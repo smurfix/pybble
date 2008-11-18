@@ -7,6 +7,8 @@ from pybble.utils import STATIC_PATH, Session, local, local_manager, \
 import pybble.models
 from pybble import views
 
+import StringIO
+import settings
 
 class Pybble(object):
 
@@ -20,6 +22,18 @@ class Pybble(object):
 
     def init_database(self):
         metadata.create_all(self.database_engine)
+	
+    def show_database(self):
+	def foo(s, p=None):
+	    buf.write(s.strip()+";\n")
+
+	buf = StringIO.StringIO()
+	gen = create_engine(settings.DATABASE_TYPE+"://", strategy="mock", executor=foo)
+	gen = gen.dialect.schemagenerator(gen.dialect, gen)
+	for table in pybble.models.Base.metadata.tables.values():
+	    gen.traverse(table)
+	print buf.getvalue()
+
 
     def dispatch(self, environ, start_response):
         local.application = self
