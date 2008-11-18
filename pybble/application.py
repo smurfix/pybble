@@ -9,6 +9,7 @@ from pybble import views
 
 import StringIO
 import settings
+import os
 
 class Pybble(object):
 
@@ -28,7 +29,7 @@ class Pybble(object):
 	    buf.write(s.strip()+";\n")
 
 	buf = StringIO.StringIO()
-	gen = create_engine(settings.DATABASE_TYPE+"://", strategy="mock", executor=foo)
+	gen = create_engine(os.getenv("DATABASE_TYPE",settings.DATABASE_TYPE)+"://", strategy="mock", executor=foo)
 	gen = gen.dialect.schemagenerator(gen.dialect, gen)
 	for table in pybble.models.Base.metadata.tables.values():
 	    gen.traverse(table)
