@@ -42,6 +42,7 @@ def link(request, uid):
 @expose('/list/', defaults={'page': 1})
 @expose('/list/<int:page>')
 def list(request, page):
+    print dir(URL)
     query = URL.query.filter_by(public=True)
     pagination = Pagination(query, 30, page, 'list')
     if pagination.page > 1 and not pagination.entries:
