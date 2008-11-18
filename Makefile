@@ -1,6 +1,8 @@
 #!/usr/bin/make
 SHELL=/bin/bash
-SQL=sqlite mysql
+SQL=mysql
+## sql_diff currently doesn't support PostgreSQL.
+## sqlite cannot drop columns.
 
 release: tools/sql_diff.py
 	@mkdir -p sql; \
