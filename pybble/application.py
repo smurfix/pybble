@@ -1,9 +1,8 @@
-from sqlalchemy import create_engine
 from werkzeug import Request, SharedDataMiddleware, ClosingIterator
 from werkzeug.exceptions import HTTPException, NotFound
-from pybble.utils import STATIC_PATH, Session, local, local_manager, \
+from pybble.utils import STATIC_PATH, local, local_manager, \
      url_map
-from pybble.database import metadata
+from pybble.database import metadata, db
 
 import pybble.models
 from pybble import views
@@ -16,14 +15,13 @@ class Pybble(object):
 
     def __init__(self, db_uri):
         local.application = self
-        self.database_engine = create_engine(db_uri, convert_unicode=True)
 
         self.dispatch = SharedDataMiddleware(self.dispatch, {
             '/static':  STATIC_PATH
         })
 
     def init_database(self):
-        metadata.create_all(self.database_engine)
+        metadata.create_all(db.engine)
 	
     def show_database(self):
 	def foo(s, p=None):
@@ -51,7 +49,7 @@ class Pybble(object):
         except HTTPException, e:
             response = e
         return ClosingIterator(response(environ, start_response),
-                               [Session.remove, local_manager.cleanup])
+                               [db.session.remove, local_manager.cleanup])
 
     def __call__(self, environ, start_response):
         return self.dispatch(environ, start_response)

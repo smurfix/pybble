@@ -7,9 +7,9 @@ from sqlalchemy import MetaData, create_engine, Table, String, Boolean,\
     Integer, Column, Text, Float, ForeignKey, DateTime
 from sqlalchemy.types import TypeDecorator, MutableType
 from sqlalchemy.orm import scoped_session, create_session, relation, Query, \
-    MapperExtension
+    MapperExtension, scoped_session
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
-from pybble.utils import Session
+from pybble.utils import local_manager
 
 if settings.DATABASE_TYPE == "sqlite":
 	dsn = 'sqlite:///'+settings.DATABASE_FILE
@@ -22,6 +22,9 @@ else:
 
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
+
+Session = scoped_session(lambda: create_session(db.engine,
+                         transactional=True), local_manager.get_ident)
 
 engine = create_engine(dsn, pool_recycle=300, convert_unicode=True, echo=settings.DATABASE_DEBUG)
 metadata = Base.metadata

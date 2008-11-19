@@ -4,7 +4,6 @@ from random import sample, randrange
 from jinja2 import Environment, FileSystemLoader
 from werkzeug import Response, Local, LocalManager, cached_property
 from werkzeug.routing import Map, Rule
-from sqlalchemy.orm import create_session, scoped_session
 
 
 TEMPLATE_PATH = path.join(path.dirname(__file__), 'templates')
@@ -18,8 +17,6 @@ application = local('application')
 
 url_map = Map([Rule('/static/<file>', endpoint='static', build_only=True)])
 
-Session = scoped_session(lambda: create_session(application.database_engine,
-                         transactional=True), local_manager.get_ident)
 jinja_env = Environment(loader=FileSystemLoader(TEMPLATE_PATH))
 
 

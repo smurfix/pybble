@@ -1,7 +1,7 @@
 from datetime import datetime
 from sqlalchemy import Table, Column, String, Boolean, DateTime, Integer, ForeignKey
 from sqlalchemy.orm import relation,backref
-from pybble.utils import Session, url_for, get_random_uid
+from pybble.utils import url_for, get_random_uid
 from pybble.database import db
 
 class Object(db.Base):

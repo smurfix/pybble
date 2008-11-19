@@ -1,9 +1,9 @@
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
-from pybble.utils import Session, Pagination, render_template, expose, \
+from pybble.utils import Pagination, render_template, expose, \
      validate_url, url_for
 from pybble.models import URL
-from pybble.database import NoResult
+from pybble.database import db,NoResult
 
 @expose('/')
 def new(request):
@@ -22,8 +22,8 @@ def new(request):
 				error = 'The alias you have requested exists already'
         if not error:
             uid = URL(url, 'private' not in request.form, alias)
-            Session.add(uid)
-            Session.commit()
+            db.session.add(uid)
+            db.session.commit()
             return redirect(url_for('display', uid=uid.uid))
     return render_template('new.html', error=error, url=url)
 
