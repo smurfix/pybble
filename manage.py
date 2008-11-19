@@ -10,7 +10,7 @@ def make_shell():
     application = make_app()
     return locals()
 
-action_runserver = script.make_runserver(make_app, use_reloader=True)
+action_runserver = script.make_runserver(make_app, use_reloader=False)
 action_shell = script.make_shell(make_shell)
 action_initdb = lambda: make_app().init_database()
 action_showdb = lambda: make_app().show_database()
