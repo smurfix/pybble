@@ -20,9 +20,10 @@ def new(request):
             elif URL.query.get(alias):
                 error = 'The alias you have requested exists already'
         if not error:
-            uid = URL(url, 'private' not in request.form, alias).uid
+            uid = URL(url, 'private' not in request.form, alias)
+            Session.add(uid)
             Session.commit()
-            return redirect(url_for('display', uid=uid))
+            return redirect(url_for('display', uid=uid.uid))
     return render_template('new.html', error=error, url=url)
 
 @expose('/display/<uid>')
