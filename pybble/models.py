@@ -9,9 +9,13 @@ class Object(db.Base):
 	query = db.session.query_property(db.Query)
 
 	id = Column(Integer(20), primary_key=True)
+
 	discriminator = Column(Integer)
 	__mapper_args__ = {'polymorphic_on': discriminator}
 
+Object.owner = Column(Integer(20),ForeignKey('obj.id'))       # direct ancestor (replied-to comment)
+Object.superowner = Column(Integer(20),ForeignKey('obj.id'))  # indirect ancestor (replied-to blog entry)
+Object.site = Column(Integer(20),ForeignKey('obj.id'))        # web site this object belongs to
 
 class URL(Object):
 	__tablename__ = "urls"
