@@ -9,6 +9,7 @@ from sqlalchemy.types import TypeDecorator, MutableType
 from sqlalchemy.orm import scoped_session, create_session, relation, Query, \
     MapperExtension
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
+from pybble.utils import Session
 
 if settings.DATABASE_TYPE == "sqlite":
 	dsn = 'sqlite:///'+settings.DATABASE_FILE
@@ -25,11 +26,9 @@ Base = declarative_base()
 engine = create_engine(dsn, pool_recycle=300, convert_unicode=True, echo=settings.DATABASE_DEBUG)
 metadata = Base.metadata
 
-session = scoped_session(lambda: create_session(engine, autoflush=True))
-
 Model = declarative_base(metadata=metadata,
-                         mapper=session.mapper)
-Model.query = session.query_property()
+                         mapper=Session.mapper)
+#Model.query = session.query_property()
 
 class QueryError(RuntimeError):
 	def __init__(self,base,*a,**k):
@@ -73,7 +72,7 @@ def _make_module():
             setattr(db, key, getattr(mod, key))
     #db.File = File
     db.engine = engine
-    db.session = session
+    db.session = Session
     db.Model = Model
     db.Query = GQuery
     db.Base = Base

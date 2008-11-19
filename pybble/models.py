@@ -1,5 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Table, Column, String, Boolean, DateTime, Integer, ForeignKey
+from sqlalchemy.orm import relation,backref
 from pybble.utils import Session, url_for, get_random_uid
 from pybble.database import db
 
@@ -13,9 +14,14 @@ class Object(db.Base):
 	discriminator = Column(Integer)
 	__mapper_args__ = {'polymorphic_on': discriminator}
 
-Object.owner = Column(Integer(20),ForeignKey('obj.id'))       # direct ancestor (replied-to comment)
-Object.superowner = Column(Integer(20),ForeignKey('obj.id'))  # indirect ancestor (replied-to blog entry)
-Object.site = Column(Integer(20),ForeignKey('obj.id'))        # web site this object belongs to
+	parent_id = Column(Integer(20),ForeignKey('obj.id'))      # direct ancestor (replied-to comment)
+	owner_id = Column(Integer(20),ForeignKey('obj.id'))        # creating object/user
+
+	#children = relation('Object', backref=backref("parent", remote_side="Object.id")) 
+	#all_children = relation('Object', backref=backref("superparent", remote_side="Object.id")) 
+Object.parent = relation(Object, remote_side=Object.id, primaryjoin=(Object.parent_id==Object.id))
+Object.owner = relation(Object, remote_side=Object.id, primaryjoin=(Object.owner_id==Object.id))
+
 
 class URL(Object):
 	__tablename__ = "urls"
