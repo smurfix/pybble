@@ -13,8 +13,10 @@ release: tools/sql_diff.py
 		if test -s .temp2; then q=$$(( $$(cat sql/$$db.version) + 1 )); echo $$q > sql/$$db.version; \
 			mv .temp1 sql/$$db.sql; mkdir -p sql/$$db; mv .temp2 sql/$$db/$$(printf '%04d' $$q).sql; fi; \
 		else echo 1 > sql/$$db.version; mv .temp1 sql/$$db.sql; fi; \
-		done; \
-		rm -f .temp1 .temp2
+		git add sql/$$db; \
+		done
+	rm -f .temp1 .temp2
+	git add sql
 
 tools/sql_diff.py: tools/sql_diff.g
 	yapps tools/sql_diff.g
