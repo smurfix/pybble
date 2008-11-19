@@ -14,14 +14,17 @@ class Object(db.Base):
 	discriminator = Column(Integer)
 	__mapper_args__ = {'polymorphic_on': discriminator}
 
-	parent_id = Column(Integer(20),ForeignKey('obj.id'))      # direct ancestor (replied-to comment)
 	owner_id = Column(Integer(20),ForeignKey('obj.id'))        # creating object/user
+	parent_id = Column(Integer(20),ForeignKey('obj.id'))       # direct ancestor (replied-to comment)
+	superparent_id = Column(Integer(20),ForeignKey('obj.id'))  # indirect ancestor (replied-to wiki page)
 
-	#children = relation('Object', backref=backref("parent", remote_side="Object.id")) 
 	#all_children = relation('Object', backref=backref("superparent", remote_side="Object.id")) 
-Object.parent = relation(Object, remote_side=Object.id, primaryjoin=(Object.parent_id==Object.id))
-Object.owner = relation(Object, remote_side=Object.id, primaryjoin=(Object.owner_id==Object.id))
 
+Object.owner = relation(Object, remote_side=Object.id, primaryjoin=(Object.owner_id==Object.id))
+Object.parent = relation(Object, remote_side=Object.id, primaryjoin=(Object.parent_id==Object.id))
+Object.superparent = relation(Object, remote_side=Object.id, primaryjoin=(Object.superparent_id==Object.id))
+
+Object.children = relation(Object, remote_side=Object.parent_id, primaryjoin=(Object.id==Object.parent_id)) 
 
 class URL(Object):
 	__tablename__ = "urls"
