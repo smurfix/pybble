@@ -3,6 +3,7 @@ from werkzeug.exceptions import NotFound
 from pybble.utils import Session, Pagination, render_template, expose, \
      validate_url, url_for
 from pybble.models import URL
+from pybble.database import NoResult
 
 @expose('/')
 def new(request):
@@ -17,8 +18,8 @@ def new(request):
                 error = 'Your alias is too long'
             elif '/' in alias:
                 error = 'Your alias might not include a slash'
-            elif URL.query.get_by(URL.uid==alias):
-                error = 'The alias you have requested exists already'
+            elif URL.query.filter(URL.uid==alias).count():
+				error = 'The alias you have requested exists already'
         if not error:
             uid = URL(url, 'private' not in request.form, alias)
             Session.add(uid)
@@ -28,17 +29,15 @@ def new(request):
 
 @expose('/display/<uid>')
 def display(request, uid):
-    url = URL.query.get_by(URL.uid==uid)
-    if not url:
-        raise NotFound()
-    return render_template('display.html', url=url)
+	try: url = URL.query.get_one(URL.uid==uid)
+	except NoResult: raise NotFound()
+	return render_template('display.html', url=url)
 
 @expose('/u/<uid>')
 def link(request, uid):
-    url = URL.query.get_by(URL.uid==uid)
-    if not url:
-        raise NotFound()
-    return redirect(url.target, 301)
+	try: url = URL.query.get_one(URL.uid==uid)
+	except NoResult: raise NotFound()
+	return redirect(url.target, 301)
 
 @expose('/list/', defaults={'page': 1})
 @expose('/list/<int:page>')

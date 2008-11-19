@@ -6,7 +6,7 @@ from pybble.database import db
 class Object(db.Base):
 	__tablename__ = "obj"
 	__table_args__ = {'useexisting': True}
-	query = db.session.query_property()
+	query = db.session.query_property(db.Query)
 
 	id = Column(Integer(20), primary_key=True)
 	discriminator = Column(Integer)
@@ -18,7 +18,7 @@ class URL(Object):
 	__table_args__ = {'useexisting': True}
 	__mapper_args__ = {'polymorphic_identity': 1}
 
-	query = db.session.query_property()
+	query = db.session.query_property(db.Query)
 
 	id = Column(Integer, ForeignKey('obj.id'), primary_key=True)
 	        
