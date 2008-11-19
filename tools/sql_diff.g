@@ -394,7 +394,9 @@ class FKey(object):
 		else:
 			r=""
 
-		r += " CONSTRAINT `%s` FOREIGN KEY (" % (self.name,)
+		if self.name:
+			r += " CONSTRAINT `%s`" % (self.name,)
+		r += " FOREIGN KEY ("
 		ra=""
 		for f in self.fields:
 			r += ra+"`"+f.name+"`"
@@ -529,7 +531,7 @@ class Table(object):
 		return None
 		
 	def new_fkey(self,name,fl1,rtable,fl2,opt):
-		if name in self.fknames:
+		if name is not None and name in self.fknames:
 			raise DupKeyError(name)
 		fl1=tuple(fl1)
 		fl2=tuple(fl2)
