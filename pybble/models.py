@@ -1,12 +1,9 @@
 from datetime import datetime
 from sqlalchemy import Table, Column, String, Boolean, DateTime, Integer, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from pybble.utils import Session, metadata, url_for, get_random_uid
+from pybble.utils import Session, url_for, get_random_uid
 from pybble.database import db
 
-Base = declarative_base()
-
-class Object(Base):
+class Object(db.Base):
 	__tablename__ = "obj"
 	__table_args__ = {'useexisting': True}
 	query = db.session.query_property()

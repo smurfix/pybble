@@ -2,7 +2,8 @@ from sqlalchemy import create_engine
 from werkzeug import Request, SharedDataMiddleware, ClosingIterator
 from werkzeug.exceptions import HTTPException, NotFound
 from pybble.utils import STATIC_PATH, Session, local, local_manager, \
-     metadata, url_map
+     url_map
+from pybble.database import metadata
 
 import pybble.models
 from pybble import views
@@ -31,7 +32,7 @@ class Pybble(object):
 	buf = StringIO.StringIO()
 	gen = create_engine(os.getenv("DATABASE_TYPE",settings.DATABASE_TYPE)+"://", strategy="mock", executor=foo)
 	gen = gen.dialect.schemagenerator(gen.dialect, gen)
-	for table in pybble.models.Base.metadata.tables.values():
+	for table in metadata.tables.values():
 	    gen.traverse(table)
 	print buf.getvalue()
 

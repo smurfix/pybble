@@ -19,11 +19,11 @@ elif settings.DATABASE_TYPE == "mysql":
 else:
 	raise ValueError("unsupported ddatabase type: use 'sqlite' or 'mysql'")
 
-engine = create_engine(dsn, pool_recycle=300, convert_unicode=True, echo=settings.DATABASE_DEBUG)
-metadata = MetaData(bind=engine)
+from sqlalchemy.ext.declarative import declarative_base
+Base = declarative_base()
 
-class ModelBase(object):
-    """Internal baseclass for `Model`."""
+engine = create_engine(dsn, pool_recycle=300, convert_unicode=True, echo=settings.DATABASE_DEBUG)
+metadata = Base.metadata
 
 session = scoped_session(lambda: create_session(engine, autoflush=True))
 
@@ -44,6 +44,7 @@ def _make_module():
     db.session = session
     db.Model = Model
     db.Query = Query
+    db.Base = Base
     return db
 
 db = _make_module()

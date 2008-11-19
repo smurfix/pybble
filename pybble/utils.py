@@ -4,7 +4,6 @@ from random import sample, randrange
 from jinja2 import Environment, FileSystemLoader
 from werkzeug import Response, Local, LocalManager, cached_property
 from werkzeug.routing import Map, Rule
-from sqlalchemy import MetaData
 from sqlalchemy.orm import create_session, scoped_session
 
 
@@ -17,7 +16,6 @@ local = Local()
 local_manager = LocalManager([local])
 application = local('application')
 
-metadata = MetaData()
 url_map = Map([Rule('/static/<file>', endpoint='static', build_only=True)])
 
 Session = scoped_session(lambda: create_session(application.database_engine,
