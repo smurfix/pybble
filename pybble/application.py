@@ -28,6 +28,7 @@ class Pybble(object):
 	    buf.write(s.strip()+";\n")
 
 	buf = StringIO.StringIO()
+	from sqlalchemy import create_engine
 	gen = create_engine(os.getenv("DATABASE_TYPE",settings.DATABASE_TYPE)+"://", strategy="mock", executor=foo)
 	gen = gen.dialect.schemagenerator(gen.dialect, gen)
 	for table in metadata.tables.values():
