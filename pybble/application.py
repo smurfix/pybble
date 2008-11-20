@@ -2,7 +2,7 @@ from werkzeug import Request, SharedDataMiddleware, ClosingIterator
 from werkzeug.exceptions import HTTPException, NotFound
 from pybble.utils import STATIC_PATH, local, local_manager, \
      url_map
-from pybble.database import metadata, db
+from pybble.database import metadata, db, NoResult
 
 import pybble.models
 from pybble import views
@@ -30,12 +30,22 @@ class Pybble(object):
     	def action(domain=("d","example.org.invalid")):
 	    """Initialize a new site"""
 	    from pybble.models import Site,User
-	    s=Site(domain)
-	    db.session.add(s)
-	    u=User("root")
-	    db.session.add(u)
-	    u.sites.append(s)
-	    print "USERS: ", s.users
+	    try:
+	    	s=Site.query.get_one(Site.domain==domain)
+	    except NoResult:
+	    	s=Site(domain)
+	    	db.session.add(s)
+	    else:
+		print "%s found." % s
+	    try:
+	    	u=User.query.get_one(User.sites.contains(s))
+	    except NoResult:
+	    	u=User("root")
+	    	u.verified=True
+	    	db.session.add(u)
+	    	u.sites.append(s)
+	    else:
+		print "%s found." % u
 	    db.session.commit()
 	    print "Your root user is named '%s' and has the password '%s'." % (u.username, u.password)
 	return action
