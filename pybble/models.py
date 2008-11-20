@@ -1,19 +1,35 @@
 from datetime import datetime
 from sqlalchemy import Table, Column, String, Unicode, Boolean, DateTime, Integer, ForeignKey, \
-	UniqueConstraint
+	UniqueConstraint, Text
 from sqlalchemy.orm import relation,backref
 from pybble.utils import url_for, random_string
 from pybble.database import db
 from datetime import datetime
+from sqlalchemy.databases.mysql import MSTinyInteger as TinyInteger
+
+
+class Discriminator(db.Base):
+	"""Discriminator for Object"""
+	__tablename__ = "discriminator"
+	__table_args__ = {'useexisting': True}
+	query = db.session.query_property(db.Query)
+	id = Column(TinyInteger(1), primary_key=True)
+	name = Column(String(30), nullable=False, unique=True)
+
+	def __init__(self, cls):
+		self.id = obj_discr(cls)
+		self.name = cls.__name__
+
 
 class Object(db.Base):
+	"""The base type of all pointed-to objects"""
 	__tablename__ = "obj"
 	__table_args__ = {'useexisting': True}
 	query = db.session.query_property(db.Query)
 
 	id = Column(Integer(20), primary_key=True)
 
-	discriminator = Column(Integer)
+	discriminator = Column(TinyInteger, ForeignKey('discriminator.id',name="obj_discr"))
 	__mapper_args__ = {'polymorphic_on': discriminator}
 
 	owner_id = Column(Integer(20),ForeignKey('obj.id',name="obj_owner"))        # creating object/user
@@ -28,7 +44,16 @@ Object.superparent = relation(Object, remote_side=Object.id, primaryjoin=(Object
 
 Object.children = relation(Object, remote_side=Object.parent_id, primaryjoin=(Object.id==Object.parent_id)) 
 
+def obj_class(id):
+	"""Given a discriminator ID, return the referred object's class."""
+	return Object.__mapper__.polymorphic_map[id].class_
+
+def obj_discr(cls):
+	"""Given a class, return the objects' discriminator."""
+	return cls.__mapper__.polymorphic_identity
+
 class URL(Object):
+	"""Test table which links to external URLs."""
 	__tablename__ = "urls"
 	__table_args__ = {'useexisting': True}
 	__mapper_args__ = {'polymorphic_identity': 1}
@@ -59,6 +84,7 @@ class URL(Object):
 		return '<URL %r>' % self.uid
 
 class User(Object):
+	"""Authorized users."""
 	__tablename__ = "users"
 	__table_args__ = {'useexisting': True}
 	__mapper_args__ = {'polymorphic_identity': 2}
@@ -105,6 +131,7 @@ PERM_WRITE=3
 PERM_ADMIN=4
 
 class Permission(db.Base):
+	"""Permission checks"""
 	__tablename__ = "permissions"
 	__table_args__ = {'useexisting': True}
 	query = db.session.query_property(db.Query)
@@ -113,11 +140,6 @@ class Permission(db.Base):
 	user_id = Column(Integer(20),ForeignKey(Object.id,name="permission_user"), nullable=False)        # acting user/group
 	obj_id = Column(Integer(20),ForeignKey(Object.id,name="permission_obj"), nullable=False)         # affected object
 	right = Column(Integer(1))
-
-site_users = Table('site_users', db.Metadata,
-	Column('site_id', Integer, ForeignKey('obj.id',name="site_users_site"), nullable=False),
-	Column('user_id', Integer, ForeignKey('obj.id',name="site_users_user"), nullable=False),
-	UniqueConstraint('site_id', 'user_id'))
 
 class Site(Object):
 	"""A web domain."""
@@ -136,7 +158,37 @@ class Site(Object):
 		self.domain=domain
 		self.name=name
 
-Site.users = relation(User, secondary=site_users, backref='sites', primaryjoin=(Object.id==site_users.c.site_id),
-	secondaryjoin=(site_users.c.user_id==Object.id))
+site_users = Table('site_users', db.Metadata,
+	Column('site_id', Integer, ForeignKey(Site.id,name="site_users_site"), nullable=False),
+	Column('user_id', Integer, ForeignKey(User.id,name="site_users_user"), nullable=False),
+	UniqueConstraint('site_id', 'user_id'))
 
+Site.users = relation(User, secondary=site_users, backref='sites',
+	primaryjoin=(Site.id==site_users.c.site_id),
+	secondaryjoin=(site_users.c.user_id==User.id))
+
+class Template(Object):
+	"""A template for rendering."""
+	__tablename__ = "templates"
+	__table_args__ = ({'useexisting': True})
+	__mapper_args__ = {'polymorphic_identity': 6}
+	query = db.session.query_property(db.Query)
+	id = Column(Integer, ForeignKey('obj.id',name="site_id"), primary_key=True,autoincrement=False)
+	name = Column(String(50), nullable=True)
+	data = Column(Text)
+
+class TemplateMatch(Object):
+	"""Associate a template to an object."""
+	__tablename__ = "template_match"
+	__table_args__ = ({'useexisting': True})
+	__mapper_args__ = {'polymorphic_identity': 6}
+	query = db.session.query_property(db.Query)
+
+	obj_id = Column('obj_id', Integer, ForeignKey('obj.id',name="obj_templates_obj"), nullable=False)
+	template_id = Column('template_id', Integer, ForeignKey('templates.id',name="obj_templates_template"), nullable=False)
+	discriminator = Column(TinyInteger, ForeignKey('discriminator.id',name="templatematch_discr"))
+	type = Column(TinyInteger(1), nullable=False)
+
+TM_TYPE_PAGE=1
+TM_TYPE_LIST=2
 
