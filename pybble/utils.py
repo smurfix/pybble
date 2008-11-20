@@ -64,3 +64,35 @@ class Pagination(object):
     previous = property(lambda x: url_for(x.endpoint, page=x.page - 1))
     next = property(lambda x: url_for(x.endpoint, page=x.page + 1))
     pages = property(lambda x: max(0, x.count - 1) // x.per_page + 1)
+
+rand=None
+baselen=None
+strlen=None
+def random_string(bytes=9, base="23456789abcdefghijkmnpqrstuvwxyz", dash="",
+				dash_step=6):
+	"""Get a random string, suitable for passwords"""
+	global rand
+	if rand is None:
+		rand = open("/dev/urandom")
+
+	global baselen;
+	global strlen;
+	if strlen is None or baselen != bytes:
+		from math import log,ceil
+		baselen=bytes;
+		strlen=ceil(ceil(log(len(base))/log(2))*baselen/8)
+		
+	passwd=rand.read(strlen)
+
+	fm=0
+	for c in passwd:
+		fm = (fm<<8) + ord(c)
+	passwd = ""
+	while bytes:
+		passwd += base[fm%len(base)]
+		fm = fm // len(base)
+		if dash_step and fm and not (len(passwd)+1)%dash_step:
+			passwd += dash
+		bytes -= 1
+	return passwd
+

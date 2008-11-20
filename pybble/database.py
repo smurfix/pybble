@@ -79,6 +79,7 @@ def _make_module():
     db.Model = Model
     db.Query = GQuery
     db.Base = Base
+    db.Metadata = metadata
     return db
 
 db = _make_module()

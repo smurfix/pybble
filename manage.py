@@ -12,7 +12,8 @@ def make_shell():
 
 action_runserver = script.make_runserver(make_app, use_reloader=False)
 action_shell = script.make_shell(make_shell)
-action_initdb = lambda: make_app().init_database()
-action_showdb = lambda: make_app().show_database()
+action_initdb = make_app().init_database()
+action_initsite = make_app().init_site()
+action_showdb = make_app().show_database()
 
 script.run()

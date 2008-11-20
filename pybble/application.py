@@ -21,19 +21,39 @@ class Pybble(object):
         })
 
     def init_database(self):
-        metadata.create_all(db.engine)
+    	def action():
+	    """Initialize or update the database"""
+	    metadata.create_all(db.engine)
+	return action
 	
-    def show_database(self):
-	def foo(s, p=None):
-	    buf.write(s.strip()+";\n")
+    def init_site(self):
+    	def action(domain=("d","example.org.invalid")):
+	    """Initialize a new site"""
+	    from pybble.models import Site,User
+	    s=Site(domain)
+	    db.session.add(s)
+	    u=User("root")
+	    db.session.add(u)
+	    u.sites.append(s)
+	    print "USERS: ", s.users
+	    db.session.commit()
+	    print "Your root user is named '%s' and has the password '%s'." % (u.username, u.password)
+	return action
 
-	buf = StringIO.StringIO()
-	from sqlalchemy import create_engine
-	gen = create_engine(os.getenv("DATABASE_TYPE",settings.DATABASE_TYPE)+"://", strategy="mock", executor=foo)
-	gen = gen.dialect.schemagenerator(gen.dialect, gen)
-	for table in metadata.tables.values():
-	    gen.traverse(table)
-	print buf.getvalue()
+    def show_database(self):
+    	def action():
+	    """Show all database table definitions"""
+	    def foo(s, p=None):
+		buf.write(s.strip()+";\n")
+
+	    buf = StringIO.StringIO()
+	    from sqlalchemy import create_engine
+	    gen = create_engine(os.getenv("DATABASE_TYPE",settings.DATABASE_TYPE)+"://", strategy="mock", executor=foo)
+	    gen = gen.dialect.schemagenerator(gen.dialect, gen)
+	    for table in metadata.tables.values():
+		gen.traverse(table)
+	    print buf.getvalue()
+	return action
 
 
     def dispatch(self, environ, start_response):
