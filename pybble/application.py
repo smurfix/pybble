@@ -36,7 +36,7 @@ class Pybble(object):
 			for k,v in Object.__mapper__.polymorphic_map.iteritems():
 
 				try:
-					o=Discriminator.query.get_by(id=k)
+					o=Discriminator.q.get_by(id=k)
 				except NoResult:
 					o=Discriminator(v)
 					db.session.add(o)
@@ -45,7 +45,7 @@ class Pybble(object):
 						raise ValueError("Discriminator '%d' pointed at '%s', now '%s'!" % (k,o.name,v.__name__))
 
 			try:
-				s=Site.query.get_by(domain=domain)
+				s=Site.q.get_by(domain=domain)
 			except NoResult:
 				s=Site(domain)
 				db.session.add(s)
@@ -53,7 +53,7 @@ class Pybble(object):
 				print "%s found." % s
 
 			try:
-				u=User.query.get_one(User.sites.contains(s))
+				u=User.q.get_one(User.sites.contains(s))
 			except NoResult:
 				u=User("root")
 				u.verified=True

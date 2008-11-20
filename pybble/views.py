@@ -18,7 +18,7 @@ def new(request):
                 error = 'Your alias is too long'
             elif '/' in alias:
                 error = 'Your alias might not include a slash'
-            elif URL.query.filter(URL.uid==alias).count():
+            elif URL.q.filter(URL.uid==alias).count():
 				error = 'The alias you have requested exists already'
         if not error:
             uid = URL(url, 'private' not in request.form, alias)
@@ -29,20 +29,20 @@ def new(request):
 
 @expose('/display/<uid>')
 def display(request, uid):
-	try: url = URL.query.get_by(uid=uid)
+	try: url = URL.q.get_by(uid=uid)
 	except NoResult: raise NotFound()
 	return render_template('display.html', url=url)
 
 @expose('/u/<uid>')
 def link(request, uid):
-	try: url = URL.query.get_by(uid=uid)
+	try: url = URL.q.get_by(uid=uid)
 	except NoResult: raise NotFound()
 	return redirect(url.target, 301)
 
 @expose('/list/', defaults={'page': 1})
 @expose('/list/<int:page>')
 def list(request, page):
-    query = URL.query.filter(URL.public==True)
+    query = URL.q.filter(URL.public==True)
     pagination = Pagination(query, 30, page, 'list')
     if pagination.page > 1 and not pagination.entries:
         raise NotFound()

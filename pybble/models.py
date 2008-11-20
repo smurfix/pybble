@@ -12,7 +12,7 @@ class Discriminator(db.Base):
 	"""Discriminator for Object"""
 	__tablename__ = "discriminator"
 	__table_args__ = {'useexisting': True}
-	query = db.session.query_property(db.Query)
+	q = db.session.query_property(db.Query)
 	id = Column(TinyInteger(1), primary_key=True)
 	name = Column(String(30), nullable=False, unique=True)
 
@@ -25,7 +25,7 @@ class Object(db.Base):
 	"""The base type of all pointed-to objects"""
 	__tablename__ = "obj"
 	__table_args__ = {'useexisting': True}
-	query = db.session.query_property(db.Query)
+	q = db.session.query_property(db.Query)
 
 	id = Column(Integer(20), primary_key=True)
 
@@ -57,7 +57,7 @@ class URL(Object):
 	__tablename__ = "urls"
 	__table_args__ = {'useexisting': True}
 	__mapper_args__ = {'polymorphic_identity': 1}
-	query = db.session.query_property(db.Query)
+	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey('obj.id',name="URL_id"), primary_key=True,autoincrement=False)
 	        
 	uid = Column(Unicode(140), nullable=False, unique=True)
@@ -72,7 +72,7 @@ class URL(Object):
 		if not uid:
 			while 1:
 				uid = get_random_uid()
-				if not URL.query.get(uid):
+				if not URL.q.get(uid):
 					break
 		self.uid = uid
 
@@ -88,7 +88,7 @@ class User(Object):
 	__tablename__ = "users"
 	__table_args__ = {'useexisting': True}
 	__mapper_args__ = {'polymorphic_identity': 2}
-	query = db.session.query_property(db.Query)
+	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey('obj.id',name="user_id"), primary_key=True,autoincrement=False)
 	        
 	username = Column(Unicode(30), nullable=False)
@@ -112,14 +112,14 @@ class User(Object):
 #	__tablename__ = "groups"
 #	__table_args__ = {'useexisting': True}
 #	__mapper_args__ = {'polymorphic_identity': 4}
-#	query = db.session.query_property(db.Query)
+#	q = db.session.query_property(db.Query)
 #	id = Column(Integer, ForeignKey('obj.id',name="Group_id"), primary_key=True,autoincrement=False)
 #	        
 #	name = Column(Unicode(30))
 #	
 #class Member(db.Base):
 #	__tablename__ = "groupmembers"
-#	query = db.session.query_property(db.Query)
+#	q = db.session.query_property(db.Query)
 #	id = Column(Integer, primary_key=True)
 #
 #	user_id = Column(Integer(20),ForeignKey(Obj.id,name="member_user"))    # one member
@@ -134,7 +134,7 @@ class Permission(db.Base):
 	"""Permission checks"""
 	__tablename__ = "permissions"
 	__table_args__ = {'useexisting': True}
-	query = db.session.query_property(db.Query)
+	q = db.session.query_property(db.Query)
 	id = Column(Integer(20), primary_key=True)
 
 	user_id = Column(Integer(20),ForeignKey(Object.id,name="permission_user"), nullable=False)        # acting user/group
@@ -146,7 +146,7 @@ class Site(Object):
 	__tablename__ = "sites"
 	__table_args__ = {'useexisting': True}
 	__mapper_args__ = {'polymorphic_identity': 5}
-	query = db.session.query_property(db.Query)
+	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey('obj.id',name="site_id"), primary_key=True,autoincrement=False)
 
 	domain = Column(Unicode(100), nullable=False, unique=True)
@@ -172,7 +172,7 @@ class Template(Object):
 	__tablename__ = "templates"
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 6}
-	query = db.session.query_property(db.Query)
+	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey('obj.id',name="site_id"), primary_key=True,autoincrement=False)
 	name = Column(String(50), nullable=True)
 	data = Column(Text)
@@ -182,7 +182,7 @@ class TemplateMatch(Object):
 	__tablename__ = "template_match"
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 6}
-	query = db.session.query_property(db.Query)
+	q = db.session.query_property(db.Query)
 
 	obj_id = Column('obj_id', Integer, ForeignKey('obj.id',name="obj_templates_obj"), nullable=False)
 	template_id = Column('template_id', Integer, ForeignKey('templates.id',name="obj_templates_template"), nullable=False)
