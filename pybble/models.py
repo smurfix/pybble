@@ -105,7 +105,7 @@ PERM_WRITE=3
 PERM_ADMIN=4
 
 class Permission(db.Base):
-	__tablename__ = "users"
+	__tablename__ = "permissions"
 	__table_args__ = {'useexisting': True}
 	query = db.session.query_property(db.Query)
 	id = Column(Integer(20), primary_key=True)
