@@ -49,9 +49,16 @@ class NoResult(QueryError):
 	pass
 
 class GQuery(Query):
+	def get_by(self,*a,**k):
+		"""Make sure that there's exactly one result."""
+		return self._get_one(self.filter_by,a,k)
+		
 	def get_one(self,*a,**k):
 		"""Make sure that there's exactly one result."""
-		res = iter(self.filter(*a,**k)[0:2])
+		return self._get_one(self.filter,a,k)
+
+	def _get_one(self,f,a,k):
+		res = iter(f(*a,**k)[0:2])
 		try:
 			r = res.next()
 		except StopIteration:

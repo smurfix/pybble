@@ -29,13 +29,13 @@ def new(request):
 
 @expose('/display/<uid>')
 def display(request, uid):
-	try: url = URL.query.get_one(URL.uid==uid)
+	try: url = URL.query.get_by(uid=uid)
 	except NoResult: raise NotFound()
 	return render_template('display.html', url=url)
 
 @expose('/u/<uid>')
 def link(request, uid):
-	try: url = URL.query.get_one(URL.uid==uid)
+	try: url = URL.query.get_by(uid=uid)
 	except NoResult: raise NotFound()
 	return redirect(url.target, 301)
 
