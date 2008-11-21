@@ -2,10 +2,16 @@ from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from pybble.utils import Pagination, render_template, expose, \
      validate_url, url_for
-from pybble.models import URL
+from pybble.models import URL, TemplateMatch, TM_TYPE_PAGE, obj_discr
 from pybble.database import db,NoResult
 
-@expose('/')
+@expose("/")
+def mainpage(request):
+	t = TemplateMatch.q.get_by(obj=request.site, discriminator=obj_discr(request.site), type=TM_TYPE_PAGE).template
+	print "SITE",request.site
+	return render_template(t, request=request)
+
+@expose('/new')
 def new(request):
     error = url = ''
     if request.method == 'POST':

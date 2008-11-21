@@ -24,15 +24,17 @@ class DatabaseLoader(BaseLoader):
 		from pybble.models import Template
 		from pybble.database import NoResult
 
-		try:
-			t = Template.q.get_by(name=template)
-		except NoResult:
-			raise TemplateNotFound(template)
+		if isinstance(template,Template):
+			t = template
 		else:
-			mtime = t.modified
-			return (t.data,
-			        "//db/%s/%s/%s" % (t.__class__.__name__,t.id,template),
-			        lambda: t.modified != mtime) 
+			try:
+				t = Template.q.get_by(name=template)
+			except NoResult:
+				raise TemplateNotFound(template)
+		mtime = t.modified
+		return (t.data,
+		        "//db/%s/%s/%s" % (t.__class__.__name__,t.id,template),
+		        lambda: t.modified != mtime) 
 	
 jinja_env = Environment(loader=DatabaseLoader())
 

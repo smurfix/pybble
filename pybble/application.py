@@ -8,6 +8,7 @@ from sqlalchemy.sql import and_, or_, not_
 
 import pybble.models
 from pybble import views
+from pybble.session import add_session, add_user, add_site
 
 import StringIO
 import settings
@@ -17,6 +18,8 @@ class Pybble(object):
 
 	def __init__(self, db_uri):
 		local.application = self
+
+
 
 		self.dispatch = SharedDataMiddleware(self.dispatch, {
 			'/static':  STATIC_PATH
@@ -29,12 +32,13 @@ class Pybble(object):
 		return action
 		
 	def init_site(self):
-		def action(domain=("d","example.org.invalid")):
+		def action(domain=("d","localhost:5000"),name=("n","Lokaler Debug-Kram")):
 
 			"""Initialize a new site"""
 			# ... or in fact the first one
 
-			from pybble.models import Site,User,Object,Discriminator,Template
+			from pybble.models import Site,User,Object,Discriminator,Template,TemplateMatch
+			from pybble.models import obj_discr, TM_TYPE_PAGE
 			for k,v in Object.__mapper__.polymorphic_map.iteritems():
 				v=v.class_
 
@@ -65,7 +69,7 @@ class Pybble(object):
 			try:
 				s=Site.q.get_by(domain=domain)
 			except NoResult:
-				s=Site(domain)
+				s=Site(domain,name=name)
 				db.session.add(s)
 			else:
 				print "%s found." % s
@@ -92,6 +96,13 @@ class Pybble(object):
 			else:
 				print "%s found." % u
 
+			try:
+			    t = TemplateMatch.q.get_by(obj=s, discriminator=obj_discr(s), type=TM_TYPE_PAGE)
+			except NoResult:
+				t = TemplateMatch(obj=s, discriminator=obj_discr(s), type=TM_TYPE_PAGE, \
+					data = "This is the website {{ request.site }}!")
+				db.session.add(t)
+
 			db.session.commit()
 			print "Your root user is named '%s' and has the password '%s'." % (u.username, u.password)
 			print "Your anon user is named '%s' and has the password '%s'." % (a.username, a.password)
@@ -116,8 +127,13 @@ class Pybble(object):
 	def dispatch(self, environ, start_response):
 		local.application = self
 		request = Request(environ)
+		local.request = request
 		local.url_adapter = adapter = url_map.bind_to_environ(environ)
 		try:
+			add_site(request)
+			add_session(request)
+			add_user(request)
+
 			endpoint, values = adapter.match()
 			handler = getattr(views, endpoint)
 			response = handler(request, **values)

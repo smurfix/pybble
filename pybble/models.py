@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from datetime import datetime
 from sqlalchemy import Table, Column, String, Unicode, Boolean, DateTime, Integer, ForeignKey, \
 	UniqueConstraint, Text
@@ -7,6 +9,8 @@ from pybble.database import db
 from datetime import datetime
 from sqlalchemy.databases.mysql import MSTinyInteger as TinyInteger
 from sqlalchemy.databases.mysql import MSTimeStamp as TimeStamp
+from sqlalchemy.sql import and_, or_, not_
+from pybble.decorators import add_to
 
 
 class Discriminator(db.Base):
@@ -84,6 +88,9 @@ class URL(Object):
 	def __repr__(self):
 		return '<URL %r>' % self.uid
 
+class UserQuery(db.Query):
+	pass # defined below
+
 class User(Object):
 	"""\
 		Authorized users.
@@ -93,7 +100,7 @@ class User(Object):
 	__tablename__ = "users"
 	__table_args__ = {'useexisting': True}
 	__mapper_args__ = {'polymorphic_identity': 2}
-	q = db.session.query_property(db.Query)
+	q = db.session.query_property(UserQuery)
 	id = Column(Integer, ForeignKey('obj.id',name="user_id"), primary_key=True,autoincrement=False)
 	        
 	username = Column(Unicode(30), nullable=False)
@@ -115,6 +122,10 @@ class User(Object):
 	@property
 	def anon(self):
 		return self.password == ""
+
+@add_to(UserQuery)
+def get_anonymous_user(self, site):
+	return self.get_one(and_(User.username=="", User.password=="",User.superparent==site))
 
 #class Group(Object):
 #	"""A group of users. (Usually.)"""
@@ -167,6 +178,9 @@ class Site(Object):
 		self.domain=domain
 		self.name=name
 
+	def __unicode__(self):
+		return u"‹Site ‚%s‘ @ %s›" % (self.name, self.domain)
+
 site_users = Table('site_users', db.Metadata,
 	Column('site_id', Integer, ForeignKey(Site.id,name="site_users_site"), nullable=False),
 	Column('user_id', Integer, ForeignKey(User.id,name="site_users_user"), nullable=False),
@@ -191,6 +205,9 @@ class Template(Object):
 		self.name = name
 		self.data = data
 
+	def __repr__(self):
+		return "'<%s:%d>'" % (self.__class__.__name__,self.id)
+
 class TemplateMatch(db.Base):
 	"""Associate a template to an object."""
 	__tablename__ = "template_match"
@@ -203,6 +220,17 @@ class TemplateMatch(db.Base):
 	discriminator = Column(TinyInteger, ForeignKey('discriminator.id',name="templatematch_discr"))
 	type = Column(TinyInteger(1), nullable=False)
 
+	def __init__(self, obj,discriminator,type, data):
+		t = Template(None,data)
+		self.obj = obj
+		self.template = t
+		self.discriminator = discriminator
+		self.type = type
+
+TemplateMatch.obj = relation(Object, remote_side="Object.id", primaryjoin=(TemplateMatch.obj_id==Object.id))
+TemplateMatch.template = relation(Template, remote_side=Template.id, foreign_keys=(TemplateMatch.template_id), primaryjoin=(TemplateMatch.template_id==Template.id))
+
 TM_TYPE_PAGE=1
 TM_TYPE_LIST=2
+TM_TYPE_STRING=3
 
