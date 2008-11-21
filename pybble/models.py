@@ -5,15 +5,28 @@ from sqlalchemy import Table, Column, String, Unicode, Boolean, DateTime, Intege
 	UniqueConstraint, Text
 from sqlalchemy.orm import relation,backref
 from pybble.utils import url_for, random_string
-from pybble.database import db
-from datetime import datetime
+from pybble.database import db, NoResult
 from sqlalchemy.databases.mysql import MSTinyInteger as TinyInteger
 from sqlalchemy.databases.mysql import MSTimeStamp as TimeStamp
 from sqlalchemy.sql import and_, or_, not_
 from pybble.decorators import add_to
+from werkzeug import import_string
 
 
-class Discriminator(db.Base):
+class DbRepr(object):
+	def __unicode__(self):
+		if getattr(self,"name",None):
+			return u'‹%s %d:%s›' % (self.__class__.__name__, self.id, self.name)
+		else:
+			return u'‹%s %d›' % (self.__class__.__name__, self.id)
+	def __str__(self):
+		if getattr(self,"name",None):
+			return '<%s %d:%s>' % (self.__class__.__name__, self.id, self.name)
+		else:
+			return '<%s %d>' % (self.__class__.__name__, self.id)
+	__repr__ = __str__
+
+class Discriminator(db.Base,DbRepr):
 	"""Discriminator for Object"""
 	__tablename__ = "discriminator"
 	__table_args__ = {'useexisting': True}
@@ -26,7 +39,7 @@ class Discriminator(db.Base):
 		self.name = cls.__name__
 
 
-class Object(db.Base):
+class Object(db.Base,DbRepr):
 	"""The base type of all pointed-to objects"""
 	__tablename__ = "obj"
 	__table_args__ = {'useexisting': True}
@@ -34,6 +47,7 @@ class Object(db.Base):
 
 	id = Column(Integer(20), primary_key=True)
 
+	# This is intentionally not a reference to the Discriminator table
 	discriminator = Column(TinyInteger, ForeignKey('discriminator.id',name="obj_discr"))
 	__mapper_args__ = {'polymorphic_on': discriminator}
 
@@ -41,13 +55,8 @@ class Object(db.Base):
 	parent_id = Column(Integer(20),ForeignKey('obj.id',name="obj_parent"))      # direct ancestor (replied-to comment)
 	superparent_id = Column(Integer(20),ForeignKey('obj.id',name="obj_super"))  # indirect ancestor (replied-to wiki page)
 
-	#all_children = relation('Object', backref=backref("superparent", remote_side="Object.id")) 
+	#all_children = relation('Object', backref=backref("superparent", remote_side=Object.id)) 
 
-	def __unicode__(self):
-		return u'‹%s %d›' % (self.__class__.__name__,self.id)
-	def __str__(self):
-		return '<%s %d>' % (self.__class__.__name__,self.id)
-	__repr__ = __str__
 
 Object.owner = relation(Object, remote_side=Object.id, primaryjoin=(Object.owner_id==Object.id))
 Object.parent = relation(Object, remote_side=Object.id, primaryjoin=(Object.parent_id==Object.id))
@@ -155,7 +164,7 @@ def get_anonymous_user(self, site):
 #	        
 #	name = Column(Unicode(30))
 #	
-#class Member(db.Base):
+#class Member(db.Base,DbRepr):
 #	__tablename__ = "groupmembers"
 #	q = db.session.query_property(db.Query)
 #	id = Column(Integer, primary_key=True)
@@ -168,7 +177,7 @@ PERM_READ=2
 PERM_WRITE=3
 PERM_ADMIN=4
 
-class Permission(db.Base):
+class Permission(db.Base,DbRepr):
 	"""Permission checks"""
 	__tablename__ = "permissions"
 	__table_args__ = {'useexisting': True}
@@ -226,7 +235,8 @@ class Template(Object):
 	def __repr__(self):
 		return "'<%s:%d>'" % (self.__class__.__name__,self.id)
 
-class TemplateMatch(db.Base):
+
+class TemplateMatch(db.Base,DbRepr):
 	"""Associate a template to an object."""
 	__tablename__ = "template_match"
 	__table_args__ = ({'useexisting': True})
@@ -245,7 +255,7 @@ class TemplateMatch(db.Base):
 		self.discriminator = discriminator
 		self.type = type
 
-TemplateMatch.obj = relation(Object, remote_side="Object.id", primaryjoin=(TemplateMatch.obj_id==Object.id))
+TemplateMatch.obj = relation(Object, remote_side=Object.id, primaryjoin=(TemplateMatch.obj_id==Object.id))
 TemplateMatch.template = relation(Template, remote_side=Template.id, foreign_keys=(TemplateMatch.template_id), primaryjoin=(TemplateMatch.template_id==Template.id))
 
 TM_TYPE_PAGE=1
