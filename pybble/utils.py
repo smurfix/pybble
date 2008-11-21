@@ -1,12 +1,14 @@
 from os import path
 from urlparse import urlparse
 from random import sample, randrange
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, BaseLoader
 from werkzeug import Response, Local, LocalManager, cached_property
 from werkzeug.routing import Map, Rule
 
 
 TEMPLATE_PATH = path.join(path.dirname(__file__), 'templates')
+# used for initial import only
+
 STATIC_PATH = path.join(path.dirname(__file__), 'static')
 ALLOWED_SCHEMES = frozenset(['http', 'https', 'ftp', 'ftps'])
 URL_CHARS = 'abcdefghijkmpqrstuvwxyzABCDEFGHIJKLMNPQRST23456789'
@@ -17,7 +19,22 @@ application = local('application')
 
 url_map = Map([Rule('/static/<file>', endpoint='static', build_only=True)])
 
-jinja_env = Environment(loader=FileSystemLoader(TEMPLATE_PATH))
+class DatabaseLoader(BaseLoader):
+	def get_source(self, environment, template):
+		from pybble.models import Template
+		from pybble.database import NoResult
+
+		try:
+			t = Template.q.get_by(name=template)
+		except NoResult:
+			raise TemplateNotFound(template)
+		else:
+			mtime = t.modified
+			return (t.data,
+			        "//db/%s/%s/%s" % (t.__class__.__name__,t.id,template),
+			        lambda: t.modified != mtime) 
+	
+jinja_env = Environment(loader=DatabaseLoader())
 
 
 def expose(rule, **kw):
@@ -80,7 +97,7 @@ def random_string(bytes=9, base="23456789abcdefghijkmnpqrstuvwxyz", dash="",
 	if strlen is None or baselen != bytes:
 		from math import log,ceil
 		baselen=bytes;
-		strlen=ceil(ceil(log(len(base))/log(2))*baselen/8)
+		strlen=int(ceil(ceil(log(len(base))/log(2))*baselen/8))
 		
 	passwd=rand.read(strlen)
 

@@ -6,6 +6,7 @@ from pybble.utils import url_for, random_string
 from pybble.database import db
 from datetime import datetime
 from sqlalchemy.databases.mysql import MSTinyInteger as TinyInteger
+from sqlalchemy.databases.mysql import MSTimeStamp as TimeStamp
 
 
 class Discriminator(db.Base):
@@ -176,14 +177,19 @@ class Template(Object):
 	id = Column(Integer, ForeignKey('obj.id',name="site_id"), primary_key=True,autoincrement=False)
 	name = Column(String(50), nullable=True)
 	data = Column(Text)
+	modified = Column(TimeStamp)
 
-class TemplateMatch(Object):
+	def __init__(self, name, data):
+		self.name = name
+		self.data = data
+
+class TemplateMatch(db.Base):
 	"""Associate a template to an object."""
 	__tablename__ = "template_match"
 	__table_args__ = ({'useexisting': True})
-	__mapper_args__ = {'polymorphic_identity': 6}
 	q = db.session.query_property(db.Query)
 
+	id = Column(Integer(20), primary_key=True)
 	obj_id = Column('obj_id', Integer, ForeignKey('obj.id',name="obj_templates_obj"), nullable=False)
 	template_id = Column('template_id', Integer, ForeignKey('templates.id',name="obj_templates_template"), nullable=False)
 	discriminator = Column(TinyInteger, ForeignKey('discriminator.id',name="templatematch_discr"))

@@ -2,6 +2,7 @@ CREATE TABLE templates (
 	id INTEGER NOT NULL, 
 	name VARCHAR(50), 
 	data TEXT, 
+	modified TIMESTAMP, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT site_id FOREIGN KEY(id) REFERENCES obj (id)
 );
@@ -12,10 +13,10 @@ CREATE TABLE obj (
 	parent_id INTEGER, 
 	superparent_id INTEGER, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT obj_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
-	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id), 
 	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id), 
-	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id)
+	 CONSTRAINT obj_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
+	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id), 
+	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id)
 );
 CREATE TABLE users (
 	id INTEGER NOT NULL, 
@@ -42,8 +43,8 @@ CREATE TABLE sites (
 	domain VARCHAR(100) NOT NULL, 
 	name VARCHAR(50) NOT NULL, 
 	PRIMARY KEY (id), 
-	 UNIQUE (name), 
 	 CONSTRAINT site_id FOREIGN KEY(id) REFERENCES obj (id), 
+	 UNIQUE (name), 
 	 UNIQUE (domain)
 );
 CREATE TABLE urls (
@@ -63,13 +64,15 @@ CREATE TABLE discriminator (
 	 UNIQUE (name)
 );
 CREATE TABLE template_match (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
 	obj_id INTEGER NOT NULL, 
 	template_id INTEGER NOT NULL, 
 	discriminator TINYINT, 
 	type TINYINT(1) NOT NULL, 
+	PRIMARY KEY (id), 
 	 CONSTRAINT obj_templates_obj FOREIGN KEY(obj_id) REFERENCES obj (id), 
-	 CONSTRAINT templatematch_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
-	 CONSTRAINT obj_templates_template FOREIGN KEY(template_id) REFERENCES templates (id)
+	 CONSTRAINT obj_templates_template FOREIGN KEY(template_id) REFERENCES templates (id), 
+	 CONSTRAINT templatematch_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id)
 );
 CREATE TABLE permissions (
 	id INTEGER NOT NULL AUTO_INCREMENT, 
