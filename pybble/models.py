@@ -43,6 +43,12 @@ class Object(db.Base):
 
 	#all_children = relation('Object', backref=backref("superparent", remote_side="Object.id")) 
 
+	def __unicode__(self):
+		return u'‹%s %d›' % (self.__class__.__name__,self.id)
+	def __str__(self):
+		return '<%s %d>' % (self.__class__.__name__,self.id)
+	__repr__ = __str__
+
 Object.owner = relation(Object, remote_side=Object.id, primaryjoin=(Object.owner_id==Object.id))
 Object.parent = relation(Object, remote_side=Object.id, primaryjoin=(Object.parent_id==Object.id))
 Object.superparent = relation(Object, remote_side=Object.id, primaryjoin=(Object.superparent_id==Object.id))
@@ -88,6 +94,9 @@ class URL(Object):
 	def __repr__(self):
 		return '<URL %r>' % self.uid
 
+	def __unicode__(self):
+		return u'‹URL %r›' % self.uid
+
 class UserQuery(db.Query):
 	pass # defined below
 
@@ -122,6 +131,15 @@ class User(Object):
 	@property
 	def anon(self):
 		return self.password == ""
+	
+	def __unicode__(self):
+		if self.username != "":
+			return u"‹User %d:%s›" % (self.id,self.username)
+
+		try:
+			return u"‹User %d:anon @%s›" % (self.id, self.superparent.domain)
+		except Exception:
+			return u"‹User %d:anon @ ???›" % (self.id,)
 
 @add_to(UserQuery)
 def get_anonymous_user(self, site):

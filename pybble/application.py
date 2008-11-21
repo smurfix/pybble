@@ -102,7 +102,7 @@ class Pybble(object):
 			    t = TemplateMatch.q.get_by(obj=s, discriminator=obj_discr(s), type=TM_TYPE_PAGE)
 			except NoResult:
 				t = TemplateMatch(obj=s, discriminator=obj_discr(s), type=TM_TYPE_PAGE, \
-					data = "This is the website {{ request.site }}!")
+					data = "This is the website {{ site }}, and you're user {{ user }}!")
 				db.session.add(t)
 
 			db.session.commit()

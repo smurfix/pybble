@@ -10,6 +10,7 @@ from werkzeug import cookie_date, get_host
 from werkzeug.contrib.securecookie import SecureCookie
 import settings
 from pybble.models import User,Site
+from pybble.database import NoResult
 from pybble.decorators import ResultNotFound
 
 class Session(SecureCookie):
@@ -30,7 +31,6 @@ def add_site(request):
 	if host.startswith("www."):
 		url = 'http://%s%s' % (host[4:], request.get_full_path())
 		return HttpResponsePermanentRedirect(url)
-	print "SITE",host
 	try:
 		site = Site.q.get_by(domain=host)
 	except ResultNotFound:
@@ -63,7 +63,8 @@ def add_user(request):
 	user_id = request.session.get('uid')
 	user = None
 	if user_id is not None:
-		user = User.q.get_by(id=user_id)
+		try: user = User.q.get_by(id=user_id)
+		except NoResult: pass
 	if user is None:
 		user = User.q.get_anonymous_user(request.site)
 
