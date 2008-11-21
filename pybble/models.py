@@ -214,7 +214,7 @@ class Template(Object):
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 6}
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="site_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey('obj.id',name="template_id"), primary_key=True,autoincrement=False)
 	name = Column(String(50), nullable=True)
 	data = Column(Text)
 	modified = Column(TimeStamp)
