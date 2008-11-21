@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from pybble.utils import Pagination, render_template, expose, \

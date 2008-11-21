@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 DATABASE_TYPE="sqlite" # or mysql
 
 # sqlite
