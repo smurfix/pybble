@@ -4,6 +4,7 @@ from werkzeug.exceptions import HTTPException, NotFound
 from pybble.utils import STATIC_PATH, local, local_manager, \
 	 url_map, TEMPLATE_PATH
 from pybble.database import metadata, db, NoResult
+from sqlalchemy.sql import and_, or_, not_
 
 import pybble.models
 from pybble import views
@@ -70,17 +71,30 @@ class Pybble(object):
 				print "%s found." % s
 
 			try:
-				u=User.q.get_one(User.sites.contains(s))
+				u=User.q.get_one(and_(User.sites.contains(s), User.username==u"root"))
 			except NoResult:
 				u=User(u"root")
 				u.verified=True
-				db.session.add(u)
 				u.sites.append(s)
+				db.session.add(u)
+			else:
+				print "%s found." % u
+
+			try:
+				a=User.q.get_one(and_(User.sites.contains(s), User.username==u""))
+			except NoResult:
+				a=User(u"", password="")
+				a.verified=False
+				a.owner = u
+				a.superparent = s
+				a.sites.append(s)
+				db.session.add(a)
 			else:
 				print "%s found." % u
 
 			db.session.commit()
 			print "Your root user is named '%s' and has the password '%s'." % (u.username, u.password)
+			print "Your anon user is named '%s' and has the password '%s'." % (a.username, a.password)
 		return action
 
 	def show_database(self):

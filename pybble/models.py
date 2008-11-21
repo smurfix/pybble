@@ -85,7 +85,11 @@ class URL(Object):
 		return '<URL %r>' % self.uid
 
 class User(Object):
-	"""Authorized users."""
+	"""\
+		Authorized users.
+		Owner: Managing user; some sort of root for anon users.
+		SuperParent: for anon users, the site they're used with.
+		"""
 	__tablename__ = "users"
 	__table_args__ = {'useexisting': True}
 	__mapper_args__ = {'polymorphic_identity': 2}
@@ -107,6 +111,10 @@ class User(Object):
 			password = random_string(9)
 		self.password=password
 		self.first_login = datetime.utcnow()
+	
+	@property
+	def anon(self):
+		return self.password == ""
 
 #class Group(Object):
 #	"""A group of users. (Usually.)"""
