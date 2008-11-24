@@ -35,45 +35,20 @@ Model = declarative_base(metadata=metadata,
                          mapper=Session.mapper)
 #Model.query = session.query_property()
 
-class QueryError(RuntimeError):
-	def __init__(self,base,*a,**k):
-		self.base = base
-		self.args = a
-		self.kw = k
-	def __str__(self):
-		return "<%s: %s: %s %s>" % (self.__class__.__name__, str(self.base), str(self.args), str(self.kw))
+from sqlalchemy.orm import exc as orm_exc
 
-class NonUniqueResult(QueryError):
-	"""There's more than one result to this query."""
-	pass
-class NoResult(QueryError):
-	"""There's no result to this query."""
-	pass
+NonUniqueResult = orm_exc.MultipleResultsFound
+NoResult = orm_exc.NoResultFound
 
 class GQuery(Query):
 	def get_by(self,*a,**k):
 		"""Make sure that there's exactly one result."""
-		return self._get_one(self.filter_by,a,k)
+		return self.filter_by(*a,**k).one()
 		
 	def get_one(self,*a,**k):
 		"""Make sure that there's exactly one result."""
-		return self._get_one(self.filter,a,k)
+		return self.filter(*a,**k).one()
 
-	def _get_one(self,f,a,k):
-		res = iter(f(*a,**k)[0:2])
-		try:
-			r = res.next()
-		except StopIteration:
-			raise NoResult(self,a,k)
-
-		try:
-			res.next()
-		except StopIteration:
-			return r
-		else:
-			raise NonUniqueResult(self,a,k)
-		
-		
 def _make_module():
     import sqlalchemy
     from sqlalchemy import orm
