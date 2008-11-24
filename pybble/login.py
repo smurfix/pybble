@@ -43,10 +43,10 @@ def do_login(request):
 			logged_in(request,u)
 
 			if u.verified:
+				flash(u"Du bist jetzt eingeloggt.",True)
+			else:
 				flash(u"Benutzer noch nicht verifiziert. Bitte gib den Code aus der Email an!",False)
 				return redirect(url_for("pybble.confirm.confirm"))
-			else:
-				flash(u"Du bist jetzt eingeloggt.",True)
 
 			if form.next.data:
 				return redirect(next)
