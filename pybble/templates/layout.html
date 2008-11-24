@@ -18,12 +18,12 @@
 		</div>
 	{%- endfor %}
 
-  <h1><a href="{{ url_for('new') }}">Pybble</a></h1>
+  <h1><a href="{{ url_for('pybble.views.new') }}">Pybble</a></h1>
   <div class="body">{% block body %}<code>Your template didn't provide a 'body' block.</code>{% endblock %}</div>
   <div class="footer">
-    {% if not USER.anon %}<a href="{{ url_for('do_logout') }}">logout</a>{%else%} <a href="{{ url_for('do_login') }}">login</a>{% endif %} | 
-    <a href="{{ url_for('new') }}">new</a> |
-    <a href="{{ url_for('list') }}">list</a> |
+    {% if not USER.anon %}<a href="{{ url_for('pybble.login.do_logout') }}">logout</a>{%else%} <a href="{{ url_for('pybble.login.do_login') }}">login</a>{% endif %} | 
+    <a href="{{ url_for('pybble.views.new') }}">new</a> |
+    <a href="{{ url_for('pybble.views.list') }}">list</a> |
     use pybble for good, not for evil
   </div>
 </body>

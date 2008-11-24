@@ -28,7 +28,7 @@ def do_login(request):
 	user = getattr(request,"user",None)
 	if user and not user.anon:
 		flash("Du bist bereits eingeloggt!")
-		return redirect((request.form or request.args or {}).get("next",None) or url_for("mainpage"))
+		return redirect((request.form or request.args or {}).get("next",None) or url_for("pybble.views.mainpage"))
 
 	if request.method == 'POST' and form.validate():
 		# create new user and show the confirmation page
@@ -44,14 +44,14 @@ def do_login(request):
 
 			if u.verified:
 				flash(u"Benutzer noch nicht verifiziert. Bitte gib den Code aus der Email an!",False)
-				return redirect(url_for("confirm"))
+				return redirect(url_for("pybble.confirm.confirm"))
 			else:
 				flash(u"Du bist jetzt eingeloggt.",True)
 
 			if form.next.data:
 				return redirect(next)
 			else:
-				return redirect(url_for("mainpage"))
+				return redirect(url_for("pybble.views.mainpage"))
 		else:
 			flash("Benutzer oder Passwort waren falsch.",False)
 	return render_template('login.html', form=form, error=error, title_trace=["Login"])
@@ -100,7 +100,7 @@ def register(request):
 
 		flash(u"Wir haben soeben eine Email an dich geschickt. <br />" + \
 			u"Klicke auf den darin enhaltenen Link oder tippe den Bestätigungscode hier ein.")
-		return redirect(url_for("confirm"))
+		return redirect(url_for("pybble.confirm.confirm"))
 
 	form.password.data = form.password2.data = ""
 	return render_template('register.html', form=form, title_trace=[u"Neuer Benutzer"])
@@ -121,7 +121,7 @@ class verifier(object):
 		user=verifier.parent
 		send_mail(user.email, 'verify_email.txt',
 		          user=user, code=verifier.code,
-		          link=url_for("confirm", code=verifier.code), page=url_for("confirm"))
+		          link=url_for("pybble.confirm.confirm", code=verifier.code), page=url_for("pybble.confirm.confirm"))
 	
 	@staticmethod
 	def entered(verifier):
@@ -130,9 +130,9 @@ class verifier(object):
 		flash(u"Du bist jetzt verifiziert.")
 
 		if current_request.user == u:
-			return redirect(url_for("mainpage"))
+			return redirect(url_for("pybble.views.mainpage"))
 		else:
-			return redirect(url_for("do_login"))
+			return redirect(url_for("pybble.login.do_login"))
 
 
 @expose("/admin/logout")
@@ -143,5 +143,5 @@ def do_logout(request):
 		request.session.pop('uid', None)
 		request.user = User.q.get_anonymous_user(request.site)
 		flash(u'Du hast dich erfolgreich abgemeldet.', True)
-	return redirect(url_for("mainpage"))
+	return redirect(url_for("pybble.views.mainpage"))
 

@@ -29,7 +29,7 @@ def new(request):
         if not error:
             uid = URL(url, 'private' not in request.form, alias)
             db.session.add(uid)
-            return redirect(url_for('display', uid=uid.uid))
+            return redirect(url_for('pybble.views.display', uid=uid.uid))
     return render_template('new.html', error=error, url=url, title_trace=[u"neue URL"])
 
 @expose('/display/<uid>')

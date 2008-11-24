@@ -57,28 +57,6 @@ class Pybble(object):
 					if o.name != v.__name__:
 						raise ValueError("Discriminator '%d' pointed at '%s', now '%s'!" % (k,o.name,v.__name__))
 
-			for fn in os.listdir(TEMPLATE_PATH):
-				if fn.startswith("."):
-					continue
-				with file(os.path.join(TEMPLATE_PATH,fn)) as f:
-					try:
-						data = f.read().decode("utf-8")
-					except Exception:
-						print >>sys.stderr,"While reading",fn
-						raise
-
-				try:
-					t = Template.q.get_by(name=fn,parent=None)
-				except NoResult:
-					t = Template(name=fn,data=data)
-					db.session.add(t)
-				else:
-					if t.data != data:
-						print "Warning: Template '%s' differs.\n" % (fn,)
-						if replace_templates:
-							t.data = data
-				
-
 			domain=domain.decode("utf-8")
 			try:
 				s=Site.q.get_by(domain=domain)
@@ -111,6 +89,32 @@ class Pybble(object):
 				db.session.add(a)
 			else:
 				print u"%s found." % a
+
+			for fn in os.listdir(TEMPLATE_PATH):
+				if fn.startswith("."):
+					continue
+				with file(os.path.join(TEMPLATE_PATH,fn)) as f:
+					try:
+						data = f.read().decode("utf-8")
+					except Exception:
+						print >>sys.stderr,"While reading",fn
+						raise
+
+				try:
+					t = Template.q.get_by(name=fn,parent=None)
+				except NoResult:
+					t = Template(name=fn,data=data)
+					t.superparent = s
+					t.owner = u
+					db.session.add(t)
+				else:
+					if t.data != data:
+						print "Warning: Template '%s' differs.\n" % (fn,)
+						if replace_templates:
+							t.data = data
+					if replace_templates:
+						t.superparent = s
+						t.owner = u
 
 			try:
 				v = VerifierBase.q.get_by(name="register")

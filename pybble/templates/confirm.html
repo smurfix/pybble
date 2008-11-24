@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 {% block body %}
   <h2>Bestätigung</h2>
-    <form method="post" action="{{url_for('confirm')}}">
+    <form method="post" action="{{ url_for('pybble.confirm.confirm') }}">
 	<p>
 	Bitte gib hier den Bestätigungscode ein.
 	</p>

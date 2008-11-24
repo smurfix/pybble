@@ -118,7 +118,7 @@ class URL(Object):
 
 	@property
 	def short_url(self):
-		return url_for('link', uid=self.uid, _external=True)
+		return url_for('pybble.views.link', uid=self.uid, _external=True)
 
 	def __repr__(self):
 		return '<URL %r>' % self.uid

@@ -31,7 +31,7 @@
     </form>
 
   <p>
-    Wenn du noch nicht registriert bist, geht es <a href="{{url_for('register')}}" target="_blank">hier</a> zur Registratur.<br />
-    <!-- Wenn du dein Passwort vergessen hast, kannst du <a href="{{url_for('lostpw')}}">ein neues Passwort anfordern</a>. -->
+    Wenn du noch nicht registriert bist, geht es <a href="{{ url_for('pybble.login.register') }}" target="_blank">hier</a> zur Registratur.<br />
+    <!-- Wenn du dein Passwort vergessen hast, kannst du <a href="{{ url_for('pybble.login.lostpw') }}">ein neues Passwort anfordern</a>. -->
   </p>
 {% endblock %}

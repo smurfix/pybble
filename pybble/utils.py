@@ -55,8 +55,9 @@ jinja_env = Environment(loader=DatabaseLoader())
 expose_map = {}
 def expose(rule, **kw):
 	def decorate(f):
-		kw['endpoint'] = f.__name__
-		expose_map[f.__name__] = f
+		name = "%s.%s" % (f.__module__,f.__name__)
+		kw['endpoint'] = name
+		expose_map[name] = f
 		url_map.add(Rule(rule, **kw))
 		return f
 	return decorate

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from pybble.utils import render_template, expose, url_for
+from pybble.utils import render_template, expose
 from pybble.flashing import flash
 from pybble.models import Verifier, VerifierBase
 from pybble.database import db,NoResult
