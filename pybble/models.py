@@ -156,6 +156,7 @@ class User(Object):
 			password = random_string(9)
 		self.password=password
 		self.first_login = datetime.utcnow()
+		self.verified = False
 	
 	@property
 	def anon(self):
@@ -349,10 +350,10 @@ class Verifier(Object):
 	code = Column(String(50), nullable=False, unique=True)
 
 	added = Column(DateTime, nullable=False)
-	repeated = Column(DateTime, nullable=False)
+	repeated = Column(DateTime, nullable=True)
 	timeout = Column(DateTime, nullable=False)
 
-	def __init__(self,base, obj, user=None, code=None):
+	def __init__(self,base, obj, user=None, code=None, days=None):
 		if isinstance(base, basestring):
 			base = VerifierBase.q.get_by(name=base)
 		self.base = base
@@ -360,7 +361,7 @@ class Verifier(Object):
 		self.owner = user or obj
 		self.code = code or random_string(20,dash="-",dash_step=5)
 		self.added = datetime.utcnow()
-		self.timeout = datetime.utcnow() + timedelta(10,0) ## ten days
+		self.timeout = datetime.utcnow() + timedelta((days or 10),0) ## ten days
 
 	@property
 	def expired(self):

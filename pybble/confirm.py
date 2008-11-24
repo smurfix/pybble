@@ -27,12 +27,12 @@ class ConfirmForm(Form):
 def confirm(request, code=None):
 	form = ConfirmForm(request.values, prefix='confirm')
 	if request.method == 'POST' and form.validate():
-		v=Verifier.q.get_by(code=form.code)
+		v=Verifier.q.get_by(code=form.code.data.lower())
 		if v.expired:
 			flash(u"Die Anfrage ist schon zu alt. Bitte schicke sie nochmal ab!")
 			return v.retry()
 		return v.entered()
-	return render_template('confirm.html', form=form)
+	return render_template('confirm.html', form=form, title_trace=[u"Bestätigung"])
 	
 	
 

@@ -150,8 +150,8 @@ class Pagination(object):
 rand=None
 baselen=None
 strlen=None
-def random_string(bytes=9, base="23456789abcdefghijkmnpqrstuvwxyz", dash="",
-				dash_step=6):
+def random_string(bytes=9, base="23456789abcdefghijkmnpqrstuvwxyz", dash="-",
+				dash_step=0):
 	"""Get a random string, suitable for passwords"""
 	global rand
 	if rand is None:
@@ -173,9 +173,9 @@ def random_string(bytes=9, base="23456789abcdefghijkmnpqrstuvwxyz", dash="",
 	while bytes:
 		passwd += base[fm%len(base)]
 		fm = fm // len(base)
-		if dash_step and fm and not (len(passwd)+1)%dash_step:
-			passwd += dash
 		bytes -= 1
+		if dash_step and bytes and fm and not (len(passwd)+1)%(dash_step+1):
+			passwd += dash
 	return passwd
 
 

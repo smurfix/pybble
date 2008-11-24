@@ -2,11 +2,12 @@
 
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
-from pybble.utils import Pagination, render_template, expose, \
-     validate_url, url_for, render_my_template, send_mail
+from pybble.utils import render_template, expose, \
+     url_for, send_mail, current_request
 from pybble.models import User, Verifier, VerifierBase
 from pybble.database import db,NoResult
 from pybble.flashing import flash
+from pybble.session import logged_in
 from wtforms import Form, BooleanField, TextField, PasswordField, HiddenField, validators
 
 ###
@@ -39,8 +40,13 @@ def do_login(request):
 			if u.password != form.password.data:
 				u = None
 		if u:
-			request.session['uid'] = u.id
-			request.user = u
+			logged_in(request,u)
+
+			if u.verified:
+				flash(u"Benutzer noch nicht verifiziert. Bitte gib den Code aus der Email an!",False)
+				return redirect(url_for("confirm"))
+			else:
+				flash(u"Du bist jetzt eingeloggt.",True)
 
 			if form.next.data:
 				return redirect(next)
@@ -48,7 +54,7 @@ def do_login(request):
 				return redirect(url_for("mainpage"))
 		else:
 			flash("Benutzer oder Passwort waren falsch.",False)
-	return render_template('login.html', form=form, error=error)
+	return render_template('login.html', form=form, error=error, title_trace=["Login"])
 
 ###
 ### register
@@ -97,7 +103,7 @@ def register(request):
 		return redirect(url_for("confirm"))
 
 	form.password.data = form.password2.data = ""
-	return render_template('register.html', form=form)
+	return render_template('register.html', form=form, title_trace=[u"Neuer Benutzer"])
 
 ###
 ### Confirm email 
@@ -122,4 +128,20 @@ class verifier(object):
 		u = verifier.parent
 		u.verified = True
 		flash(u"Du bist jetzt verifiziert.")
-		return redirect(url_for("mainpage"))
+
+		if current_request.user == u:
+			return redirect(url_for("mainpage"))
+		else:
+			return redirect(url_for("do_login"))
+
+
+@expose("/admin/logout")
+def do_logout(request):
+	if request.user.anon:
+		flash(u'Du warst nicht eingeloggt', False)
+	else:
+		request.session.pop('uid', None)
+		request.user = User.q.get_anonymous_user(request.site)
+		flash(u'Du hast dich erfolgreich abgemeldet.', True)
+	return redirect(url_for("mainpage"))
+

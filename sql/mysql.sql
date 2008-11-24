@@ -4,7 +4,7 @@ CREATE TABLE templates (
 	data TEXT, 
 	modified TIMESTAMP, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT site_id FOREIGN KEY(id) REFERENCES obj (id)
+	 CONSTRAINT template_id FOREIGN KEY(id) REFERENCES obj (id)
 );
 CREATE TABLE obj (
 	id INTEGER NOT NULL AUTO_INCREMENT, 
@@ -15,8 +15,8 @@ CREATE TABLE obj (
 	PRIMARY KEY (id), 
 	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id), 
 	 CONSTRAINT obj_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
-	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id), 
-	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id)
+	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id), 
+	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id)
 );
 CREATE TABLE users (
 	id INTEGER NOT NULL, 
@@ -34,8 +34,8 @@ CREATE TABLE users (
 CREATE TABLE site_users (
 	site_id INTEGER NOT NULL, 
 	user_id INTEGER NOT NULL, 
-	 UNIQUE (site_id, user_id), 
 	 CONSTRAINT site_users_site FOREIGN KEY(site_id) REFERENCES obj (id), 
+	 UNIQUE (site_id, user_id), 
 	 CONSTRAINT site_users_user FOREIGN KEY(user_id) REFERENCES obj (id)
 );
 CREATE TABLE sites (
@@ -43,9 +43,21 @@ CREATE TABLE sites (
 	domain VARCHAR(100) NOT NULL, 
 	name VARCHAR(50) NOT NULL, 
 	PRIMARY KEY (id), 
+	 UNIQUE (domain), 
 	 CONSTRAINT site_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (name), 
-	 UNIQUE (domain)
+	 UNIQUE (name)
+);
+CREATE TABLE verifiers (
+	id INTEGER NOT NULL, 
+	base_id TINYINT, 
+	code VARCHAR(50) NOT NULL, 
+	added DATETIME NOT NULL, 
+	repeated DATETIME, 
+	timeout DATETIME NOT NULL, 
+	PRIMARY KEY (id), 
+	 CONSTRAINT verifier_id FOREIGN KEY(id) REFERENCES obj (id), 
+	 CONSTRAINT verifier_base FOREIGN KEY(base_id) REFERENCES verifierbase (id), 
+	 UNIQUE (code)
 );
 CREATE TABLE urls (
 	id INTEGER NOT NULL, 
@@ -62,6 +74,14 @@ CREATE TABLE discriminator (
 	name VARCHAR(30) NOT NULL, 
 	PRIMARY KEY (id), 
 	 UNIQUE (name)
+);
+CREATE TABLE verifierbase (
+	id TINYINT(1) NOT NULL AUTO_INCREMENT, 
+	name VARCHAR(30) NOT NULL, 
+	cls VARCHAR(50) NOT NULL, 
+	PRIMARY KEY (id), 
+	 UNIQUE (name), 
+	 UNIQUE (cls)
 );
 CREATE TABLE template_match (
 	id INTEGER NOT NULL AUTO_INCREMENT, 

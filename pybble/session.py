@@ -97,11 +97,17 @@ def add_user(request):
 #		user = User.objects.get_anonymous_user()
 
 	request.user = user
-	print "REQSET %r to %r" % (request,user)
 
 def save_session(request, response):
 	new = request.session.new
 	session_data = request.session.serialize()
-	if new or request.session_data != session_data:
-		response.set_cookie(settings.SESSION_COOKIE_NAME, session_data, httponly=True)
+	if True or new or request.session_data != session_data:
+		response.set_cookie(settings.SESSION_COOKIE_NAME, session_data, httponly=False)
 
+def add_response_headers(request,response):
+	if request.session.should_vary:
+		response.headers.add('Vary','Cookie')
+
+def logged_in(request,user):
+	request.session['uid'] = user.id
+	request.user = user

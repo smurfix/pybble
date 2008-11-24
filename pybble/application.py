@@ -9,7 +9,8 @@ from pybble.database import metadata, db, NoResult
 from sqlalchemy.sql import and_, or_, not_
 
 import pybble.models
-from pybble.session import add_session, add_user, add_site, save_session
+from pybble.session import add_session, add_user, add_site, save_session, \
+	add_response_headers
 
 import StringIO
 import settings
@@ -160,13 +161,17 @@ class Pybble(object):
 			endpoint, values = adapter.match()
 			handler = expose_map[endpoint]
 			response = handler(request, **values)
+			save_session(request,response)
+			db.session.commit()
 		except NotFound, e:
 			response = views.not_found(request)
 			response.status_code = 404
 		except HTTPException, e:
 			response = e
-		try: save_session(request,response)
-		except Exception: raise
+		try:
+			add_response_headers(request,response)
+		except Exception:
+			raise
 		return ClosingIterator(response(environ, start_response),
 							   [db.session.remove, local_manager.cleanup])
 

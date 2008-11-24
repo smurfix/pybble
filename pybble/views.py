@@ -29,15 +29,14 @@ def new(request):
         if not error:
             uid = URL(url, 'private' not in request.form, alias)
             db.session.add(uid)
-            db.session.commit()
             return redirect(url_for('display', uid=uid.uid))
-    return render_template('new.html', error=error, url=url)
+    return render_template('new.html', error=error, url=url, title_trace=[u"neue URL"])
 
 @expose('/display/<uid>')
 def display(request, uid):
 	try: url = URL.q.get_by(uid=uid)
 	except NoResult: raise NotFound()
-	return render_template('display.html', url=url)
+	return render_template('display.html', url=url, title_trace=[u"URL anzeigen"])
 
 @expose('/u/<uid>')
 def link(request, uid):
@@ -52,7 +51,7 @@ def list(request, page):
     pagination = Pagination(query, 30, page, 'list')
     if pagination.page > 1 and not pagination.entries:
         raise NotFound()
-    return render_template('list.html', pagination=pagination)
+    return render_template('list.html', pagination=pagination, title_trace=[u"URL-Liste"])
 
 def not_found(request):
-    return render_template('not_found.html')
+    return render_template('not_found.html', title_trace=[u"Seite nicht gefunden"])
