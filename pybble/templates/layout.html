@@ -1,13 +1,25 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
- "http://www.w3.org/TR/html4/strict.dtd">
-<html>
-<head>
-  <title>Pybble</title>
-  <link rel="stylesheet" type="text/css" href="{{ url_for('static', file='style.css') }}">
+{{- XHTML_DTD }}
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:cc="http://creativecommons.org/ns#"
+      xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+      xmlns:dc="http://purl.org/dc/elements/1.1/" xml:lang="de" lang="de" dir="ltr">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>{{ (title_trace|default([]) + [SITE.name])|join(' › ') }}</title>
+    {%- set styles = ['style.css'] + styles|default([]) -%}
+    {%- for style in styles %}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', file=style) }}" />
+    {%- endfor %}
+
 </head>
 <body>
+	{%- for message in MESSAGES %}
+		<div class="message{% if message.success == true %} success{% elif message.success == false %} fail{% endif %}">
+			{{ message.text }}
+		</div>
+	{%- endfor %}
+
   <h1><a href="{{ url_for('new') }}">Pybble</a></h1>
-  <div class="body">{% block body %}{% endblock %}</div>
+  <div class="body">{% block body %}<code>Your template didn't provide a 'body' block.</code>{% endblock %}</div>
   <div class="footer">
     <a href="{{ url_for('new') }}">new</a> |
     <a href="{{ url_for('list') }}">list</a> |

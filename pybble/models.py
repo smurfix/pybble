@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from datetime import datetime
+from datetime import datetime,timedelta
 from sqlalchemy import Table, Column, String, Unicode, Boolean, DateTime, Integer, ForeignKey, \
 	UniqueConstraint, Text
 from sqlalchemy.orm import relation,backref
@@ -11,6 +11,11 @@ from sqlalchemy.databases.mysql import MSTimeStamp as TimeStamp
 from sqlalchemy.sql import and_, or_, not_
 from pybble.decorators import add_to
 from werkzeug import import_string
+
+try:
+    from hashlib import md5
+except ImportError:
+	from md5 import md5
 
 
 class DbRepr(object):
@@ -25,6 +30,13 @@ class DbRepr(object):
 		else:
 			return '<%s %d>' % (self.__class__.__name__, self.id)
 	__repr__ = __str__
+
+	def oid(self):
+		"""Return a crypto ID of an object"""
+		return "%s.%d.%s" % (self.__class__.__name__,
+		                     self.id, 
+		                     md5(self.__class__.__name__ + str(self.id) + settings.SECRET_KEY)\
+		                         .digest().encode('base64').strip('\n =')[:20].replace("+","/-").replace("/","_"))
 
 class Discriminator(db.Base,DbRepr):
 	"""Discriminator for Object"""
@@ -71,6 +83,14 @@ def obj_class(id):
 def obj_discr(cls):
 	"""Given a class, return the objects' discriminator."""
 	return cls.__mapper__.polymorphic_identity
+
+def obj_get(oid):
+	"""Given an object ID, return the object"""
+	cls,id,hash = oid.split(".")
+	obj = obj_class(int(id))
+	if oid != obj.oid():
+		raise ValueError("This object does not exist: " % (oid,))
+	return obj
 
 class URL(Object):
 	"""Test table which links to external URLs."""
@@ -140,7 +160,33 @@ class User(Object):
 	@property
 	def anon(self):
 		return self.password == ""
+	@property
+	def name(self):
+		if self.first_name and self.last_name:
+			return u"%s %s" % (self.first_name,self.last_name)
+		elif self.first_name:
+			return self.first_name
+		elif self.last_name:
+			return self.last_name
+		else:
+			return self.email
 	
+	def __unicode__(self):
+		if getattr(self,"name",None):
+			return u'‹%s %d:%s›' % (self.__class__.__name__, self.id, self.name)
+		elif getattr(self,"superparent",None):
+			return u'‹%s %d (anon @ %s)›' % (self.__class__.__name__, self.id, unicode(self.superparent))
+		else:
+			return u'‹%s %d (anon?)›' % (self.__class__.__name__, self.id)
+	def __str__(self):
+		if getattr(self,"name",None):
+			return '<%s %d:%s>' % (self.__class__.__name__, self.id, self.name)
+		elif getattr(self,"superparent",None):
+			return '<%s %d (anon @ %s)>' % (self.__class__.__name__, self.id, str(self.superparent))
+		else:
+			return '<%s %d (anon?)>' % (self.__class__.__name__, self.id)
+	__repr__ = __str__
+
 	def __unicode__(self):
 		if self.username != "":
 			return u"‹User %d:%s›" % (self.id,self.username)
@@ -189,7 +235,7 @@ class Permission(db.Base,DbRepr):
 	right = Column(Integer(1))
 
 class Site(Object):
-	"""A web domain."""
+	"""A web domain. 'owner' is set to the domain's superuser."""
 	__tablename__ = "sites"
 	__table_args__ = {'useexisting': True}
 	__mapper_args__ = {'polymorphic_identity': 5}
@@ -262,3 +308,74 @@ TM_TYPE_PAGE=1
 TM_TYPE_LIST=2
 TM_TYPE_STRING=3
 
+VerifierBases = {}
+class VerifierBase(db.Base,DbRepr):
+	"""
+		Class for verification subsystems.
+		"""
+
+	__tablename__ = "verifierbase"
+	__table_args__ = {'useexisting': True}
+	q = db.session.query_property(db.Query)
+	id = Column(TinyInteger(1), primary_key=True)
+	name = Column(String(30), nullable=False, unique=True)
+	cls = Column(String(50), nullable=False, unique=True)
+	_mod = None
+
+	def __init__(self, name, cls):
+		self.name = name
+		self.cls = cls
+
+	@property
+	def _module(self):
+		if self._mod is None:
+			self._mod = import_string(self.cls)
+		return self._mod
+
+
+class Verifier(Object):
+	"""
+		Verification emails (or similar).
+		Parent: the thing to be verified.
+		Owner: the user who's asked.
+		"""
+	__tablename__ = "verifiers"
+	__table_args__ = ({'useexisting': True})
+	__mapper_args__ = {'polymorphic_identity': 8}
+	q = db.session.query_property(db.Query)
+	id = Column(Integer, ForeignKey('obj.id',name="verifier_id"), primary_key=True,autoincrement=False)
+
+	base_id = Column(TinyInteger, ForeignKey('verifierbase.id',name="verifier_base"))
+	code = Column(String(50), nullable=False, unique=True)
+
+	added = Column(DateTime, nullable=False)
+	repeated = Column(DateTime, nullable=False)
+	timeout = Column(DateTime, nullable=False)
+
+	def __init__(self,base, obj, user=None, code=None):
+		if isinstance(base, basestring):
+			base = VerifierBase.q.get_by(name=base)
+		self.base = base
+		self.parent = obj
+		self.owner = user or obj
+		self.code = code or random_string(20,dash="-",dash_step=5)
+		self.added = datetime.utcnow()
+		self.timeout = datetime.utcnow() + timedelta(10,0) ## ten days
+
+	@property
+	def expired(self):
+		return self.timeout < datetime.utcnow()
+	
+	def send(self,*a,**k):
+		"""Send the data to the user"""
+		return self.base._module.send(self,*a,**k)
+
+	def entered(self,*a,**k):
+		"""The user entered the code. Redirect to whatever."""
+		return self.base._module.entered(self,*a,**k)
+
+	def retry(self,*a,**k):
+		"""The user entered the code too late, or whaveter. Redirect to request page."""
+		return self.base._module.retry(self,*a,**k)
+
+Verifier.base = relation(VerifierBase, remote_side=VerifierBase.id, primaryjoin=(Verifier.base_id==VerifierBase.id))

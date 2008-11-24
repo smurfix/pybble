@@ -24,22 +24,35 @@ class Session(SecureCookie):
 							settings.SECRET_KEY)).digest() \
 							.encode('base64').strip('\n =')
 		return self['_sk']
-
+	
+	def serialize(cls,*a,**k):
+		if hasattr(cls,"new"):
+			del cls.new
+		return super(Session,cls).serialize(*a,**k)
+	
 @ResultNotFound
 def add_site(request):
 	host = get_host(request.environ)
+	site = None
 	if host.startswith("www."):
 		url = 'http://%s%s' % (host[4:], request.get_full_path())
 		return HttpResponsePermanentRedirect(url)
 	try:
 		site = Site.q.get_by(domain=host)
-	except ResultNotFound:
-		print "... not found!"
+	except NoResult:
+		print "host '%s' ... not found!" % (host,)
+		try:
+			site = Site.q.get_by(id=1)
+		except NoResult:
+			site = Site(domain=host,name='Unknown domain «%s%»' % (host,))
 		raise
-	request.site = site
+	finally:
+		if site is None:
+			raise
+		request.site = site
 
 def add_session(request):
-	data = request.cookies.get(settings.SESSION_COOKIE_NAME)
+	data = request.cookies.get(settings.SESSION_COOKIE_NAME, "")
 	session = None
 	expired = False
 	if data:
@@ -47,12 +60,18 @@ def add_session(request):
 		if session.get('_ex', 0) < time():
 			session = None
 			expired = True
+		else:
+			session.new = False
+
 	if session is None:
 		session = Session(secret_key=settings.SECRET_KEY)
 		session['_ex'] = time() + settings.SESSION_COOKIE_AGE
+		session.new = True
+	else:
+		request.session_data = data
 	request.session = session
 	if expired:
-		from inyoka.utils.flashing import flash
+		from pybble.flashing import flash
 		flash(u'Deine Sitzung ist abgelaufen.  Du musst dich neu '
 				u'anmelden.', session=session)
 
@@ -78,4 +97,11 @@ def add_user(request):
 #		user = User.objects.get_anonymous_user()
 
 	request.user = user
+	print "REQSET %r to %r" % (request,user)
+
+def save_session(request, response):
+	new = request.session.new
+	session_data = request.session.serialize()
+	if new or request.session_data != session_data:
+		response.set_cookie(settings.SESSION_COOKIE_NAME, session_data, httponly=True)
 

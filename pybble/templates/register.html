@@ -1,0 +1,51 @@
+{% extends 'layout.html' %}
+{% block body %}
+  <h2>Login</h2>
+    <form method="post" action="{{ action }}">
+    <table>
+	  {% if form.username.errors %}
+	    {% for e in form.username.errors: %}
+		  <tr><th>Error:</th><td>{{e}}</td></tr>
+	    {% endfor -%}
+	  {% endif -%}
+      <tr>
+        <th>{{ form.username.label }}</th>
+        <td>{{ form.username }}</td>
+      </tr>
+	  {% if form.password.errors %}
+	    {% for e in form.password.errors: %}
+		  <tr><th>Error:</th><td>{{e}}</td></tr>
+	    {% endfor -%}
+	  {% endif -%}
+      <tr>
+        <th>{{ form.password.label }}</th>
+        <td>{{ form.password }}</td>
+      </tr>
+	  {% if form.password2.errors %}
+	    {% for e in form.password2.errors: %}
+		  <tr><th>Error:</th><td>{{e}}</td></tr>
+	    {% endfor -%}
+	  {% endif -%}
+      <tr>
+        <th>{{ form.password2.label }}</th>
+        <td>{{ form.password2 }}</td>
+      </tr>
+	  {% if form.email.errors %}
+	    {% for e in form.email.errors: %}
+		  <tr><th>Error:</th><td>{{e}}</td></tr>
+	    {% endfor -%}
+	  {% endif -%}
+      <tr>
+        <th>{{ form.email.label }}</th>
+        <td>{{ form.email }}</td>
+      </tr>
+    </table>
+	{{ form.next }}
+    <input type="submit" value="Login" />
+    </form>
+
+  <p>
+    Wenn du noch nicht registriert bist, geht es <a href="/admin/new" target="_blank">hier</a> zur Registratur.<br />
+    <!-- Wenn du dein Passwort vergessen hast, kannst du <a href="/admin/lostpw">ein neues Passwort anfordern</a>. -->
+  </p>
+{% endblock %}

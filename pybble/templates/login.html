@@ -1,0 +1,37 @@
+{% extends 'layout.html' %}
+{% block body %}
+  <h2>Login</h2>
+    <form method="post" action="{{ action }}">
+    <table>
+	  {% if form.username.errors %}
+	    {% for e in form.username.errors: %}
+		  <tr><th>Error:</th><td>{{e}}</td></tr>
+	    {% endfor -%}
+	  {% endif -%}
+      <tr>
+        <th>{{ form.username.label }}</th>
+        <td>{{ form.username }}</td>
+      </tr>
+      <tr>
+	  {% if form.password.errors %}
+	    {% for e in form.password.errors: %}
+		  <tr><th>Error:</th><td>{{e}}</td></tr>
+	    {% endfor -%}
+	  {% endif -%}
+        <th>{{ form.password.label }}</th>
+        <td>{{ form.password }}</td>
+      </tr>
+      <tr>
+        <td>&nbsp;</td>
+        <td>{{ form.remember }} {{ form.remember.label }}</td>
+    </table>
+	{{ form.next }}
+	{% if error %}<div>{{ error }}</div>{% endif -%}
+    <input type="submit" value="Login" />
+    </form>
+
+  <p>
+    Wenn du noch nicht registriert bist, geht es <a href="{{url_for('register')}}" target="_blank">hier</a> zur Registratur.<br />
+    <!-- Wenn du dein Passwort vergessen hast, kannst du <a href="{{url_for('lostpw')}}">ein neues Passwort anfordern</a>. -->
+  </p>
+{% endblock %}
