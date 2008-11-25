@@ -70,7 +70,7 @@ def add_session(request):
 	else:
 		request.session_data = data
 	request.session = session
-	if expired:
+	if expired and request.session.get('uid'):
 		from pybble.flashing import flash
 		flash(u'Deine Sitzung ist abgelaufen.  Du musst dich neu '
 				u'anmelden.', session=session)
