@@ -7,9 +7,13 @@
     <title>{{ (title_trace|default([]) + [SITE.name])|join(' › ') }}</title>
     {%- set styles = ['style.css'] + styles|default([]) -%}
     {%- for style in styles %}
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', file=style) }}" />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', file='css/' + style) }}" />
     {%- endfor %}
-
+    {%- for script in ['jQuery.js', 'jQuery.Dimensions.js', 'jQuery.extensions.js',
+                       'overall.js'] + scripts|default([]) %}
+    <script type="text/javascript" src="{{ url_for('static', file='js/' + script) }}"></script>
+    {%- endfor %}
+	{%- block add_header %}{% endblock -%}
 </head>
 <body>
 	{%- for message in MESSAGES %}

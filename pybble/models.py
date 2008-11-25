@@ -11,6 +11,7 @@ from sqlalchemy.databases.mysql import MSTimeStamp as TimeStamp
 from sqlalchemy.sql import and_, or_, not_
 from pybble.decorators import add_to
 from werkzeug import import_string
+import settings
 
 try:
     from hashlib import md5
@@ -31,12 +32,6 @@ class DbRepr(object):
 			return '<%s %d>' % (self.__class__.__name__, self.id)
 	__repr__ = __str__
 
-	def oid(self):
-		"""Return a crypto ID of an object"""
-		return "%s.%d.%s" % (self.__class__.__name__,
-		                     self.id, 
-		                     md5(self.__class__.__name__ + str(self.id) + settings.SECRET_KEY)\
-		                         .digest().encode('base64').strip('\n =')[:20].replace("+","/-").replace("/","_"))
 
 class Discriminator(db.Base,DbRepr):
 	"""Discriminator for Object"""
@@ -69,6 +64,23 @@ class Object(db.Base,DbRepr):
 
 	#all_children = relation('Object', backref=backref("superparent", remote_side=Object.id)) 
 
+	@property
+	def classname(self):
+		return self.__class__.__name__
+
+	def oid(self):
+		"""
+			Return a crypto ID of an object.
+			This is done so that simply enumerating object IDs off the web pages wont work.
+			"""
+		return "%s.%d.%d.%s" % (self.classname, self.discriminator, self.id, 
+		                        md5(self.__class__.__name__ + str(self.id) + settings.SECRET_KEY)\
+		                            .digest().encode('base64').strip('\n =')[:10].replace("+","/-").replace("/","_"))
+	def discr(cls):
+		"""Given a class, return the objects' discriminator."""
+		return cls.__mapper__.polymorphic_identity
+
+
 
 Object.owner = relation(Object, remote_side=Object.id, primaryjoin=(Object.owner_id==Object.id))
 Object.parent = relation(Object, remote_side=Object.id, primaryjoin=(Object.parent_id==Object.id))
@@ -80,14 +92,11 @@ def obj_class(id):
 	"""Given a discriminator ID, return the referred object's class."""
 	return Object.__mapper__.polymorphic_map[id].class_
 
-def obj_discr(cls):
-	"""Given a class, return the objects' discriminator."""
-	return cls.__mapper__.polymorphic_identity
-
 def obj_get(oid):
 	"""Given an object ID, return the object"""
-	cls,id,hash = oid.split(".")
-	obj = obj_class(int(id))
+	cls,cid,id,hash = oid.split(".")
+	cls = obj_class(int(cid))
+	obj = cls.q.get_by(id=int(id))
 	if oid != obj.oid():
 		raise ValueError("This object does not exist: " % (oid,))
 	return obj

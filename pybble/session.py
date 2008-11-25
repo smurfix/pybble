@@ -102,11 +102,19 @@ def save_session(request, response):
 	new = request.session.new
 	session_data = request.session.serialize()
 	if True or new or request.session_data != session_data:
-		response.set_cookie(settings.SESSION_COOKIE_NAME, session_data, httponly=False)
+		if request.session.get('_perm'):
+			expires_time = request.session.get('_ex', 0)
+			expires = cookie_date(expires_time)
+		else:
+			expires = None
+		response.set_cookie(settings.SESSION_COOKIE_NAME, session_data, httponly=True, expires=expires)
 
 def add_response_headers(request,response):
 	if request.session.should_vary:
-		response.headers.add('Vary','Cookie')
+		try:
+			response.headers.add('Vary','Cookie')
+		except AttributeError:
+			pass
 
 def logged_in(request,user):
 	request.session['uid'] = user.id

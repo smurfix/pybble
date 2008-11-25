@@ -1,0 +1,5 @@
+<ul class="jqueryFileTree" style="display: none;">
+{% for o in obj.children %}
+	<li class="{% if o.children.count() %}directory{% else %}file{% endif %} collapsed t_{{o.classname}}"><a href="#" rel="{{o.oid}}">{{subpage(o,3)}}</a></li>
+{% endfor %}
+</ul>

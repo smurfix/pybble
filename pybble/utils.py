@@ -3,7 +3,7 @@
 from os import path
 from urlparse import urlparse
 from random import sample, randrange
-from jinja2 import Environment, BaseLoader
+from jinja2 import Environment, BaseLoader, Markup
 from werkzeug import Response, Local, LocalManager, cached_property
 from werkzeug.routing import Map, Rule
 from time import time
@@ -50,7 +50,7 @@ class DatabaseLoader(BaseLoader):
 				"//db/%s/%s/%s" % (t.__class__.__name__,t.id,template),
 				lambda: t.modified != mtime) 
 	
-jinja_env = Environment(loader=DatabaseLoader())
+jinja_env = Environment(loader=DatabaseLoader(), autoescape=True)
 
 expose_map = {}
 def expose(rule, **kw):
@@ -65,34 +65,33 @@ def expose(rule, **kw):
 def url_for(endpoint, _external=False, **values):
 	return local.url_adapter.build(endpoint, values, force_external=_external)
 jinja_env.globals['url_for'] = url_for
+jinja_env.globals['subpage'] = lambda a,b: render_my_template(current_request,a,b)
 
-def render_my_template(request, obj, **context):
+def render_my_template(request, obj, type=None, **context):
 	"""Global render"""
-	from pybble.models import TemplateMatch, obj_discr, TM_TYPE_PAGE
+	from pybble.models import TemplateMatch, TM_TYPE_PAGE
+	from pybble.database import NoResult
+
+	if type is None:
+		type = TM_TYPE_PAGE
 
 	context["obj"] = obj
-	context["sub"] = sub = {}
 
-	t = TemplateMatch.q.get_by(obj=obj, discriminator=obj_discr(obj), type=TM_TYPE_PAGE).template
-
-	## TODO: This can be improved: pre-fetch the list of discriminators and then
-	## selectively get the children of that type with a join statement
-	for c in obj.children:
-		cn = c.__class.__name__.lower()
-		if cn not in sub: sub[cn] = []
-		sub.cn.append(c)
-	
+	try:
+		t = TemplateMatch.q.get_by(obj=obj, discriminator=obj.discriminator, type=type).template
+	except NoResult:
+		t = "missing_%d.html" % (type,)
 	return render_template(t, **context)
 
 def render_template(template, **context):
 	if current_request:
 		from pybble.flashing import get_flashed_messages
 		context.update(
-			XHTML_DTD=get_dtd(),
+			XHTML_DTD=Markup(get_dtd()),
 			# CURRENT_URL=current_request.build_absolute_uri(),
 			USER=current_request.user,
 			MESSAGES=get_flashed_messages(),
-			SITE=current_request.site
+			SITE=current_request.site,
 		)
 	return Response(jinja_env.get_template(template).render(**context),
 					mimetype='text/html')

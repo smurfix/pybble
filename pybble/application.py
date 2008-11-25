@@ -44,7 +44,7 @@ class Pybble(object):
 			# ... or in fact the first one
 
 			from pybble.models import Site,User,Object,Discriminator,Template,TemplateMatch,VerifierBase
-			from pybble.models import obj_discr, TM_TYPE_PAGE
+			from pybble.models import TM_TYPE_PAGE
 			for k,v in Object.__mapper__.polymorphic_map.iteritems():
 				v=v.class_
 
@@ -109,7 +109,7 @@ class Pybble(object):
 					db.session.add(t)
 				else:
 					if t.data != data:
-						print "Warning: Template '%s' differs.\n" % (fn,)
+						print "Warning: Template '%s' differs." % (fn,)
 						if replace_templates:
 							t.data = data
 					if replace_templates:
@@ -125,9 +125,9 @@ class Pybble(object):
 				print "%s found." % v
 
 			try:
-			    t = TemplateMatch.q.get_by(obj=s, discriminator=obj_discr(s), type=TM_TYPE_PAGE)
+			    t = TemplateMatch.q.get_by(obj=s, discriminator=s.discriminator, type=TM_TYPE_PAGE)
 			except NoResult:
-				t = TemplateMatch(obj=s, discriminator=obj_discr(s), type=TM_TYPE_PAGE, \
+				t = TemplateMatch(obj=s, discriminator=s.discriminator, type=TM_TYPE_PAGE, \
 					data = open("pybble/main.html").read())
 				db.session.add(t)
 

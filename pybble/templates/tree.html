@@ -1,0 +1,26 @@
+{% extends 'layout.html' %}
+{%- set styles = ['jqueryFileTree.css'] + styles|default([]) -%}
+{%- set scripts = ['jQuery.FileTree.js'] + scripts|default([]) -%}
+{% block add_header %}
+		<script type="text/javascript">
+			
+			$(document).ready( function() {
+				$('.jqueryFileTree').fileTree({ root: '{{obj.oid()}}', script: '{{ url_for('pybble.views.view_snippet') }}' }, function(file) { 
+					alert(file);
+				});
+			});
+		</script>
+
+{% endblock %}
+{% block body %}
+
+  <h2>Object tree of {{ obj }}</h2>
+  <p>OID: {{ obj.oid() }}</p>
+  <ul class="jqueryFileTree">
+  {%- if obj.children.count %}
+     <li class="directory collapsed t_{{obj.classname}}"><a href="#" rel="/snippet/oid/{{obj.oid()}}/2">{{ subpage(obj,3) }}</a></li>
+  {% else %}
+	 <li class="file t_{{obj.classname}}"><a href="#" rel="/snippet/oid/{{obj.oid()}}/2">{{ subpage(obj,3) }}</a></li>
+  {% endif -%}
+   </ul>
+{% endblock %}

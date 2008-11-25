@@ -4,43 +4,43 @@
     <form method="post" action="{{ action }}">
     <table>
 	  {% if form.username.errors %}
-	    {% for e in form.username.errors: %}
+	    {% for e in form.username.errors %}
 		  <tr><th>Error:</th><td>{{e}}</td></tr>
 	    {% endfor -%}
 	  {% endif -%}
       <tr>
-        <th>{{ form.username.label }}</th>
-        <td>{{ form.username }}</td>
+        <th>{{ form.username.label|safe }}</th>
+        <td>{{ form.username|safe }}</td>
       </tr>
 	  {% if form.password.errors %}
-	    {% for e in form.password.errors: %}
+	    {% for e in form.password.errors %}
 		  <tr><th>Error:</th><td>{{e}}</td></tr>
 	    {% endfor -%}
 	  {% endif -%}
       <tr>
-        <th>{{ form.password.label }}</th>
-        <td>{{ form.password }}</td>
+        <th>{{ form.password.label|safe }}</th>
+        <td>{{ form.password|safe }}</td>
       </tr>
 	  {% if form.password2.errors %}
-	    {% for e in form.password2.errors: %}
+	    {% for e in form.password2.errors %}
 		  <tr><th>Error:</th><td>{{e}}</td></tr>
 	    {% endfor -%}
 	  {% endif -%}
       <tr>
-        <th>{{ form.password2.label }}</th>
-        <td>{{ form.password2 }}</td>
+        <th>{{ form.password2.label|safe }}</th>
+        <td>{{ form.password2|safe }}</td>
       </tr>
 	  {% if form.email.errors %}
-	    {% for e in form.email.errors: %}
+	    {% for e in form.email.errors %}
 		  <tr><th>Error:</th><td>{{e}}</td></tr>
 	    {% endfor -%}
 	  {% endif -%}
       <tr>
-        <th>{{ form.email.label }}</th>
-        <td>{{ form.email }}</td>
+        <th>{{ form.email.label|safe }}</th>
+        <td>{{ form.email|safe }}</td>
       </tr>
     </table>
-	{{ form.next }}
+	{{ form.next|safe }}
     <input type="submit" value="Login" />
     </form>
 

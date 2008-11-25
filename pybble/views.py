@@ -4,12 +4,29 @@ from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from pybble.utils import Pagination, render_template, expose, \
      validate_url, url_for, render_my_template
-from pybble.models import URL, TemplateMatch, TM_TYPE_PAGE, obj_discr
+from pybble.models import URL, TemplateMatch, TM_TYPE_PAGE, TM_TYPE_LIST, obj_get
 from pybble.database import db,NoResult
 
 @expose("/")
 def mainpage(request):
 	return render_my_template(request, request.site)
+
+@expose('/tree')
+@expose('/tree/<oid>')
+def view_tree(request, oid=None):
+	if oid is None:
+		obj = request.site
+	else:
+		obj = obj_get(oid)
+	return render_template('tree.html', obj=obj)
+
+@expose('/snippet')
+@expose('/snippet/<oid>')
+def view_snippet(request, oid=None, level=TM_TYPE_PAGE):
+	if oid is None:
+		oid = request.values['dir'] # FileTree
+		level = request.values.get(level,TM_TYPE_LIST)
+	return render_my_template(request, obj_get(oid), type=level)
 
 @expose('/new')
 def new(request):

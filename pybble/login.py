@@ -3,7 +3,7 @@
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from pybble.utils import render_template, expose, \
-     url_for, send_mail, current_request
+     url_for, send_mail, current_request, make_permanent
 from pybble.models import User, Verifier, VerifierBase
 from pybble.database import db,NoResult
 from pybble.flashing import flash
@@ -41,6 +41,8 @@ def do_login(request):
 				u = None
 		if u:
 			logged_in(request,u)
+			if form.remember.data:
+				make_permanent(request)
 
 			if u.verified:
 				flash(u"Du bist jetzt eingeloggt.",True)

@@ -4,28 +4,28 @@
     <form method="post" action="{{ action }}">
     <table>
 	  {% if form.username.errors %}
-	    {% for e in form.username.errors: %}
+	    {% for e in form.username.errors %}
 		  <tr><th>Error:</th><td>{{e}}</td></tr>
 	    {% endfor -%}
 	  {% endif -%}
       <tr>
-        <th>{{ form.username.label }}</th>
-        <td>{{ form.username }}</td>
+        <th>{{ form.username.label|safe }}</th>
+        <td>{{ form.username|safe }}</td>
       </tr>
       <tr>
 	  {% if form.password.errors %}
-	    {% for e in form.password.errors: %}
+	    {% for e in form.password.errors %}
 		  <tr><th>Error:</th><td>{{e}}</td></tr>
 	    {% endfor -%}
 	  {% endif -%}
-        <th>{{ form.password.label }}</th>
-        <td>{{ form.password }}</td>
+        <th>{{ form.password.label|safe }}</th>
+        <td>{{ form.password|safe }}</td>
       </tr>
       <tr>
         <td>&nbsp;</td>
-        <td>{{ form.remember }} {{ form.remember.label }}</td>
+        <td>{{ form.remember|safe }} {{ form.remember.label|safe }}</td>
     </table>
-	{{ form.next }}
+	{{ form.next|safe }}
 	{% if error %}<div>{{ error }}</div>{% endif -%}
     <input type="submit" value="Login" />
     </form>
