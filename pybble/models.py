@@ -42,7 +42,7 @@ class Discriminator(db.Base,DbRepr):
 	name = Column(String(30), nullable=False, unique=True)
 
 	def __init__(self, cls):
-		self.id = cls.discr()
+		self.id = cls.discr
 		self.name = cls.__name__
 
 
@@ -83,6 +83,8 @@ class Object(db.Base,DbRepr):
 		return "%s.%d.%d.%s" % (self.classname, self.discriminator, self.id, 
 		                        md5(self.__class__.__name__ + str(self.id) + settings.SECRET_KEY)\
 		                            .digest().encode('base64').strip('\n =')[:10].replace("+","/-").replace("/","_"))
+
+	@property
 	@classmethod
 	def discr(cls):
 		"""Given a class, return the objects' discriminator."""
