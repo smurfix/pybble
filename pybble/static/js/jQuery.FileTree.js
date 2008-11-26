@@ -53,7 +53,7 @@ if(jQuery) (function($){
 				function showTree(c, t) {
 					$(c).addClass('wait');
 					$.post(o.script, { dir: t }, function(data) {
-						$(c).filter('.start').removeClass('start').html('');
+						$(c).find('.start').remove()
 						$(c).removeClass('wait').append(data);
 						if( o.root == t ) $(c).find('UL:hidden').show(); else $(c).find('UL:hidden').slideDown({ duration: o.expandSpeed, easing: o.expandEasing });
 						bindTree(c);
@@ -82,13 +82,11 @@ if(jQuery) (function($){
 					$(t).find('LI span.image').bind(o.folderEvent, function() {
 						clickExpand($(this).parent())
 					});
-					// Prevent A from triggering the # on non-click events
-					if( o.folderEvent.toLowerCase != 'click' ) $(t).find('LI A').bind('click', function() { return false; });
 				}
 				// Loading message
-				$(this).html('<li class="start wait"><span class="image"></span>' + o.loadMessage + '</li>');
+				$(this).html('<ul class="start"><li class="wait"><span class="image"></span>' + o.loadMessage + '</li></ul>');
 				// Get the initial file list
-				showTree( $(this).children("li:first"), escape(o.root) );
+				showTree( $(this), escape(o.root) );
 			});
 		}
 	});

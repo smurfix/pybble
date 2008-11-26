@@ -1,4 +1,4 @@
-<ul class="jqueryFileTree" style="display: none;">
+<ul style="display: none;">
 {% for o in obj.children %}
 	<li rel="{{o.oid()}}" class="{% if o.has_children() %}directory{% else %}file{% endif %} collapsed t_{{o.classname}}">
 		<span class="image" />

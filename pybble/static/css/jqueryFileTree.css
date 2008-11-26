@@ -1,4 +1,4 @@
-UL.jqueryFileTree {
+DIV.jqueryFileTree {
 	font-family: Verdana, sans-serif;
 	font-size: 11px;
 	line-height: 13px; // images are 16px
@@ -6,7 +6,7 @@ UL.jqueryFileTree {
 	margin: 0px;
 }
 
-UL.jqueryFileTree LI {
+DIV.jqueryFileTree LI {
 	list-style: none;
 	padding: 0px;
 	padding-left: 20px; // separate image element
@@ -14,18 +14,22 @@ UL.jqueryFileTree LI {
 	white-space: nowrap;
 }
 
-UL.jqueryFileTree A {
+DIV.jqueryFileTree A {
 	color: #333;
 	// text-decoration: none;
 	display: block;
 	padding: 0px 2px;
 }
 
-UL.jqueryFileTree LI SPAN :hover {
+DIV.jqueryFileTree LI SPAN :hover {
 	background: #BDF;
 }
 
-UL.jqueryFileTree SPAN.image {
+DIV.jqueryFileTree LI A :hover {
+	background: #BDF;
+}
+
+DIV.jqueryFileTree SPAN.image {
 	height:16px;
 	width:16px;
 	display: block;
@@ -33,10 +37,10 @@ UL.jqueryFileTree SPAN.image {
 }
 
 /* Core Styles */
-.jqueryFileTree LI.directory SPAN.image { background: url(/static/jFileTree/directory.png) left top no-repeat; }
-.jqueryFileTree LI.expanded SPAN.image { background: url(/static/jFileTree/folder_open.png) left top no-repeat; }
-.jqueryFileTree LI.file SPAN.image { background: url(/static/jFileTree/file.png) left top no-repeat; }
-.jqueryFileTree LI.wait SPAN.image { background: url(/static/jFileTree/spinner.gif) left top no-repeat; }
+DIV.jqueryFileTree LI.directory SPAN.image { background: url(/static/jFileTree/directory.png) left top no-repeat; }
+DIV.jqueryFileTree LI.expanded SPAN.image { background: url(/static/jFileTree/folder_open.png) left top no-repeat; }
+DIV.jqueryFileTree LI.file SPAN.image { background: url(/static/jFileTree/file.png) left top no-repeat; }
+DIV.jqueryFileTree LI.wait SPAN.image { background: url(/static/jFileTree/spinner.gif) left top no-repeat; }
 
 /* File Extensions*/
 /*
