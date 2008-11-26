@@ -8,6 +8,7 @@ from werkzeug import Response, Local, LocalManager, cached_property
 from werkzeug.routing import Map, Rule
 from time import time
 import settings
+from markdown import Markdown
 
 TEMPLATE_PATH = path.join(path.dirname(__file__), 'templates')
 # used for initial import only
@@ -62,10 +63,13 @@ def expose(rule, **kw):
 		return f
 	return decorate
 
+## jinja extensions
+marker = Markdown(extensions = ['wikilinks'])
+jinja_env.filters['markdown'] = lambda a: marker(a)
+
 def url_for(endpoint, _external=False, **values):
 	return local.url_adapter.build(endpoint, values, force_external=_external)
 jinja_env.globals['url_for'] = url_for
-jinja_env.globals['subpage'] = lambda a,b: render_my_template(current_request,a,b,resp=False)
 
 def render_my_template(request, obj, type=None, resp=True, **context):
 	"""Global render"""
