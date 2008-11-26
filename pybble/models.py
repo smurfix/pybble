@@ -4,7 +4,7 @@ from datetime import datetime,timedelta
 from sqlalchemy import Table, Column, String, Unicode, Boolean, DateTime, Integer, ForeignKey, \
 	UniqueConstraint, Text
 from sqlalchemy.orm import relation,backref
-from pybble.utils import url_for, random_string
+from pybble.utils import url_for, random_string, current_request
 from pybble.database import db, NoResult
 from sqlalchemy.databases.mysql import MSTinyInteger as TinyInteger
 from sqlalchemy.databases.mysql import MSTimeStamp as TimeStamp
@@ -163,7 +163,6 @@ class User(Object):
 	last_name = Column(Unicode(30))
 	email = Column(String(100))
 	password = Column(String(30), nullable=False)
-	verified = Column(Boolean, nullable=False)
 	first_login = Column(DateTime, nullable=False)
 	last_login = Column(DateTime)
 
@@ -173,7 +172,6 @@ class User(Object):
 			password = random_string(9)
 		self.password=password
 		self.first_login = datetime.utcnow()
-		self.verified = False
 	
 	@property
 	def anon(self):
@@ -188,6 +186,29 @@ class User(Object):
 			return self.last_name
 		else:
 			return self.email
+
+	def _get_verified(self):
+		
+		g = current_request.site
+		try:
+			m = Member.q.get_by(user=self,group=g)
+		except NoResult:
+			return False
+		else:
+			return not m.excluded
+	def _set_verified(self,v):
+		g = current_request.site
+		try:
+			m = Member.q.get_by(user=self,group=g)
+		except NoResult:
+			if v:
+				db.session.add(Member(user=self,group=g))
+		if v:
+			Member.q.get_by(user=self,group=g).delete()
+		else:
+			db.session.add(Member(user=self,group=g))
+	verified = property(_get_verified,_set_verified)
+				
 	
 	def __unicode__(self):
 		if getattr(self,"name",None):
@@ -218,31 +239,63 @@ class User(Object):
 def get_anonymous_user(self, site):
 	return self.get_one(and_(User.username=="", User.password=="",User.superparent==site))
 
-#class Group(Object):
-#	"""A group of users. (Usually.)"""
-#	__tablename__ = "groups"
-#	__table_args__ = {'useexisting': True}
-#	__mapper_args__ = {'polymorphic_identity': 4}
-#	q = db.session.query_property(db.Query)
-#	id = Column(Integer, ForeignKey('obj.id',name="Group_id"), primary_key=True,autoincrement=False)
-#	        
-#	name = Column(Unicode(30))
-#	
-#class Member(db.Base,DbRepr):
-#	__tablename__ = "groupmembers"
-#	q = db.session.query_property(db.Query)
-#	id = Column(Integer, primary_key=True)
-#
-#	user_id = Column(Integer(20),ForeignKey(Obj.id,name="member_user"))    # one member
-#	group_id = Column(Integer(20),ForeignKey(Obj.id,name="member_group"))   # membership group
-#	
-PERM_LIST=1
-PERM_READ=2
-PERM_WRITE=3
-PERM_ADMIN=4
+class Group(Object):
+	"""
+		A group of users. (Usually.)
+		superparent: the site this group belongs to.
+		owner: the managing user; the site, for system groups.
+		"""
+	__tablename__ = "groups"
+	__table_args__ = {'useexisting': True}
+	__mapper_args__ = {'polymorphic_identity': 4}
+	q = db.session.query_property(db.Query)
+	id = Column(Integer, ForeignKey('obj.id',name="Group_id"), primary_key=True,autoincrement=False)
+	        
+	name = Column(Unicode(30))
+
+	def __init__(self,name,owner,site=None):
+		self.superparent = site or owner
+		self.owner = owner
+		self.name = name
+	
+def named_group(owner, name):
+	"""Return the site-specific group with that name."""
+	return Group.q.get_by(name==name, owner==site)
+
+class Member(db.Base,DbRepr):
+	__tablename__ = "groupmembers"
+	q = db.session.query_property(db.Query)
+	id = Column(Integer, primary_key=True)
+
+	user_id = Column(Integer(20),ForeignKey(Object.id,name="member_user"))   # one member
+	group_id = Column(Integer(20),ForeignKey(Object.id,name="member_group")) # membership group
+	excluded = Column(Boolean, nullable=False)
+
+	def __init__(self,user,group):
+		self.user = user
+		self.group = group
+		self.excluded = False
+
+## The user may in fact be another group
+Member.user = relation(Object, remote_side=Object.id, primaryjoin=(Member.user_id==Object.id))
+## The group may in fact be a site, or anything else
+Member.group = relation(Object, remote_side=Object.id, primaryjoin=(Member.group_id==Object.id))
+
+PERM_NONE=0   # Exclusion: cannot do anything with that thing
+PERM_LIST=1   # object will show up in listings
+PERM_READ=2   # object may be examined
+PERM_ADD=3    # can add child objects
+PERM_WRITE=4  # object may be modified
+PERM_ADMIN=9  # can do anything at all to the thing
 
 class Permission(db.Base,DbRepr):
-	"""Permission checks"""
+	"""
+		Permission checks: This user can do that to objects of yonder type.
+
+		Inherit=False: only this object
+		inherit=True : only to child objects
+		inherit=NULL : both.
+		"""
 	__tablename__ = "permissions"
 	__table_args__ = {'useexisting': True}
 	q = db.session.query_property(db.Query)
@@ -251,6 +304,103 @@ class Permission(db.Base,DbRepr):
 	user_id = Column(Integer(20),ForeignKey(Object.id,name="permission_user"), nullable=False)        # acting user/group
 	obj_id = Column(Integer(20),ForeignKey(Object.id,name="permission_obj"), nullable=False)         # affected object
 	right = Column(Integer(1))
+	inherit = Column(Boolean, nullable=True)
+	discriminator = Column(TinyInteger, ForeignKey('discriminator.id',name="obj_discr"))
+
+	def __init__(self, user, obj, discr, right, inherit=None):
+		self.user = user
+		self.object = object
+		if isinstance(discr, basestring):
+			self.discriminator = Discriminator.q.get_by(name=base).id
+		else:
+			self.discriminator = discr
+		self.right = right
+		self.inherit = inherit
+	
+	@staticmethod
+	def can_do(user,obj,discr=None):
+		"""Recursively get the permission of this user for that (type of) object."""
+		done = {}
+		if discr is None:
+			discr = obj.discriminator
+
+		ul = [user]
+		ulq = [user]
+		while ulq:
+			u = ulq.pop(0)
+			for m in Member.q.filter_by(user=u):
+				g = m.group
+				if not m.excluded and g not in ul:
+					ul.append(g)
+					ulq.append(g)
+
+		no_inh = True
+
+		while obj:
+			if obj.id in done:
+				raise ValueError("Object recursion on "+repr(obj))
+			done[obj.id]=1
+
+			for u in ul:
+				try:
+					p = Permission.q.filter(Permission.inherit != no_inh).filter_by(user=u,object=obj).one()
+				except NoResult:
+					pass
+				else:
+					return p.right
+
+			no_inh = False
+			obj = obj.parent
+
+		return PERM_NONE
+
+	@staticmethod
+	def permit(user,obj, right, discr=None, inherit=None):
+		if discr is None:
+			discr = obj.discriminator
+		p = Permission.q.filter_by(user=u,object=obj,discriminator=discr).all()
+		
+		if len(p) > 0:
+			if inherit is None:
+				while p:
+					p.pop().delete()
+				p = None
+			elif len(p) > 1 and p[1].inherit == inherit:
+				p = p[1]
+			else:
+				p = p[0]
+				if p.inherit is None:
+					p.inherit = not inherit
+					p = None
+				elif p.inherit != inherit:
+					p = None
+
+		if p:
+			p.right = right
+		else:
+			p = Permission(user,obj,discr,right,inherit)
+			db.session.add(p)
+
+	@staticmethod
+	def drop(user,obj, discr=None, inherit=None):
+		if discr is None:
+			discr = obj.discriminator
+		p = Permission.q.filter_by(user=u,object=obj,discriminator=discr).all()
+		
+		if len(p) > 0:
+			if inherit is None:
+				while p:
+					p.pop().delete()
+				return
+			elif len(p) > 1 and p[1].inherit == inherit:
+				p = p[1]
+			else:
+				p = p[0]
+			p.delete()
+
+
+Permission.user = relation(Object, remote_side=Object.id, primaryjoin=(Permission.user_id==Object.id))
+Permission.object = relation(Object, remote_side=Object.id, primaryjoin=(Permission.obj_id==Object.id))
 
 class Site(Object):
 	"""A web domain. 'owner' is set to the domain's superuser."""

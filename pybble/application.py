@@ -44,7 +44,10 @@ class Pybble(object):
 			# ... or in fact the first one
 
 			from pybble.models import Site,User,Object,Discriminator,Template,TemplateMatch,VerifierBase,WikiPage
-			from pybble.models import TM_TYPE_PAGE
+			from pybble.models import Group,Member,Permission
+			from pybble.models import obj_discr, TM_TYPE_PAGE, PERM_READ,PERM_ADMIN
+			from pybble.utils import current_request
+
 			for k,v in Object.__mapper__.polymorphic_map.iteritems():
 				v=v.class_
 
@@ -75,6 +78,7 @@ class Pybble(object):
 				u.sites.append(s)
 				s.owner = u
 				db.session.add(u)
+				u.verified = True
 			else:
 				print u"%s found." % u
 
