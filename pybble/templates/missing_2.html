@@ -1,5 +1,10 @@
 <ul class="jqueryFileTree" style="display: none;">
 {% for o in obj.children %}
-	<li class="{% if o.children.count() %}directory{% else %}file{% endif %} collapsed t_{{o.classname}}"><a href="#" rel="{{o.oid}}">{{subpage(o,3)}}</a></li>
+	<li rel="{{o.oid()}}" class="{% if o.has_children() %}directory{% else %}file{% endif %} collapsed t_{{o.classname}}">
+		<span class="image" />
+	    <a href="{{ url_for("pybble.views.view_oid",oid=o.oid()) }}">
+			{{ subpage(o,3) }}
+		</a>
+	</li>
 {% endfor %}
 </ul>

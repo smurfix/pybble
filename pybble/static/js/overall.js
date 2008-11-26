@@ -224,4 +224,10 @@ $(document).ready(function() {
 //      return false;
 //    });
 //  })();
+
+	// add Ajax error things
+	 $("div.messages").ajaxError(function(event, request, settings){
+		   $(this).append('<div class="message fail">Error requesting data ' + settings.url + ' with ' + request + '</div>');
+		    });
+
 });

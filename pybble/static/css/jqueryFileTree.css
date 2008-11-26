@@ -1,7 +1,7 @@
 UL.jqueryFileTree {
 	font-family: Verdana, sans-serif;
 	font-size: 11px;
-	line-height: 18px;
+	line-height: 13px; // images are 16px
 	padding: 0px;
 	margin: 0px;
 }
@@ -9,29 +9,37 @@ UL.jqueryFileTree {
 UL.jqueryFileTree LI {
 	list-style: none;
 	padding: 0px;
-	padding-left: 20px;
+	padding-left: 20px; // separate image element
 	margin: 0px;
 	white-space: nowrap;
 }
 
 UL.jqueryFileTree A {
 	color: #333;
-	text-decoration: none;
+	// text-decoration: none;
 	display: block;
 	padding: 0px 2px;
 }
 
-UL.jqueryFileTree A:hover {
+UL.jqueryFileTree LI SPAN :hover {
 	background: #BDF;
 }
 
+UL.jqueryFileTree SPAN.image {
+	height:16px;
+	width:16px;
+	display: block;
+	float: left;
+}
+
 /* Core Styles */
-.jqueryFileTree LI.directory { background: url(/static/jFileTree/directory.png) left top no-repeat; }
-.jqueryFileTree LI.expanded { background: url(/static/jFileTree/folder_open.png) left top no-repeat; }
-.jqueryFileTree LI.file { background: url(/static/jFileTree/file.png) left top no-repeat; }
-.jqueryFileTree LI.wait { background: url(/static/jFileTree/spinner.gif) left top no-repeat; }
+.jqueryFileTree LI.directory SPAN.image { background: url(/static/jFileTree/directory.png) left top no-repeat; }
+.jqueryFileTree LI.expanded SPAN.image { background: url(/static/jFileTree/folder_open.png) left top no-repeat; }
+.jqueryFileTree LI.file SPAN.image { background: url(/static/jFileTree/file.png) left top no-repeat; }
+.jqueryFileTree LI.wait SPAN.image { background: url(/static/jFileTree/spinner.gif) left top no-repeat; }
 
 /* File Extensions*/
+/*
 .jqueryFileTree LI.ext_3gp { background: url(/static/jFileTree/film.png) left top no-repeat; }
 .jqueryFileTree LI.ext_afp { background: url(/static/jFileTree/code.png) left top no-repeat; }
 .jqueryFileTree LI.ext_afpa { background: url(/static/jFileTree/code.png) left top no-repeat; }
@@ -90,3 +98,4 @@ UL.jqueryFileTree A:hover {
 .jqueryFileTree LI.ext_xls { background: url(/static/jFileTree/xls.png) left top no-repeat; }
 .jqueryFileTree LI.ext_xml { background: url(/static/jFileTree/code.png) left top no-repeat; }
 .jqueryFileTree LI.ext_zip { background: url(/static/jFileTree/zip.png) left top no-repeat; }
+*/

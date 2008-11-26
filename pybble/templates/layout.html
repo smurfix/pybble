@@ -16,11 +16,13 @@
 	{%- block add_header %}{% endblock -%}
 </head>
 <body>
+	<div class="messages">
 	{%- for message in MESSAGES %}
 		<div class="message{% if message.success == true %} success{% elif message.success == false %} fail{% endif %}">
 			{{ message.text }}
 		</div>
 	{%- endfor %}
+	</div>
 
   <h1><a href="{{ url_for('pybble.views.new') }}">Pybble</a></h1>
   <div class="body">{% block body %}<code>Your template didn't provide a 'body' block.</code>{% endblock %}</div>

@@ -13,10 +13,10 @@ CREATE TABLE obj (
 	parent_id INTEGER, 
 	superparent_id INTEGER, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id), 
 	 CONSTRAINT obj_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
-	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id), 
-	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id)
+	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id), 
+	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id), 
+	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id)
 );
 CREATE TABLE users (
 	id INTEGER NOT NULL, 
@@ -43,9 +43,17 @@ CREATE TABLE sites (
 	domain VARCHAR(100) NOT NULL, 
 	name VARCHAR(50) NOT NULL, 
 	PRIMARY KEY (id), 
-	 UNIQUE (domain), 
+	 UNIQUE (name), 
 	 CONSTRAINT site_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (name)
+	 UNIQUE (domain)
+);
+CREATE TABLE wikipage (
+	id INTEGER NOT NULL, 
+	name VARCHAR(50), 
+	data TEXT, 
+	modified TIMESTAMP, 
+	PRIMARY KEY (id), 
+	 CONSTRAINT template_id FOREIGN KEY(id) REFERENCES obj (id)
 );
 CREATE TABLE verifiers (
 	id INTEGER NOT NULL, 
@@ -56,8 +64,8 @@ CREATE TABLE verifiers (
 	timeout DATETIME NOT NULL, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT verifier_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT verifier_base FOREIGN KEY(base_id) REFERENCES verifierbase (id), 
-	 UNIQUE (code)
+	 UNIQUE (code), 
+	 CONSTRAINT verifier_base FOREIGN KEY(base_id) REFERENCES verifierbase (id)
 );
 CREATE TABLE urls (
 	id INTEGER NOT NULL, 
@@ -66,8 +74,8 @@ CREATE TABLE urls (
 	added DATETIME NOT NULL, 
 	public BOOL NOT NULL, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT `URL_id` FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (uid)
+	 UNIQUE (uid), 
+	 CONSTRAINT `URL_id` FOREIGN KEY(id) REFERENCES obj (id)
 );
 CREATE TABLE discriminator (
 	id TINYINT(1) NOT NULL AUTO_INCREMENT, 
@@ -90,9 +98,9 @@ CREATE TABLE template_match (
 	discriminator TINYINT, 
 	type TINYINT(1) NOT NULL, 
 	PRIMARY KEY (id), 
+	 CONSTRAINT templatematch_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
 	 CONSTRAINT obj_templates_obj FOREIGN KEY(obj_id) REFERENCES obj (id), 
-	 CONSTRAINT obj_templates_template FOREIGN KEY(template_id) REFERENCES templates (id), 
-	 CONSTRAINT templatematch_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id)
+	 CONSTRAINT obj_templates_template FOREIGN KEY(template_id) REFERENCES templates (id)
 );
 CREATE TABLE permissions (
 	id INTEGER NOT NULL AUTO_INCREMENT, 

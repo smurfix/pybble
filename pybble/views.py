@@ -20,6 +20,10 @@ def view_tree(request, oid=None):
 		obj = obj_get(oid)
 	return render_template('tree.html', obj=obj)
 
+@expose('/view/<oid>')
+def view_oid(request, oid):
+	return render_template('tree.html', obj=obj_get(oid))
+
 @expose('/snippet')
 @expose('/snippet/<oid>')
 def view_snippet(request, oid=None, level=TM_TYPE_PAGE):

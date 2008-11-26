@@ -65,9 +65,9 @@ def expose(rule, **kw):
 def url_for(endpoint, _external=False, **values):
 	return local.url_adapter.build(endpoint, values, force_external=_external)
 jinja_env.globals['url_for'] = url_for
-jinja_env.globals['subpage'] = lambda a,b: render_my_template(current_request,a,b)
+jinja_env.globals['subpage'] = lambda a,b: render_my_template(current_request,a,b,resp=False)
 
-def render_my_template(request, obj, type=None, **context):
+def render_my_template(request, obj, type=None, resp=True, **context):
 	"""Global render"""
 	from pybble.models import TemplateMatch, TM_TYPE_PAGE
 	from pybble.database import NoResult
@@ -81,9 +81,9 @@ def render_my_template(request, obj, type=None, **context):
 		t = TemplateMatch.q.get_by(obj=obj, discriminator=obj.discriminator, type=type).template
 	except NoResult:
 		t = "missing_%d.html" % (type,)
-	return render_template(t, **context)
+	return render_template(t, resp=resp, **context)
 
-def render_template(template, **context):
+def render_template(template, resp=True,**context):
 	if current_request:
 		from pybble.flashing import get_flashed_messages
 		context.update(
@@ -93,8 +93,12 @@ def render_template(template, **context):
 			MESSAGES=get_flashed_messages(),
 			SITE=current_request.site,
 		)
-	return Response(jinja_env.get_template(template).render(**context),
-					mimetype='text/html')
+	r = jinja_env.get_template(template).render(**context)
+	if resp:
+		r = Response(r, mimetype='text/html')
+	else:
+		r = Markup(r)
+	return r
 
 def validate_url(url):
 	return urlparse(url)[0] in ALLOWED_SCHEMES

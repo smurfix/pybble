@@ -43,7 +43,7 @@ class Pybble(object):
 			"""Initialize a new site"""
 			# ... or in fact the first one
 
-			from pybble.models import Site,User,Object,Discriminator,Template,TemplateMatch,VerifierBase
+			from pybble.models import Site,User,Object,Discriminator,Template,TemplateMatch,VerifierBase,WikiPage
 			from pybble.models import TM_TYPE_PAGE
 			for k,v in Object.__mapper__.polymorphic_map.iteritems():
 				v=v.class_
@@ -130,6 +130,33 @@ class Pybble(object):
 				t = TemplateMatch(obj=s, discriminator=s.discriminator, type=TM_TYPE_PAGE, \
 					data = open("pybble/main.html").read())
 				db.session.add(t)
+
+			try:
+				w = WikiPage.q.get_by(name="MainPage")
+			except NoResult:
+				w = WikiPage("MainPage","""\
+Hello
+=====
+
+Welcome to the first page of the rest of your life.
+""")
+				w.owner=u
+				w.parent=s
+				db.session.add(w)
+			try:
+				ww = WikiPage.q.get_by(name="SubPage")
+			except NoResult:
+				ww = WikiPage("SubPage","""\
+Hello
+=====
+
+Welcome to the second page of the rest of your life.
+
+You may continue on your own. ;-)
+""")
+				ww.owner=u
+				ww.parent=w
+				db.session.add(ww)
 
 			db.session.commit()
 			print "Your root user is named '%s' and has the password '%s'." % (u.username, u.password)

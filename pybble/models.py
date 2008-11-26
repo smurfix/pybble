@@ -42,7 +42,7 @@ class Discriminator(db.Base,DbRepr):
 	name = Column(String(30), nullable=False, unique=True)
 
 	def __init__(self, cls):
-		self.id = obj_discr(cls)
+		self.id = cls.discr()
 		self.name = cls.__name__
 
 
@@ -64,6 +64,13 @@ class Object(db.Base,DbRepr):
 
 	#all_children = relation('Object', backref=backref("superparent", remote_side=Object.id)) 
 
+	def has_children(self, discriminator=None):
+		if discriminator:
+			n = len(self.children.filter_by(discriminator=discriminator))
+		else:
+			n = len(self.children)
+		return n
+
 	@property
 	def classname(self):
 		return self.__class__.__name__
@@ -76,6 +83,7 @@ class Object(db.Base,DbRepr):
 		return "%s.%d.%d.%s" % (self.classname, self.discriminator, self.id, 
 		                        md5(self.__class__.__name__ + str(self.id) + settings.SECRET_KEY)\
 		                            .digest().encode('base64').strip('\n =')[:10].replace("+","/-").replace("/","_"))
+	@classmethod
 	def discr(cls):
 		"""Given a class, return the objects' discriminator."""
 		return cls.__mapper__.polymorphic_identity
@@ -288,10 +296,6 @@ class Template(Object):
 		self.name = name
 		self.data = data
 
-	def __repr__(self):
-		return "'<%s:%d>'" % (self.__class__.__name__,self.id)
-
-
 class TemplateMatch(db.Base,DbRepr):
 	"""Associate a template to an object."""
 	__tablename__ = "template_match"
@@ -389,3 +393,24 @@ class Verifier(Object):
 		return self.base._module.retry(self,*a,**k)
 
 Verifier.base = relation(VerifierBase, remote_side=VerifierBase.id, primaryjoin=(Verifier.base_id==VerifierBase.id))
+
+class WikiPage(Object):
+	"""A wiki (or similar) page."""
+	__tablename__ = "wikipage"
+	__table_args__ = ({'useexisting': True})
+	__mapper_args__ = {'polymorphic_identity': 9}
+	q = db.session.query_property(db.Query)
+	id = Column(Integer, ForeignKey('obj.id',name="template_id"), primary_key=True,autoincrement=False)
+
+	name = Column(String(50))
+	data = Column(Text)
+	modified = Column(TimeStamp)
+
+	def __init__(self, name, data):
+		self.name = name
+		self.data = data
+	
+	def markup(self):
+		import markdown
+		return markdown.markdown(self.data)
+
