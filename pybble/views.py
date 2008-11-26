@@ -22,7 +22,7 @@ def view_tree(request, oid=None):
 
 @expose('/view/<oid>')
 def view_oid(request, oid):
-	return render_template('tree.html', obj=obj_get(oid))
+	return render_my_template(request, obj=obj_get(oid), type=TM_TYPE_PAGE)
 
 @expose('/snippet')
 @expose('/snippet/<oid>')

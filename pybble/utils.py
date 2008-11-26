@@ -77,10 +77,24 @@ def render_my_template(request, obj, type=None, resp=True, **context):
 
 	context["obj"] = obj
 
-	try:
-		t = TemplateMatch.q.get_by(obj=obj, discriminator=obj.discriminator, type=type).template
-	except NoResult:
+	t = None
+	discr = obj.discriminator
+	no_inherit = True
+
+	while obj:
+		try:
+			t = TemplateMatch.q.filter(TemplateMatch.inherit != no_inherit).\
+			                    get_by(obj=obj, discriminator=discr, type=type).template
+		except NoResult:
+			pass
+		else:
+			break
+		obj = obj.parent
+		no_inherit = False
+
+	if t is None:
 		t = "missing_%d.html" % (type,)
+
 	return render_template(t, resp=resp, **context)
 
 def render_template(template, resp=True,**context):

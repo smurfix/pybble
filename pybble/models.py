@@ -311,6 +311,7 @@ class TemplateMatch(db.Base,DbRepr):
 	template_id = Column('template_id', Integer, ForeignKey('templates.id',name="obj_templates_template"), nullable=False)
 	discriminator = Column(TinyInteger, ForeignKey('discriminator.id',name="templatematch_discr"))
 	type = Column(TinyInteger(1), nullable=False)
+	inherit = Column(Boolean, nullable=True)
 
 	def __init__(self, obj,discriminator,type, data):
 		t = Template(None,data)
