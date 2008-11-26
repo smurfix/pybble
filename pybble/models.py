@@ -296,6 +296,10 @@ class Template(Object):
 		self.name = name
 		self.data = data
 
+	def __repr__(self):
+		return "'<%s:%d>'" % (self.__class__.__name__,self.id)
+
+
 class TemplateMatch(db.Base,DbRepr):
 	"""Associate a template to an object."""
 	__tablename__ = "template_match"
