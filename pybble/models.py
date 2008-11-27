@@ -42,7 +42,7 @@ class Discriminator(db.Base,DbRepr):
 	name = Column(String(30), nullable=False, unique=True)
 
 	def __init__(self, cls):
-		self.id = cls.discr
+		self.id = cls.discr()
 		self.name = cls.__name__
 
 
@@ -84,7 +84,6 @@ class Object(db.Base,DbRepr):
 		                        md5(self.__class__.__name__ + str(self.id) + settings.SECRET_KEY)\
 		                            .digest().encode('base64').strip('\n =')[:10].replace("+","/-").replace("/","_"))
 
-	@property
 	@classmethod
 	def discr(cls):
 		"""Given a class, return the objects' discriminator."""
@@ -206,7 +205,10 @@ class User(Object):
 			if v:
 				db.session.add(Member(user=self,group=g))
 		if v:
-			Member.q.get_by(user=self,group=g).delete()
+			try:
+				Member.q.get_by(user=self,group=g).delete()
+			except NoResult:
+				pass
 		else:
 			db.session.add(Member(user=self,group=g))
 	verified = property(_get_verified,_set_verified)
