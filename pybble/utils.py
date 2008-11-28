@@ -118,6 +118,8 @@ def render_template(template, resp=True,**context):
 		r = Markup(r)
 	return r
 
+jinja_env.globals['subpage'] = lambda a,b: render_my_template(current_request,a,b,resp=False)
+
 def validate_url(url):
 	return urlparse(url)[0] in ALLOWED_SCHEMES
 

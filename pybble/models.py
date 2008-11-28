@@ -185,6 +185,8 @@ class User(Object):
 			return self.first_name
 		elif self.last_name:
 			return self.last_name
+		elif self.username:
+			return self.username
 		else:
 			return self.email
 
@@ -436,7 +438,11 @@ Site.users = relation(User, secondary=site_users, backref='sites',
 	secondaryjoin=(site_users.c.user_id==User.id))
 
 class Template(Object):
-	"""A template for rendering."""
+	"""
+		A template for rendering.
+		superparent: Site the template applies to.
+		owner: user who created the template.
+		"""
 	__tablename__ = "templates"
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 6}

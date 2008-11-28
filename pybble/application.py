@@ -9,6 +9,7 @@ from pybble.database import metadata, db, NoResult
 from sqlalchemy.sql import and_, or_, not_
 
 import pybble.models
+import pybble.admin
 from pybble.session import add_session, add_user, add_site, save_session, \
 	add_response_headers
 
@@ -38,7 +39,7 @@ class Pybble(object):
 		return self.init_site(replace_templates=True)
 
 	def init_site(self, replace_templates=False):
-		def action(domain=("d","localhost:5000"),name=("n","Lokaler Debug-Kram")):
+		def action(domain=("d","localhost:5000"),name=("n",u"Lokaler Debug-Kram")):
 
 			"""Initialize a new site"""
 			# ... or in fact the first one

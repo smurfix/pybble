@@ -1,0 +1,13 @@
+{% extends 'layout.html' %}
+{% block body %}
+  <h2>List of (named) templates</h2>
+  <table><thead>
+    <tr><td>Name</td><td>by</td><td>modified</td><td>Edit?</td></tr>
+	</thead><tbody>
+  {%- for t in templates %}
+    <tr><td>{{ t.name }}</td><td>{{ t.owner.name|default('unknown') }}</td><td>{{ t.modified }}</td><td><a
+	href="{{ url_for('pybble.admin.edit_template',template=t.oid()) }}">E</a></td></tr>
+  {% endfor -%}
+    </tbody></table>
+  </ul>
+{% endblock %}

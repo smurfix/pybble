@@ -24,9 +24,10 @@
       <tr>
         <td>&nbsp;</td>
         <td>{{ form.remember|safe }} {{ form.remember.label|safe }}</td>
+	  </tr>
     </table>
 	{{ form.next|safe }}
-	{% if error %}<div>{{ error }}</div>{% endif -%}
+	{% if error %}<div class="error">{{ error }}</div>{% endif -%}
     <input type="submit" value="Login" />
     </form>
 
