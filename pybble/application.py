@@ -110,7 +110,7 @@ class Pybble(object):
 						raise
 
 				try:
-					t = Template.q.get_by(name=fn,parent=None)
+					t = Template.q.get_by(name=fn,parent=None,superparent=s)
 				except NoResult:
 					t = Template(name=fn,data=data)
 					t.superparent = s
@@ -121,6 +121,7 @@ class Pybble(object):
 						print "Warning: Template '%s' differs." % (fn,)
 						if replace_templates:
 							t.data = data
+							t.modified = datetime.utcnow()
 					if replace_templates:
 						t.superparent = s
 						t.owner = u
