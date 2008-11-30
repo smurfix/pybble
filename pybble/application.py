@@ -16,6 +16,7 @@ from pybble.session import add_session, add_user, add_site, save_session, \
 import StringIO
 import settings
 import sys,os
+from datetime import datetime
 
 ## Adapters
 from pybble import views,login,confirm
@@ -46,7 +47,7 @@ class Pybble(object):
 
 			from pybble.models import Site,User,Object,Discriminator,Template,TemplateMatch,VerifierBase,WikiPage
 			from pybble.models import Group,Member,Permission
-			from pybble.models import TM_TYPE_PAGE, PERM_READ,PERM_ADMIN
+			from pybble.models import TM_DETAIL_PAGE, PERM_READ,PERM_ADMIN
 			from pybble import utils
 			from werkzeug import Request
 
@@ -135,9 +136,9 @@ class Pybble(object):
 				print "%s found." % v
 
 			try:
-			    t = TemplateMatch.q.get_by(obj=s, discriminator=s.discriminator, type=TM_TYPE_PAGE)
+			    t = TemplateMatch.q.get_by(obj=s, discriminator=s.discriminator, type=TM_DETAIL_PAGE)
 			except NoResult:
-				t = TemplateMatch(obj=s, discriminator=s.discriminator, type=TM_TYPE_PAGE, \
+				t = TemplateMatch(obj=s, discriminator=s.discriminator, type=TM_DETAIL_PAGE, \
 					data = open("pybble/main.html").read())
 				db.session.add(t)
 

@@ -9,6 +9,7 @@ from pybble.database import db,NoResult
 from pybble.flashing import flash
 from pybble.session import logged_in
 from wtforms import Form, BooleanField, TextField, PasswordField, HiddenField, validators
+from wtforms.validators import ValidationError
 
 ###
 ### Login

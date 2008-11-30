@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
+# -*. utf-8 -*-
 
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from pybble.utils import Pagination, render_template, expose, \
      validate_url, url_for, render_my_template
-from pybble.models import URL, TemplateMatch, TM_TYPE_PAGE, TM_TYPE_LIST, obj_get
+from pybble.models import URL, TemplateMatch, TM_DETAIL_PAGE, TM_DETAIL_LIST, obj_get
 from pybble.database import db,NoResult
 
 @expose("/")
@@ -22,15 +22,15 @@ def view_tree(request, oid=None):
 
 @expose('/view/<oid>')
 def view_oid(request, oid):
-	return render_my_template(request, obj=obj_get(oid), type=TM_TYPE_PAGE)
+	return render_my_template(request, obj=obj_get(oid), detail=TM_DETAIL_PAGE)
 
 @expose('/snippet')
 @expose('/snippet/<oid>')
-def view_snippet(request, oid=None, level=TM_TYPE_PAGE):
+def view_snippet(request, oid=None, detail=TM_DETAIL_PAGE):
 	if oid is None:
 		oid = request.values['dir'] # FileTree
-		level = request.values.get(level,TM_TYPE_LIST)
-	return render_my_template(request, obj_get(oid), type=level)
+		detail = request.values.get(detail,TM_DETAIL_LIST)
+	return render_my_template(request, obj_get(oid), detail=detail)
 
 @expose('/new')
 def new(request):

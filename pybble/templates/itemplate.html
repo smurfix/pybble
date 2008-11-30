@@ -1,0 +1,64 @@
+{% extends 'layout.html' %}
+{% block body %}
+  <h2>Edit template for {{ name_discr(form.discr.data) }} / {{ name_detail(form.detail.data) }}</h2>
+    <form method="post" action="{{ action }}">
+    <table>
+	  {% if form.oid.errors %}
+	    {% for e in form.oid.errors %}
+		  <tr><th>Error:</th><td>{{e}}</td></tr>
+	    {% endfor -%}
+	  {% endif -%}
+      <tr>
+        <th>{{ form.oid.label|safe }}</th>
+        <td>{{ form.oid|safe }}{# TODO Lookup #}</td>
+      </tr>
+	  {% if form.discr.errors %}
+	    {% for e in form.discr.errors %}
+		  <tr><th>Error:</th><td>{{e}}</td></tr>
+	    {% endfor -%}
+	  {% endif -%}
+      <tr>
+        <th>{{ form.discr.label|safe }}</th>
+        <td>{{ form.discr|safe }}</td>
+      </tr>
+	  {% if form.detail.errors %}
+	    {% for e in form.detail.errors %}
+		  <tr><th>Error:</th><td>{{e}}</td></tr>
+	    {% endfor -%}
+	  {% endif -%}
+      <tr>
+        <th>{{ form.detail.label|safe }}</th>
+        <td>{{ form.detail|safe }}</td>
+      </tr>
+	  {% if form.inherit.errors %}
+	    {% for e in form.inherit.errors %}
+		  <tr><th>Error:</th><td>{{e}}</td></tr>
+	    {% endfor -%}
+	  {% endif -%}
+      <tr>
+        <th>{{ form.inherit.label|safe }}</th>
+        <td>{{ form.inherit|safe }}</td>
+      </tr>
+      <tr>
+	  {% if form.clone.errors %}
+	    {% for e in form.clone.errors %}
+		  <tr><th>Error:</th><td>{{e}}</td></tr>
+	    {% endfor -%}
+	  {% endif -%}
+        <th>{{ form.clone.label|safe }}</th>
+        <td>{{ form.clone|safe }}</td>
+      </tr>
+	  {% if form.page.errors %}
+	    {% for e in form.page.errors %}
+		  <tr><th>Error:</th><td>{{e}}</td></tr>
+	    {% endfor -%}
+	  {% endif -%}
+        <th>{{ form.page.label|safe }}</th>
+        <td>{{ form.page(cols=80,rows=20)|safe }}</td>
+      </tr>
+    </table>
+	{% if error %}<div class="error">{{ error }}</div>{% endif -%}
+    <input type="submit" value="Update" />
+    </form>
+
+{% endblock %}

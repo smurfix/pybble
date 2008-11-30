@@ -18,6 +18,16 @@ try:
 except ImportError:
 	from md5 import md5
 
+# Template detail levels
+TM_DETAIL_PAGE=1
+TM_DETAIL_LIST=2
+TM_DETAIL_STRING=3
+
+def TM_DETAIL_name(id):
+	if int(id) == TM_DETAIL_PAGE: return "Page view"
+	if int(id) == TM_DETAIL_LIST: return "Object list"
+	if int(id) == TM_DETAIL_STRING: return "One-line info"
+	raise ValueError("%s is not a valid TM_DETAIL constant" % (id,))
 
 class DbRepr(object):
 	def __unicode__(self):
@@ -71,6 +81,13 @@ class Object(db.Base,DbRepr):
 			n = len(self.children)
 		return n
 
+	def has_templates(self, discriminator=None):
+		if discriminator:
+			n = len(self.templates.filter_by(discriminator=discriminator))
+		else:
+			n = len(self.templates)
+		return n
+
 	@property
 	def classname(self):
 		return self.__class__.__name__
@@ -89,7 +106,28 @@ class Object(db.Base,DbRepr):
 		"""Given a class, return the objects' discriminator."""
 		return cls.__mapper__.polymorphic_identity
 
+	def get_template(self, detail=TM_DETAIL_PAGE):
+		"""Return this object's template at a given detail level"""
+		discr = self.discriminator
+		no_inherit = True
 
+		while self:
+			try:
+				t = TemplateMatch.q.filter(TemplateMatch.inherit != no_inherit).\
+									get_by(obj=self, discriminator=discr, type=detail).template
+			except NoResult:
+				if not self.parent:
+					raise
+			else:
+				return t
+
+			self = self.parent
+			no_inherit = False
+
+	def uptree(self):
+		while self:
+			yield self
+			self = self.parent
 
 Object.owner = relation(Object, remote_side=Object.id, primaryjoin=(Object.owner_id==Object.id))
 Object.parent = relation(Object, remote_side=Object.id, primaryjoin=(Object.parent_id==Object.id))
@@ -473,19 +511,22 @@ class TemplateMatch(db.Base,DbRepr):
 	type = Column(TinyInteger(1), nullable=False)
 	inherit = Column(Boolean, nullable=True)
 
-	def __init__(self, obj,discriminator,type, data):
-		t = Template(None,data)
+	def __init__(self, obj,discriminator,detail, data):
+		if isinstance(data,Template):
+			t = data
+		else:
+			t = Template(None,data)
 		self.obj = obj
 		self.template = t
 		self.discriminator = discriminator
-		self.type = type
+		self.type = detail
 
 TemplateMatch.obj = relation(Object, remote_side=Object.id, primaryjoin=(TemplateMatch.obj_id==Object.id))
 TemplateMatch.template = relation(Template, remote_side=Template.id, foreign_keys=(TemplateMatch.template_id), primaryjoin=(TemplateMatch.template_id==Template.id))
 
-TM_TYPE_PAGE=1
-TM_TYPE_LIST=2
-TM_TYPE_STRING=3
+Object.templates = relation(TemplateMatch, remote_side=TemplateMatch.obj_id, primaryjoin=(TemplateMatch.obj_id==Object.id)) 
+Template.matches = relation(TemplateMatch, remote_side=TemplateMatch.template_id, primaryjoin=(TemplateMatch.template_id==Template.id), foreign_keys=[TemplateMatch.template_id]) 
+
 
 VerifierBases = {}
 class VerifierBase(db.Base,DbRepr):

@@ -53,9 +53,11 @@ if(jQuery) (function($){
 				function showTree(c, t) {
 					$(c).addClass('wait');
 					$.post(o.script, { dir: t }, function(data) {
-						$(c).find('.start').remove()
-						$(c).removeClass('wait').append(data);
-						if( o.root == t ) $(c).find('UL:hidden').show(); else $(c).find('UL:hidden').slideDown({ duration: o.expandSpeed, easing: o.expandEasing });
+						data = $(data)
+						$(c).replaceWith(data)
+						c = data
+						// if( o.root == t ) $(c).find('UL:hidden').show(); else $(c).find('UL:hidden').slideDown({ duration: o.expandSpeed, easing: o.expandEasing });
+						$(c).find('UL:hidden').show();
 						bindTree(c);
 					});
 				}
@@ -72,21 +74,22 @@ if(jQuery) (function($){
 							$(target).removeClass('collapsed').addClass('expanded');
 						} else {
 							// Collapse
-							$(target).find('UL').slideUp({ duration: o.collapseSpeed, easing: o.collapseEasing });
+							// $(target).find('UL').slideUp({ duration: o.collapseSpeed, easing: o.collapseEasing });
+							$(target).find('UL').hide();
 							$(target).removeClass('expanded').addClass('collapsed');
 						}
 					}
 					return false;
 				}
 				function bindTree(t) {
-					$(t).find('LI span.image').bind(o.folderEvent, function() {
+					$(t).find('span.image').bind(o.folderEvent, function() {
 						clickExpand($(this).parent())
 					});
 				}
 				// Loading message
-				$(this).html('<ul class="start"><li class="wait"><span class="image"></span>' + o.loadMessage + '</li></ul>');
+				$(this).html('<li class="wait"><span class="image"></span>' + o.loadMessage + '</li>');
 				// Get the initial file list
-				showTree( $(this), escape(o.root) );
+				showTree( $(this).find('LI'), escape(o.root) );
 			});
 		}
 	});

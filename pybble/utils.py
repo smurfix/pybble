@@ -65,19 +65,32 @@ def expose(rule, **kw):
 
 ## jinja extensions
 marker = Markdown(extensions = ['wikilinks'])
-jinja_env.filters['markdown'] = lambda a: marker(a)
+jinja_env.filters['markdown'] = lambda a: Markup(marker.convert(a))
 
 def url_for(endpoint, _external=False, **values):
 	return local.url_adapter.build(endpoint, values, force_external=_external)
 jinja_env.globals['url_for'] = url_for
 
-def render_my_template(request, obj, type=None, resp=True, **context):
+def name_discr(id):
+	from pybble.models import Discriminator
+	if id is None:
+		return "*"
+	return Discriminator.q.get_by(id=id).name
+jinja_env.globals['name_discr'] = name_discr
+
+def name_detail(id):
+	from pybble.models import TM_DETAIL_name
+	return TM_DETAIL_name(id)
+jinja_env.globals['name_detail'] = name_detail
+
+
+def render_my_template(request, obj, detail=None, resp=True, **context):
 	"""Global render"""
-	from pybble.models import TemplateMatch, TM_TYPE_PAGE
+	from pybble.models import TemplateMatch, TM_DETAIL_PAGE
 	from pybble.database import NoResult
 
-	if type is None:
-		type = TM_TYPE_PAGE
+	if detail is None:
+		detail = TM_DETAIL_PAGE
 
 	context["obj"] = obj
 
@@ -85,19 +98,10 @@ def render_my_template(request, obj, type=None, resp=True, **context):
 	discr = obj.discriminator
 	no_inherit = True
 
-	while obj:
-		try:
-			t = TemplateMatch.q.filter(TemplateMatch.inherit != no_inherit).\
-			                    get_by(obj=obj, discriminator=discr, type=type).template
-		except NoResult:
-			pass
-		else:
-			break
-		obj = obj.parent
-		no_inherit = False
-
-	if t is None:
-		t = "missing_%d.html" % (type,)
+	try:
+		t = obj.get_template(detail=detail)
+	except NoResult:
+		t = "missing_%d.html" % (detail,)
 
 	return render_template(t, resp=resp, **context)
 
