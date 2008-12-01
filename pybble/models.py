@@ -88,6 +88,12 @@ class Object(db.Base,DbRepr):
 			n = len(self.templates)
 		return n
 
+	def has_memberships(self):
+		return len(self.memberships)
+
+	def has_permissions(self):
+		return len(self.permissions)
+
 	@property
 	def classname(self):
 		return self.__class__.__name__
@@ -325,12 +331,23 @@ Member.user = relation(Object, remote_side=Object.id, primaryjoin=(Member.user_i
 ## The group may in fact be a site, or anything else
 Member.group = relation(Object, remote_side=Object.id, primaryjoin=(Member.group_id==Object.id))
 
+Object.memberships = relation(Member, remote_side=Member.user_id, primaryjoin=(Member.user_id==Object.id)) 
+
 PERM_NONE=0   # Exclusion: cannot do anything with that thing
 PERM_LIST=1   # object will show up in listings
 PERM_READ=2   # object may be examined
 PERM_ADD=3    # can add child objects
 PERM_WRITE=4  # object may be modified
 PERM_ADMIN=9  # can do anything at all to the thing
+
+def PERM_name(id):
+	if int(id) == 0: return "No permission"
+	if int(id) == 1: return "List"
+	if int(id) == 2: return "Read"
+	if int(id) == 3: return "Add"
+	if int(id) == 4: return "Write"
+	if int(id) == 9: return "Admin"
+	raise ValueError("%s is not a valid PERM constant" % (id,))
 
 class Permission(db.Base,DbRepr):
 	"""
@@ -347,9 +364,9 @@ class Permission(db.Base,DbRepr):
 
 	user_id = Column(Integer(20),ForeignKey(Object.id,name="permission_user"), nullable=False)        # acting user/group
 	obj_id = Column(Integer(20),ForeignKey(Object.id,name="permission_obj"), nullable=False)         # affected object
-	right = Column(Integer(1))
+	right = Column(Integer(1), nullable=False)
 	inherit = Column(Boolean, nullable=True)
-	discriminator = Column(TinyInteger, ForeignKey('discriminator.id',name="obj_discr"))
+	discriminator = Column(TinyInteger, ForeignKey('discriminator.id',name="obj_discr"), nullable=True)
 
 	def __init__(self, user, obj, discr, right, inherit=None):
 		self.user = user
@@ -445,6 +462,8 @@ class Permission(db.Base,DbRepr):
 
 Permission.user = relation(Object, remote_side=Object.id, primaryjoin=(Permission.user_id==Object.id))
 Permission.object = relation(Object, remote_side=Object.id, primaryjoin=(Permission.obj_id==Object.id))
+
+Object.permissions = relation(Permission, remote_side=Permission.obj_id, primaryjoin=(Permission.obj_id==Object.id)) 
 
 class Site(Object):
 	"""A web domain. 'owner' is set to the domain's superuser."""

@@ -83,6 +83,11 @@ def name_detail(id):
 	return TM_DETAIL_name(id)
 jinja_env.globals['name_detail'] = name_detail
 
+def name_permission(id):
+	from pybble.models import PERM_name
+	return PERM_name(id)
+jinja_env.globals['name_permission'] = name_permission
+
 
 def render_my_template(request, obj, detail=None, resp=True, **context):
 	"""Global render"""
