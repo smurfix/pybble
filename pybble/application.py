@@ -100,19 +100,26 @@ class Pybble(object):
 			else:
 				print u"%s found." % a
 
-			try:
-				p=Permission.q.get_by(owner=u,parent=s)
-			except NoResult:
-				p=Permission(u, s, None, PERM_ADMIN)
-				p.superparent=s
-				db.session.add(p)
+			db.session.flush()
 
-			try:
-				ap=Permission.q.get_by(owner=a,parent=s)
-			except NoResult:
-				ap=Permission(a, s, None, PERM_READ)
-				p.superparent=s
-				db.session.add(ap)
+			for d in Discriminator.q.all():
+				try:
+					p=Permission.q.get_by(owner=u,parent=s,discr=d.id)
+				except NoResult:
+					p=Permission(u, s, d, PERM_ADMIN)
+					p.superparent=s
+					db.session.add(p)
+
+			for d in Discriminator.q.filter(or_(Discriminator.name=='Site',
+					Discriminator.name=='WikiPage')):
+				try:
+					ap=Permission.q.get_by(owner=a,parent=s,discr=d.id)
+				except NoResult:
+					ap=Permission(a, s, d, PERM_READ)
+					p.superparent=s
+					db.session.add(ap)
+
+			db.session.flush()
 
 			for fn in os.listdir(TEMPLATE_PATH):
 				if fn.startswith("."):
@@ -149,10 +156,12 @@ class Pybble(object):
 			else:
 				print "%s found." % v
 
+			db.session.flush()
+
 			try:
-			    t = TemplateMatch.q.get_by(obj=s, discriminator=s.discriminator, type=TM_DETAIL_PAGE)
+			    t = TemplateMatch.q.get_by(obj=s, discr=s.discriminator, type=TM_DETAIL_PAGE)
 			except NoResult:
-				t = TemplateMatch(obj=s, discriminator=s.discriminator, detail=TM_DETAIL_PAGE, \
+				t = TemplateMatch(obj=s, discr=s.discriminator, detail=TM_DETAIL_PAGE, \
 					data = open("pybble/main.html").read())
 				db.session.add(t)
 

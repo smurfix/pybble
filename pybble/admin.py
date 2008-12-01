@@ -74,11 +74,11 @@ def edit_named_template(request, template):
 
 		if not error:
 			if template.name != form.name.data:
-				flash("Du hast eine neue Template '%s' angelegt." % (form.name.data,))
+				flash(u"Du hast eine neue Template '%s' angelegt." % (form.name.data,))
 			template.name = form.name.data
 			template.data = form.page.data
 			template.modified = datetime.utcnow()
-			flash("Template '%s' gespeichert." % (form.name.data,), True)
+			flash(u"Template '%s' gespeichert." % (form.name.data,), True)
 			return redirect(url_for("pybble.admin.show_templates"))
 
 	
@@ -123,38 +123,38 @@ def edit_assoc_template(request, match, template, obj):
 		obj = obj_get(form.oid.data)
 
 		if match and form.clone.data == "No":
-			match.discriminator = int(form.discr.data)
-			match.type = int(form.detail.data)
+			match.discr = int(form.discr.data)
+			match.detail = int(form.detail.data)
 			match.inherit = inherit
 			match.template = template
 			match.obj = obj
 		else:
 			try:
-				match = TemplateMatch.q.get_by(discriminator = int(form.discr.data), type=int(form.detail.data), obj=obj, inherit=inherit)
+				match = TemplateMatch.q.get_by(discr = int(form.discr.data), detail=int(form.detail.data), obj=obj, inherit=inherit)
 			except NoResult:
 				match = TemplateMatch(obj,int(form.discr.data),int(form.detail.data),template)
 				match.inherit = inherit
 				db.session.add(match)
 			else:
-				match.discriminator = int(form.discr.data)
-				match.type = int(form.detail.data)
+				match.discr = int(form.discr.data)
+				match.detail = int(form.detail.data)
 				match.inherit = inherit
 				match.template = template
 
-		flash("Gespeichert.",True)
+		flash(u"Gespeichert.",True)
 
 		if match.inherit is None:
 			m = TemplateMatch.q.filter(TemplateMatch.inherit != None)
 		else:
 			m = TemplateMatch.q.filter(TemplateMatch.inherit == None)
-		m = m.filter_by(discriminator=match.discriminator, type=match.type, obj=obj)
+		m = m.filter_by(discr=match.discr, detail=match.detail, obj=obj)
 		if match.inherit is None:
 			if length(m):
-				flash("Vorherige Assoziation(en) entfernt.")
+				flash(u"Vorherige Assoziation(en) entfernt.")
 			m.delete()
 		else:
 			m.inherit = not match.inherit
-			flash("Bestehende Assoziation eingeschränkt.")
+			flash(u"Bestehende Assoziation eingeschränkt.")
 
 		return redirect(url_for("pybble.admin.edit_template", template=obj.oid()))
 
@@ -164,8 +164,8 @@ def edit_assoc_template(request, match, template, obj):
 		if obj:
 			form.oid.data = obj.oid()
 		if match:
-			form.discr.data = str(match.discriminator)
-			form.detail.data = str(match.type)
+			form.discr.data = str(match.discr)
+			form.detail.data = str(match.detail)
 			form.inherit.data = "*" if match.inherit is None else "Yes" if match.inherit else "No"
 	return render_template('itemplate.html', obj=obj, templ=template, form=form, error=error, title_trace=[template.name])
 
@@ -208,7 +208,7 @@ def edit_single_permission(request, perm):
 
 		if form.clone.data == "Yes":
 			perm = Permission(user, obj, discr, right, inherit)
-			db.session.add(template)
+			db.session.add(perm)
 		else:
 			perm.owner = user
 			perm.parent = obj
@@ -216,21 +216,21 @@ def edit_single_permission(request, perm):
 			perm.right = right
 			perm.inherit = inherit
 
-		flash("Gespeichert.",True)
+		flash(u"Gespeichert.",True)
 
 		if perm.inherit is None:
 			m = Permission.q.filter(TemplateMatch.inherit != None)
 		else:
 			m = Permission.q.filter(TemplateMatch.inherit == None)
-		m = m.filter_by(discriminator=discr, parent=obj, owner=user)
+		m = m.filter_by(discr=discr, parent=obj, owner=user)
 		if perm.inherit is None:
 			if m.count():
-				flash("Vorherige Berechtigung(en) entfernt.")
+				flash(u"Vorherige Berechtigung(en) entfernt.")
 			# m.delete()
 			m.parent=None ## TODO: recycle
 		else:
 			m.inherit = not perm.inherit
-			flash("Bestehende Berechtigung eingeschränkt.")
+			flash(u"Bestehende Berechtigung eingeschränkt.")
 
 		return redirect(url_for("pybble.admin.edit_permission", permission=obj.oid()))
 
@@ -238,7 +238,7 @@ def edit_single_permission(request, perm):
 	elif request.method == 'GET':
 		form.object.data = perm.parent.oid()
 		form.user.data = perm.owner.oid()
-		form.discr.data = str(perm.discriminator)
+		form.discr.data = str(perm.discr)
 		form.inherit.data = "*" if perm.inherit is None else "Yes" if perm.inherit else "No"
 		form.right.data = str(perm.right)
 		form.clone.data = "Yes"

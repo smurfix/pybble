@@ -28,7 +28,7 @@ def do_login(request):
 
 	user = getattr(request,"user",None)
 	if user and not user.anon:
-		flash("Du bist bereits eingeloggt!")
+		flash(u"Du bist bereits eingeloggt!")
 		return redirect((request.form or request.args or {}).get("next",None) or url_for("pybble.views.mainpage"))
 
 	if request.method == 'POST' and form.validate():
@@ -56,7 +56,7 @@ def do_login(request):
 			else:
 				return redirect(url_for("pybble.views.mainpage"))
 		else:
-			flash("Benutzer oder Passwort waren falsch.",False)
+			flash(u"Benutzer oder Passwort waren falsch.",False)
 	return render_template('login.html', form=form, error=error, title_trace=["Login"])
 
 ###

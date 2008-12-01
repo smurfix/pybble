@@ -46,7 +46,7 @@ class GQuery(Query):
 		"""Make sure that there's exactly one result."""
 		try:
 			return self.filter_by(*a,**k).one()
-		except NoResult:
+		except (NoResult,NonUniqueResult):
 			print >>sys.stderr,"Inputs: %s %s" % (repr(a),repr(k))
 			raise
 		

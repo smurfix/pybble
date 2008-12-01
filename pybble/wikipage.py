@@ -56,7 +56,7 @@ def editor(request, obj=None, name=None):
 			elif obj.data != form.page.data:
 				obj.data = form.page.data
 				obj.modified = datetime.utcnow()
-			flash("Wiki-Seite '%s' gespeichert." % (obj.name), True)
+			flash(u"Wiki-Seite '%s' gespeichert." % (obj.name), True)
 			return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
 
 	

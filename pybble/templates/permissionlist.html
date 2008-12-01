@@ -6,7 +6,9 @@
 	</thead><tbody>
   {%- for o in obj.uptree() %}
     {% for p in o.permissions %}
-    	<tr><td>{{ o }}</td><td>{{ p.owner }}</td><td>{{ name_discr(p.discriminator) }}</td>
+    	<tr><td>{{ o }}</td>
+			<td>{{ p.owner }}</td>
+			<td>{{ name_discr(p.discr) }}</td>
 			<td>{{ name_permission(p.right) }}</td>
 			<td>{% if p.inherit is none %}*{%elif p.inherit%}Y{%else%}N{%endif%}</td>
 			<td><a href="{{ url_for('pybble.admin.edit_permission',permission=p.oid()) }}">E</a></td></tr>

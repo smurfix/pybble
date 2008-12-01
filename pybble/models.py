@@ -51,9 +51,20 @@ class Discriminator(db.Base,DbRepr):
 	name = Column(String(30), nullable=False, unique=True)
 
 	def __init__(self, cls):
-		self.id = cls.discr()
+		self.id = cls.__mapper__.polymorphic_identity
 		self.name = cls.__name__
-
+	
+	@staticmethod
+	def get(discr, obj=None):
+		if isinstance(discr, Discriminator):
+			return discr
+		elif isinstance(discr, basestring):
+			return Discriminator.q.get_by(name=discr)
+		elif discr is None:
+			return Discriminator.q.get_by(id=obj.discriminator)
+		else:
+			assert isinstance(discr, int)
+			return Discriminator.q.get_by(id=discr)
 
 class Object(db.Base,DbRepr):
 	"""The base type of all pointed-to objects"""
@@ -113,11 +124,6 @@ class Object(db.Base,DbRepr):
 		return "%s.%d.%d.%s" % (self.classname, self.discriminator, self.id, 
 		                        md5(self.__class__.__name__ + str(self.id) + settings.SECRET_KEY)\
 		                            .digest().encode('base64').strip('\n =')[:10].replace("+","/-").replace("/","_"))
-
-	@classmethod
-	def discr(cls):
-		"""Given a class, return the objects' discriminator."""
-		return cls.__mapper__.polymorphic_identity
 
 	def get_template(self, detail=TM_DETAIL_PAGE):
 		"""Return this object's template at a given detail level"""
@@ -374,15 +380,12 @@ class Permission(Object):
 
 	right = Column(Integer(1), nullable=False)
 	inherit = Column(Boolean, nullable=True)
-	discriminator = Column(TinyInteger, ForeignKey('discriminator.id',name="obj_discr"), nullable=True)
+	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="obj_discr"), nullable=False)
 
 	def __init__(self, user, obj, discr, right, inherit=None):
 		self.owner = user
 		self.parent = obj
-		if isinstance(discr, basestring):
-			self.discriminator = Discriminator.q.get_by(name=base).id
-		else:
-			self.discriminator = discr
+		self.discr = Discriminator.get(discr,obj).id
 		self.right = right
 		self.inherit = inherit
 	
@@ -390,8 +393,7 @@ class Permission(Object):
 	def can_do(user,obj,discr=None):
 		"""Recursively get the permission of this user for that (type of) object."""
 		done = {}
-		if discr is None:
-			discr = obj.discriminator
+		discr = Discriminator.get(discr,obj).id
 
 		ul = [user]
 		ulq = [user]
@@ -412,7 +414,7 @@ class Permission(Object):
 
 			for u in ul:
 				try:
-					p = Permission.q.filter(or_(Permission.inherit != no_inh, Permission.inherit == None)).filter_by(owner=u,parent=obj).one()
+					p = Permission.q.filter(or_(Permission.inherit != no_inh, Permission.inherit == None)).filter_by(owner=u,parent=obj,discr=discr).one()
 				except NoResult:
 					pass
 				else:
@@ -425,9 +427,8 @@ class Permission(Object):
 
 	@staticmethod
 	def permit(user,obj, right, discr=None, inherit=None):
-		if discr is None:
-			discr = obj.discriminator
-		p = Permission.q.filter_by(owner=u,parent=obj,discriminator=discr).all()
+		discr = Discriminator.get(discr,obj).id
+		p = Permission.q.filter_by(owner=u,parent=obj,discr=discr).all()
 		
 		if len(p) > 0:
 			if inherit is None:
@@ -452,9 +453,8 @@ class Permission(Object):
 
 	@staticmethod
 	def drop(user,obj, discr=None, inherit=None):
-		if discr is None:
-			discr = obj.discriminator
-		p = Permission.q.filter_by(owner=u,parent=obj,discriminator=discr).all()
+		discr = Discriminator.get(discr,obj).id
+		p = Permission.q.filter_by(owner=u,parent=obj,discr=discr).all()
 		
 		if len(p) > 0:
 			if inherit is None:
@@ -529,18 +529,18 @@ class TemplateMatch(db.Base,DbRepr):
 	id = Column(Integer(20), primary_key=True)
 	obj_id = Column('obj_id', Integer, ForeignKey('obj.id',name="obj_templates_obj"), nullable=False)
 	template_id = Column('template_id', Integer, ForeignKey('templates.id',name="obj_templates_template"), nullable=False)
-	discriminator = Column(TinyInteger, ForeignKey('discriminator.id',name="templatematch_discr"))
+	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="templatematch_discr"), nullable=False)
 	type = Column(TinyInteger(1), nullable=False)
 	inherit = Column(Boolean, nullable=True)
 
-	def __init__(self, obj,discriminator,detail, data):
+	def __init__(self, obj,discr,detail, data):
 		if isinstance(data,Template):
 			t = data
 		else:
 			t = Template(None,data)
 		self.obj = obj
 		self.template = t
-		self.discriminator = discriminator
+		self.discr = Discriminator.get(discr,obj).id
 		self.type = detail
 
 TemplateMatch.obj = relation(Object, remote_side=Object.id, primaryjoin=(TemplateMatch.obj_id==Object.id))

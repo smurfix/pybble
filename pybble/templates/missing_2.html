@@ -12,7 +12,7 @@
 	    <a href="{{ url_for("pybble.views.view_oid",oid=o.oid()) }}">
 			{{ subpage(o,3) }} / {{ name_permission(o.right) }}
 		</a>
-		for {{ name_discr(o.discriminator) }} / {% if o.inherit is none %}*{%elif o.inherit%}Y{%else%}N{%endif%}
+		for {{ name_discr(o.discr) }} / {% if o.inherit is none %}*{%elif o.inherit%}Y{%else%}N{%endif%}
 	</li>
 {% endfor %}
 {% for o in obj.templates %}
