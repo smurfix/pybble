@@ -3,8 +3,10 @@
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from pybble.utils import render_template, expose, \
-     url_for, send_mail, current_request, make_permanent
-from pybble.models import WikiPage
+     url_for, send_mail, current_request, make_permanent, \
+	 render_my_template
+from pybble.models import WikiPage, TM_DETAIL_PAGE
+from pybble.views import view_oid
 
 from pybble.database import db,NoResult
 from pybble.flashing import flash
@@ -63,4 +65,10 @@ def editor(request, obj=None, name=None):
 		form.page.data = obj.data if obj else ""
 	return render_template('wikiedit.html', obj=obj, form=form, error=error, name=form.name.data, title_trace=[form.name.data])
 
+
+@expose("/wiki/<name>")
+def viewer(request, name):
+	obj = WikiPage.q.get_by(name=name)
+	return render_my_template(request, obj=obj, detail=TM_DETAIL_PAGE, \
+		title_trace=[obj.name])
 

@@ -18,16 +18,15 @@ try:
 except ImportError:
 	from md5 import md5
 
+
 # Template detail levels
-TM_DETAIL_PAGE=1
-TM_DETAIL_LIST=2
-TM_DETAIL_STRING=3
+TM_DETAIL = {1:"Page", 2:"List", 3:"String"}
+for _x,_y in TM_DETAIL.items():
+	globals()["TM_DETAIL_"+_y.upper()] = _x
 
 def TM_DETAIL_name(id):
-	if int(id) == TM_DETAIL_PAGE: return "Page view"
-	if int(id) == TM_DETAIL_LIST: return "Object list"
-	if int(id) == TM_DETAIL_STRING: return "One-line info"
-	raise ValueError("%s is not a valid TM_DETAIL constant" % (id,))
+	return TM_DETAIL[int(id)]
+
 
 class DbRepr(object):
 	def __unicode__(self):
@@ -74,6 +73,7 @@ class Object(db.Base,DbRepr):
 
 	#all_children = relation('Object', backref=backref("superparent", remote_side=Object.id)) 
 
+	@property
 	def has_children(self, discriminator=None):
 		if discriminator:
 			n = len(self.children.filter_by(discriminator=discriminator))
@@ -81,6 +81,7 @@ class Object(db.Base,DbRepr):
 			n = len(self.children)
 		return n
 
+	@property
 	def has_templates(self, discriminator=None):
 		if discriminator:
 			n = len(self.templates.filter_by(discriminator=discriminator))
@@ -88,11 +89,17 @@ class Object(db.Base,DbRepr):
 			n = len(self.templates)
 		return n
 
+	@property
 	def has_memberships(self):
-		return len(self.memberships)
+		return self.memberships.count()
 
+	@property
 	def has_permissions(self):
-		return len(self.permissions)
+		return self.permissions.count()
+
+	@property
+	def permissions(self):
+		return Permission.q.filter_by(parent_id=self.id)
 
 	@property
 	def classname(self):
@@ -115,20 +122,28 @@ class Object(db.Base,DbRepr):
 	def get_template(self, detail=TM_DETAIL_PAGE):
 		"""Return this object's template at a given detail level"""
 		discr = self.discriminator
-		no_inherit = True
 
-		while self:
-			try:
-				t = TemplateMatch.q.filter(TemplateMatch.inherit != no_inherit).\
-									get_by(obj=self, discriminator=discr, type=detail).template
-			except NoResult:
-				if not self.parent:
-					raise
-			else:
-				return t
+		def loop(self):
+			no_inherit = True
+			while self:
+				try:
+					t = TemplateMatch.q.filter(or_(TemplateMatch.inherit != no_inherit, TemplateMatch.inherit == None)).\
+										get_by(obj=self, discriminator=discr, type=detail).template
+				except NoResult:
+					if not self.parent:
+						raise
+				else:
+					return t
 
-			self = self.parent
-			no_inherit = False
+				self = self.parent
+				no_inherit = False
+
+		try:
+			return loop(self)
+		except NoResult:
+			discr = None
+			return loop(self)
+			
 
 	def uptree(self):
 		while self:
@@ -333,25 +348,19 @@ Member.group = relation(Object, remote_side=Object.id, primaryjoin=(Member.group
 
 Object.memberships = relation(Member, remote_side=Member.user_id, primaryjoin=(Member.user_id==Object.id)) 
 
-PERM_NONE=0   # Exclusion: cannot do anything with that thing
-PERM_LIST=1   # object will show up in listings
-PERM_READ=2   # object may be examined
-PERM_ADD=3    # can add child objects
-PERM_WRITE=4  # object may be modified
-PERM_ADMIN=9  # can do anything at all to the thing
+PERM = {0:"None", 1:"List", 2:"Read", 3:"Add", 4:"Write", 9:"Admin"}
+for _x,_y in PERM.items():
+	globals()["PERM_"+_y.upper()] = _x
 
 def PERM_name(id):
-	if int(id) == 0: return "No permission"
-	if int(id) == 1: return "List"
-	if int(id) == 2: return "Read"
-	if int(id) == 3: return "Add"
-	if int(id) == 4: return "Write"
-	if int(id) == 9: return "Admin"
-	raise ValueError("%s is not a valid PERM constant" % (id,))
+	return PERM[int(id)]
 
-class Permission(db.Base,DbRepr):
+class Permission(Object,DbRepr):
 	"""
 		Permission checks: This user can do that to objects of yonder type.
+		Owner: the enabled user/group
+		Parent: the object to be accessed
+		Superparent: site
 
 		Inherit=False: only this object
 		inherit=True : only to child objects
@@ -359,18 +368,17 @@ class Permission(db.Base,DbRepr):
 		"""
 	__tablename__ = "permissions"
 	__table_args__ = {'useexisting': True}
+	__mapper_args__ = {'polymorphic_identity': 10}
 	q = db.session.query_property(db.Query)
-	id = Column(Integer(20), primary_key=True)
+	id = Column(Integer, ForeignKey('obj.id',name="Group_id"), primary_key=True,autoincrement=False)
 
-	user_id = Column(Integer(20),ForeignKey(Object.id,name="permission_user"), nullable=False)        # acting user/group
-	obj_id = Column(Integer(20),ForeignKey(Object.id,name="permission_obj"), nullable=False)         # affected object
 	right = Column(Integer(1), nullable=False)
 	inherit = Column(Boolean, nullable=True)
 	discriminator = Column(TinyInteger, ForeignKey('discriminator.id',name="obj_discr"), nullable=True)
 
 	def __init__(self, user, obj, discr, right, inherit=None):
-		self.user = user
-		self.object = object
+		self.owner = user
+		self.parent = object
 		if isinstance(discr, basestring):
 			self.discriminator = Discriminator.q.get_by(name=base).id
 		else:
@@ -399,12 +407,12 @@ class Permission(db.Base,DbRepr):
 
 		while obj:
 			if obj.id in done:
-				raise ValueError("Object recursion on "+repr(obj))
+				raise ValueError("Parent recursion on "+repr(obj))
 			done[obj.id]=1
 
 			for u in ul:
 				try:
-					p = Permission.q.filter(Permission.inherit != no_inh).filter_by(user=u,object=obj).one()
+					p = Permission.q.filter(or_(Permission.inherit != no_inh, Permission.inherit == None)).filter_by(owner=u,parent=obj).one()
 				except NoResult:
 					pass
 				else:
@@ -419,7 +427,7 @@ class Permission(db.Base,DbRepr):
 	def permit(user,obj, right, discr=None, inherit=None):
 		if discr is None:
 			discr = obj.discriminator
-		p = Permission.q.filter_by(user=u,object=obj,discriminator=discr).all()
+		p = Permission.q.filter_by(owner=u,parent=obj,discriminator=discr).all()
 		
 		if len(p) > 0:
 			if inherit is None:
@@ -446,7 +454,7 @@ class Permission(db.Base,DbRepr):
 	def drop(user,obj, discr=None, inherit=None):
 		if discr is None:
 			discr = obj.discriminator
-		p = Permission.q.filter_by(user=u,object=obj,discriminator=discr).all()
+		p = Permission.q.filter_by(owner=u,parent=obj,discriminator=discr).all()
 		
 		if len(p) > 0:
 			if inherit is None:
@@ -459,11 +467,6 @@ class Permission(db.Base,DbRepr):
 				p = p[0]
 			p.delete()
 
-
-Permission.user = relation(Object, remote_side=Object.id, primaryjoin=(Permission.user_id==Object.id))
-Permission.object = relation(Object, remote_side=Object.id, primaryjoin=(Permission.obj_id==Object.id))
-
-Object.permissions = relation(Permission, remote_side=Permission.obj_id, primaryjoin=(Permission.obj_id==Object.id)) 
 
 class Site(Object):
 	"""A web domain. 'owner' is set to the domain's superuser."""

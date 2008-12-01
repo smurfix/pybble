@@ -27,7 +27,15 @@ def edit_oid(request, oid):
 
 @expose('/view/<oid>')
 def view_oid(request, oid):
-	return render_my_template(request, obj=obj_get(oid), detail=TM_DETAIL_PAGE)
+	obj = obj_get(oid)
+	try:
+		name = obj.name
+		v = import_string("pybble.%s.viewer" % (obj.classname.lower(),))
+	except Exception:
+		return render_my_template(request, obj=obj_get(oid), detail=TM_DETAIL_PAGE)
+	else:
+		return redirect(url_for('pybble.%s.viewer' % (obj.classname.lower(),), name=name))
+
 
 @expose('/snippet')
 @expose('/snippet/<oid>')

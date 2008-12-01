@@ -64,7 +64,14 @@ def expose(rule, **kw):
 	return decorate
 
 ## jinja extensions
-marker = Markdown(extensions = ['wikilinks'])
+marker = Markdown(
+    extensions = ['wikilinks'], 
+    extension_configs = {'wikilinks': [
+                                      ('base_url', '/wiki/'), 
+                                      ('end_url', ''), 
+                                      ('html_class', 'wiki') ]},
+    safe_mode = True,
+)
 jinja_env.filters['markdown'] = lambda a: Markup(marker.convert(a))
 
 def url_for(endpoint, _external=False, **values):
@@ -73,9 +80,9 @@ jinja_env.globals['url_for'] = url_for
 
 def name_discr(id):
 	from pybble.models import Discriminator
-	if id is None:
+	if id is None or id == "None":
 		return "*"
-	return Discriminator.q.get_by(id=id).name
+	return Discriminator.q.get_by(id=int(id)).name
 jinja_env.globals['name_discr'] = name_discr
 
 def name_detail(id):
