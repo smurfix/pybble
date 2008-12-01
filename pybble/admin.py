@@ -4,8 +4,8 @@ from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from pybble.utils import render_template, expose, \
      url_for, send_mail, current_request, make_permanent
-from pybble.models import Template, TemplateMatch, Discriminator, obj_get, \
-	TM_DETAIL, PERM
+from pybble.models import Template, TemplateMatch, Discriminator, \
+	Permission, obj_get, TM_DETAIL, PERM
 
 from pybble.database import db,NoResult
 from pybble.flashing import flash
@@ -90,7 +90,10 @@ def edit_named_template(request, template):
 
 tmc = TM_DETAIL.items()
 tmc.sort()
-dsc = list(Discriminator.q.all())
+try:
+	dsc = list(Discriminator.q.all())
+except Exception:
+	dsc = [] # if not set up yet
 dsc.sort(cmp=lambda a,b: cmp(a.name,b.name))
 
 class TemplateForm(Form):
@@ -167,82 +170,79 @@ def edit_assoc_template(request, match, template, obj):
 	return render_template('itemplate.html', obj=obj, templ=template, form=form, error=error, title_trace=[template.name])
 
 
-#plc = PERM.items()
-#plc.sort()
-#
-#
-#class PermissionForm(Form):
-#	user = TextField('User', [valid_obj])
-#	object = TextField('Object', [valid_obj])
-#
-#	discr = SelectField('Object type?', choices=[ (str(q.id),q.name) for q in Discriminator.q.all() ])
-#	inherit = SelectField('Applies to?', choices=(('Yes','All sub-pages'), ('No','this page only'),('*','This page and all sub-pages')))
-#	right = SelectField('Access to:', choices=((str(x),y) for x,y in plc))
-#	clone = SelectField('Copy?', choices=(('Yes','Store new permission'),('No','Modify existing permission')))
-#
-#def edit_permision(request, match, template, obj):
-#	form = TemplateForm(request.form, prefix="template")
-#	error = ""
-#	if request.method == 'POST' and form.validate():
-#		if form.clone.data == "Yes":
-#			template = Template(None, form.page.data)
-#			db.session.add(template)
-#		elif template.data != form.page.data:
-#			template.data = form.page.data
-#			template.modified = datetime.utcnow()
-#
-#		if form.inherit.data == "Yes": inherit = True
-#		elif form.inherit.data == "No": inherit = False
-#		elif form.inherit.data == "*": inherit = None
-#		else: assert False
-#
-#		obj = obj_get(form.oid.data)
-#
-#		if match and form.clone.data == "No":
-#			match.discriminator = int(form.discr.data)
-#			match.type = int(form.detail.data)
-#			match.inherit = inherit
-#			match.template = template
-#			match.obj = obj
-#		else:
-#			try:
-#				match = TemplateMatch.q.get_by(discriminator = int(form.discr.data), type=int(form.detail.data), obj=obj, inherit=inherit)
-#			except NoResult:
-#				match = TemplateMatch(obj,int(form.discr.data),int(form.detail.data),template)
-#				match.inherit = inherit
-#				db.session.add(match)
-#			else:
-#				match.discriminator = int(form.discr.data)
-#				match.type = int(form.detail.data)
-#				match.inherit = inherit
-#				match.template = template
-#
-#		flash("Gespeichert.",True)
-#
-#		if match.inherit is None:
-#			m = TemplateMatch.q.filter(TemplateMatch.inherit != None)
-#		else:
-#			m = TemplateMatch.q.filter(TemplateMatch.inherit == None)
-#		m = m.filter_by(discriminator=match.discriminator, type=match.type, obj=obj)
-#		if match.inherit is None:
-#			if m.count():
-#				flash("Vorherige Assoziation(en) entfernt.")
-#			m.delete()
-#		else:
-#			m.inherit = not match.inherit
-#			flash("Bestehende Assoziation eingeschränkt.")
-#
-#		return redirect(url_for("pybble.admin.edit_template", template=obj.oid()))
-#
-#	
-#	elif request.method == 'GET':
-#		form.page.data = template.data
-#		if obj:
-#			form.oid.data = obj.oid()
-#		if match:
-#			form.discr.data = str(match.discriminator)
-#			form.detail.data = str(match.type)
-#			form.inherit.data = "*" if match.inherit is None else "Yes" if match.inherit else "No"
-#	return render_template('itemplate.html', obj=obj, templ=template, form=form, error=error, title_trace=[template.name])
-#
-#
+@expose("/admin/perm/<permission>")
+def edit_permission(request, permission=None):
+	p = obj_get(permission)
+	if isinstance(p,Permission):
+		return edit_single_permission(request,p)
+	else:
+		# show list of templates for that object
+		return render_template('permissionlist.html', obj=p, title_trace=["Permissions"])
+
+plc = PERM.items()
+plc.sort()
+
+class PermissionForm(Form):
+	user = TextField('User', [valid_obj])
+	object = TextField('Object', [valid_obj])
+
+	discr = SelectField('Object type?', choices=tuple((str(q.id),q.name) for q in dsc))
+	inherit = SelectField('Applies to?', choices=(('Yes','All sub-pages'), ('No','this page only'),('*','This page and all sub-pages')))
+	right = SelectField('Access to:', choices=tuple((str(x),y) for x,y in plc))
+	clone = SelectField('Copy?', choices=(('Yes','Store new permission'),('No','Modify existing permission')))
+
+
+def edit_single_permission(request, perm):
+	form = PermissionForm(request.form, prefix="perm")
+	error = ""
+	if request.method == 'POST' and form.validate():
+		user = obj_get(form.user.data)
+		obj = obj_get(form.object.data)
+		discr = int(form.discr.data)
+		right = int(form.right.data)
+
+		if form.inherit.data == "Yes": inherit = True
+		elif form.inherit.data == "No": inherit = False
+		elif form.inherit.data == "*": inherit = None
+		else: assert False
+
+		if form.clone.data == "Yes":
+			perm = Permission(user, obj, discr, right, inherit)
+			db.session.add(template)
+		else:
+			perm.owner = user
+			perm.parent = obj
+			perm.discr = discr
+			perm.right = right
+			perm.inherit = inherit
+
+		flash("Gespeichert.",True)
+
+		if perm.inherit is None:
+			m = Permission.q.filter(TemplateMatch.inherit != None)
+		else:
+			m = Permission.q.filter(TemplateMatch.inherit == None)
+		m = m.filter_by(discriminator=discr, parent=obj, owner=user)
+		if perm.inherit is None:
+			if m.count():
+				flash("Vorherige Berechtigung(en) entfernt.")
+			# m.delete()
+			m.parent=None ## TODO: recycle
+		else:
+			m.inherit = not perm.inherit
+			flash("Bestehende Berechtigung eingeschränkt.")
+
+		return redirect(url_for("pybble.admin.edit_permission", permission=obj.oid()))
+
+	
+	elif request.method == 'GET':
+		form.object.data = perm.parent.oid()
+		form.user.data = perm.owner.oid()
+		form.discr.data = str(perm.discriminator)
+		form.inherit.data = "*" if perm.inherit is None else "Yes" if perm.inherit else "No"
+		form.right.data = str(perm.right)
+		form.clone.data = "Yes"
+
+	return render_template('iperm.html', obj=perm.parent, user=perm.owner, form=form, error=error, title_trace=["Edit permission"])
+
+

@@ -1,0 +1,19 @@
+{% extends 'layout.html' %}
+{% block body %}
+  <h2>List of permissions</h2>
+  <table><thead>
+    <tr><td>Object</td><td>User</td><td>type</td><td>Right</td><td>Subpages?</td><td>Edit?</td></tr>
+	</thead><tbody>
+  {%- for o in obj.uptree() %}
+    {% for p in o.permissions %}
+    	<tr><td>{{ o }}</td><td>{{ p.owner }}</td><td>{{ name_discr(p.discriminator) }}</td>
+			<td>{{ name_permission(p.right) }}</td>
+			<td>{% if p.inherit is none %}*{%elif p.inherit%}Y{%else%}N{%endif%}</td>
+			<td><a href="{{ url_for('pybble.admin.edit_permission',permission=p.oid()) }}">E</a></td></tr>
+	{% else %}
+    	<tr><td>{{ o }}</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
+	{% endfor -%}
+  {% endfor -%}
+    </tbody></table>
+  </ul>
+{% endblock %}

@@ -31,14 +31,14 @@ def TM_DETAIL_name(id):
 class DbRepr(object):
 	def __unicode__(self):
 		if getattr(self,"name",None):
-			return u'‹%s %d:%s›' % (self.__class__.__name__, self.id, self.name)
+			return u'‹%s %s:%s›' % (self.__class__.__name__, self.id, self.name)
 		else:
-			return u'‹%s %d›' % (self.__class__.__name__, self.id)
+			return u'‹%s %s›' % (self.__class__.__name__, self.id)
 	def __str__(self):
 		if getattr(self,"name",None):
-			return '<%s %d:%s>' % (self.__class__.__name__, self.id, self.name)
+			return '<%s %s:%s>' % (self.__class__.__name__, self.id, self.name)
 		else:
-			return '<%s %d>' % (self.__class__.__name__, self.id)
+			return '<%s %s>' % (self.__class__.__name__, self.id)
 	__repr__ = __str__
 
 
@@ -284,11 +284,11 @@ class User(Object):
 			return u'‹%s %d (anon?)›' % (self.__class__.__name__, self.id)
 	def __str__(self):
 		if getattr(self,"name",None):
-			return '<%s %d:%s>' % (self.__class__.__name__, self.id, self.name)
+			return '<%s %s:%s>' % (self.__class__.__name__, self.id, self.name)
 		elif getattr(self,"superparent",None):
-			return '<%s %d (anon @ %s)>' % (self.__class__.__name__, self.id, str(self.superparent))
+			return '<%s %s (anon @ %s)>' % (self.__class__.__name__, self.id, str(self.superparent))
 		else:
-			return '<%s %d (anon?)>' % (self.__class__.__name__, self.id)
+			return '<%s %s (anon?)>' % (self.__class__.__name__, self.id)
 	__repr__ = __str__
 
 	def __unicode__(self):
@@ -355,7 +355,7 @@ for _x,_y in PERM.items():
 def PERM_name(id):
 	return PERM[int(id)]
 
-class Permission(Object,DbRepr):
+class Permission(Object):
 	"""
 		Permission checks: This user can do that to objects of yonder type.
 		Owner: the enabled user/group
@@ -378,7 +378,7 @@ class Permission(Object,DbRepr):
 
 	def __init__(self, user, obj, discr, right, inherit=None):
 		self.owner = user
-		self.parent = object
+		self.parent = obj
 		if isinstance(discr, basestring):
 			self.discriminator = Discriminator.q.get_by(name=base).id
 		else:

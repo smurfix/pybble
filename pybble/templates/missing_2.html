@@ -6,6 +6,15 @@
 
 {% if obj.has_children or obj.has_templates or obj.has_permissions %}
 <ul style="display: none;">
+{% for o in obj.permissions %}
+	<li rel="{{o.oid()}}" class="file collapsed t_{{o.classname}}">
+		<span class="image" />
+	    <a href="{{ url_for("pybble.views.view_oid",oid=o.oid()) }}">
+			{{ subpage(o,3) }} / {{ name_permission(o.right) }}
+		</a>
+		for {{ name_discr(o.discriminator) }} / {% if o.inherit is none %}*{%elif o.inherit%}Y{%else%}N{%endif%}
+	</li>
+{% endfor %}
 {% for o in obj.templates %}
 	<li rel="{{o.template.oid()}}" class="file t_TemplateMatch">
 		<span class="image" />
@@ -20,15 +29,6 @@
 	    <a href="{{ url_for("pybble.views.view_oid",oid=o.oid()) }}">
 			{{ subpage(o,3) }}
 		</a>
-	</li>
-{% endfor %}
-{% for o in obj.permissions %}
-	<li rel="{{o.user.oid()}}" class="{% if o.has_children or o.has_templates or o.has_permissions %}directory{% else %}file{% endif %} collapsed t_{{o.classname}}">
-		<span class="image" />
-	    <a href="{{ url_for("pybble.views.view_oid",oid=o.oid()) }}">
-			{{ subpage(o.user,3) }} / {{ name_permission(o.right) }}
-		</a>
-		for {{ name_discr(o.discr) }} / {% if o.inherit is none %}*{%elif o.inherit%}Y{%else%}N{%endif%}
 	</li>
 {% endfor %}
 </ul>

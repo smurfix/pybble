@@ -100,6 +100,20 @@ class Pybble(object):
 			else:
 				print u"%s found." % a
 
+			try:
+				p=Permission.q.get_by(owner=u,parent=s)
+			except NoResult:
+				p=Permission(u, s, None, PERM_ADMIN)
+				p.superparent=s
+				db.session.add(p)
+
+			try:
+				ap=Permission.q.get_by(owner=a,parent=s)
+			except NoResult:
+				ap=Permission(a, s, None, PERM_READ)
+				p.superparent=s
+				db.session.add(ap)
+
 			for fn in os.listdir(TEMPLATE_PATH):
 				if fn.startswith("."):
 					continue
