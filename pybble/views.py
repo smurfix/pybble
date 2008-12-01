@@ -1,6 +1,6 @@
 # -*. utf-8 -*-
 
-from werkzeug import redirect
+from werkzeug import redirect, import_string
 from werkzeug.exceptions import NotFound
 from pybble.utils import Pagination, render_template, expose, \
      validate_url, url_for, render_my_template
@@ -19,6 +19,11 @@ def view_tree(request, oid=None):
 	else:
 		obj = obj_get(oid)
 	return render_template('tree.html', obj=obj)
+
+@expose('/edit/<oid>')
+def edit_oid(request, oid):
+	obj=obj_get(oid)
+	return import_string("pybble.%s.editor" % (obj.classname.lower(),))(request, obj)
 
 @expose('/view/<oid>')
 def view_oid(request, oid):
