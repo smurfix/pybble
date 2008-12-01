@@ -138,7 +138,7 @@ class Pybble(object):
 			try:
 			    t = TemplateMatch.q.get_by(obj=s, discriminator=s.discriminator, type=TM_DETAIL_PAGE)
 			except NoResult:
-				t = TemplateMatch(obj=s, discriminator=s.discriminator, type=TM_DETAIL_PAGE, \
+				t = TemplateMatch(obj=s, discriminator=s.discriminator, detail=TM_DETAIL_PAGE, \
 					data = open("pybble/main.html").read())
 				db.session.add(t)
 
