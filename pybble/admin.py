@@ -2,10 +2,10 @@
 
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
-from pybble.utils import render_template, expose, \
-     url_for, send_mail, current_request, make_permanent
+from pybble.utils import send_mail, current_request, make_permanent
+from pybble.render import url_for, expose, render_template
 from pybble.models import Template, TemplateMatch, Discriminator, \
-	Permission, obj_get, TM_DETAIL, PERM
+	Permission, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE
 
 from pybble.database import db,NoResult
 from pybble.flashing import flash
@@ -29,13 +29,10 @@ def valid_obj(form, field):
 
 @expose("/admin/template")
 def show_templates(request):
+	"""List all named templates, allow editing"""
 	t = Template.q.filter(and_(Template.superparent == request.site, Template.name != None)).order_by(Template.name)
 	return render_template('templates.html', templates=t, title_trace=["Templates"])
 	
-@expose("/admin/template/for/<oid>")
-def edit_template_for(request, oid=None):
-	obj = obj_get(oid)
-
 @expose("/admin/template/<template>")
 def edit_template(request, template=None):
 	t = obj_get(template)
@@ -51,11 +48,14 @@ def edit_template(request, template=None):
 		return edit_named_template(request,t)
 	
 @expose("/admin/template/<template>/<id>")
-def edit_template_at(request, template, id):
+@expose("/admin/template/<template>/<id>/<obj>")
+def edit_template_at(request, template, id, obj=None):
 	t = obj_get(template)
 	tm = TemplateMatch.q.get_by(id=id)
 	assert tm.template == t
-	return edit_assoc_template(request,tm,t,tm.obj)
+	if obj is None: obj = tm.obj
+	else: obj = obj_get(obj)
+	return edit_assoc_template(request,tm,t,obj)
 
 class NamedTemplateForm(Form):
 	name = TextField('Name', [validators.length(min=3, max=30)])
@@ -149,7 +149,7 @@ def edit_assoc_template(request, match, template, obj):
 			m = TemplateMatch.q.filter(TemplateMatch.inherit == None)
 		m = m.filter_by(discr=match.discr, detail=match.detail, obj=obj)
 		if match.inherit is None:
-			if length(m):
+			if m.count():
 				flash(u"Vorherige Assoziation(en) entfernt.")
 			m.delete()
 		else:
@@ -163,10 +163,15 @@ def edit_assoc_template(request, match, template, obj):
 		form.page.data = template.data
 		if obj:
 			form.oid.data = obj.oid()
+			form.discr.data = str(obj.discriminator)
+		form.detail.data = str(TM_DETAIL_PAGE)
 		if match:
 			form.discr.data = str(match.discr)
 			form.detail.data = str(match.detail)
 			form.inherit.data = "*" if match.inherit is None else "Yes" if match.inherit else "No"
+		else:
+			form.inherit.data = "*"
+
 	return render_template('itemplate.html', obj=obj, templ=template, form=form, error=error, title_trace=[template.name])
 
 

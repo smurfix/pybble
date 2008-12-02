@@ -26,10 +26,10 @@
 			<ul>
 				{% if USER.anon -%}
 				<li><a href="{{ url_for('pybble.login.register') }}">Anmelden</a></li>
-				<li><a href="{{ url_for('pybble.login.do_login') }}">Login</a></li>
+				<li><a href="{{ url_for('pybble.login.do_login', next=url()) }}">Login</a></li>
 				{%- else -%}
 				<li><a href="/">Hallo, <strong>{{ USER.name }}</strong>!</a></li>
-				<li><a href="{{ url_for('pybble.login.do_logout') }}">Logout</a></li>
+				<li><a href="{{ url_for('pybble.login.do_logout', next=url()) }}">Logout</a></li>
 				{%- endif %}
 			</ul>
 		</div>

@@ -6,9 +6,11 @@
 	</thead><tbody>
   {%- for o in obj.uptree() %}
     {% for t in o.templates %}
-    	<tr><td>{{ o }}</td><td>{{ name_detail(t.type) }} / {{ name_discr(t.discr) }}</td>
+    	<tr><td>{{ o }}</td><td>{{ name_detail(t.detail) }} / {{ name_discr(t.discr) }}</td>
 			<td>{% if t.inherit is none %}*{%elif t.inherit%}Y{%else%}N{%endif%}</td>
-			<td>{{ t.modified }}</td><td><a href="{{ url_for('pybble.admin.edit_template_at',id=t.id,template=t.template.oid()) }}">E</a></td></tr>
+			<td>{{ t.modified }}</td><td><a href="{{ url_for('pybble.admin.edit_template_at',id=t.id,template=t.template.oid()) }}">Edit</a>
+			{% if o != obj %}| <a href="{{ url_for('pybble.admin.edit_template_at',id=t.id,template=t.template.oid(),obj=obj.oid()) }}">New</a>{% endif -%}
+			</td></tr>
 	{% else %}
     	<tr><td>{{ o }}</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
 	{% endfor -%}

@@ -4,7 +4,7 @@ from datetime import datetime,timedelta
 from sqlalchemy import Table, Column, String, Unicode, Boolean, DateTime, Integer, ForeignKey, \
 	UniqueConstraint, Text
 from sqlalchemy.orm import relation,backref
-from pybble.utils import url_for, random_string, current_request
+from pybble.utils import random_string, current_request
 from pybble.database import db, NoResult
 from sqlalchemy.databases.mysql import MSTinyInteger as TinyInteger
 from sqlalchemy.databases.mysql import MSTimeStamp as TimeStamp
@@ -20,7 +20,7 @@ except ImportError:
 
 
 # Template detail levels
-TM_DETAIL = {1:"Page", 2:"List", 3:"String"}
+TM_DETAIL = {1:"Page", 2:"List", 3:"String", 4:"SubPage"}
 for _x,_y in TM_DETAIL.items():
 	globals()["TM_DETAIL_"+_y.upper()] = _x
 
@@ -134,7 +134,7 @@ class Object(db.Base,DbRepr):
 			while self:
 				try:
 					t = TemplateMatch.q.filter(or_(TemplateMatch.inherit != no_inherit, TemplateMatch.inherit == None)).\
-										get_by(obj=self, discr=discr, type=detail).template
+										get_by(obj=self, discr=discr, detail=detail).template
 				except NoResult:
 					if not self.parent:
 						raise
@@ -239,7 +239,7 @@ class User(Object):
 				db.session.add(Member(user=self,group=g))
 		else:
 			if not v:
-				m.delete()
+				db.session.delete(m)
 	verified = property(_get_verified,_set_verified)
 				
 	
@@ -429,6 +429,18 @@ class Permission(Object):
 				p = p[0]
 			p.delete()
 
+for a,b in PERM.iteritems():
+	def can_do_closure(a,b):
+		def can_do(self, obj, discr = None):
+			if a > PERM_NONE:
+				return Permission.can_do(self, obj, discr) >= a
+			else:
+				return Permission.can_do(self, obj, discr) <= a
+		can_do.__doc__ = "Check if this user/group/whatever can %s an object" % \
+			(b.lower() if a > PERM_NONE else "do nothing with",)
+		return can_do
+	setattr(Object,'can_'+b.lower(), can_do_closure(a,b))
+
 
 class Site(Object):
 	"""A web domain. 'owner' is set to the domain's superuser."""
@@ -492,7 +504,7 @@ class TemplateMatch(db.Base,DbRepr):
 	obj_id = Column('obj_id', Integer, ForeignKey('obj.id',name="obj_templates_obj"), nullable=False)
 	template_id = Column('template_id', Integer, ForeignKey('templates.id',name="obj_templates_template"), nullable=False)
 	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="templatematch_discr"), nullable=False)
-	type = Column(TinyInteger(1), nullable=False)
+	detail = Column(TinyInteger(1), nullable=False)
 	inherit = Column(Boolean, nullable=True)
 
 	def __init__(self, obj,discr,detail, data):
@@ -503,7 +515,7 @@ class TemplateMatch(db.Base,DbRepr):
 		self.obj = obj
 		self.template = t
 		self.discr = Discriminator.get(discr,obj).id
-		self.type = detail
+		self.detail = detail
 
 TemplateMatch.obj = relation(Object, remote_side=Object.id, primaryjoin=(TemplateMatch.obj_id==Object.id))
 TemplateMatch.template = relation(Template, remote_side=Template.id, foreign_keys=(TemplateMatch.template_id), primaryjoin=(TemplateMatch.template_id==Template.id))

@@ -2,14 +2,15 @@
 
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
-from pybble.utils import render_template, expose, \
-     url_for, send_mail, current_request, make_permanent
+from pybble.utils import send_mail, current_request, make_permanent
+from pybble.render import url_for, expose, render_template
 from pybble.models import User, Verifier, VerifierBase
 from pybble.database import db,NoResult
 from pybble.flashing import flash
 from pybble.session import logged_in
 from wtforms import Form, BooleanField, TextField, PasswordField, HiddenField, validators
 from wtforms.validators import ValidationError
+from jinja2 import Markup
 
 ###
 ### Login
@@ -52,11 +53,13 @@ def do_login(request):
 				return redirect(url_for("pybble.confirm.confirm"))
 
 			if form.next.data:
-				return redirect(next)
+				return redirect(form.next.data)
 			else:
 				return redirect(url_for("pybble.views.mainpage"))
 		else:
-			flash(u"Benutzer oder Passwort waren falsch.",False)
+			flash(u"Username oder Passwort sind falsch.",False)
+	elif request.method == 'GET':
+		form.next.data = request.args.get("next","")
 	return render_template('login.html', form=form, error=error, title_trace=["Login"])
 
 ###
@@ -101,8 +104,8 @@ def register(request):
 		db.session.add(v)
 		v.send()
 
-		flash(u"Wir haben soeben eine Email an dich geschickt. <br />" + \
-			u"Klicke auf den darin enhaltenen Link oder tippe den Bestätigungscode hier ein.")
+		flash(Markup(u"Wir haben soeben eine Email an dich geschickt. <br />" + \
+			u"Klicke auf den darin enhaltenen Link oder tippe den Bestätigungscode hier ein."))
 		return redirect(url_for("pybble.confirm.confirm"))
 
 	form.password.data = form.password2.data = ""
@@ -124,7 +127,8 @@ class verifier(object):
 		user=verifier.parent
 		send_mail(user.email, 'verify_email.txt',
 		          user=user, code=verifier.code,
-		          link=url_for("pybble.confirm.confirm", code=verifier.code), page=url_for("pybble.confirm.confirm"))
+		          link=url_for("pybble.confirm.confirm", code=verifier.code, _external=1),
+				  page=url_for("pybble.confirm.confirm", _external=1))
 	
 	@staticmethod
 	def entered(verifier):
@@ -146,5 +150,5 @@ def do_logout(request):
 		request.session.pop('uid', None)
 		request.user = User.q.get_anonymous_user(request.site)
 		flash(u'Du hast dich erfolgreich abgemeldet.', True)
-	return redirect(url_for("pybble.views.mainpage"))
+	return redirect(request.args.get("next",None) or url_for("pybble.views.mainpage"))
 

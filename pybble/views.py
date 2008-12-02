@@ -2,8 +2,8 @@
 
 from werkzeug import redirect, import_string
 from werkzeug.exceptions import NotFound
-from pybble.utils import Pagination, render_template, expose, \
-     validate_url, url_for, render_my_template
+from pybble.render import render_template, render_my_template, \
+	expose, url_for
 from pybble.models import TemplateMatch, TM_DETAIL_PAGE, TM_DETAIL_LIST, obj_get
 from pybble.database import db,NoResult
 

@@ -4,12 +4,14 @@ from __future__ import with_statement
 from werkzeug import Request, SharedDataMiddleware, ClosingIterator
 from werkzeug.exceptions import HTTPException, NotFound
 from pybble.utils import STATIC_PATH, local, local_manager, \
-	 url_map, TEMPLATE_PATH, expose_map
+	 TEMPLATE_PATH
+from pybble.render import expose_map, url_map
 from pybble.database import metadata, db, NoResult
 from sqlalchemy.sql import and_, or_, not_
 
 import pybble.models
 import pybble.admin
+import pybble.wikipage
 from pybble.session import add_session, add_user, add_site, save_session, \
 	add_response_headers
 
@@ -79,26 +81,29 @@ class Pybble(object):
 				u=User.q.get_one(and_(User.sites.contains(s), User.username==u"root"))
 			except NoResult:
 				u=User(u"root")
-				u.verified=True
 				u.email=settings.ADMIN
 				u.sites.append(s)
 				s.owner = u
 				db.session.add(u)
-				u.verified = True
 			else:
 				print u"%s found." % u
+
+			db.session.flush()
+			u.verified=True
 
 			try:
 				a=User.q.get_one(and_(User.sites.contains(s), User.username==u""))
 			except NoResult:
 				a=User(u"", password="")
-				a.verified=False
 				a.owner = u
 				a.superparent = s
 				a.sites.append(s)
 				db.session.add(a)
 			else:
 				print u"%s found." % a
+
+			db.session.flush()
+			a.verified=False
 
 			db.session.flush()
 
@@ -158,12 +163,18 @@ class Pybble(object):
 
 			db.session.flush()
 
+			data = open("pybble/main.html").read()
 			try:
-			    t = TemplateMatch.q.get_by(obj=s, discr=s.discriminator, type=TM_DETAIL_PAGE)
+			    t = TemplateMatch.q.get_by(obj=s, discr=s.discriminator, detail=TM_DETAIL_PAGE)
 			except NoResult:
-				t = TemplateMatch(obj=s, discr=s.discriminator, detail=TM_DETAIL_PAGE, \
-					data = open("pybble/main.html").read())
+				t = TemplateMatch(obj=s, discr=s.discriminator, detail=TM_DETAIL_PAGE, data = data)
 				db.session.add(t)
+			else:
+				if t.template.data != data:
+					print "Warning: AssocTemplate 'wiki.html' differs."
+					if replace_templates:
+						t.template.data = data
+						t.template.modified = datetime.utcnow()
 
 			try:
 				w = WikiPage.q.get_by(name="MainPage")
@@ -173,6 +184,8 @@ Hello
 =====
 
 Welcome to the first page of the rest of your life.
+
+There's also a [[SubPage]] somewhere.
 """)
 				w.owner=u
 				w.parent=s
@@ -191,6 +204,19 @@ You may continue on your own. ;-)
 				ww.owner=u
 				ww.parent=w
 				db.session.add(ww)
+
+			data = open("pybble/wiki.html").read()
+			try:
+			    t = TemplateMatch.q.get_by(obj=s, discr=w.discriminator, detail=TM_DETAIL_PAGE)
+			except NoResult:
+				t = TemplateMatch(obj=s, discr=w.discriminator, detail=TM_DETAIL_PAGE, data = data)
+				db.session.add(t)
+			else:
+				if t.template.data != data:
+					print "Warning: AssocTemplate 'wiki.html' differs."
+					if replace_templates:
+						t.template.data = data
+						t.template.modified = datetime.utcnow()
 
 			db.session.commit()
 			print "Your root user is named '%s' and has the password '%s'." % (u.username, u.password)
