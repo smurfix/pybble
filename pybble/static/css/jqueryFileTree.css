@@ -1,9 +1,9 @@
-UL.jqueryFileTree, DIV.body UL.jqueryFileTree {
+UL.jqueryFileTree, DIV.body UL.jqueryFileTree, DIV.body UL.jqueryFileTree UL {
 	font-family: Verdana, sans-serif;
 	font-size: 11px;
 	line-height: 17px; // images are 16px
-	padding: 0;
-	margin: 0;
+	padding: 0 0;
+	margin: 0 0;
 }
 
 UL.jqueryFileTree LI {
@@ -17,7 +17,7 @@ UL.jqueryFileTree LI {
 UL.jqueryFileTree A {
 	color: #333;
 	// text-decoration: none;
-	display: block;
+	// display: block;
 	padding: 0px 2px;
 }
 
