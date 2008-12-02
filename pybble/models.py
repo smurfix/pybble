@@ -134,7 +134,7 @@ class Object(db.Base,DbRepr):
 			while self:
 				try:
 					t = TemplateMatch.q.filter(or_(TemplateMatch.inherit != no_inherit, TemplateMatch.inherit == None)).\
-										get_by(obj=self, discriminator=discr, type=detail).template
+										get_by(obj=self, discr=discr, type=detail).template
 				except NoResult:
 					if not self.parent:
 						raise
@@ -271,13 +271,9 @@ class User(Object):
 		except NoResult:
 			if v:
 				db.session.add(Member(user=self,group=g))
-		if v:
-			try:
-				Member.q.get_by(user=self,group=g).delete()
-			except NoResult:
-				pass
 		else:
-			db.session.add(Member(user=self,group=g))
+			if not v:
+				m.delete()
 	verified = property(_get_verified,_set_verified)
 				
 	
