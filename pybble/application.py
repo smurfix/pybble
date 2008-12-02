@@ -2,7 +2,7 @@
 
 from __future__ import with_statement
 from werkzeug import Request, SharedDataMiddleware, ClosingIterator
-from werkzeug.exceptions import HTTPException, NotFound
+from werkzeug.exceptions import HTTPException, NotFound, Unauthorized
 from pybble.utils import STATIC_PATH, local, local_manager, \
 	 TEMPLATE_PATH
 from pybble.render import expose_map, url_map
@@ -255,8 +255,11 @@ You may continue on your own. ;-)
 			save_session(request,response)
 			db.session.commit()
 		except NotFound, e:
-			response = views.not_found(request)
+			response = views.not_found(request, request.url)
 			response.status_code = 404
+		except AuthError, e:
+			response = views.not_allowed(request, e.obj,e.perm)
+			response.status_code = 403
 		except HTTPException, e:
 			response = e
 		try:

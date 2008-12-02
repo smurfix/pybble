@@ -146,9 +146,10 @@ class verifier(object):
 def do_logout(request):
 	if request.user.anon:
 		flash(u'Du warst nicht eingeloggt', False)
+		return redirect(request.args.get("next",None) or url_for("pybble.views.mainpage"))
 	else:
 		request.session.pop('uid', None)
 		request.user = User.q.get_anonymous_user(request.site)
 		flash(u'Du hast dich erfolgreich abgemeldet.', True)
-	return redirect(request.args.get("next",None) or url_for("pybble.views.mainpage"))
+		return redirect(url_for("pybble.views.mainpage"))
 

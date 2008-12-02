@@ -87,5 +87,9 @@ def view_snippet(request, oid=None, detail=TM_DETAIL_PAGE):
 #        raise NotFound()
 #    return render_template('list.html', pagination=pagination, title_trace=[u"URL-Liste"])
 #
-def not_found(request):
+
+def not_found(request, url=None):
     return render_template('not_found.html', title_trace=[u"Seite nicht gefunden"])
+
+def not_allowed(request, obj, perm=None):
+    return render_template('not_allowed.html', title_trace=[u"Keine Berechtigung"])

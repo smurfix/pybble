@@ -4,7 +4,7 @@ from datetime import datetime,timedelta
 from sqlalchemy import Table, Column, String, Unicode, Boolean, DateTime, Integer, ForeignKey, \
 	UniqueConstraint, Text
 from sqlalchemy.orm import relation,backref
-from pybble.utils import random_string, current_request
+from pybble.utils import random_string, current_request, AuthError
 from pybble.database import db, NoResult
 from sqlalchemy.databases.mysql import MSTinyInteger as TinyInteger
 from sqlalchemy.databases.mysql import MSTimeStamp as TimeStamp
@@ -386,6 +386,11 @@ class Permission(Object):
 			obj = obj.parent
 
 		return PERM_NONE
+
+	@staticmethod
+	def will_do(user,obj,discr=None, perm=PERM_NONE):
+		if Permission.can_do(user,obj,discr) < perm:
+			raise AuthError(obj,perm)
 
 	@staticmethod
 	def permit(user,obj, right, discr=None, inherit=None):

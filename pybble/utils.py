@@ -5,6 +5,7 @@ from urlparse import urlparse
 from random import sample, randrange
 from jinja2 import Environment, BaseLoader, Markup
 from werkzeug import Local, LocalManager, cached_property
+from werkzeug.exceptions import Unauthorized
 from time import time
 import settings
 from markdown import Markdown
@@ -110,4 +111,10 @@ def test_session_cookie(request):
 	else:
 		retry_link = None
 	return retry_link
+
+class AuthError(Unauthorized):
+	def __init__(self,obj,perm):
+		super(AuthError,self).__init__()
+		self.obj = obj
+		self.perm = perm
 

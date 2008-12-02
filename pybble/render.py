@@ -78,7 +78,7 @@ jinja_env.globals['name_detail'] = name_detail
 
 def name_permission(id):
 	from pybble.models import PERM_name
-	return PERM_name(id)
+	return PERM_name(id).lower()
 jinja_env.globals['name_permission'] = name_permission
 
 
@@ -156,8 +156,19 @@ for a,b in PERM.iteritems():
 			else:
 				return Permission.can_do(current_request.user, obj) <= a
 		can_do.contextfunction = 1 # Jinja
-		return can_do
-	jinja_env.globals['can_' + b.lower()] = can_do_closure(a,b)
+
+		def will_do(env, obj=None):
+			if obj is None:
+				obj = env.vars['obj']
+			if a > PERM_NONE:
+				if Permission.can_do(current_request.user, obj) < a:
+					raise AuthError(obj,a)
+		will_do.contextfunction = 1 # Jinja
+
+		return can_do,will_do
+	c,d = can_do_closure(a,b)
+	jinja_env.globals['can_' + b.lower()] = c
+	jinja_env.globals['will_' + b.lower()] = d
 
 
 class Pagination(object):
