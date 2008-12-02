@@ -30,7 +30,7 @@ $(document).ready(function() {
 
   // add a hide message link to all flash messages
   $.each($('div.message'), function(i, elm) {
-    $(elm).prepend($('<a href="#" class="hide" />')
+    $(elm).prepend($('<a href="#nogo" class="hide" />')
       .click(function() {
 //        if ($(this).parent().hasClass('global')) {
 //          $.post('/?__service__=portal.hide_global_message', {});

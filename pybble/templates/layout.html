@@ -5,7 +5,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>{{ (title_trace|default([]) + [SITE.name])|join(' › ') }}</title>
-    {%- set styles = ['style.css'] + styles|default([]) -%}
+    {%- set styles = ['style.css','menu.css'] + styles|default([]) -%}
     {%- for style in styles %}
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', file='css/' + style) }}" />
     {%- endfor %}
@@ -16,18 +16,36 @@
 	{%- block add_header %}{% endblock -%}
 </head>
 <body>
+	<div id="menu">
+		<div class="menu left">
+			<ul>
+				<li><a href="/">Home</a></li>
+			</ul>
+		</div>
+		<div class="menu right">
+			<ul>
+				{% if USER.anon -%}
+				<li><a href="{{ url_for('pybble.login.register') }}">Anmelden</a></li>
+				<li><a href="{{ url_for('pybble.login.do_login') }}">Login</a></li>
+				{%- else -%}
+				<li><a href="/">Hallo {{ USER.name }}!</a></li>
+				<li><a href="{{ url_for('pybble.login.do_logout') }}">Logout</a></li>
+				{%- endif %}
+			</ul>
+		</div>
+	</div>
+
+  	<h1 id="top">{{ SITE.name }}</h1>
 	<div class="messages">
-	{%- for message in MESSAGES %}
+	  {%- for message in MESSAGES %}
 		<div class="message{% if message.success == true %} success{% elif message.success == false %} fail{% endif %}">
 			{{ message.text }}
 		</div>
-	{%- endfor %}
-	</div>
+	  {%- endfor %}
+    </div>
 
-  <h1><a href="{{ url_for('pybble.views.new') }}">Pybble</a></h1>
   <div class="body">{% block body %}<code>Your template didn't provide a 'body' block.</code>{% endblock %}</div>
   <div class="footer">
-    {% if not USER.anon %}<a href="{{ url_for('pybble.login.do_logout') }}">logout</a>{%else%} <a href="{{ url_for('pybble.login.do_login') }}">login</a>{% endif %} | 
     <a href="{{ url_for('pybble.views.new') }}">new</a> |
     <a href="{{ url_for('pybble.views.list') }}">list</a> |
     use pybble for good, not for evil
