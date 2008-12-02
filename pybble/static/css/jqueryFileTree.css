@@ -37,10 +37,10 @@ UL.jqueryFileTree SPAN.image {
 }
 
 /* Core Styles */
-UL.jqueryFileTree LI.collapsed > SPAN.image { background: url(/static/jFileTree/directory.png) left top no-repeat; }
-UL.jqueryFileTree LI.expanded > SPAN.image { background: url(/static/jFileTree/folder_open.png) left top no-repeat; }
-UL.jqueryFileTree LI.file SPAN.image { background: url(/static/jFileTree/file.png) left top no-repeat; }
-UL.jqueryFileTree LI.wait SPAN.image { background: url(/static/jFileTree/spinner.gif) left top no-repeat; }
+UL.jqueryFileTree LI.collapsed > SPAN.image { background: url(/static/img/directory.png) left top no-repeat; }
+UL.jqueryFileTree LI.expanded > SPAN.image { background: url(/static/img/folder_open.png) left top no-repeat; }
+UL.jqueryFileTree LI.file SPAN.image { background: url(/static/img/file.png) left top no-repeat; }
+UL.jqueryFileTree LI.wait SPAN.image { background: url(/static/img/spinner.gif) left top no-repeat; }
 
 /* File Extensions*/
 /*
