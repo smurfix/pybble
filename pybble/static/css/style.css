@@ -49,6 +49,10 @@ form {
 	display: block;
 }
 
+.error {
+	color: #A00;
+}
+
 div.message {
 	// width: 500px;
 	background-color: #FF8;

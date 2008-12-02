@@ -1,29 +1,13 @@
 {% extends 'layout.html' %}
+{% from 'form.html' import show, showb %}
+
 {% block body %}
   <h2>Login</h2>
     <form method="post" action="{{ action }}">
     <table>
-	  {% if form.username.errors %}
-	    {% for e in form.username.errors %}
-		  <tr><th>Error:</th><td>{{e}}</td></tr>
-	    {% endfor -%}
-	  {% endif -%}
-      <tr>
-        <th>{{ form.username.label|safe }}</th>
-        <td>{{ form.username|safe }}</td>
-      </tr>
-      <tr>
-	  {% if form.password.errors %}
-	    {% for e in form.password.errors %}
-		  <tr><th>Error:</th><td>{{e}}</td></tr>
-	    {% endfor -%}
-	  {% endif -%}
-        <th>{{ form.password.label|safe }}</th>
-        <td>{{ form.password|safe }}</td>
-      </tr>
-      <tr>
-        <td>&nbsp;</td>
-        <td>{{ form.remember|safe }} {{ form.remember.label|safe }}</td>
+	  {{ show(form.username) }}
+	  {{ show(form.password) }}
+	  {{ showb(form.remember) }}
 	  </tr>
     </table>
 	{{ form.next|safe }}
