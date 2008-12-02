@@ -46,7 +46,7 @@ class Pybble(object):
 			# ... or in fact the first one
 
 			from pybble.models import Site,User,Object,Discriminator,Template,TemplateMatch,VerifierBase,WikiPage
-			from pybble.models import Group,Member,Permission
+			from pybble.models import Group,Permission
 			from pybble.models import TM_DETAIL_PAGE, PERM_READ,PERM_ADMIN
 			from pybble import utils
 			from werkzeug import Request
