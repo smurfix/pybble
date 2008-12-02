@@ -28,7 +28,7 @@
 				<li><a href="{{ url_for('pybble.login.register') }}">Anmelden</a></li>
 				<li><a href="{{ url_for('pybble.login.do_login') }}">Login</a></li>
 				{%- else -%}
-				<li><a href="/">Hallo {{ USER.name }}!</a></li>
+				<li><a href="/">Hallo, <strong>{{ USER.name }}</strong>!</a></li>
 				<li><a href="{{ url_for('pybble.login.do_logout') }}">Logout</a></li>
 				{%- endif %}
 			</ul>
@@ -46,9 +46,9 @@
 
   <div class="body">{% block body %}<code>Your template didn't provide a 'body' block.</code>{% endblock %}</div>
   <div class="footer">
-    <a href="{{ url_for('pybble.views.new') }}">new</a> |
+    {# <a href="{{ url_for('pybble.views.new') }}">new</a> |
     <a href="{{ url_for('pybble.views.list') }}">list</a> |
-    use pybble for good, not for evil
+    #} use pybble for good, not for evil
   </div>
 </body>
 </html>

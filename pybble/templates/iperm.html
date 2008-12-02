@@ -1,62 +1,16 @@
 {% extends 'layout.html' %}
+{% from 'form.html' import show, showb %}
+
 {% block body %}
   <h2>Edit template for {{ name_discr(form.discr.data) }} / {{ name_permission(form.right.data) }}</h2>
     <form method="post" action="{{ action }}">
     <table>
-	  {% if form.user.errors %}
-	    {% for e in form.user.errors %}
-		  <tr><th>Error:</th><td>{{e}}</td></tr>
-	    {% endfor -%}
-	  {% endif -%}
-      <tr>
-        <th>{{ form.user.label|safe }}</th>
-        <td>{{ form.user|safe }}{# TODO Lookup #}</td>
-      </tr>
-	  {% if form.object.errors %}
-	    {% for e in form.object.errors %}
-		  <tr><th>Error:</th><td>{{e}}</td></tr>
-	    {% endfor -%}
-	  {% endif -%}
-      <tr>
-        <th>{{ form.object.label|safe }}</th>
-        <td>{{ form.object|safe }}{# TODO Lookup #}</td>
-      </tr>
-	  {% if form.discr.errors %}
-	    {% for e in form.discr.errors %}
-		  <tr><th>Error:</th><td>{{e}}</td></tr>
-	    {% endfor -%}
-	  {% endif -%}
-      <tr>
-        <th>{{ form.discr.label|safe }}</th>
-        <td>{{ form.discr|safe }}</td>
-      </tr>
-	  {% if form.right.errors %}
-	    {% for e in form.right.errors %}
-		  <tr><th>Error:</th><td>{{e}}</td></tr>
-	    {% endfor -%}
-	  {% endif -%}
-      <tr>
-        <th>{{ form.right.label|safe }}</th>
-        <td>{{ form.right|safe }}</td>
-      </tr>
-	  {% if form.inherit.errors %}
-	    {% for e in form.inherit.errors %}
-		  <tr><th>Error:</th><td>{{e}}</td></tr>
-	    {% endfor -%}
-	  {% endif -%}
-      <tr>
-        <th>{{ form.inherit.label|safe }}</th>
-        <td>{{ form.inherit|safe }}</td>
-      </tr>
-      <tr>
-	  {% if form.clone.errors %}
-	    {% for e in form.clone.errors %}
-		  <tr><th>Error:</th><td>{{e}}</td></tr>
-	    {% endfor -%}
-	  {% endif -%}
-        <th>{{ form.clone.label|safe }}</th>
-        <td>{{ form.clone|safe }}</td>
-      </tr>
+	  {{ show(form.user) }}
+	  {{ show(form.object) }}
+	  {{ show(form.discr) }}
+	  {{ show(form.right) }}
+	  {{ show(form.inherit) }}
+	  {{ show(form.clone) }}
     </table>
 	{% if error %}<div class="error">{{ error }}</div>{% endif -%}
     <input type="submit" value="Update" />

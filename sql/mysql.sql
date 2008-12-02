@@ -6,16 +6,6 @@ CREATE TABLE templates (
 	PRIMARY KEY (id), 
 	 CONSTRAINT template_id FOREIGN KEY(id) REFERENCES obj (id)
 );
-CREATE TABLE urls (
-	id INTEGER NOT NULL, 
-	uid VARCHAR(140) NOT NULL, 
-	target VARCHAR(500) NOT NULL, 
-	added DATETIME NOT NULL, 
-	public BOOL NOT NULL, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT `URL_id` FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (uid)
-);
 CREATE TABLE obj (
 	id INTEGER NOT NULL AUTO_INCREMENT, 
 	discriminator TINYINT, 
@@ -23,8 +13,8 @@ CREATE TABLE obj (
 	parent_id INTEGER, 
 	superparent_id INTEGER, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id), 
 	 CONSTRAINT obj_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
+	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id), 
 	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id), 
 	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id)
 );
@@ -43,8 +33,8 @@ CREATE TABLE users (
 CREATE TABLE site_users (
 	site_id INTEGER NOT NULL, 
 	user_id INTEGER NOT NULL, 
-	 CONSTRAINT site_users_site FOREIGN KEY(site_id) REFERENCES obj (id), 
 	 CONSTRAINT site_users_user FOREIGN KEY(user_id) REFERENCES obj (id), 
+	 CONSTRAINT site_users_site FOREIGN KEY(site_id) REFERENCES obj (id), 
 	 UNIQUE (site_id, user_id)
 );
 CREATE TABLE sites (
@@ -62,8 +52,8 @@ CREATE TABLE groupmembers (
 	group_id INTEGER, 
 	excluded BOOL NOT NULL, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT member_user FOREIGN KEY(user_id) REFERENCES obj (id), 
-	 CONSTRAINT member_group FOREIGN KEY(group_id) REFERENCES obj (id)
+	 CONSTRAINT member_group FOREIGN KEY(group_id) REFERENCES obj (id), 
+	 CONSTRAINT member_user FOREIGN KEY(user_id) REFERENCES obj (id)
 );
 CREATE TABLE wikipage (
 	id INTEGER NOT NULL, 
@@ -102,31 +92,28 @@ CREATE TABLE verifierbase (
 	name VARCHAR(30) NOT NULL, 
 	cls VARCHAR(50) NOT NULL, 
 	PRIMARY KEY (id), 
-	 UNIQUE (cls), 
-	 UNIQUE (name)
+	 UNIQUE (name), 
+	 UNIQUE (cls)
 );
 CREATE TABLE template_match (
 	id INTEGER NOT NULL AUTO_INCREMENT, 
 	obj_id INTEGER NOT NULL, 
 	template_id INTEGER NOT NULL, 
-	discriminator TINYINT, 
+	discr TINYINT NOT NULL, 
 	type TINYINT(1) NOT NULL, 
 	inherit BOOL, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT obj_templates_obj FOREIGN KEY(obj_id) REFERENCES obj (id), 
 	 CONSTRAINT obj_templates_template FOREIGN KEY(template_id) REFERENCES templates (id), 
-	 CONSTRAINT templatematch_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id)
+	 CONSTRAINT templatematch_discr FOREIGN KEY(discr) REFERENCES discriminator (id)
 );
 CREATE TABLE permissions (
-	id INTEGER NOT NULL AUTO_INCREMENT, 
-	user_id INTEGER NOT NULL, 
-	obj_id INTEGER NOT NULL, 
-	`right` INTEGER, 
+	id INTEGER NOT NULL, 
+	`right` INTEGER NOT NULL, 
 	inherit BOOL, 
-	discriminator TINYINT, 
+	discr TINYINT NOT NULL, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT permission_obj FOREIGN KEY(obj_id) REFERENCES obj (id), 
-	 CONSTRAINT permission_user FOREIGN KEY(user_id) REFERENCES obj (id), 
-	 CONSTRAINT obj_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id)
+	 CONSTRAINT obj_discr FOREIGN KEY(discr) REFERENCES discriminator (id), 
+	 CONSTRAINT `Group_id` FOREIGN KEY(id) REFERENCES obj (id)
 );
 

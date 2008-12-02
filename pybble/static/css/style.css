@@ -25,7 +25,7 @@ a:hover {
 }
 
 .message a.hide:hover {
-  background-image: url(../img/message_fail.png);
+  background-image: url(../img/hide_highlight.png);
 }
 
 h1#top {

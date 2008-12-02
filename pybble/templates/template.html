@@ -1,26 +1,12 @@
 {% extends 'layout.html' %}
+{% from 'form.html' import show, showb %}
+
 {% block body %}
   <h2>Edit template {{templ.name }}</h2>
     <form method="post" action="{{ action }}">
     <table>
-	  {% if form.name.errors %}
-	    {% for e in form.name.errors %}
-		  <tr><th>Error:</th><td>{{e}}</td></tr>
-	    {% endfor -%}
-	  {% endif -%}
-      <tr>
-        <th>{{ form.name.label|safe }}</th>
-        <td>{{ form.name|safe }}</td>
-      </tr>
-      <tr>
-	  {% if form.page.errors %}
-	    {% for e in form.page.errors %}
-		  <tr><th>Error:</th><td>{{e}}</td></tr>
-	    {% endfor -%}
-	  {% endif -%}
-        <th>{{ form.page.label|safe }}</th>
-        <td>{{ form.page(cols=80,rows=20)|safe }}</td>
-      </tr>
+	  {{ show(form.name) }}
+	  {{ show(form.page, cols=80,rows=20) }}
     </table>
 	{% if error %}<div class="error">{{ error }}</div>{% endif -%}
     <input type="submit" value="Update" />
