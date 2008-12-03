@@ -1,6 +1,6 @@
 <li rel="{{obj.oid()}}/{{discr}}" class="directory expanded td_{{cls.cls_name()}}">
 	<span class="image" />
-	<a href="#nogo">{{ cls.cls_name }} ({% if count > 1 %}{{count}} items{% else %}1 item{%endif%})</a>
+	<a href="#nogo">{{ cls.cls_name() }} ({% if count > 1 %}{{count}} items{% else %}1 item{%endif%})</a>
 
 <ul style="display: none;">
 {% for o in sub %}
