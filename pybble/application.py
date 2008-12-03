@@ -4,7 +4,7 @@ from __future__ import with_statement
 from werkzeug import Request, SharedDataMiddleware, ClosingIterator
 from werkzeug.exceptions import HTTPException, NotFound, Unauthorized
 from pybble.utils import STATIC_PATH, local, local_manager, \
-	 TEMPLATE_PATH
+	 TEMPLATE_PATH, AuthError
 from pybble.render import expose_map, url_map
 from pybble.database import metadata, db, NoResult
 from sqlalchemy.sql import and_, or_, not_

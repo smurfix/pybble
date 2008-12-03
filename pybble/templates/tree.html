@@ -5,17 +5,40 @@
 		<script type="text/javascript">
 			
 			$(document).ready( function() {
-				$('.jqueryFileTree').fileTree({ root: '{{obj.oid()}}', script: '{{ url_for('pybble.views.view_snippet') }}' });
+				$('#jq_owner').fileTree({ root: '{{obj.oid()}}', script: '/snippet/owner' });
+				$('#jq_parent').fileTree({ root: '{{obj.oid()}}', script: '/snippet/parent' });
+				$('#jq_superparent').fileTree({ root: '{{obj.oid()}}', script: '/snippet/superparent' });
 			});
 		</script>
 
 {% endblock %}
 {% block body %}
 
-  <h2>Object tree of {{ obj }}</h2>
-  <p>OID: {{ obj.oid() }}</p>
-  <ul class="jqueryFileTree">
+  <h1>Object trees of {{ obj }}</h1>
+  <h2>Owner</h1>
+  <ul class="jqueryFileTree" id="jq_owner">
      <li>Javascript is disabled -- no display!</span>
 	 <!-- TODO: generate a child list -->
   </ul>
+  <h2>Parent / child</h1>
+  <ul class="jqueryFileTree" id="jq_parent">
+     <li>Javascript is disabled -- no display!</span>
+	 <!-- TODO: generate a child list -->
+  </ul>
+  <h2>Super-Parent / child</h1>
+  <ul class="jqueryFileTree" id="jq_superparent">
+     <li>Javascript is disabled -- no display!</span>
+	 <!-- TODO: generate a child list -->
+  </ul>
+
+  <ul class="uplink">
+    {% if obj.owner -%}
+	  <li><a href="{{ url_for("pybble.views.view_tree", oid=obj.owner.oid()) }}">Owner: {{ obj.owner }}</a> ({{ obj.owner.oid() }})</li>
+	{%- endif %}
+    {% if obj.parent -%}
+	  <li><a href="{{ url_for("pybble.views.view_tree", oid=obj.parent.oid()) }}">Parent: {{ obj.parent }}</a> ({{ obj.parent.oid() }})</li>
+	{%- endif %}
+    {% if obj.superparent -%}
+	  <li><a href="{{ url_for("pybble.views.view_tree", oid=obj.superparent.oid()) }}">Superparent: {{ obj.superparent }}</a> ({{ obj.superparent.oid() }})</li>
+	{%- endif %}
 {% endblock %}

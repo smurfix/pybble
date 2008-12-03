@@ -4,6 +4,7 @@ from datetime import datetime,timedelta
 from sqlalchemy import Table, Column, String, Unicode, Boolean, DateTime, Integer, ForeignKey, \
 	UniqueConstraint, Text
 from sqlalchemy.orm import relation,backref
+from sqlalchemy.sql import select,func
 from pybble.utils import random_string, current_request, AuthError
 from pybble.database import db, NoResult
 from sqlalchemy.databases.mysql import MSTinyInteger as TinyInteger
@@ -85,12 +86,52 @@ class Object(db.Base,DbRepr):
 	#all_children = relation('Object', backref=backref("superparent", remote_side=Object.id)) 
 
 	@property
-	def has_children(self, discriminator=None):
-		if discriminator:
-			n = len(self.children.filter_by(discriminator=discriminator))
+	def has_children(self, discr=None):
+		if discr:
+			n = len(self.children.filter_by(discriminator=discr))
 		else:
 			n = len(self.children)
 		return n
+
+	@property
+	def has_superchildren(self, discr=None):
+		if discr:
+			n = len(self.superchildren.filter_by(discriminator=discr))
+		else:
+			n = len(self.superchildren)
+		return n
+
+	@property
+	def has_slaves(self, discr=None):
+		if discr:
+			n = len(self.slaves.filter_by(discriminator=discr))
+		else:
+			n = len(self.slaves)
+		return n
+
+	@property
+	def discr_children(self):
+		s = select([Object.discriminator, func.count(Object.id)], Object.parent_id==self.id).\
+		    group_by(Object.discriminator).order_by(Object.discriminator)
+		for discr,num in db.engine.execute(s):
+			c = obj_class(discr)
+			yield c, c.q.filter_by(parent=self), num
+
+	@property
+	def discr_superchildren(self):
+		s = select([Object.discriminator, func.count(Object.id)], Object.superparent_id==self.id).\
+		    group_by(Object.discriminator).order_by(Object.discriminator)
+		for discr,num in db.engine.execute(s):
+			c = obj_class(discr)
+			yield c, c.q.filter_by(superparent=self), num
+
+	@property
+	def discr_slaves(self):
+		s = select([Object.discriminator, func.count(Object.id)], Object.owner_id==self.id).\
+		    group_by(Object.discriminator).order_by(Object.discriminator)
+		for discr,num in db.engine.execute(s):
+			c = obj_class(discr)
+			yield c, c.q.filter_by(owner=self), num
 
 	@property
 	def has_templates(self, discriminator=None):
@@ -115,6 +156,18 @@ class Object(db.Base,DbRepr):
 	@property
 	def classname(self):
 		return self.__class__.__name__
+
+	@property
+	def classdiscr(self):
+		return self.__class__.__mapper__.polymorphic_identity
+
+	@classmethod
+	def cls_name(cls):
+		return cls.__name__
+
+	@classmethod
+	def cls_discr(cls):
+		return cls.__mapper__.polymorphic_identity
 
 	def oid(self):
 		"""
@@ -156,15 +209,17 @@ class Object(db.Base,DbRepr):
 			yield self
 			self = self.parent
 
-Object.owner = relation(Object, remote_side=Object.id, primaryjoin=(Object.owner_id==Object.id))
-Object.parent = relation(Object, remote_side=Object.id, primaryjoin=(Object.parent_id==Object.id))
-Object.superparent = relation(Object, remote_side=Object.id, primaryjoin=(Object.superparent_id==Object.id))
+Object.owner = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Object.owner_id==Object.id))
+Object.parent = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Object.parent_id==Object.id))
+Object.superparent = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Object.superparent_id==Object.id))
 
 Object.children = relation(Object, remote_side=Object.parent_id, primaryjoin=(Object.id==Object.parent_id)) 
+Object.superchildren = relation(Object, remote_side=Object.superparent_id, primaryjoin=(Object.id==Object.superparent_id)) 
+Object.slaves = relation(Object, remote_side=Object.owner_id, primaryjoin=(Object.id==Object.owner_id)) 
 
 def obj_class(id):
 	"""Given a discriminator ID, return the referred object's class."""
-	return Object.__mapper__.polymorphic_map[id].class_
+	return Object.__mapper__.polymorphic_map[int(id)].class_
 
 def obj_get(oid):
 	"""Given an object ID, return the object"""
@@ -295,26 +350,29 @@ def named_group(owner, name):
 	"""Return the site-specific group with that name."""
 	return Group.q.get_by(name==name, owner==site)
 
-class Member(db.Base,DbRepr):
+class Member(Object,DbRepr):
+	"""\
+		Indicates membership of one object of another.
+		owner: the individual who's the member.
+		parent: the group
+		"""
 	__tablename__ = "groupmembers"
+	__table_args__ = {'useexisting': True}
+	__mapper_args__ = {'polymorphic_identity': 13}
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, primary_key=True)
+	id = Column(Integer, ForeignKey('obj.id',name="Group_id"), primary_key=True,autoincrement=False)
 
-	user_id = Column(Integer(20),ForeignKey(Object.id,name="member_user"))   # one member
-	group_id = Column(Integer(20),ForeignKey(Object.id,name="member_group")) # membership group
 	excluded = Column(Boolean, nullable=False)
 
 	def __init__(self,user,group):
-		self.user = user
-		self.group = group
+		self.owner = user
+		self.parent = group
 		self.excluded = False
 
-## The user may in fact be another group
-Member.user = relation(Object, remote_side=Object.id, primaryjoin=(Member.user_id==Object.id))
-## The group may in fact be a site, or anything else
-Member.group = relation(Object, remote_side=Object.id, primaryjoin=(Member.group_id==Object.id))
+Member.user = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.owner_id==Object.id))
+Member.group = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.parent_id==Object.id))
 
-Object.memberships = relation(Member, remote_side=Member.user_id, primaryjoin=(Member.user_id==Object.id)) 
+Object.memberships = relation(Member, remote_side=Member.owner_id, uselist=True, primaryjoin=(Member.owner_id==Object.id)) 
 
 PERM = {0:"None", 1:"List", 2:"Read", 3:"Add", 4:"Write", 9:"Admin"}
 for _x,_y in PERM.items():
@@ -499,15 +557,18 @@ class Template(Object):
 		return "'<%s:%d>'" % (self.__class__.__name__,self.id)
 
 
-class TemplateMatch(db.Base,DbRepr):
-	"""Associate a template to an object."""
+class TemplateMatch(Object):
+	"""
+		Associate a template to an object.
+		Parent: The object which the template is for.
+		Owner: The template.
+		"""
 	__tablename__ = "template_match"
 	__table_args__ = ({'useexisting': True})
+	__mapper_args__ = {'polymorphic_identity': 12}
 	q = db.session.query_property(db.Query)
+	id = Column(Integer, ForeignKey('obj.id',name="Group_id"), primary_key=True,autoincrement=False)
 
-	id = Column(Integer(20), primary_key=True)
-	obj_id = Column('obj_id', Integer, ForeignKey('obj.id',name="obj_templates_obj"), nullable=False)
-	template_id = Column('template_id', Integer, ForeignKey('templates.id',name="obj_templates_template"), nullable=False)
 	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="templatematch_discr"), nullable=False)
 	detail = Column(TinyInteger(1), nullable=False)
 	inherit = Column(Boolean, nullable=True)
@@ -517,16 +578,16 @@ class TemplateMatch(db.Base,DbRepr):
 			t = data
 		else:
 			t = Template(None,data)
-		self.obj = obj
-		self.template = t
+		self.parent = obj
+		self.owner = t
 		self.discr = Discriminator.get(discr,obj).id
 		self.detail = detail
+	
+TemplateMatch.obj = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.parent_id==Object.id))
+TemplateMatch.template = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.owner_id==Object.id))
 
-TemplateMatch.obj = relation(Object, remote_side=Object.id, primaryjoin=(TemplateMatch.obj_id==Object.id))
-TemplateMatch.template = relation(Template, remote_side=Template.id, foreign_keys=(TemplateMatch.template_id), primaryjoin=(TemplateMatch.template_id==Template.id))
-
-Object.templates = relation(TemplateMatch, remote_side=TemplateMatch.obj_id, primaryjoin=(TemplateMatch.obj_id==Object.id)) 
-Template.matches = relation(TemplateMatch, remote_side=TemplateMatch.template_id, primaryjoin=(TemplateMatch.template_id==Template.id), foreign_keys=[TemplateMatch.template_id]) 
+Object.templates = relation(TemplateMatch, remote_side=TemplateMatch.parent_id, uselist=True, primaryjoin=(TemplateMatch.parent_id==Object.id)) 
+Template.matches = relation(Object, remote_side=TemplateMatch.owner_id, uselist=True, primaryjoin=(Object.owner_id==Template.id), foreign_keys=[Object.owner_id]) 
 
 
 VerifierBases = {}

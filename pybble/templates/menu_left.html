@@ -5,5 +5,25 @@
 				<li><a href="/wiki/MainPage">Das Wichtigste</a></li>
 			</ul>
 		</li>
+
+		{%- if can_admin(SITE) %}
+		<li>
+			<a href="
+				{%- if obj -%}
+					{{ url_for("pybble.views.view_tree", oid=obj.oid()) }}
+				{%- else -%}
+					{{ url_for("pybble.views.view_tree") }}
+				{%- endif -%}
+				">Admin</a>
+			<ul>
+				{%- if obj -%}
+				<li><a href="{{ url_for("pybble.views.edit_oid", oid=obj.oid()) }}">Edit</a></li>
+				<li><a href="{{ url_for("pybble.views.delete_oid", oid=obj.oid()) }}">Delete</a></li>
+				<li><a href="{{ url_for("pybble.admin.edit_template", template=obj.oid()) }}">Templates</a></li>
+				<li><a href="{{ url_for("pybble.admin.edit_permission", permission=obj.oid()) }}">Permissions</a></li>
+				{%- endif %}
+			</ul>
+		</li>
+		{%- endif %}
 	</ul>
 </div>

@@ -1,15 +1,18 @@
 {% extends 'layout.html' %}
 {% block body %}
-  <h2>List of (unnamed) templates</h2>
+  <h1>Templates für {{ obj }}</h1>
   <table><thead>
-    <tr><td>Object</td><td>Type</td><td>Subpages?</td><td>modified</td><td>Edit?</td></tr>
+    <tr><td>Object</td><td>Type</td><td>Subpages?</td><td>geändert</td><td>Edit?</td></tr>
 	</thead><tbody>
   {%- for o in obj.uptree() %}
     {% for t in o.templates %}
     	<tr><td>{{ o }}</td><td>{{ name_detail(t.detail) }} / {{ name_discr(t.discr) }}</td>
 			<td>{% if t.inherit is none %}*{%elif t.inherit%}Y{%else%}N{%endif%}</td>
 			<td>{{ t.modified }}</td><td><a href="{{ url_for('pybble.admin.edit_template_at',id=t.id,template=t.template.oid()) }}">Edit</a>
-			{% if o != obj %}| <a href="{{ url_for('pybble.admin.edit_template_at',id=t.id,template=t.template.oid(),obj=obj.oid()) }}">New</a>{% endif -%}
+			{% if o != obj %}
+				| <a href="{{ url_for('pybble.admin.edit_template_at',id=t.id,template=t.template.oid(),obj=obj.oid()) }}">New</a>
+				| <a href="{{ url_for('pybble.admin.del_template_at',id=t.id,template=t.template.oid(),obj=obj.oid()) }}">Del</a>
+			{% endif -%}
 			</td></tr>
 	{% else %}
     	<tr><td>{{ o }}</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
