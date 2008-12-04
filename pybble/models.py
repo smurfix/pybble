@@ -192,19 +192,35 @@ class Object(db.Base,DbRepr):
 		"""Return this object's template at a given detail level"""
 		discr = self.discriminator
 
+		print "Search template at",self,"level",detail
 		no_inherit = True
-		while self:
+		obj = self
+		while obj:
 			try:
 				t = TemplateMatch.q.filter(or_(TemplateMatch.inherit != no_inherit, TemplateMatch.inherit == None)).\
-									get_by(obj=self, discr=discr, detail=detail).template
+									get_by(obj=obj, discr=discr, detail=detail).template
 			except NoResult:
-				if not self.parent:
-					raise
+				print "... not found for now"
+				pass
 			else:
+				print "... found",t
 				return t
 
-			self = self.parent
+			if obj is current_request.site:
+				break
+			elif obj.parent:
+				obj = obj.parent
+			elif obj.superparent:
+				obj = obj.superparent
+			else:
+				obj = current_request.site
+
+			print "... retry at",obj
 			no_inherit = False
+
+		print "... not found"
+		raise NoResult("Template %d for %s" % (detail,str(self)))
+
 
 	def uptree(self):
 		while self:
