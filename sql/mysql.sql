@@ -33,9 +33,18 @@ CREATE TABLE users (
 CREATE TABLE site_users (
 	site_id INTEGER NOT NULL, 
 	user_id INTEGER NOT NULL, 
+	 UNIQUE (site_id, user_id), 
 	 CONSTRAINT site_users_site FOREIGN KEY(site_id) REFERENCES obj (id), 
-	 CONSTRAINT site_users_user FOREIGN KEY(user_id) REFERENCES obj (id), 
-	 UNIQUE (site_id, user_id)
+	 CONSTRAINT site_users_user FOREIGN KEY(user_id) REFERENCES obj (id)
+);
+CREATE TABLE breadcrumbs (
+	id INTEGER NOT NULL, 
+	discr TINYINT NOT NULL, 
+	seq INTEGER, 
+	visited TIMESTAMP, 
+	PRIMARY KEY (id), 
+	 CONSTRAINT template_id FOREIGN KEY(id) REFERENCES obj (id), 
+	 CONSTRAINT templatematch_discr FOREIGN KEY(discr) REFERENCES discriminator (id)
 );
 CREATE TABLE sites (
 	id INTEGER NOT NULL, 
@@ -69,8 +78,8 @@ CREATE TABLE verifiers (
 	timeout DATETIME NOT NULL, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT verifier_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (code), 
-	 CONSTRAINT verifier_base FOREIGN KEY(base_id) REFERENCES verifierbase (id)
+	 CONSTRAINT verifier_base FOREIGN KEY(base_id) REFERENCES verifierbase (id), 
+	 UNIQUE (code)
 );
 CREATE TABLE groups (
 	id INTEGER NOT NULL, 
@@ -108,8 +117,8 @@ CREATE TABLE permissions (
 	discr TINYINT NOT NULL, 
 	new_discr TINYINT, 
 	PRIMARY KEY (id), 
+	 CONSTRAINT obj_new_discr FOREIGN KEY(new_discr) REFERENCES discriminator (id), 
 	 CONSTRAINT `Group_id` FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT obj_discr FOREIGN KEY(discr) REFERENCES discriminator (id), 
-	 CONSTRAINT obj_new_discr FOREIGN KEY(new_discr) REFERENCES discriminator (id)
+	 CONSTRAINT obj_discr FOREIGN KEY(discr) REFERENCES discriminator (id)
 );
 

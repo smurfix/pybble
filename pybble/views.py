@@ -65,6 +65,7 @@ def delete_oid(request, oid):
 def view_oid(request, oid):
 	obj = obj_get(oid)
 	request.user.will_read(obj)
+	request.user.visited(obj)
 	try:
 		name = obj.name
 		v = import_string("pybble.%s.viewer" % (obj.classname.lower(),))

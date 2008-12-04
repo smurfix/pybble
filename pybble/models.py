@@ -278,6 +278,20 @@ class User(Object):
 		else:
 			return self.email
 
+	def visited(self,obj):
+		if obj.__class__ is Breadcrumb:
+			return # no recursive nonsense, please
+		q = Breadcrumb.q.filter_by(owner=self,discr=obj.discriminator)
+		try:
+			s = q.get_by(parent=obj)
+		except NoResult:
+			for b in q.order_by(Breadcrumb.visited)[10:]:
+				db.session.delete(b)
+			b = Breadcrumb(self,obj)
+			db.session.add(b)
+		else:
+			s.visited = datetime.utcnow()
+	
 	def _get_verified(self):
 		
 		g = current_request.site
@@ -311,6 +325,9 @@ class User(Object):
 
 	def can_do(user,obj,discr=None, want=None):
 		"""Recursively get the permission of this user for that (type of) object."""
+		if obj is not current_request.site and current_request.user.can_admin(current_request.site):
+			return PERM_ADMIN
+
 		done = {}
 		discr = Discriminator.get(discr,obj).id
 
@@ -709,3 +726,39 @@ class WikiPage(Object):
 		import markdown
 		return markdown.markdown(self.data)
 
+
+class Breadcrumb(Object):
+	"""\
+		Track page visits.
+		Owner: the user who did it.
+		Parent: The page thus visited.
+		discr: mirrors parent.discr for easier seekage
+		"""
+	__tablename__ = "breadcrumbs"
+	__table_args__ = ({'useexisting': True})
+	__mapper_args__ = {'polymorphic_identity': 14}
+	q = db.session.query_property(db.Query)
+	id = Column(Integer, ForeignKey('obj.id',name="template_id"), primary_key=True,autoincrement=False)
+
+	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="templatematch_discr"), nullable=False)
+	#seq = Column(Integer)
+	visited = Column(TimeStamp)
+
+	def __init__(self, user, obj):
+		self.owner = user
+		self.parent = obj
+		self.visited = datetime.utcnow()
+		self.discr = obj.discriminator
+		#self.seq = 1+(db.engine.execute(select([func.max(Breadcrumb.seq)], and_(Breadcrumb.owner==user,Breadcrumb.discr==self.discr))).scalar() or 0)
+
+	def __unicode__(self):
+		if not self.owner or not self.parent: return super(Member,self).__unicode__()
+		return u'‹%s %s: %s saw %s on %s›' % (self.__class__.__name__, self.id, unicode(self.owner), unicode(self.parent), unicode(self.visited))
+	def __str__(self):
+		if not self.owner or not self.parent: return super(Member,self).__str__()
+		return '<%s %s: %s saw %s on %s>' % (self.__class__.__name__, self.id, str(self.owner), str(self.parent), str(self.visited))
+	def __repr__(self):
+		if not self.owner or not self.parent: return super(Member,self).__repr__()
+		return self.__str__()
+
+	
