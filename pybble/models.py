@@ -685,7 +685,12 @@ class Verifier(Object):
 Verifier.base = relation(VerifierBase, remote_side=VerifierBase.id, primaryjoin=(Verifier.base_id==VerifierBase.id))
 
 class WikiPage(Object):
-	"""A wiki (or similar) page."""
+	"""\
+		A wiki (or similar) page.
+		Parent: The "main" wikipage we're a parent of
+		Superparent: Our site
+		Owner: Whoever created the page
+		"""
 	__tablename__ = "wikipage"
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 9}
