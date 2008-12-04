@@ -1,10 +1,11 @@
   <h2>Zugriffsdaten</h2>
     <table>
 	  <tbody>
-		<tr><th>ID:</th><td>{{ obj }} ({{ obj.oid() }})</td></tr>
+		<tr><th>Zugang:</th><td>{{ obj }}</td></tr>
+		<tr><th>ID:</th><td>{{ obj.oid() }}</td></tr>
 		<tr><th>User:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.owner.oid()) }}">{{ obj.owner }}</a> ({{ obj.owner.oid() }})</td></tr>
 		<tr><th>Objekt:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.parent.oid()) }}">{{ obj.parent }}</a> ({{ obj.parent.oid() }})</td></tr>
-		<tr><th>Typ:</th><td>{{ name_discr(obj.discr) }} ({{ obj.discr }})</td></tr>
+		<tr><th>für Typ:</th><td>{{ name_discr(obj.discr) }} ({{ obj.discr }})</td></tr>
 		{%- if obj.new_discr is not none %}
 		<tr><th>Typ neu:</th><td>{{ name_discr(obj.new_discr) }} ({{ obj.new_discr }})</td></tr>
 		{%- endif %}
