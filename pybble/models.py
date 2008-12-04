@@ -499,6 +499,7 @@ Member.user = relation(Object, remote_side=Object.id, uselist=False, primaryjoin
 Member.group = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.parent_id==Object.id))
 
 Object.memberships = relation(Member, remote_side=Member.owner_id, uselist=True, primaryjoin=(Member.owner_id==Object.id)) 
+Object.members = relation(Member, remote_side=Member.parent_id, uselist=True, primaryjoin=(Member.parent_id==Object.id)) 
 
 class Permission(Object):
 	"""
