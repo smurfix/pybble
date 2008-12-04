@@ -31,7 +31,7 @@ def TM_DETAIL_name(id):
 
 # Permission levels
 
-PERM = {0:"None", 1:"List", 2:"Read", 3:"Add", 4:"Write", 9:"Admin"}
+PERM = {0:"None", 1:"List", 2:"Read", 3:"Add", 4:"Write", 5:"Delete", 9:"Admin"}
 for _x,_y in PERM.items():
 	globals()["PERM_"+_y.upper()] = _x
 
@@ -292,6 +292,20 @@ class User(Object):
 		else:
 			s.visited = datetime.utcnow()
 	
+	def last_visited(self,cls):
+		try:
+			return Breadcrumb.q.filter_by(owner=self,discr=cls.cls_discr()) \
+			                   .order_by(Breadcrumb.visited.desc()) \
+			                   .first().parent
+		except NoResult:
+			return None
+	
+	def all_visited(self, cls=None):
+		if cls:
+			return Breadcrumb.q.filter_by(owner=self,discr=cls.cls_discr()).order_by(Breadcrumb.visited.desc())
+		else:
+			return Breadcrumb.q.filter_by(owner=self).order_by(Breadcrumb.visited.desc())
+
 	def _get_verified(self):
 		
 		g = current_request.site
@@ -752,13 +766,13 @@ class Breadcrumb(Object):
 		#self.seq = 1+(db.engine.execute(select([func.max(Breadcrumb.seq)], and_(Breadcrumb.owner==user,Breadcrumb.discr==self.discr))).scalar() or 0)
 
 	def __unicode__(self):
-		if not self.owner or not self.parent: return super(Member,self).__unicode__()
+		if not self.owner or not self.parent: return super(Breadcrumb,self).__unicode__()
 		return u'‹%s %s: %s saw %s on %s›' % (self.__class__.__name__, self.id, unicode(self.owner), unicode(self.parent), unicode(self.visited))
 	def __str__(self):
-		if not self.owner or not self.parent: return super(Member,self).__str__()
+		if not self.owner or not self.parent: return super(Breadcrumb,self).__str__()
 		return '<%s %s: %s saw %s on %s>' % (self.__class__.__name__, self.id, str(self.owner), str(self.parent), str(self.visited))
 	def __repr__(self):
-		if not self.owner or not self.parent: return super(Member,self).__repr__()
+		if not self.owner or not self.parent: return super(Breadcrumb,self).__repr__()
 		return self.__str__()
 
 	

@@ -6,6 +6,8 @@ from pybble.render import render_template, render_my_template, \
 	expose, url_for
 from pybble.models import TemplateMatch, TM_DETAIL_PAGE, obj_get, obj_class
 from pybble.database import db,NoResult
+from wtforms import Form, HiddenField
+from pybble.flashing import flash
 
 @expose("/")
 def mainpage(request):
@@ -45,21 +47,27 @@ def new_oid(request, oid, descr=None):
 	cls = obj_class(descr)
 	return import_string("pybble.%s.newer" % (cls.__name__.lower(),))(request, obj, descr)
 
+
+class DeleteForm(Form):
+	next = HiddenField("next URL")
+
 @expose('/delete/<oid>')
 def delete_oid(request, oid):
 	obj=obj_get(oid)
-	request.user.will_admin(obj)
-	url = request.values.get("next","")
-	if request.method == 'POST' and request.values:
+	request.user.will_delete(obj)
+	form = DeleteForm(request.form, prefix='delete')
+	if request.method == 'POST' and form.validate():
 		db.session.delete(obj)
-		flash(u"%s (%s) wurde gelöscht" % (unicode(obj),), True)
+		flash(u"%s (%s) wurde gelöscht" % (unicode(obj),obj.oid()), True)
 
-		if url:
-			return redirect(url)
+		if form.next.data:
+			return redirect(form.next.data)
+		elif obj.parent:
+			return redirect(url_for("pybble.views.view_oid", oid=obj.oarent.oid()))
 		else:
-			return render_template(request, obj=obj_get(oid), detail=TM_DETAIL_PAGE)
+			return redirect(url_for("pybble.views.mainpage"))
 
-	return render_template('delete.html', url=url, title_trace=[u"Löschen"], obj=obj)
+	return render_template('delete.html', form=form, title_trace=[u"Löschen"], obj=obj)
 
 @expose('/view/<oid>')
 def view_oid(request, oid):
@@ -89,6 +97,11 @@ def view_snippet(request, t):
 		return view_snippet2(request, t, oid,discr)
 	else:
 		return view_snippet1(request, t, oid)
+
+@expose('/last_visited')
+def last_visited(request):
+	return render_template("last_visited.html", q=request.user.all_visited(), title_trace=[u"zuletzt besucht"])
+	
 
 @expose('/snippet/<t>/<oid>')
 def view_snippet1(request, t, oid):

@@ -103,8 +103,13 @@ way to fit your requirements.
 	position:absolute;
 	height:0;
 	top:31px;
-	left:0; 
 	width:150px;
+}
+.menu.left ul ul {
+	left:0; 
+}
+.menu.right ul ul {
+	right:0; 
 }
 ///* another hack for IE5.5 */
 //* html .menu ul ul {

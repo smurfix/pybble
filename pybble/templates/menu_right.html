@@ -4,8 +4,12 @@
 				<li><a href="{{ url_for('pybble.login.register') }}">Anmelden</a></li>
 				<li><a href="{{ url_for('pybble.login.do_login', next=url()) }}">Login</a></li>
 				{%- else -%}
-				<li><a href="/">Hallo, <strong>{{ USER.name }}</strong>!</a></li>
-				<li><a href="{{ url_for('pybble.login.do_logout', next=url()) }}">Logout</a></li>
+				<li><a href="{{ url_for('pybble.views.view_oid', oid=USER.oid()) }}">Hallo, <strong>{{ USER.name }}</strong>!</a>
+				<ul>
+					<li><a href="{{ url_for('pybble.views.last_visited') }}">zuletzt besucht</a></li>
+				</ul>
+				</li>
+				<li><a href="{{ url_for('pybble.login.do_logout') }}">Logout</a></li>
 				{%- endif %}
 			</ul>
 		</div>

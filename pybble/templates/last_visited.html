@@ -1,0 +1,24 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h2>Zuletzt besuchte Seiten</h2>
+  <table>
+    <thead>
+	  <tr><td>Seite</td><td>Datum</td><td>ID</td>
+	</thead><tbody>
+      {% for o in q if o.parent %}
+        <tr>
+		  <td><a href="{{url_for("pybble.views.view_oid", oid=o.parent.oid()) }}">{{ o.parent }}</a></td>
+		  <td>{{ o.visited }}</td>
+		  <td>{{ o.parent.oid() }}</td>
+		</tr>
+      {% else %}
+        <tr><td colspan="2"><strong>Das Protokoll scheint leer zu sein.</strong></td></tr>
+      {% endfor %}
+	</tbody>
+  </table>
+  <p>
+    Dieses Log zeichnet die letzten zehn besuchten Seiten jedes Typs auf.<br />
+	Es wird nicht permanent gespeichert, nicht in irgendeiner Form manuell oder automatisiert ausgewertet, und schon gar nicht an Dritte weitergegeben.
+  </p>
+{% endblock %}

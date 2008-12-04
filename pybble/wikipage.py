@@ -4,7 +4,7 @@ from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from pybble.utils import send_mail, current_request, make_permanent
 from pybble.render import url_for, render_template, expose, render_my_template
-from pybble.models import WikiPage, TM_DETAIL_PAGE
+from pybble.models import Site, WikiPage, TM_DETAIL_PAGE
 from pybble.views import view_oid
 
 from pybble.database import db,NoResult
@@ -29,9 +29,9 @@ def editor(request, obj=None, name=None, parent=None):
 	if parent is None:
 		parent = obj.parent if obj else request.site
 	elif obj is not None:
-		assert objparent == parent
+		assert obj.parent == parent
 	else:
-		assert obj_class(parent.discriminator) == WikiPage
+		assert isinstance(parent, (Site,WikiPage))
 
 	form = WikiEditForm(request.form, prefix="wiki")
 	error = ""
@@ -44,7 +44,6 @@ def editor(request, obj=None, name=None, parent=None):
 			else:
 				error = "Diese Wiki-Seite gibt es bereits!"
 		if name:
-			parent = obj
 			try:
 				obj = WikiPage.q.get_by(name=form.name.data, superparent=request.site)
 			except NoResult:
@@ -77,7 +76,13 @@ def viewer(request, name):
 	try:
 		obj = WikiPage.q.get_by(name=name)
 	except NoResult:
-		return editor(request, name=name)
+		obj = request.user.last_visited(WikiPage)
+		if request.user.can_add(obj):
+			flash("Die Seite gibt es noch nicht. Du kannst sie jetzt anlegen.")
+			return redirect(url_for("pybble.views.edit_oid", parent=obj.oid(), name=name))
+		else:
+			flash("Die Seite gibt es noch nicht. Du darfst sie leider auch nicht anlegen.",False)
+			return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
 	else:
 		return render_my_template(request, obj=obj, detail=TM_DETAIL_PAGE, \
 			title_trace=[obj.name])
