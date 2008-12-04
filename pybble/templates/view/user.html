@@ -1,0 +1,11 @@
+  <h2>Daten für {{ obj.name }}</h2>
+    <table>
+	  <tbody>
+		<tr><th>ID:</th><td>{{ obj }} ({{ obj.oid() }})</td></tr>
+		<tr><th>Username:</th><td>{{ obj.username }}</td></tr>
+		<tr><th>Password:</th><td>(natürlich nicht angezeigt)</td></tr>
+		<tr><th>Name:</th><td>{{ obj.name }}</td></tr>
+		<tr><th>Email:</th><td><a href="mailto:{{obj.email}}">{{ obj.email }}</a></td></tr>
+		<tr><th>erster Login:</th><td>{{ obj.first_login }}</td></tr>
+	  </tbody>
+    </table>
