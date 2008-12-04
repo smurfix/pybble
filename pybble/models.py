@@ -202,10 +202,8 @@ class Object(db.Base,DbRepr):
 				t = TemplateMatch.q.filter(or_(TemplateMatch.inherit != no_inherit, TemplateMatch.inherit == None)).\
 									get_by(obj=obj, discr=discr, detail=detail).template
 			except NoResult:
-				print "... not found for now"
 				pass
 			else:
-				print "... found",t
 				return t
 
 			if obj is current_request.site:
@@ -217,10 +215,8 @@ class Object(db.Base,DbRepr):
 			else:
 				obj = current_request.site
 
-			print "... retry at",obj
 			no_inherit = False
 
-		print "... not found"
 		raise NoResult("Template %d for %s" % (detail,str(self)))
 
 
