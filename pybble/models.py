@@ -293,7 +293,7 @@ class User(Object):
 			return self.email
 
 	def visited(self,obj):
-		if obj._no_crumbs:
+		if getattr(obj,"_no_crumbs",False):
 			return # no recursive or similar nonsense, please
 		q = Breadcrumb.q.filter_by(owner=self,discr=obj.discriminator)
 		try:
