@@ -195,7 +195,9 @@ class Object(db.Base,DbRepr):
 		print "Search template at",self,"level",detail
 		no_inherit = True
 		obj = self
+		seen = set()
 		while obj:
+			seen.add(obj)
 			try:
 				t = TemplateMatch.q.filter(or_(TemplateMatch.inherit != no_inherit, TemplateMatch.inherit == None)).\
 									get_by(obj=obj, discr=discr, detail=detail).template
@@ -208,9 +210,9 @@ class Object(db.Base,DbRepr):
 
 			if obj is current_request.site:
 				break
-			elif obj.parent:
+			elif obj.parent is not None and obj.parent not in seen:
 				obj = obj.parent
-			elif obj.superparent:
+			elif obj.superparent is not None and obj.superparent not in seen:
 				obj = obj.superparent
 			else:
 				obj = current_request.site
@@ -295,8 +297,8 @@ class User(Object):
 			return self.email
 
 	def visited(self,obj):
-		if obj.__class__ is Breadcrumb:
-			return # no recursive nonsense, please
+		if obj._no_crumbs:
+			return # no recursive or similar nonsense, please
 		q = Breadcrumb.q.filter_by(owner=self,discr=obj.discriminator)
 		try:
 			s = q.get_by(parent=obj)
@@ -476,6 +478,7 @@ class Member(Object,DbRepr):
 	__tablename__ = "groupmembers"
 	__table_args__ = {'useexisting': True}
 	__mapper_args__ = {'polymorphic_identity': 13}
+	_no_crumbs = True
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey('obj.id',name="Group_id"), primary_key=True,autoincrement=False)
 
@@ -518,6 +521,7 @@ class Permission(Object):
 	__tablename__ = "permissions"
 	__table_args__ = {'useexisting': True}
 	__mapper_args__ = {'polymorphic_identity': 10}
+	_no_crumbs = True
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey('obj.id',name="Group_id"), primary_key=True,autoincrement=False)
 
@@ -767,6 +771,8 @@ class Breadcrumb(Object):
 	__tablename__ = "breadcrumbs"
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 14}
+	_no_crumbs = True
+
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey('obj.id',name="template_id"), primary_key=True,autoincrement=False)
 
