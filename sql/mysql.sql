@@ -33,8 +33,8 @@ CREATE TABLE users (
 CREATE TABLE site_users (
 	site_id INTEGER NOT NULL, 
 	user_id INTEGER NOT NULL, 
-	 CONSTRAINT site_users_user FOREIGN KEY(user_id) REFERENCES obj (id), 
 	 CONSTRAINT site_users_site FOREIGN KEY(site_id) REFERENCES obj (id), 
+	 CONSTRAINT site_users_user FOREIGN KEY(user_id) REFERENCES obj (id), 
 	 UNIQUE (site_id, user_id)
 );
 CREATE TABLE sites (
@@ -43,17 +43,14 @@ CREATE TABLE sites (
 	name VARCHAR(50) NOT NULL, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT site_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (domain), 
-	 UNIQUE (name)
+	 UNIQUE (name), 
+	 UNIQUE (domain)
 );
 CREATE TABLE groupmembers (
-	id INTEGER NOT NULL AUTO_INCREMENT, 
-	user_id INTEGER, 
-	group_id INTEGER, 
+	id INTEGER NOT NULL, 
 	excluded BOOL NOT NULL, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT member_group FOREIGN KEY(group_id) REFERENCES obj (id), 
-	 CONSTRAINT member_user FOREIGN KEY(user_id) REFERENCES obj (id)
+	 CONSTRAINT `Group_id` FOREIGN KEY(id) REFERENCES obj (id)
 );
 CREATE TABLE wikipage (
 	id INTEGER NOT NULL, 
@@ -96,15 +93,12 @@ CREATE TABLE verifierbase (
 	 UNIQUE (cls)
 );
 CREATE TABLE template_match (
-	id INTEGER NOT NULL AUTO_INCREMENT, 
-	obj_id INTEGER NOT NULL, 
-	template_id INTEGER NOT NULL, 
+	id INTEGER NOT NULL, 
 	discr TINYINT NOT NULL, 
-	type TINYINT(1) NOT NULL, 
+	detail TINYINT(1) NOT NULL, 
 	inherit BOOL, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT obj_templates_obj FOREIGN KEY(obj_id) REFERENCES obj (id), 
-	 CONSTRAINT obj_templates_template FOREIGN KEY(template_id) REFERENCES templates (id), 
+	 CONSTRAINT `Group_id` FOREIGN KEY(id) REFERENCES obj (id), 
 	 CONSTRAINT templatematch_discr FOREIGN KEY(discr) REFERENCES discriminator (id)
 );
 CREATE TABLE permissions (
@@ -112,8 +106,10 @@ CREATE TABLE permissions (
 	`right` INTEGER NOT NULL, 
 	inherit BOOL, 
 	discr TINYINT NOT NULL, 
+	new_discr TINYINT, 
 	PRIMARY KEY (id), 
+	 CONSTRAINT `Group_id` FOREIGN KEY(id) REFERENCES obj (id), 
 	 CONSTRAINT obj_discr FOREIGN KEY(discr) REFERENCES discriminator (id), 
-	 CONSTRAINT `Group_id` FOREIGN KEY(id) REFERENCES obj (id)
+	 CONSTRAINT obj_new_discr FOREIGN KEY(new_discr) REFERENCES discriminator (id)
 );
 

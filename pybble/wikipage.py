@@ -25,10 +25,16 @@ class WikiEditForm(Form):
 	name = TextField('Name', [validators.length(min=3, max=30)])
 	page = TextAreaField('Page')
 
-def editor(request, obj=None, name=None):
+def editor(request, obj=None, name=None, parent=None):
+	if parent is None:
+		parent = obj.parent if obj else request.site
+	elif obj is not None:
+		assert objparent == parent
+	else:
+		assert obj_class(parent.discriminator) == WikiPage
+
 	form = WikiEditForm(request.form, prefix="wiki")
 	error = ""
-	parent = None
 	if request.method == 'POST' and form.validate():
 		if obj:
 			try:
@@ -52,6 +58,7 @@ def editor(request, obj=None, name=None):
 				obj.superparent = request.site
 				obj.parent = parent
 				db.session.add(obj)
+				db.session.flush()
 			elif obj.data != form.page.data:
 				obj.data = form.page.data
 				obj.modified = datetime.utcnow()
@@ -62,12 +69,16 @@ def editor(request, obj=None, name=None):
 	elif request.method == 'GET':
 		form.name.data = obj.name if obj else name
 		form.page.data = obj.data if obj else ""
-	return render_template('wikiedit.html', obj=obj, form=form, error=error, name=form.name.data, title_trace=[form.name.data])
+	return render_template('edit/wikipage.html', obj=obj, form=form, error=error, name=form.name.data, title_trace=[form.name.data])
 
 
 @expose("/wiki/<name>")
 def viewer(request, name):
-	obj = WikiPage.q.get_by(name=name)
-	return render_my_template(request, obj=obj, detail=TM_DETAIL_PAGE, \
-		title_trace=[obj.name])
+	try:
+		obj = WikiPage.q.get_by(name=name)
+	except NoResult:
+		return editor(request, name=name)
+	else:
+		return render_my_template(request, obj=obj, detail=TM_DETAIL_PAGE, \
+			title_trace=[obj.name])
 

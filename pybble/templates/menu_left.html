@@ -16,6 +16,7 @@
 				{%- endif -%}
 				">Admin</a>
 			<ul>
+				<li><a href="{{ url_for("pybble.admin.show_templates") }}">Named Templates</a></li>
 				{%- if obj -%}
 				<li><a href="{{ url_for("pybble.views.edit_oid", oid=obj.oid()) }}">Edit</a></li>
 				<li><a href="{{ url_for("pybble.views.delete_oid", oid=obj.oid()) }}">Delete</a></li>

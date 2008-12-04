@@ -53,14 +53,19 @@ way to fit your requirements.
 .menu.left a, .menu.left a:visited {
 	border-width:0 1px 1px 0; 
 }
-.menu ul ul a, .menu ul ul a:visited {
-	margin-top: -1px;
-}
-.menu.left ul ul a, .menu.left ul ul a:visited {
-	border-width: 1px 1px 1px 0; 
-}
 .menu.right a, .menu.right a:visited {
 	border-width:0 0 1px 1px; 
+}
+
+.menu.left ul ul a, .menu.left ul ul a:visited {
+	border-width: 1px 1px 1px 1px;
+	margin-top: -1px;
+	margin-left: -1px;
+}
+.menu.right ul ul a, .menu.right ul ul a:visited {
+	border-width: 1px 1px 1px 1px;
+	margin-top: -1px;
+	margin-right: -1px;
 }
 
 // /* a hack so that IE5.5 faulty box model is corrected */

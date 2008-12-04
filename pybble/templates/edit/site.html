@@ -1,0 +1,15 @@
+{% extends 'layout.html' %}
+{% from 'form.html' import show, showb %}
+
+{% block body %}
+  <h2>Edit Site {{ name }}</h2>
+    <form method="post" action="{{ action }}">
+    <table>
+	  {{ show(form.name) }}
+	  {{ show(form.domain) }}
+    </table>
+	{% if error %}<div class="error">{{ error }}</div>{% endif -%}
+    <input type="submit" value="Update" />
+    </form>
+
+{% endblock %}

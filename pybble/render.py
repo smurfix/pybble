@@ -5,7 +5,9 @@ from werkzeug import cached_property, Response
 from werkzeug.routing import Map, Rule
 from markdown import Markdown
 from pybble.utils import current_request, local
-from pybble.models import PERM, PERM_NONE, Permission
+from pybble.models import PERM, PERM_NONE, Permission, obj_get, TemplateMatch, \
+	TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING
+from pybble.database import NoResult
 
 url_map = Map([Rule('/static/<file>', endpoint='static', build_only=True)])
 
@@ -33,7 +35,7 @@ class DatabaseLoader(BaseLoader):
 		mtime = t.modified
 		return (t.data,
 				"//db/%s/%s/%s" % (t.__class__.__name__,t.id,template),
-				lambda: t.modified != mtime) 
+				lambda: True ) # t.modified != mtime) 
 	
 jinja_env = Environment(loader=DatabaseLoader(), autoescape=True)
 
@@ -84,11 +86,15 @@ jinja_env.globals['name_permission'] = name_permission
 
 def render_my_template(request, obj, detail=None, resp=True, **context):
 	"""Global render"""
-	from pybble.models import TemplateMatch, TM_DETAIL_PAGE
-	from pybble.database import NoResult
 
+	if isinstance(obj,basestring):
+		obj = obj_get(obj)
 	if detail is None:
 		detail = TM_DETAIL_PAGE
+	if detail == TM_DETAIL_PAGE:
+		request.user.will_read(obj)
+	else:
+		request.user.will_list(obj)
 
 	context["obj"] = obj
 
@@ -120,7 +126,8 @@ def render_template(template, resp=True,**context):
 		r = Markup(r)
 	return r
 
-jinja_env.globals['subpage'] = lambda a,b: render_my_template(current_request,a,b,resp=False)
+jinja_env.globals['subpage'] = lambda a,b=TM_DETAIL_SUBPAGE: render_my_template(current_request,a,b,resp=False)
+jinja_env.globals['subline'] = lambda a,b=TM_DETAIL_STRING: render_my_template(current_request,a,b,resp=False)
 
 
 pybble_dtd = None
@@ -152,16 +159,16 @@ for a,b in PERM.iteritems():
 			if obj is None:
 				obj = env.vars['obj']
 			if a > PERM_NONE:
-				return Permission.can_do(current_request.user, obj) >= a
+				return current_request.user.can_do(obj) >= a
 			else:
-				return Permission.can_do(current_request.user, obj) <= a
+				return current_request.user.can_do(obj) <= a
 		can_do.contextfunction = 1 # Jinja
 
 		def will_do(env, obj=None):
 			if obj is None:
 				obj = env.vars['obj']
 			if a > PERM_NONE:
-				if Permission.can_do(current_request.user, obj) < a:
+				if current_request.user.can_do(obj) < a:
 					raise AuthError(obj,a)
 		will_do.contextfunction = 1 # Jinja
 

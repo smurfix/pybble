@@ -1,9 +1,5 @@
 {% extends 'layout.html' %}
 
 {% block body %}
-<h2>Template Not Found</h2>
-<p>
-	There is no page view template for object {{ obj.oid() }}. <br />
-Please tell the administrators.
-</p>
+{{ subpage(obj) }}
 {% endblock %}

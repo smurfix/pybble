@@ -49,7 +49,7 @@ class Pybble(object):
 
 			from pybble.models import Site,User,Object,Discriminator,Template,TemplateMatch,VerifierBase,WikiPage
 			from pybble.models import Group,Permission
-			from pybble.models import TM_DETAIL_PAGE, PERM_READ,PERM_ADMIN
+			from pybble.models import TM_DETAIL_SUBPAGE, PERM_READ,PERM_ADMIN
 			from pybble import utils
 			from werkzeug import Request
 
@@ -126,9 +126,7 @@ class Pybble(object):
 
 			db.session.flush()
 
-			for fn in os.listdir(TEMPLATE_PATH):
-				if fn.startswith("."):
-					continue
+			def get_template(fn):
 				with file(os.path.join(TEMPLATE_PATH,fn)) as f:
 					try:
 						data = f.read().decode("utf-8")
@@ -153,6 +151,17 @@ class Pybble(object):
 						t.superparent = s
 						t.owner = u
 
+			for fn in os.listdir(TEMPLATE_PATH):
+				if fn.startswith(".") or not fn.endswith(".html"):
+					continue
+				get_template(fn)
+
+			for fn in os.listdir(os.path.join(TEMPLATE_PATH,"edit")):
+				if fn.startswith(".") or not fn.endswith(".html"):
+					continue
+				get_template(os.path.join("edit",fn))
+
+
 			try:
 				v = VerifierBase.q.get_by(name="register")
 			except NoResult:
@@ -163,18 +172,6 @@ class Pybble(object):
 
 			db.session.flush()
 
-			data = open("pybble/main.html").read()
-			try:
-			    t = TemplateMatch.q.get_by(obj=s, discr=s.discriminator, detail=TM_DETAIL_PAGE)
-			except NoResult:
-				t = TemplateMatch(obj=s, discr=s.discriminator, detail=TM_DETAIL_PAGE, data = data)
-				db.session.add(t)
-			else:
-				if t.template.data != data:
-					print "Warning: AssocTemplate 'wiki.html' differs."
-					if replace_templates:
-						t.template.data = data
-						t.template.modified = datetime.utcnow()
 
 			try:
 				w = WikiPage.q.get_by(name="MainPage")
@@ -205,18 +202,22 @@ You may continue on your own. ;-)
 				ww.parent=w
 				db.session.add(ww)
 
-			data = open("pybble/wiki.html").read()
-			try:
-			    t = TemplateMatch.q.get_by(obj=s, discr=w.discriminator, detail=TM_DETAIL_PAGE)
-			except NoResult:
-				t = TemplateMatch(obj=s, discr=w.discriminator, detail=TM_DETAIL_PAGE, data = data)
-				db.session.add(t)
-			else:
-				if t.template.data != data:
-					print "Warning: AssocTemplate 'wiki.html' differs."
-					if replace_templates:
-						t.template.data = data
-						t.template.modified = datetime.utcnow()
+			for d in Discriminator.q.all():
+				try:
+					data = open("pybble/templates/view/%s.html" % (d.name.lower(),)).read()
+				except (IOError,OSError):
+					continue
+				try:
+					t = TemplateMatch.q.get_by(obj=s, discr=d.id, detail=TM_DETAIL_SUBPAGE)
+				except NoResult:
+					t = TemplateMatch(obj=s, discr=d.id, detail=TM_DETAIL_SUBPAGE, data = data)
+					db.session.add(t)
+				else:
+					if t.template.data != data:
+						print "Warning: AssocTemplate 'view/%s.html' differs." % (d.name.lower(),)
+						if replace_templates:
+							t.template.data = data
+							t.template.modified = datetime.utcnow()
 
 			db.session.commit()
 			print "Your root user is named '%s' and has the password '%s'." % (u.username, u.password)

@@ -4,7 +4,7 @@ from werkzeug import redirect, import_string
 from werkzeug.exceptions import NotFound
 from pybble.render import render_template, render_my_template, \
 	expose, url_for
-from pybble.models import TemplateMatch, TM_DETAIL_PAGE, TM_DETAIL_LIST, obj_get, obj_class
+from pybble.models import TemplateMatch, TM_DETAIL_PAGE, obj_get, obj_class
 from pybble.database import db,NoResult
 
 @expose("/")
@@ -18,6 +18,8 @@ def view_tree(request, oid=None):
 		obj = request.site
 	else:
 		obj = obj_get(oid)
+
+	request.user.will_admin(obj)
 	if obj is request.site:
 		title_trace=["Objects"]
 	else:
@@ -27,11 +29,26 @@ def view_tree(request, oid=None):
 @expose('/edit/<oid>')
 def edit_oid(request, oid):
 	obj=obj_get(oid)
-	return import_string("pybble.%s.editor" % (obj.classname.lower(),))(request, obj)
+	request.user.will_write(obj)
+	try:
+		return import_string("pybble.%s.editor" % (obj.classname.lower(),))(request, obj)
+	except ImportError:
+		raise 
+
+@expose('/new/<oid>')
+@expose('/new/<oid>/<descr>')
+def new_oid(request, oid, descr=None):
+	obj=obj_get(oid)
+	if descr is None:
+		descr = obj.descriptor
+	request.user.will_add(obj,descr)
+	cls = obj_class(descr)
+	return import_string("pybble.%s.newer" % (cls.__name__.lower(),))(request, obj, descr)
 
 @expose('/delete/<oid>')
 def delete_oid(request, oid):
 	obj=obj_get(oid)
+	request.user.will_admin(obj)
 	url = request.values.get("next","")
 	if request.method == 'POST' and request.values:
 		db.session.delete(obj)
@@ -47,13 +64,17 @@ def delete_oid(request, oid):
 @expose('/view/<oid>')
 def view_oid(request, oid):
 	obj = obj_get(oid)
+	request.user.will_read(obj)
 	try:
 		name = obj.name
 		v = import_string("pybble.%s.viewer" % (obj.classname.lower(),))
 	except Exception:
 		return render_my_template(request, obj=obj_get(oid), detail=TM_DETAIL_PAGE)
 	else:
-		return redirect(url_for('pybble.%s.viewer' % (obj.classname.lower(),), name=name))
+		args = {}
+		if "name" in v.func_code.co_varnames: args["name"]=name
+		if "oid"  in v.func_code.co_varnames: args["oid" ]=oid
+		return redirect(url_for('pybble.%s.viewer' % (obj.classname.lower(),), **args))
 
 
 @expose('/snippet/<t>')
@@ -146,4 +167,8 @@ def not_found(request, url=None):
     return render_template('not_found.html', title_trace=[u"Seite nicht gefunden"])
 
 def not_allowed(request, obj, perm=None):
-    return render_template('not_allowed.html', title_trace=[u"Keine Berechtigung"])
+    return render_template('not_allowed.html', title_trace=[u"Keine Berechtigung"], obj=obj, perm=perm)
+
+def not_able(request, obj, perm=None):
+    return render_template('not_able.html', title_trace=[u"Das geht nicht"], obj=obj, perm=perm)
+

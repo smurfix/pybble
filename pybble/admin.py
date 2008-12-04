@@ -160,7 +160,8 @@ def edit_assoc_template(request, match, template, obj):
 		if match.inherit is None:
 			if m.count():
 				flash(u"Vorherige Assoziation(en) entfernt.")
-			m.delete()
+			for mm in m:
+				db.session.delete(mm)
 		else:
 			m.inherit = not match.inherit
 			flash(u"Bestehende Assoziation eingeschränkt.")

@@ -21,12 +21,22 @@ except ImportError:
 
 
 # Template detail levels
-TM_DETAIL = {1:"Page", 2:"List", 3:"String", 4:"SubPage"}
+TM_DETAIL = {1:"Page", 2:"Subpage", 3:"String"}
 for _x,_y in TM_DETAIL.items():
 	globals()["TM_DETAIL_"+_y.upper()] = _x
 
 def TM_DETAIL_name(id):
 	return TM_DETAIL[int(id)]
+
+
+# Permission levels
+
+PERM = {0:"None", 1:"List", 2:"Read", 3:"Add", 4:"Write", 9:"Admin"}
+for _x,_y in PERM.items():
+	globals()["PERM_"+_y.upper()] = _x
+
+def PERM_name(id):
+	return PERM[int(id)]
 
 
 class DbRepr(object):
@@ -182,27 +192,19 @@ class Object(db.Base,DbRepr):
 		"""Return this object's template at a given detail level"""
 		discr = self.discriminator
 
-		def loop(self):
-			no_inherit = True
-			while self:
-				try:
-					t = TemplateMatch.q.filter(or_(TemplateMatch.inherit != no_inherit, TemplateMatch.inherit == None)).\
-										get_by(obj=self, discr=discr, detail=detail).template
-				except NoResult:
-					if not self.parent:
-						raise
-				else:
-					return t
+		no_inherit = True
+		while self:
+			try:
+				t = TemplateMatch.q.filter(or_(TemplateMatch.inherit != no_inherit, TemplateMatch.inherit == None)).\
+									get_by(obj=self, discr=discr, detail=detail).template
+			except NoResult:
+				if not self.parent:
+					raise
+			else:
+				return t
 
-				self = self.parent
-				no_inherit = False
-
-		try:
-			return loop(self)
-		except NoResult:
-			discr = None
-			return loop(self)
-			
+			self = self.parent
+			no_inherit = False
 
 	def uptree(self):
 		while self:
@@ -297,23 +299,6 @@ class User(Object):
 				db.session.delete(m)
 	verified = property(_get_verified,_set_verified)
 				
-	
-	def __unicode__(self):
-		if getattr(self,"name",None):
-			return u'‹%s %d:%s›' % (self.__class__.__name__, self.id, self.name)
-		elif getattr(self,"superparent",None):
-			return u'‹%s %d (anon @ %s)›' % (self.__class__.__name__, self.id, unicode(self.superparent))
-		else:
-			return u'‹%s %d (anon?)›' % (self.__class__.__name__, self.id)
-	def __str__(self):
-		if getattr(self,"name",None):
-			return '<%s %s:%s>' % (self.__class__.__name__, self.id, self.name)
-		elif getattr(self,"superparent",None):
-			return '<%s %s (anon @ %s)>' % (self.__class__.__name__, self.id, str(self.superparent))
-		else:
-			return '<%s %s (anon?)>' % (self.__class__.__name__, self.id)
-	__repr__ = __str__
-
 	def __unicode__(self):
 		if self.username != "":
 			return u"‹User %d:%s›" % (self.id,self.username)
@@ -322,6 +307,91 @@ class User(Object):
 			return u"‹User %d:anon @%s›" % (self.id, self.superparent.domain)
 		except Exception:
 			return u"‹User %d:anon @ ???›" % (self.id,)
+
+
+	def can_do(user,obj,discr=None, want=None):
+		"""Recursively get the permission of this user for that (type of) object."""
+		done = {}
+		discr = Discriminator.get(discr,obj).id
+
+		if want:
+			pq = Permission.q.filter_by(p.right == want)
+		else:
+			pq = Permission.q
+
+		ul = [user]
+		ulq = [user]
+		while ulq:
+			u = ulq.pop(0)
+			for m in Member.q.filter_by(user=u):
+				g = m.group
+				if not m.excluded and g not in ul:
+					ul.append(g)
+					ulq.append(g)
+
+		no_inh = True
+
+		while obj:
+			if obj.id in done:
+				raise ValueError("Parent recursion on "+repr(obj))
+			done[obj.id]=1
+
+			for u in ul:
+				try:
+					p = Permission.q.filter(or_(Permission.inherit != no_inh, Permission.inherit == None)).filter_by(owner=u,parent=obj,discr=discr).one()
+				except NoResult:
+					pass
+				else:
+					return p.right
+
+			no_inh = False
+			obj = obj.parent
+
+		return PERM_NONE
+
+	def will_do(user,obj,discr=None, perm=PERM_NONE):
+		if user.can_do(obj,discr) < perm:
+			raise AuthError(obj,perm)
+
+	def permit(user,obj, right, discr=None, inherit=None):
+		discr = Discriminator.get(discr,obj).id
+		p = Permission.q.filter_by(owner=u,parent=obj,discr=discr).all()
+		
+		if len(p) > 0:
+			if inherit is None:
+				while p:
+					p.pop().delete()
+				p = None
+			elif len(p) > 1 and p[1].inherit == inherit:
+				p = p[1]
+			else:
+				p = p[0]
+				if p.inherit is None:
+					p.inherit = not inherit
+					p = None
+				elif p.inherit != inherit:
+					p = None
+
+		if p:
+			p.right = right
+		else:
+			p = Permission(user,obj,discr,right,inherit)
+			db.session.add(p)
+
+	def forbid(user,obj, discr=None, inherit=None):
+		discr = Discriminator.get(discr,obj).id
+		p = Permission.q.filter_by(owner=u,parent=obj,discr=discr).all()
+		
+		if len(p) > 0:
+			if inherit is None:
+				while p:
+					db.session.delete(p.pop())
+				return
+			elif len(p) > 1 and p[1].inherit == inherit:
+				p = p[1]
+			else:
+				p = p[0]
+			p.delete()
 
 @add_to(UserQuery)
 def get_anonymous_user(self, site):
@@ -369,17 +439,20 @@ class Member(Object,DbRepr):
 		self.parent = group
 		self.excluded = False
 
+	def __unicode__(self):
+		if not self.owner or not self.parent: return super(Member,self).__unicode__()
+		return u'‹%s %s: %s%s in %s›' % (self.__class__.__name__, self.id, unicode(self.owner), " NOT" if self.excluded else "", unicode(self.parent))
+	def __str__(self):
+		if not self.owner or not self.parent: return super(Member,self).__str__()
+		return '<%s %s: %s%s in %s>' % (self.__class__.__name__, self.id, str(self.owner), " NOT" if self.excluded else "", str(self.parent))
+	def __repr__(self):
+		if not self.owner or not self.parent: return super(Member,self).__repr__()
+		return self.__str__()
+
 Member.user = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.owner_id==Object.id))
 Member.group = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.parent_id==Object.id))
 
 Object.memberships = relation(Member, remote_side=Member.owner_id, uselist=True, primaryjoin=(Member.owner_id==Object.id)) 
-
-PERM = {0:"None", 1:"List", 2:"Read", 3:"Add", 4:"Write", 9:"Admin"}
-for _x,_y in PERM.items():
-	globals()["PERM_"+_y.upper()] = _x
-
-def PERM_name(id):
-	return PERM[int(id)]
 
 class Permission(Object):
 	"""
@@ -391,6 +464,9 @@ class Permission(Object):
 		Inherit=False: only this object
 		inherit=True : only to child objects
 		inherit=NULL : both.
+
+		discr: The object type to be modified
+		new_discr: The type of object that may be added
 		"""
 	__tablename__ = "permissions"
 	__table_args__ = {'useexisting': True}
@@ -401,108 +477,44 @@ class Permission(Object):
 	right = Column(Integer(1), nullable=False)
 	inherit = Column(Boolean, nullable=True)
 	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="obj_discr"), nullable=False)
+	new_discr = Column(TinyInteger, ForeignKey('discriminator.id',name="obj_new_discr"), nullable=True)
 
-	def __init__(self, user, obj, discr, right, inherit=None):
+	def __init__(self, user, obj, discr, right, inherit=None, new_discr=None):
 		self.owner = user
 		self.parent = obj
 		self.discr = Discriminator.get(discr,obj).id
 		self.right = right
 		self.inherit = inherit
 	
-	@staticmethod
-	def can_do(user,obj,discr=None):
-		"""Recursively get the permission of this user for that (type of) object."""
-		done = {}
-		discr = Discriminator.get(discr,obj).id
+	def __unicode__(self):
+		if not self.owner or not self.parent: return super(Permission,self).__unicode__()
+		return u'‹%s %s: %s can %s %s %s %s %s›' % (self.__class__.__name__, self.id, unicode(self.owner),PERM[self.right],Discriminator.q.get_by(id=self.discr).name,unicode(self.parent), "*" if self.inherit is None else "Y" if self.inherit else "N", Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-")
+	def __str__(self):
+		if not self.owner or not self.parent: return super(Permission,self).__str__()
+		return '<%s %s: %s can %s %s %s %s %s>' % (self.__class__.__name__, self.id, str(self.owner),PERM[self.right],Discriminator.q.get_by(id=self.discr).name,str(self.parent), "*" if self.inherit is None else "Y" if self.inherit else "N", Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-")
+	def __repr__(self):
+		if not self.owner or not self.parent: return super(Permission,self).__repr__()
+		return self.__str__()
 
-		ul = [user]
-		ulq = [user]
-		while ulq:
-			u = ulq.pop(0)
-			for m in Member.q.filter_by(user=u):
-				g = m.group
-				if not m.excluded and g not in ul:
-					ul.append(g)
-					ulq.append(g)
-
-		no_inh = True
-
-		while obj:
-			if obj.id in done:
-				raise ValueError("Parent recursion on "+repr(obj))
-			done[obj.id]=1
-
-			for u in ul:
-				try:
-					p = Permission.q.filter(or_(Permission.inherit != no_inh, Permission.inherit == None)).filter_by(owner=u,parent=obj,discr=discr).one()
-				except NoResult:
-					pass
-				else:
-					return p.right
-
-			no_inh = False
-			obj = obj.parent
-
-		return PERM_NONE
-
-	@staticmethod
-	def will_do(user,obj,discr=None, perm=PERM_NONE):
-		if Permission.can_do(user,obj,discr) < perm:
-			raise AuthError(obj,perm)
-
-	@staticmethod
-	def permit(user,obj, right, discr=None, inherit=None):
-		discr = Discriminator.get(discr,obj).id
-		p = Permission.q.filter_by(owner=u,parent=obj,discr=discr).all()
-		
-		if len(p) > 0:
-			if inherit is None:
-				while p:
-					p.pop().delete()
-				p = None
-			elif len(p) > 1 and p[1].inherit == inherit:
-				p = p[1]
-			else:
-				p = p[0]
-				if p.inherit is None:
-					p.inherit = not inherit
-					p = None
-				elif p.inherit != inherit:
-					p = None
-
-		if p:
-			p.right = right
-		else:
-			p = Permission(user,obj,discr,right,inherit)
-			db.session.add(p)
-
-	@staticmethod
-	def drop(user,obj, discr=None, inherit=None):
-		discr = Discriminator.get(discr,obj).id
-		p = Permission.q.filter_by(owner=u,parent=obj,discr=discr).all()
-		
-		if len(p) > 0:
-			if inherit is None:
-				while p:
-					p.pop().delete()
-				return
-			elif len(p) > 1 and p[1].inherit == inherit:
-				p = p[1]
-			else:
-				p = p[0]
-			p.delete()
 
 for a,b in PERM.iteritems():
 	def can_do_closure(a,b):
 		def can_do(self, obj, discr = None):
 			if a > PERM_NONE:
-				return Permission.can_do(self, obj, discr) >= a
+				return self.can_do(obj, discr) >= a
 			else:
-				return Permission.can_do(self, obj, discr) <= a
+				return self.can_do(obj, discr, a) == a
 		can_do.__doc__ = "Check if this user/group/whatever can %s an object" % \
 			(b.lower() if a > PERM_NONE else "do nothing with",)
-		return can_do
-	setattr(Object,'can_'+b.lower(), can_do_closure(a,b))
+
+		def will_do(self, obj, discr = None):
+			if not can_do(self, obj, discr):
+				raise AuthError(obj,a)
+
+		return can_do,will_do
+	c,d = can_do_closure(a,b)
+	setattr(Object,'can_'+b.lower(), c)
+	setattr(Object,'will_'+b.lower(), d)
 
 
 class Site(Object):
@@ -583,6 +595,16 @@ class TemplateMatch(Object):
 		self.discr = Discriminator.get(discr,obj).id
 		self.detail = detail
 	
+	def __unicode__(self):
+		if not self.owner or not self.parent: return super(TemplateMatch,self).__unicode__()
+		return u'‹%s %s: %s for %s %s %s %s›' % (self.__class__.__name__, self.id, unicode(self.owner),TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,unicode(self.parent), "*" if self.inherit is None else "Y" if self.inherit else "N")
+	def __str__(self):
+		if not self.owner or not self.parent: return super(TemplateMatch,self).__str__()
+		return '<%s %s: %s for %s %s %s %s>' % (self.__class__.__name__, self.id, str(self.owner),TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,str(self.parent), "*" if self.inherit is None else "Y" if self.inherit else "N")
+	def __repr__(self):
+		if not self.owner or not self.parent: return super(TemplateMatch,self).__repr__()
+		return self.__str__()
+
 TemplateMatch.obj = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.parent_id==Object.id))
 TemplateMatch.template = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.owner_id==Object.id))
 
