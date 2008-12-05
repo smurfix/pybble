@@ -38,14 +38,20 @@ def edit_oid(request, oid):
 		raise 
 
 @expose('/new/<oid>')
-@expose('/new/<oid>/<descr>')
-def new_oid(request, oid, descr=None):
+@expose('/new/<oid>/<discr>')
+@expose('/new/<oid>/<discr>/<name>')
+def new_oid(request, oid, discr=None, name=None):
 	obj=obj_get(oid)
-	if descr is None:
-		descr = obj.descriptor
-	request.user.will_add(obj,descr)
-	cls = obj_class(descr)
-	return import_string("pybble.%s.newer" % (cls.__name__.lower(),))(request, obj, descr)
+	if discr is None:
+		discr = obj.discriminator
+	request.user.will_add(obj,discr)
+	cls = obj_class(discr)
+	v = import_string("pybble.%s.newer" % (cls.__name__.lower(),))
+
+	args = {}
+	if "name" in v.func_code.co_varnames: args["name"]=name
+	if "parent"  in v.func_code.co_varnames: args["parent" ]=obj
+	return v(request, **args)
 
 
 class DeleteForm(Form):
@@ -63,7 +69,7 @@ def delete_oid(request, oid):
 		if form.next.data:
 			return redirect(form.next.data)
 		elif obj.parent:
-			return redirect(url_for("pybble.views.view_oid", oid=obj.oarent.oid()))
+			return redirect(url_for("pybble.views.view_oid", oid=obj.parent.oid()))
 		else:
 			return redirect(url_for("pybble.views.mainpage"))
 

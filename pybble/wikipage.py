@@ -21,54 +21,59 @@ from datetime import datetime
 ### Wiki page editor
 ###
 
+def newpage(form, field):
+	q = WikiPage.q
+	if hasattr(form,"obj"):
+		q = q.filter(Wikipage.id != form.obj.id)
+	try:
+		q.get_by(name=field.data, superparent=current_request.site)
+	except NoResult:
+		pass
+	else:
+		raise ValidationError(u"Eine Wiki-Seite namens „%s“ gibt es bereits" % (field.data,))
+
 class WikiEditForm(Form):
-	name = TextField('Name', [validators.length(min=3, max=30)])
+	name = TextField('Name', [validators.length(min=3, max=30), newpage])
 	page = TextAreaField('Page')
 
-def editor(request, obj=None, name=None, parent=None):
+def newer(request, parent, name=None):
 	if parent is None:
-		parent = obj.parent if obj else request.site
-	elif obj is not None:
-		assert obj.parent == parent
+		parent = request.site
 	else:
 		assert isinstance(parent, (Site,WikiPage))
 
 	form = WikiEditForm(request.form, prefix="wiki")
-	error = ""
 	if request.method == 'POST' and form.validate():
-		if obj:
-			try:
-				WikiPage.q.filter(WikiPage.id != obj.id).get_by(name=form.name.data, superparent=request.site)
-			except NoResult:
-				pass
-			else:
-				error = "Diese Wiki-Seite gibt es bereits!"
-		if name:
-			try:
-				obj = WikiPage.q.get_by(name=form.name.data, superparent=request.site)
-			except NoResult:
-				obj = None
-			else:
-				error = "Eine Wiki-Seite dieses Namens gibt es bereits!"
+		obj = WikiPage(form.name.data,form.page.data)
+		obj.superparent = request.site
+		obj.parent = parent
+		db.session.add(obj)
+		db.session.flush()
+		flash(u"Wiki-Seite '%s' gespeichert." % (obj.name), True)
+		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
 
-		if not error:
-			if obj is None:
-				obj = WikiPage(form.name.data,form.page.data)
-				obj.superparent = request.site
-				obj.parent = parent
-				db.session.add(obj)
-				db.session.flush()
-			elif obj.data != form.page.data:
-				obj.data = form.page.data
-				obj.modified = datetime.utcnow()
-			flash(u"Wiki-Seite '%s' gespeichert." % (obj.name), True)
-			return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
+	elif request.method == 'GET':
+		form.name.data = name
+		form.page.data = ""
+
+	return render_template('edit/wikipage.html', parent=parent, form=form, name=form.name.data, title_trace=[form.name.data])
+
+	
+def editor(request, obj=None):
+	form = WikiEditForm(request.form, prefix="wiki")
+	form.obj = obj
+	if request.method == 'POST' and form.validate():
+		if obj.data != form.page.data:
+			obj.data = form.page.data
+			obj.modified = datetime.utcnow()
+		flash(u"Wiki-Seite '%s' gespeichert." % (obj.name), True)
+		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
 
 	
 	elif request.method == 'GET':
 		form.name.data = obj.name if obj else name
 		form.page.data = obj.data if obj else ""
-	return render_template('edit/wikipage.html', obj=obj, form=form, error=error, name=form.name.data, title_trace=[form.name.data])
+	return render_template('edit/wikipage.html', obj=obj, form=form, name=form.name.data, title_trace=[form.name.data])
 
 
 @expose("/wiki/<name>")
@@ -79,7 +84,7 @@ def viewer(request, name):
 		obj = request.user.last_visited(WikiPage)
 		if request.user.can_add(obj):
 			flash("Die Seite gibt es noch nicht. Du kannst sie jetzt anlegen.")
-			return redirect(url_for("pybble.views.edit_oid", parent=obj.oid(), name=name))
+			return redirect(url_for("pybble.views.new_oid", oid=obj.oid(), name=name, discr=WikiPage.cls_discr()))
 		else:
 			flash("Die Seite gibt es noch nicht. Du darfst sie leider auch nicht anlegen.",False)
 			return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
