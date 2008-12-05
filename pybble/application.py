@@ -215,9 +215,9 @@ You may continue on your own. ;-)
 				else:
 					if t.template.data != data:
 						print "Warning: AssocTemplate 'view/%s.html' differs." % (d.name.lower(),)
-#						if replace_templates:
-#							t.template.data = data
-#							t.template.modified = datetime.utcnow()
+						if replace_templates:
+							t.template.data = data
+							t.template.modified = datetime.utcnow()
 
 			db.session.commit()
 			print "Your root user is named '%s' and has the password '%s'." % (u.username, u.password)
