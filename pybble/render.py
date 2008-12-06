@@ -8,6 +8,7 @@ from pybble.utils import current_request, local
 from pybble.models import PERM, PERM_NONE, Permission, obj_get, TemplateMatch, \
 	TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING
 from pybble.database import NoResult
+from pybble.diff import textDiff
 
 url_map = Map([Rule('/static/<file>', endpoint='static', build_only=True)])
 
@@ -83,6 +84,7 @@ def name_permission(id):
 	return PERM_name(id).lower()
 jinja_env.globals['name_permission'] = name_permission
 
+jinja_env.globals['diff'] = textDiff
 
 def render_my_template(request, obj, detail=None, resp=True, **context):
 	"""Global render"""
@@ -155,13 +157,13 @@ def get_dtd():
 # Permission checks for templates: {% if can_edit() %} -- menu -- {% endif %}
 for a,b in PERM.iteritems():
 	def can_do_closure(a,b):
-		def can_do(env, obj=None):
+		def can_do(env, obj=None, discr=None):
 			if obj is None:
 				obj = env.vars['obj']
 			if a > PERM_NONE:
-				return current_request.user.can_do(obj) >= a
+				return current_request.user.can_do(obj, discr) >= a
 			else:
-				return current_request.user.can_do(obj) <= a
+				return current_request.user.can_do(obj, discr, a) == a
 		can_do.contextfunction = 1 # Jinja
 
 		def will_do(env, obj=None):
@@ -169,6 +171,9 @@ for a,b in PERM.iteritems():
 				obj = env.vars['obj']
 			if a > PERM_NONE:
 				if current_request.user.can_do(obj) < a:
+					raise AuthError(obj,a)
+			else:
+				if current_request.user.can_do(obj, want=a) != a:
 					raise AuthError(obj,a)
 		will_do.contextfunction = 1 # Jinja
 

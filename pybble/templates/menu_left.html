@@ -6,6 +6,11 @@
 			</ul>
 		</li>
 
+		{%- if obj and can_edit(obj) %}
+		<li><a href="{{ url_for("pybble.views.edit_oid", oid=obj.oid()) }}">Edit</a></li>
+		{%- endif %}
+		{%- if obj and can_add(obj) %}
+
 		{%- if can_admin(SITE) %}
 		<li>
 			<a href="

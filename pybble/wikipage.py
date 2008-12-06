@@ -4,7 +4,7 @@ from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from pybble.utils import send_mail, current_request, make_permanent
 from pybble.render import url_for, render_template, expose, render_my_template
-from pybble.models import Site, WikiPage, TM_DETAIL_PAGE
+from pybble.models import Site, WikiPage, TM_DETAIL_PAGE, Change
 from pybble.views import view_oid
 
 from pybble.database import db,NoResult
@@ -24,7 +24,7 @@ from datetime import datetime
 def newpage(form, field):
 	q = WikiPage.q
 	if hasattr(form,"obj"):
-		q = q.filter(Wikipage.id != form.obj.id)
+		q = q.filter(WikiPage.id != form.obj.id)
 	try:
 		q.get_by(name=field.data, superparent=current_request.site)
 	except NoResult:
@@ -35,6 +35,7 @@ def newpage(form, field):
 class WikiEditForm(Form):
 	name = TextField('Name', [validators.length(min=3, max=30), newpage])
 	page = TextAreaField('Page')
+	comment = TextField('Kommentar', [validators.length(min=3, max=200)])
 
 def newer(request, parent, name=None):
 	if parent is None:
@@ -64,9 +65,16 @@ def editor(request, obj=None):
 	form.obj = obj
 	if request.method == 'POST' and form.validate():
 		if obj.data != form.page.data:
+			c = Change(request.user, obj, obj.data)
+			c.comment = form.comment.data
+			db.session.save(c)
 			obj.data = form.page.data
 			obj.modified = datetime.utcnow()
-		flash(u"Wiki-Seite '%s' gespeichert." % (obj.name), True)
+
+			flash(u"Wiki-Seite '%s' gespeichert." % (obj.name), True)
+		else:
+			flash(u"Wiki-Seite '%s' unverändert." % (obj.name))
+
 		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
 
 	

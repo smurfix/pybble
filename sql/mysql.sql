@@ -13,10 +13,10 @@ CREATE TABLE obj (
 	parent_id INTEGER, 
 	superparent_id INTEGER, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id), 
 	 CONSTRAINT obj_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
-	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id), 
-	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id)
+	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id), 
+	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id), 
+	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id)
 );
 CREATE TABLE users (
 	id INTEGER NOT NULL, 
@@ -33,8 +33,8 @@ CREATE TABLE users (
 CREATE TABLE site_users (
 	site_id INTEGER NOT NULL, 
 	user_id INTEGER NOT NULL, 
-	 CONSTRAINT site_users_site FOREIGN KEY(site_id) REFERENCES obj (id), 
 	 UNIQUE (site_id, user_id), 
+	 CONSTRAINT site_users_site FOREIGN KEY(site_id) REFERENCES obj (id), 
 	 CONSTRAINT site_users_user FOREIGN KEY(user_id) REFERENCES obj (id)
 );
 CREATE TABLE breadcrumbs (
@@ -50,9 +50,9 @@ CREATE TABLE sites (
 	domain VARCHAR(100) NOT NULL, 
 	name VARCHAR(50) NOT NULL, 
 	PRIMARY KEY (id), 
-	 UNIQUE (name), 
 	 CONSTRAINT site_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (domain)
+	 UNIQUE (domain), 
+	 UNIQUE (name)
 );
 CREATE TABLE groupmembers (
 	id INTEGER NOT NULL, 
@@ -76,8 +76,8 @@ CREATE TABLE verifiers (
 	repeated DATETIME, 
 	timeout DATETIME NOT NULL, 
 	PRIMARY KEY (id), 
-	 UNIQUE (code), 
 	 CONSTRAINT verifier_id FOREIGN KEY(id) REFERENCES obj (id), 
+	 UNIQUE (code), 
 	 CONSTRAINT verifier_base FOREIGN KEY(base_id) REFERENCES verifierbase (id)
 );
 CREATE TABLE groups (
@@ -91,6 +91,14 @@ CREATE TABLE discriminator (
 	name VARCHAR(30) NOT NULL, 
 	PRIMARY KEY (id), 
 	 UNIQUE (name)
+);
+CREATE TABLE changes (
+	id INTEGER NOT NULL, 
+	timestamp TIMESTAMP, 
+	data TEXT, 
+	comment VARCHAR(200), 
+	PRIMARY KEY (id), 
+	 CONSTRAINT template_id FOREIGN KEY(id) REFERENCES obj (id)
 );
 CREATE TABLE verifierbase (
 	id TINYINT(1) NOT NULL AUTO_INCREMENT, 

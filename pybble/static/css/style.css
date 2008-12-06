@@ -7,11 +7,11 @@ body {
 }
 
 a {
-    color: #0C4850;
+    color: #145;
 }
 
 a:hover {
-    color: #1C818F;
+    color: #289;
 }
 
 .message a.hide {
@@ -26,6 +26,26 @@ a:hover {
 
 .message a.hide:hover {
   background-image: url(../img/hide_highlight.png);
+}
+
+code {
+	white-space: pre;
+}
+
+td.code {
+	border:1px solid #ccc;
+}
+
+code del {
+	color: red;
+}
+
+code ins {
+	color: green;
+}
+
+th.top {
+	vertical-align: top;
 }
 
 h1#top {
@@ -73,8 +93,8 @@ div.message.fail {
 }
 
 h1 a:hover {
-    color: #ADEEF7;
-    background-color: #0E8A96;
+    color: #AEF;
+    background-color: #199;
 }
 
 div.footer {
@@ -83,19 +103,19 @@ div.footer {
     text-align: right;
     padding: 10px;
     // width: 480px;
-    background-color: #004C63;
+    background-color: #046;
     color: white;
 }
 
 div.footer a {
-    color: #A0E9FF;
+    color: #AEF;
 }
 
 div.body {
     margin: 0 auto 0 auto;
     padding: 20px;
     // width: 460px;
-    background-color: #98CE24;
+    background-color: #ffc;
     color: black;
 }
 

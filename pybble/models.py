@@ -13,6 +13,7 @@ from sqlalchemy.sql import and_, or_, not_
 from pybble.decorators import add_to
 from werkzeug import import_string
 import settings
+import sys
 
 try:
     from hashlib import md5
@@ -30,8 +31,10 @@ def TM_DETAIL_name(id):
 
 
 # Permission levels
+## Negative values need to match exactly.
+## Positive one accumulate, i.e. somebody who can write is obviously able to read
 
-PERM = {0:"None", 1:"List", 2:"Read", 3:"Add", 4:"Write", 5:"Delete", 9:"Admin"}
+PERM = {0:"None", 1:"List", 2:"Read", -3:"Add", 4:"Write", 5:"Delete", 9:"Admin"}
 for _x,_y in PERM.items():
 	globals()["PERM_"+_y.upper()] = _x
 
@@ -71,7 +74,7 @@ class Discriminator(db.Base,DbRepr):
 			return discr
 		elif isinstance(discr, basestring):
 			return Discriminator.q.get_by(name=discr)
-		elif discr is None:
+		elif discr is None and obj is not None:
 			return Discriminator.q.get_by(id=obj.discriminator)
 		else:
 			assert isinstance(discr, int)
@@ -353,41 +356,57 @@ class User(Object):
 
 	def can_do(user,obj,discr=None, want=None):
 		"""Recursively get the permission of this user for that (type of) object."""
-		if obj is not current_request.site and current_request.user.can_admin(current_request.site):
+
+		print >>sys.stderr,"PERM",discr,want,obj,"AT",current_request.site
+		if obj is not current_request.site and \
+		   current_request.user.can_admin(current_request.site):
 			return PERM_ADMIN
 
-		done = {}
-		discr = Discriminator.get(discr,obj).id
+		pq = Permission.q
+		if want is not None:
+			if want > 0:
+				pq = pq.filter(Permission.right >= want)
+			else:
+				pq = pq.filter(Permission.right == want)
+		if discr is not None:
+			discr = Discriminator.get(discr).id
+			pq = pq.filter_by(discr=discr)
 
-		if want:
-			pq = Permission.q.filter_by(p.right == want)
-		else:
-			pq = Permission.q
+		ul = getattr(current_request.user,"_memberships",None)
+		if ul is None:
+			ul = [user]
+			uld = set((user,))
 
-		ul = [user]
-		ulq = [user]
-		while ulq:
-			u = ulq.pop(0)
-			for m in Member.q.filter_by(user=u):
-				g = m.group
-				if not m.excluded and g not in ul:
-					ul.append(g)
+			ulq = [user]
+			while ulq:
+				u = ulq.pop(0)
+				for m in u.memberships:
+					g = m.group
+					if m.excluded:
+						uld.add(g)
+						continue
+					if g not in uld:
+						ul.append(g)
 					ulq.append(g)
+					uld.add(g)
+			current_request.user._memberships = ul
 
 		no_inh = True
 
+		done = set()
 		while obj:
-			if obj.id in done:
+			if obj in done:
 				raise ValueError("Parent recursion on "+repr(obj))
-			done[obj.id]=1
+			done.add(obj)
 
 			for u in ul:
 				try:
-					p = Permission.q.filter(or_(Permission.inherit != no_inh, Permission.inherit == None)).filter_by(owner=u,parent=obj,discr=discr).one()
+					p = Permission.q.filter(or_(Permission.inherit != no_inh, Permission.inherit == None)).filter(or_(*(Permission.owner == u for u in ul))).filter_by(parent=obj).order_by().value(Permission.right)
 				except NoResult:
 					pass
 				else:
-					return p.right
+					if p is not None:
+						return p
 
 			no_inh = False
 			obj = obj.parent
@@ -793,5 +812,43 @@ class Breadcrumb(Object):
 	def __repr__(self):
 		if not self.owner or not self.parent: return super(Breadcrumb,self).__repr__()
 		return self.__str__()
+
+
+	
+class Change(Object):
+	"""\
+		Track content changes.
+		Owner: the user who did it.
+		Parent: The page thus changed.
+		"""
+	__tablename__ = "changes"
+	__table_args__ = ({'useexisting': True})
+	__mapper_args__ = {'polymorphic_identity': 15}
+	_no_crumbs = True
+
+	q = db.session.query_property(db.Query)
+	id = Column(Integer, ForeignKey('obj.id',name="template_id"), primary_key=True,autoincrement=False)
+
+	timestamp = Column(TimeStamp)
+	data = Column(Text)
+	comment = Column(Unicode(200), nullable=True)
+
+	def __init__(self, user, obj, data):
+		self.owner = user
+		self.parent = obj
+		self.data = data
+		self.timestamp = datetime.utcnow()
+
+	def __unicode__(self):
+		if not self.owner or not self.parent: return super(Breadcrumb,self).__unicode__()
+		return u'‹%s %s: %s changed %s on %s›' % (self.__class__.__name__, self.id, unicode(self.owner), unicode(self.parent), unicode(self.timestamp))
+	def __str__(self):
+		if not self.owner or not self.parent: return super(Breadcrumb,self).__str__()
+		return '<%s %s: %s changed %s on %s>' % (self.__class__.__name__, self.id, str(self.owner), str(self.parent), str(self.timestamp))
+	def __repr__(self):
+		if not self.owner or not self.parent: return super(Breadcrumb,self).__repr__()
+		return self.__str__()
+
+Object.changes = relation(Change, remote_side=Change.parent_id, uselist=True, primaryjoin=(Change.parent_id==Object.id)) 
 
 	
