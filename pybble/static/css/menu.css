@@ -22,9 +22,9 @@ way to fit your requirements.
 	margin:0;
 	list-style-type:none;
 }
-.menu ul ul {
-	width:150px;
-}
+//.menu ul ul {
+//	width:150px;
+//}
 /* float the list to make it horizontal and a relative positon so that you can control the dropdown menu positon */
 .menu.left li {
 	float:left;
@@ -37,7 +37,7 @@ way to fit your requirements.
 	position:relative;
 }
 /* style the links for the top level */
-.menu a, .menu a:visited {
+.menu a, .menu span, .menu a:visited {
 	display:block;
 	font-size:11px;
 	text-decoration:none; 
@@ -50,19 +50,20 @@ way to fit your requirements.
 	padding-right:10px; 
 	line-height:29px;
 }
-.menu.left a, .menu.left a:visited {
+
+.menu.left a, .menu.left span, .menu.left a:visited {
 	border-width:0 1px 1px 0; 
 }
-.menu.right a, .menu.right a:visited {
+.menu.right a, .menu.right span, .menu.right a:visited {
 	border-width:0 0 1px 1px; 
 }
 
-.menu.left ul ul a, .menu.left ul ul a:visited {
+.menu.left ul ul a, .menu.left ul ul span, .menu.left ul ul a:visited {
 	border-width: 1px 1px 1px 1px;
 	margin-top: -1px;
 	margin-left: -1px;
 }
-.menu.right ul ul a, .menu.right ul ul a:visited {
+.menu.right ul ul a, .menu.right ul ul span, .menu.right ul ul a:visited {
 	border-width: 1px 1px 1px 1px;
 	margin-top: -1px;
 	margin-right: -1px;
@@ -103,7 +104,7 @@ way to fit your requirements.
 	position:absolute;
 	height:0;
 	top:31px;
-	width:150px;
+	width:120px;
 }
 .menu.left ul ul {
 	left:0; 
@@ -119,35 +120,36 @@ way to fit your requirements.
 
 /* position the third level flyout menu */
 .menu.left ul ul ul {
-	top:0;
-	width:150px;
+	top:0px;
+//	width:150px;
 }
 .menu.left ul ul ul {
+	top:0px;
 	left:150px; 
 }
 .menu.right ul ul ul {
-	right:150px; 
+//	right:150px; 
 }
 
 /* position the third level flyout menu for a left flyout */
 .menu.left ul ul ul.left {
-	left:-150px;
+//	left:-150px;
 }
 .menu.right ul ul ul.right {
-	left:150px;
+//	left:150px;
 }
 
 /* style the table so that it takes no part in the layout - required for IE to work */
 .menu table {position:absolute; top:0; left:0;}
 
 /* style the second level links */
-.menu ul ul a, .menu ul ul a:visited {
+.menu ul ul a, .menu ul ul span, .menu ul ul a:visited {
 	background:#d4d8bd; 
 	color:#000; 
 	height:auto; 
 	line-height:1em; 
 	padding:5px 10px; 
-	width:129px
+	width:129px;
 }
 /* yet another hack for IE5.5 */
 //* html .menu ul ul a{
@@ -162,15 +164,24 @@ way to fit your requirements.
 	background:#997;
 	text-decoration:underline; 
 }
+.menu span:hover, .menu ul ul span:hover{
+	color:#fff; 
+	background:#997;
+}
 .menu :hover > a, .menu ul ul :hover > a {
 	color:#fff;
 	background:#997;
 	text-decoration:underline; 
 }
+.menu :hover > span, .menu ul ul :hover > span {
+	color:#fff;
+	background:#997;
+}
 
 /* make the second level visible when hover on first level list OR link */
 .menu ul li:hover ul,
-.menu ul a:hover ul{
+.menu ul a:hover ul,
+.menu ul span:hover ul {
 	visibility:visible; 
 }
 /* keep the third level hidden when you hover on first level list OR link */
