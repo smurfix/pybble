@@ -51,7 +51,6 @@ def editor(request, obj=None, parent=None):
 		user = obj_get(form.user.data)
 		obj = obj_get(form.object.data)
 		discr = int(form.discr.data)
-		print repr(form.new_discr.data)
 		new_discr = int(form.new_discr.data) if form.new_discr.data != "-" else None
 		right = int(form.right.data)
 
