@@ -20,9 +20,10 @@ def make_shell():
 	application = make_app()
 	return locals()
 
-action_runserver = script.make_runserver(
-	res(DebuggedApplication(make_app(), evalex=True, show_hidden_frames=True)),
-	use_reloader=True)
+app = make_app()
+if settings.SERVER_DEBUG:
+	app = DebuggedApplication(app, evalex=True, show_hidden_frames=True)
+action_runserver = script.make_runserver(res(app), use_reloader=settings.SERVER_RELOAD)
 action_shell = script.make_shell(make_shell)
 action_initdb = make_app().init_database()
 action_initsite = make_app().init_site()
