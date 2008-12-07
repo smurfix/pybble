@@ -5,12 +5,26 @@ from werkzeug import cached_property, Response
 from werkzeug.routing import Map, Rule
 from markdown import Markdown
 from pybble.utils import current_request, local
-from pybble.models import PERM, PERM_NONE, Permission, obj_get, TemplateMatch, \
-	TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING
+from pybble.models import PERM, PERM_NONE, PERM_ADD, Permission, obj_get, TemplateMatch, \
+	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class
 from pybble.database import NoResult
 from pybble.diff import textDiff
+from wtforms.validators import ValidationError
 
 url_map = Map([Rule('/static/<file>', endpoint='static', build_only=True)])
+
+try:
+	discr_list = list(Discriminator.q.all())
+except Exception:
+	discr_list = [] # if not set up yet
+discr_list.sort(cmp=lambda a,b: cmp(a.name,b.name))
+
+def valid_obj(form, field):
+	"""Field verifier which checks that an object ID is valid"""
+	try:
+		obj_get(field.data)
+	except Exception:
+		raise ValidationError(u"Das Objekt '%s' gibt es nicht" % (field.data,))
 
 class TemplateNotFound(IOError, LookupError):
 	"""
@@ -85,6 +99,24 @@ def name_permission(id):
 jinja_env.globals['name_permission'] = name_permission
 
 jinja_env.globals['diff'] = textDiff
+
+def addables(obj):
+	u = current_request.user
+	if not hasattr(u,"_can_add"):
+		u._can_add = {}
+	u = u._can_add
+
+	g = u.get(obj.id,None)
+	if g is None:
+		g = []
+		for d in Discriminator.q.all():
+#			if getattr(obj_class(d.id),"_no_crumbs",False):
+#				continue
+			if current_request.user.can_add(obj, discr=obj.discriminator, new_discr=d.id):
+				g.append((d.id,d.name))
+		u[obj.id] = g
+	return g
+jinja_env.globals['addables'] = addables
 
 def render_my_template(request, obj, detail=None, resp=True, **context):
 	"""Global render"""
@@ -161,9 +193,9 @@ for a,b in PERM.iteritems():
 			if obj is None:
 				obj = env.vars['obj']
 			if a > PERM_NONE:
-				return current_request.user.can_do(obj, discr) >= a
+				return current_request.user.can_do(obj, discr=discr) >= a
 			else:
-				return current_request.user.can_do(obj, discr, a) == a
+				return current_request.user.can_do(obj, discr=discr, want=a) == a
 		can_do.contextfunction = 1 # Jinja
 
 		def will_do(env, obj=None):

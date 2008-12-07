@@ -12,6 +12,7 @@ from sqlalchemy.sql import and_, or_, not_
 import pybble.models
 import pybble.admin
 import pybble.wikipage
+import pybble.permission
 from pybble.session import add_session, add_user, add_site, save_session, \
 	add_response_headers
 
@@ -49,7 +50,7 @@ class Pybble(object):
 
 			from pybble.models import Site,User,Object,Discriminator,Template,TemplateMatch,VerifierBase,WikiPage
 			from pybble.models import Group,Permission
-			from pybble.models import TM_DETAIL_SUBPAGE, PERM_READ,PERM_ADMIN
+			from pybble.models import TM_DETAIL_SUBPAGE, PERM_READ,PERM_ADMIN,PERM_ADD
 			from pybble import utils
 			from werkzeug import Request
 
@@ -109,20 +110,32 @@ class Pybble(object):
 
 			for d in Discriminator.q.all():
 				try:
-					p=Permission.q.get_by(owner=u,parent=s,discr=d.id)
+					p=Permission.q.get_by(owner=u,parent=s,discr=d.id,right=PERM_ADMIN)
 				except NoResult:
 					p=Permission(u, s, d, PERM_ADMIN)
 					p.superparent=s
 					db.session.add(p)
 
-			for d in Discriminator.q.filter(or_(Discriminator.name=='Site',
-					Discriminator.name=='WikiPage')):
+			dw = Discriminator.q.get_by(name="WikiPage")
+			ds = Discriminator.q.get_by(name="Site")
+			dp = Discriminator.q.get_by(name="Permission")
+
+			for d in (dw,ds):
 				try:
-					ap=Permission.q.get_by(owner=a,parent=s,discr=d.id)
+					p=Permission.q.get_by(owner=a,parent=s,discr=d.id,right=PERM_READ)
 				except NoResult:
-					ap=Permission(a, s, d, PERM_READ)
+					p=Permission(a, s, d, PERM_READ)
 					p.superparent=s
-					db.session.add(ap)
+					db.session.add(p)
+
+			for d,e in ((ds,dw),(ds,dp),(dw,dw),(dw,dp)):
+				try:
+					p=Permission.q.get_by(owner=u,parent=s,discr=d.id,right=PERM_ADD,new_discr=e.id)
+				except NoResult:
+					p=Permission(u, s, d, PERM_ADD)
+					p.new_discr=e.id
+					p.superparent=s
+					db.session.add(p)
 
 			db.session.flush()
 

@@ -70,6 +70,9 @@ class Discriminator(db.Base,DbRepr):
 	
 	@staticmethod
 	def get(discr, obj=None):
+		if isinstance(discr, basestring):
+			try: discr = int(discr)
+			except ValueError: pass
 		if isinstance(discr, Discriminator):
 			return discr
 		elif isinstance(discr, basestring):
@@ -80,7 +83,7 @@ class Discriminator(db.Base,DbRepr):
 			assert isinstance(discr, int)
 			return Discriminator.q.get_by(id=discr)
 
-class Object(db.Base,DbRepr):
+class Object(db.Base):
 	"""The base type of all pointed-to objects"""
 	__tablename__ = "obj"
 	__table_args__ = {'useexisting': True}
@@ -96,6 +99,25 @@ class Object(db.Base,DbRepr):
 	parent_id = Column(Integer(20),ForeignKey('obj.id',name="obj_parent"))      # direct ancestor (replied-to comment)
 	superparent_id = Column(Integer(20),ForeignKey('obj.id',name="obj_super"))  # indirect ancestor (replied-to wiki page)
 
+	def __unicode__(self):
+		if self.deleted: d = "DEL "
+		else: d = ""
+		if getattr(self,"name",None):
+			return u'‹%s%s %s:%s›' % (d,self.__class__.__name__, self.id, self.name)
+		else:
+			return u'‹%s%s %s›' % (d,self.__class__.__name__, self.id)
+	def __str__(self):
+		if self.deleted: d = "DEL "
+		else: d = ""
+		if getattr(self,"name",None):
+			return '<%s%s %s:%s>' % (d,self.__class__.__name__, self.id, self.name)
+		else:
+			return '<%s%s %s>' % (d,self.__class__.__name__, self.id)
+	__repr__ = __str__
+	@property
+	def deleted(self):
+		self.parent is None and self.superparent is None and self.owner is None
+	
 	#all_children = relation('Object', backref=backref("superparent", remote_side=Object.id)) 
 
 	@property
@@ -181,6 +203,17 @@ class Object(db.Base,DbRepr):
 	@classmethod
 	def cls_discr(cls):
 		return cls.__mapper__.polymorphic_identity
+
+	@property
+	def pso(self): # parent/super/owner
+		if self.deleted:
+			try:
+				d = Deleted.get_by(parent=self)
+			except NoResult:
+				return (None,None,None,None)
+			else:
+				return (d.superparent, d.old_superparent, d.old_owner,"DEL ")
+		return (self.parent,self.superparent,self.owner,"")
 
 	def oid(self):
 		"""
@@ -354,23 +387,27 @@ class User(Object):
 			return u"‹User %d:anon @ ???›" % (self.id,)
 
 
-	def can_do(user,obj,discr=None, want=None):
+	def can_do(user,obj, discr=None, new_discr=None, want=None):
 		"""Recursively get the permission of this user for that (type of) object."""
 
-		print >>sys.stderr,"PERM",discr,want,obj,"AT",current_request.site
+		print >>sys.stderr,"PERM",discr,new_discr,want,obj,"AT",current_request.site,u"⇒",
 		if obj is not current_request.site and \
 		   current_request.user.can_admin(current_request.site):
-			return PERM_ADMIN
+			print >>sys.stderr,"ADMIN"
+			return want if want and want < 0 else PERM_ADMIN
 
 		pq = Permission.q
 		if want is not None:
-			if want > 0:
+			if want >= PERM_NONE:
 				pq = pq.filter(Permission.right >= want)
 			else:
 				pq = pq.filter(Permission.right == want)
 		if discr is not None:
 			discr = Discriminator.get(discr).id
 			pq = pq.filter_by(discr=discr)
+		if new_discr is not None:
+			new_discr = Discriminator.get(new_discr).id
+			pq = pq.filter_by(new_discr=new_discr)
 
 		ul = getattr(current_request.user,"_memberships",None)
 		if ul is None:
@@ -399,18 +436,19 @@ class User(Object):
 				raise ValueError("Parent recursion on "+repr(obj))
 			done.add(obj)
 
-			for u in ul:
-				try:
-					p = Permission.q.filter(or_(Permission.inherit != no_inh, Permission.inherit == None)).filter(or_(*(Permission.owner == u for u in ul))).filter_by(parent=obj).order_by().value(Permission.right)
-				except NoResult:
-					pass
-				else:
-					if p is not None:
-						return p
+			try:
+				p = pq.filter(or_(Permission.inherit != no_inh, Permission.inherit == None)).filter(or_(*(Permission.owner == u for u in ul))).filter_by(parent=obj).order_by().value(Permission.right)
+			except NoResult:
+				pass
+			else:
+				if p is not None:
+					print >>sys.stderr,p
+					return p
 
 			no_inh = False
 			obj = obj.parent
 
+		print >>sys.stderr,"NONE"
 		return PERM_NONE
 
 	def will_do(user,obj,discr=None, perm=PERM_NONE):
@@ -505,11 +543,13 @@ class Member(Object,DbRepr):
 		self.excluded = False
 
 	def __unicode__(self):
+		p,s,o,d = self.pso
 		if not self.owner or not self.parent: return super(Member,self).__unicode__()
-		return u'‹%s %s: %s%s in %s›' % (self.__class__.__name__, self.id, unicode(self.owner), " NOT" if self.excluded else "", unicode(self.parent))
+		return u'‹%s%s %s: %s%s in %s›' % (d,self.__class__.__name__, self.id, unicode(self.owner), " NOT" if self.excluded else "", unicode(p))
 	def __str__(self):
+		p,s,o,d = self.pso
 		if not self.owner or not self.parent: return super(Member,self).__str__()
-		return '<%s %s: %s%s in %s>' % (self.__class__.__name__, self.id, str(self.owner), " NOT" if self.excluded else "", str(self.parent))
+		return '<%s%s %s: %s%s in %s>' % (d,self.__class__.__name__, self.id, str(self.owner), " NOT" if self.excluded else "", str(p))
 	def __repr__(self):
 		if not self.owner or not self.parent: return super(Member,self).__repr__()
 		return self.__str__()
@@ -554,11 +594,13 @@ class Permission(Object):
 		self.inherit = inherit
 	
 	def __unicode__(self):
-		if not self.owner or not self.parent: return super(Permission,self).__unicode__()
-		return u'‹%s %s: %s can %s %s %s %s %s›' % (self.__class__.__name__, self.id, unicode(self.owner),PERM[self.right],Discriminator.q.get_by(id=self.discr).name,unicode(self.parent), "*" if self.inherit is None else "Y" if self.inherit else "N", Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-")
+		p,s,o,d = self.pso
+		if not o or not p: return super(Permission,self).__unicode__()
+		return u'‹%s%s %s: %s can %s %s %s %s %s›' % (d,self.__class__.__name__, self.id, unicode(o),PERM[self.right],Discriminator.q.get_by(id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N", Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-")
 	def __str__(self):
-		if not self.owner or not self.parent: return super(Permission,self).__str__()
-		return '<%s %s: %s can %s %s %s %s %s>' % (self.__class__.__name__, self.id, str(self.owner),PERM[self.right],Discriminator.q.get_by(id=self.discr).name,str(self.parent), "*" if self.inherit is None else "Y" if self.inherit else "N", Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-")
+		p,s,o,d = self.pso
+		if not o or not p: return super(Permission,self).__str__()
+		return '<%s%s %s: %s can %s %s %s %s %s>' % (d,self.__class__.__name__, self.id, str(o),PERM[self.right],Discriminator.q.get_by(id=self.discr).name,str(p), "*" if self.inherit is None else "Y" if self.inherit else "N", Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-")
 	def __repr__(self):
 		if not self.owner or not self.parent: return super(Permission,self).__repr__()
 		return self.__str__()
@@ -566,16 +608,16 @@ class Permission(Object):
 
 for a,b in PERM.iteritems():
 	def can_do_closure(a,b):
-		def can_do(self, obj, discr = None):
+		def can_do(self, obj, discr=None, new_discr=None):
 			if a > PERM_NONE:
-				return self.can_do(obj, discr) >= a
+				return self.can_do(obj, discr=discr, new_discr=new_discr) >= a
 			else:
-				return self.can_do(obj, discr, a) == a
+				return self.can_do(obj, discr=discr, new_discr=new_discr, want=a) == a
 		can_do.__doc__ = "Check if this user/group/whatever can %s an object" % \
 			(b.lower() if a > PERM_NONE else "do nothing with",)
 
-		def will_do(self, obj, discr = None):
-			if not can_do(self, obj, discr):
+		def will_do(self, obj, discr=None, new_discr=None):
+			if not can_do(self, obj, discr=discr, new_discr=new_discr):
 				raise AuthError(obj,a)
 
 		return can_do,will_do
@@ -663,11 +705,13 @@ class TemplateMatch(Object):
 		self.detail = detail
 	
 	def __unicode__(self):
-		if not self.owner or not self.parent: return super(TemplateMatch,self).__unicode__()
-		return u'‹%s %s: %s for %s %s %s %s›' % (self.__class__.__name__, self.id, unicode(self.owner),TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,unicode(self.parent), "*" if self.inherit is None else "Y" if self.inherit else "N")
+		p,s,o,d = self.pso
+		if not o or not p: return super(TemplateMatch,self).__unicode__()
+		return u'‹%s%s %s: %s for %s %s %s %s›' % (d,self.__class__.__name__, self.id, unicode(o),TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
 	def __str__(self):
-		if not self.owner or not self.parent: return super(TemplateMatch,self).__str__()
-		return '<%s %s: %s for %s %s %s %s>' % (self.__class__.__name__, self.id, str(self.owner),TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,str(self.parent), "*" if self.inherit is None else "Y" if self.inherit else "N")
+		p,s,o,d = self.pso
+		if not o or not p: return super(TemplateMatch,self).__str__()
+		return '<%s%s %s: %s for %s %s %s %s>' % (d,self.__class__.__name__, self.id, str(o),TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,str(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
 	def __repr__(self):
 		if not self.owner or not self.parent: return super(TemplateMatch,self).__repr__()
 		return self.__str__()
@@ -804,13 +848,14 @@ class Breadcrumb(Object):
 		#self.seq = 1+(db.engine.execute(select([func.max(Breadcrumb.seq)], and_(Breadcrumb.owner==user,Breadcrumb.discr==self.discr))).scalar() or 0)
 
 	def __unicode__(self):
-		if not self.owner or not self.parent: return super(Breadcrumb,self).__unicode__()
-		return u'‹%s %s: %s saw %s on %s›' % (self.__class__.__name__, self.id, unicode(self.owner), unicode(self.parent), unicode(self.visited))
+		p,s,o,d = self.pso
+		if not o or not p: return super(Breadcrumb,self).__unicode__()
+		return u'‹%s%s %s: %s saw %s on %s›' % (d,self.__class__.__name__, self.id, unicode(o), unicode(p), unicode(self.visited))
 	def __str__(self):
-		if not self.owner or not self.parent: return super(Breadcrumb,self).__str__()
-		return '<%s %s: %s saw %s on %s>' % (self.__class__.__name__, self.id, str(self.owner), str(self.parent), str(self.visited))
+		p,s,o,d = self.pso
+		if not o or not p: return super(Breadcrumb,self).__str__()
+		return '<%s%s %s: %s saw %s on %s>' % (d,self.__class__.__name__, self.id, str(o), str(p), str(self.visited))
 	def __repr__(self):
-		if not self.owner or not self.parent: return super(Breadcrumb,self).__repr__()
 		return self.__str__()
 
 
@@ -839,16 +884,189 @@ class Change(Object):
 		self.data = data
 		self.timestamp = datetime.utcnow()
 
+		db.session.add(self)
+		db.session.add(Tracker(user,obj,self))
+
 	def __unicode__(self):
-		if not self.owner or not self.parent: return super(Breadcrumb,self).__unicode__()
-		return u'‹%s %s: %s changed %s on %s›' % (self.__class__.__name__, self.id, unicode(self.owner), unicode(self.parent), unicode(self.timestamp))
+		p,s,o,d = self.pso
+		if not o or not p: return super(Change,self).__unicode__()
+		return u'‹%s %s: %s changed %s on %s›' % (self.__class__.__name__, self.id, unicode(o), unicode(p), unicode(self.timestamp))
 	def __str__(self):
-		if not self.owner or not self.parent: return super(Breadcrumb,self).__str__()
-		return '<%s %s: %s changed %s on %s>' % (self.__class__.__name__, self.id, str(self.owner), str(self.parent), str(self.timestamp))
+		p,s,o,d = self.pso
+		if not o or not p: return super(Change,self).__str__()
+		return '<%s %s: %s changed %s on %s>' % (self.__class__.__name__, self.id, str(o), str(p), str(self.timestamp))
 	def __repr__(self):
-		if not self.owner or not self.parent: return super(Breadcrumb,self).__repr__()
 		return self.__str__()
 
 Object.changes = relation(Change, remote_side=Change.parent_id, uselist=True, primaryjoin=(Change.parent_id==Object.id)) 
 
+
+
+class Delete(Object):
+	"""\
+		Track deleted content.
+		Owner: the user who did it.
+		Parent: The page thus changed.
+		Superparent: the old parent.
+		"""
+	__tablename__ = "deleted"
+	__table_args__ = ({'useexisting': True})
+	_no_crumbs = True
+
+	q = db.session.query_property(db.Query)
+	id = Column(Integer, ForeignKey('obj.id',name="delete_id"), primary_key=True,autoincrement=False)
+
+	__mapper_args__ = {'polymorphic_identity': 16, 'inherit_condition':id==Object.id}
+
+	comment = Column(Unicode(200), nullable=True)
+
+	## The old parent is in self.superparent
+	old_superparent_id = Column(Integer(20), ForeignKey('obj.id',name="obj_super"))
+	old_owner_id = Column(Integer(20), ForeignKey('obj.id',name="obj_owner"))
+
+	timestamp = Column(TimeStamp)
+
+	def __init__(self, user, obj, comment):
+		self.owner = user
+		self.parent = obj
+		self.old_owner = obj.owner
+		self.superparent = obj.parent
+		self.old_superparent = obj.superparent
+
+		obj.owner = None
+		obj.parent = None
+		obj.superparent = None
+		obj.deleted = True
+
+		self.timestamp = datetime.utcnow()
+		db.session.add(self)
+		db.session.add(Tracker(user,obj,self))
+
+	def __unicode__(self):
+		if not self.owner or not self.parent: return super(Delete,self).__unicode__()
+		return u'‹%s %s: %s deleted %s on %s›' % (self.__class__.__name__, self.id, unicode(self.owner), unicode(self.parent), unicode(self.timestamp))
+	def __str__(self):
+		if not self.owner or not self.parent: return super(Delete,self).__str__()
+		return '<%s %s: %s deleted %s on %s>' % (self.__class__.__name__, self.id, str(self.owner), str(self.parent), str(self.timestamp))
+	def __repr__(self):
+		return self.__str__()
+
+Delete.old_owner = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Delete.old_owner_id==Object.id))
+Delete.old_superparent = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Delete.old_superparent_id==Object.id))
+
+
+class Tracker(Object):
+	"""\
+		Track any kind of change, for purpose of RSSification, Emails, et al.
+		Owner: the user who did it.
+		Parent: The Change/Delete object, if any.
+		Superparent: The object itself.
+		"""
+	__tablename__ = "tracking"
+	__table_args__ = ({'useexisting': True})
+	__mapper_args__ = {'polymorphic_identity': 17}
+	_no_crumbs = True
+
+	q = db.session.query_property(db.Query)
+	id = Column(Integer, ForeignKey('obj.id',name="template_id"), primary_key=True,autoincrement=False)
+
+	timestamp = Column(TimeStamp)
+
+	def __init__(self, user, obj, change_obj = None):
+		self.owner = user
+		self.superparent = obj
+		self.parent = change_obj
+
+		self.timestamp = datetime.utcnow()
+
+	def __unicode__(self):
+		if not self.owner or not self.superparent: return super(Tracker,self).__unicode__()
+		if self.parent:
+			return u'‹%s %s: %s changed %s›' % (self.__class__.__name__, self.id, unicode(self.owner), unicode(self.parent))
+		else:
+			return u'‹%s %s: %s changed %s on %s›' % (self.__class__.__name__, self.id, unicode(self.owner), unicode(self.superparent), unicode(self.timestamp))
+	def __str__(self):
+		if not self.owner or not self.superparent: return super(Tracker,self).__str__()
+		if self.parent:
+			return '<%s %s: %s changed %s>' % (self.__class__.__name__, self.id, str(self.owner), str(self.parent))
+		else:
+			return '<%s %s: %s changed %s on %s>' % (self.__class__.__name__, self.id, str(self.owner), str(self.superparent), str(self.timestamp))
+	def __repr__(self):
+		return self.__str__()
+
 	
+class UserTracker(Object):
+	"""\
+		Record that a change be reported to a user. This will be auto-built from Tracker and WantTracking objects.
+		Owner: the user in question.
+		Parent: The tracker object.
+		Superparent: The tracked object itself.
+		"""
+	__tablename__ = "usertracking"
+	__table_args__ = ({'useexisting': True})
+	__mapper_args__ = {'polymorphic_identity': 18}
+	_no_crumbs = True
+
+	q = db.session.query_property(db.Query)
+	id = Column(Integer, ForeignKey('obj.id',name="template_id"), primary_key=True,autoincrement=False)
+
+	comment = Column(Unicode(200), nullable=True)
+
+	def __init__(self, user, tracker):
+		self.owner = user
+		self.superparent = tracker.superparent
+		self.parent = tracker
+		self.timestamp = datetime.utcnow()
+
+	def __unicode__(self):
+		if not self.owner or not self.parent: return super(Tracker,self).__unicode__()
+		return u'‹%s %s: %s for %s›' % (self.__class__.__name__, self.id, str(self.parent), str(self.owner))
+	def __str__(self):
+		if not self.owner or not self.parent: return super(Tracker,self).__str__()
+		return '<%s %s: %s for %s>' % (self.__class__.__name__, self.id, str(self.parent), str(self.owner))
+	def __repr__(self):
+		return self.__str__()
+
+UserTracker.obj = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.superparent_id==Object.id))
+UserTracker.user = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.owner_id==Object.id))
+	
+
+class WantTracking(Object):
+	"""
+		Record that a user wants changes reported.
+		Parent: The object which should be tracked.
+		Owner: The user who wants the tracking.
+		email: send email when this happens.
+		"""
+	__tablename__ = "template_match"
+	__table_args__ = ({'useexisting': True})
+	__mapper_args__ = {'polymorphic_identity': 19}
+	q = db.session.query_property(db.Query)
+	id = Column(Integer, ForeignKey('obj.id',name="Group_id"), primary_key=True,autoincrement=False)
+
+	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="templatematch_discr"), nullable=False)
+	inherit = Column(Boolean, nullable=True)
+	email = Column(Boolean, nullable=False) # send mail, not just RSS/on-site?
+	mods = Column(Boolean, nullable=False) # also alert for modifications?
+
+	def __init__(self, user,obj, discr=None):
+		self.parent = obj
+		self.owner = user
+		self.discr = Discriminator.get(discr,obj).id
+		self.email = False
+		sef.inherit = None
+	
+	def __unicode__(self):
+		p,s,o,d = self.pso
+		if not o or not p: return super(TemplateMatch,self).__unicode__()
+		return u'‹%s%s %s: %d in %s for %s %s›' % (d,self.__class__.__name__, self.id, Discriminator.q.get_by(id=self.discr).name, unicode(p),unicode(o), "*" if self.inherit is None else "Y" if self.inherit else "N")
+	def __str__(self):
+		p,s,o,d = self.pso
+		if not o or not p: return super(TemplateMatch,self).__str__()
+		return '<%s%s %s: %d in %s for %s %s>' % (d,self.__class__.__name__, self.id, Discriminator.q.get_by(id=self.discr).name, str(p),str(o), "*" if self.inherit is None else "Y" if self.inherit else "N")
+	def __repr__(self):
+		return self.__str__()
+
+WantTracking.obj = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.parent_id==Object.id))
+WantTracking.user = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.owner_id==Object.id))
+

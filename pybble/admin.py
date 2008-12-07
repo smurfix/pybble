@@ -3,7 +3,8 @@
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from pybble.utils import send_mail, current_request, make_permanent
-from pybble.render import url_for, expose, render_template
+from pybble.render import url_for, expose, render_template, valid_obj, \
+	discr_list
 from pybble.models import Template, TemplateMatch, Discriminator, \
 	Permission, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE
 
@@ -12,16 +13,8 @@ from pybble.flashing import flash
 from pybble.session import logged_in
 from wtforms import Form, BooleanField, TextField, TextAreaField, \
 	SelectField, PasswordField, HiddenField, validators
-from wtforms.validators import ValidationError
 from sqlalchemy.sql import and_, or_, not_
 from datetime import datetime
-
-
-def valid_obj(form, field):
-	try:
-		obj_get(field.data)
-	except Exception:
-		raise ValidationError(u"Das Objekt '%s' gibt es nicht" % (field.data,))
 
 ###
 ### Template editor
@@ -99,16 +92,11 @@ def edit_named_template(request, template):
 
 tmc = TM_DETAIL.items()
 tmc.sort()
-try:
-	dsc = list(Discriminator.q.all())
-except Exception:
-	dsc = [] # if not set up yet
-dsc.sort(cmp=lambda a,b: cmp(a.name,b.name))
 
 class TemplateForm(Form):
 	oid = TextField('OID', [valid_obj])
 	detail = SelectField('Detail?', choices=tuple((str(x),y) for x,y in tmc))
-	discr = SelectField('Object type?', choices=tuple((str(q.id),q.name) for q in dsc))
+	discr = SelectField('Object type?', choices=tuple((str(q.id),q.name) for q in discr_list))
 	inherit = SelectField('Applies to?', choices=(('Yes','All sub-pages'), ('No','this page only'),('*','This page and all sub-pages')))
 	page = TextAreaField('Template')
 	clone = SelectField('Copy?', choices=(('Yes','Store new template'),('Link','Add new assoc'),('No','Replace old assoc')))
@@ -160,11 +148,13 @@ def edit_assoc_template(request, match, template, obj):
 		if match.inherit is None:
 			if m.count():
 				flash(u"Vorherige Assoziation(en) entfernt.")
-			for mm in m:
-				db.session.delete(mm)
+				for mm in m:
+					db.session.delete(mm)
 		else:
-			m.inherit = not match.inherit
-			flash(u"Bestehende Assoziation eingeschränkt.")
+			if m.count():
+				flash(u"Bestehende Assoziation eingeschränkt.")
+				for mm in m:
+					mm.inherit = not match.inherit
 
 		return redirect(url_for("pybble.admin.edit_template", template=obj.oid()))
 
@@ -183,81 +173,5 @@ def edit_assoc_template(request, match, template, obj):
 			form.inherit.data = "*"
 
 	return render_template('itemplate.html', obj=obj, templ=template, form=form, error=error, title_trace=[template.name])
-
-
-@expose("/admin/perm/<permission>")
-def edit_permission(request, permission=None):
-	p = obj_get(permission)
-	if isinstance(p,Permission):
-		return edit_single_permission(request,p)
-	else:
-		# show list of templates for that object
-		return render_template('permissionlist.html', obj=p, title_trace=["Permissions"])
-
-plc = PERM.items()
-plc.sort()
-
-class PermissionForm(Form):
-	user = TextField('User', [valid_obj])
-	object = TextField('Object', [valid_obj])
-
-	discr = SelectField('Object type?', choices=tuple((str(q.id),q.name) for q in dsc))
-	inherit = SelectField('Applies to?', choices=(('Yes','All sub-pages'), ('No','this page only'),('*','This page and all sub-pages')))
-	right = SelectField('Access to:', choices=tuple((str(x),y) for x,y in plc))
-	clone = SelectField('Copy?', choices=(('Yes','Store new permission'),('No','Modify existing permission')))
-
-
-def edit_single_permission(request, perm):
-	form = PermissionForm(request.form, prefix="perm")
-	error = ""
-	if request.method == 'POST' and form.validate():
-		user = obj_get(form.user.data)
-		obj = obj_get(form.object.data)
-		discr = int(form.discr.data)
-		right = int(form.right.data)
-
-		if form.inherit.data == "Yes": inherit = True
-		elif form.inherit.data == "No": inherit = False
-		elif form.inherit.data == "*": inherit = None
-		else: assert False
-
-		if form.clone.data == "Yes":
-			perm = Permission(user, obj, discr, right, inherit)
-			db.session.add(perm)
-		else:
-			perm.owner = user
-			perm.parent = obj
-			perm.discr = discr
-			perm.right = right
-			perm.inherit = inherit
-
-		flash(u"Gespeichert.",True)
-
-		if perm.inherit is None:
-			m = Permission.q.filter(TemplateMatch.inherit != None)
-		else:
-			m = Permission.q.filter(TemplateMatch.inherit == None)
-		m = m.filter_by(discr=discr, parent=obj, owner=user)
-		if perm.inherit is None:
-			if m.count():
-				flash(u"Vorherige Berechtigung(en) entfernt.")
-			# m.delete()
-			m.parent=None ## TODO: recycle
-		else:
-			m.inherit = not perm.inherit
-			flash(u"Bestehende Berechtigung eingeschränkt.")
-
-		return redirect(url_for("pybble.admin.edit_permission", permission=obj.oid()))
-
-	
-	elif request.method == 'GET':
-		form.object.data = perm.parent.oid()
-		form.user.data = perm.owner.oid()
-		form.discr.data = str(perm.discr)
-		form.inherit.data = "*" if perm.inherit is None else "Yes" if perm.inherit else "No"
-		form.right.data = str(perm.right)
-		form.clone.data = "Yes"
-
-	return render_template('iperm.html', obj=perm.parent, user=perm.owner, form=form, error=error, title_trace=["Edit permission"])
 
 

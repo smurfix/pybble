@@ -44,7 +44,7 @@ def new_oid(request, oid, discr=None, name=None):
 	obj=obj_get(oid)
 	if discr is None:
 		discr = obj.discriminator
-	request.user.will_add(obj,discr)
+	request.user.will_add(obj,new_discr=discr)
 	cls = obj_class(discr)
 	v = import_string("pybble.%s.newer" % (cls.__name__.lower(),))
 
@@ -52,6 +52,16 @@ def new_oid(request, oid, discr=None, name=None):
 	if "name" in v.func_code.co_varnames: args["name"]=name
 	if "parent"  in v.func_code.co_varnames: args["parent" ]=obj
 	return v(request, **args)
+
+@expose('/copy/<oid>/<parent>')
+def copy_oid(request, oid, parent):
+	"""Create a copy of <oid> wich lives beyond / controls / whatever <parent>."""
+	obj=obj_get(oid)
+	parent=obj_get(parent)
+
+	request.user.will_add(parent,new_discr=obj.discriminator)
+	v = import_string("pybble.%s.editor" % (obj.classname.lower(),))
+	return v(request, obj=obj,parent=parent)
 
 
 class DeleteForm(Form):

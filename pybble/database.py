@@ -54,6 +54,10 @@ class GQuery(Query):
 		"""Make sure that there's exactly one result."""
 		return self.filter(*a,**k).one()
 
+	def each(self, proc):
+		"""Run a command on each query value"""
+		for p in self: proc(p)
+
 def _make_module():
     import sqlalchemy
     from sqlalchemy import orm

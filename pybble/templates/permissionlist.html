@@ -2,7 +2,7 @@
 {% block body %}
   <h2>List of permissions</h2>
   <table><thead>
-    <tr><td>Object</td><td>User</td><td>type</td><td>Right</td><td>Subpages?</td><td>Edit?</td></tr>
+    <tr><td>Object</td><td>User</td><td>Typ</td><td>neu?</td><td>Right</td><td>Subpages?</td><td>Edit?</td></tr>
 	</thead><tbody>
   {%- for o in obj.uptree() %}
     {% for p in o.permissions %}
@@ -10,8 +10,11 @@
 			<td>{{ p.owner }}</td>
 			<td>{{ name_discr(p.discr) }}</td>
 			<td>{{ name_permission(p.right) }}</td>
+			<td>{{ name_discr(p.new_discr) if p.new_discr else "-" }}</td>
 			<td>{% if p.inherit is none %}*{%elif p.inherit%}Y{%else%}N{%endif%}</td>
-			<td><a href="{{ url_for('pybble.admin.edit_permission',permission=p.oid()) }}">E</a></td></tr>
+			<td><a href="{{ url_for('pybble.views.edit_oid',oid=p.oid()) }}">Edit</a>
+			  | <a href="{{ url_for('pybble.views.copy_oid',oid=p.oid(),parent=obj.oid()) }}">New</a>
+			  | <a href="{{ url_for('pybble.views.delete_oid',oid=p.oid()) }}">Del</a></td></tr>
 	{% else %}
     	<tr><td>{{ o }}</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
 	{% endfor -%}
