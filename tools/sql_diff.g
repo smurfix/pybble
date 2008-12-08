@@ -413,36 +413,28 @@ class FKey(object):
 
 	def _diffs(self,ok,skip_flags=""):
 		if 'i' not in skip_flags and self.name != ok.name:
-			print "#FK Name:",self.name,ok.name
 			return True
 		if self.rtable != ok.rtable:
-			print "#FK",self.name,"rtable:",self.rtable,ok.rtable
 			return True
 		fs=[f.name for f in self.fields]
 		ofs=[f.name for f in ok.fields]
 		if fs != ofs:
-			print "#FK",self.name,"fields:",fs,ofs
 			return True
 		if self.rfields != ok.rfields:
-			print "#FK",self.name,"rfields:",self.rfields,ok.rfields
 			return True
 		for a,b in self.opt.items():
 			try: c=ok.opt[a]
 			except KeyError:
-				print "#FK",self.name,"k_opt",a,"??"
 				return True
 			else:
 				if b != c:
-					print "#FK",self.name,"k_opt",a,b,c
 					return True
 		for a,b in ok.opt.items():
 			try: c=self.opt[a]
 			except KeyError:
-				print "#FK",self.name,"ok_opt",a,"??"
 				return True
 			else:
 				if b != c:
-					print "#FK",self.name,"ok_opt",a,b,c
 					return True
 		return False
 
