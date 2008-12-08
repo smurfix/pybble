@@ -114,9 +114,10 @@ class Object(db.Base):
 		else:
 			return '<%s%s %s>' % (d,self.__class__.__name__, self.id)
 	__repr__ = __str__
+
 	@property
 	def deleted(self):
-		self.parent is None and self.superparent is None and self.owner is None
+		return self.parent is None and self.superparent is None and self.owner is None
 	
 	#all_children = relation('Object', backref=backref("superparent", remote_side=Object.id)) 
 
@@ -202,6 +203,7 @@ class Object(db.Base):
 
 	@classmethod
 	def cls_name(cls):
+		"""Necessary because underscore names don't work in templates."""
 		return cls.__name__
 
 	@classmethod
@@ -209,10 +211,18 @@ class Object(db.Base):
 		return cls.__mapper__.polymorphic_identity
 
 	@property
+	def change_obj(self):
+		"""\
+			For objects which return change records, return whatever was changed.
+			Other objects return themselves.
+			"""
+		return self
+
+	@property
 	def pso(self): # parent/super/owner
 		if self.deleted:
 			try:
-				d = Deleted.get_by(parent=self)
+				d = Delete.q.get_by(parent=self)
 			except NoResult:
 				return (None,None,None,None)
 			else:
@@ -299,6 +309,7 @@ class User(Object):
 	"""\
 		Authorized users.
 		Owner: Managing user; some sort of root for anon users.
+		Parent: the site they first logged in on.
 		SuperParent: for anon users, the site they're used with.
 		"""
 	__tablename__ = "users"
@@ -910,8 +921,11 @@ class Change(Object):
 	def __repr__(self):
 		return self.__str__()
 
-Object.changes = relation(Change, remote_side=Change.parent_id, uselist=True, primaryjoin=(Change.parent_id==Object.id)) 
+	@property
+	def change_obj(self):
+		return self.parent
 
+Object.changes = relation(Change, remote_side=Change.parent_id, uselist=True, primaryjoin=(Change.parent_id==Object.id)) 
 
 
 class Delete(Object):
@@ -962,7 +976,12 @@ class Delete(Object):
 	def __repr__(self):
 		return self.__str__()
 
+	@property
+	def change_obj(self):
+		return self.parent
+
 Delete.old_owner = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Delete.old_owner_id==Object.id))
+Delete.old_parent = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Delete.superparent_id==Object.id))
 Delete.old_superparent = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Delete.old_superparent_id==Object.id))
 
 
@@ -971,7 +990,7 @@ class Tracker(Object):
 		Track any kind of change, for purpose of RSSification, Emails, et al.
 		Owner: the user who did it.
 		Parent: The Change/Delete object, if any.
-		Superparent: The object itself.
+		Superparent: The site.
 		"""
 	__tablename__ = "tracking"
 	__table_args__ = ({'useexisting': True})
@@ -983,10 +1002,10 @@ class Tracker(Object):
 
 	timestamp = Column(TimeStamp)
 
-	def __init__(self, user, obj, change_obj = None):
+	def __init__(self, user, obj, site = None):
 		self.owner = user
-		self.superparent = obj
-		self.parent = change_obj
+		self.parent = change_obj or obj
+		self.superparent = site or current_request.site
 
 		self.timestamp = datetime.utcnow()
 
@@ -1004,6 +1023,12 @@ class Tracker(Object):
 			return '<%s %s: %s changed %s on %s>' % (self.__class__.__name__, self.id, str(self.owner), str(self.superparent), str(self.timestamp))
 	def __repr__(self):
 		return self.__str__()
+
+	@property
+	def change_obj(self):
+		return self.parent.change_obj
+
+Tracker.site = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Tracker.superparent_id==Object.id))
 
 	
 class UserTracker(Object):
@@ -1031,7 +1056,7 @@ class UserTracker(Object):
 
 	def __unicode__(self):
 		if not self.owner or not self.parent: return super(Tracker,self).__unicode__()
-		return u'‹%s %s: %s for %s›' % (self.__class__.__name__, self.id, str(self.parent), str(self.owner))
+		return u'‹%s %s: %s for %s›' % (self.__class__.__name__, self.id, unicode(self.parent), unicode(self.owner))
 	def __str__(self):
 		if not self.owner or not self.parent: return super(Tracker,self).__str__()
 		return '<%s %s: %s for %s>' % (self.__class__.__name__, self.id, str(self.parent), str(self.owner))
@@ -1048,7 +1073,7 @@ class WantTracking(Object):
 		Parent: The object which should be tracked.
 		Owner: The user who wants the tracking.
 		email: send email when this happens.
-		track_new/_mod: track new / modified content
+		track_new/_mod/_del: track new / modified / deleted content
 		"""
 	__tablename__ = "wanttracking"
 	__table_args__ = ({'useexisting': True})
@@ -1057,10 +1082,10 @@ class WantTracking(Object):
 	id = Column(Integer, ForeignKey('obj.id',name="Group_id"), primary_key=True,autoincrement=False)
 
 	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="wanttracking_discr"), nullable=True)
-	inherit = Column(Boolean, nullable=True)
 	email = Column(Boolean, nullable=False) # send mail, not just RSS/on-site?
 	track_new = Column(Boolean, nullable=False) # alert for new data?
 	track_mod = Column(Boolean, nullable=False) # alert for modifications?
+	track_del = Column(Boolean, nullable=False) # alert for deletions?
 
 	def __init__(self, user,obj, discr=None):
 		self.parent = obj
@@ -1069,16 +1094,17 @@ class WantTracking(Object):
 		self.email = False
 		self.track_new = False
 		self.track_mod = False
+		self.track_del = False
 		self.inherit = None
 	
 	def __unicode__(self):
 		p,s,o,d = self.pso
 		if not o or not p: return super(WantTracking,self).__unicode__()
-		return u'‹%s%s %s: %s in %s for %s %s›' % (d,self.__class__.__name__, self.id, "-" if self.discr is None else Discriminator.q.get_by(id=self.discr).name, unicode(p),unicode(o), "*" if self.inherit is None else "Y" if self.inherit else "N")
+		return u'‹%s%s %s: %s in %s for %s %s›' % (d,self.__class__.__name__, self.id, "-" if self.discr is None else Discriminator.q.get_by(id=self.discr).name, unicode(p),unicode(o), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
 	def __str__(self):
 		p,s,o,d = self.pso
 		if not o or not p: return super(WantTracking,self).__str__()
-		return '<%s%s %s: %s in %s for %s %s>' % (d,self.__class__.__name__, self.id, "-" if self.discr is None else Discriminator.q.get_by(id=self.discr).name, str(p),str(o), "*" if self.inherit is None else "Y" if self.inherit else "N")
+		return '<%s%s %s: %s in %s for %s %s>' % (d,self.__class__.__name__, self.id, "-" if self.discr is None else Discriminator.q.get_by(id=self.discr).name, str(p),str(o), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
 	def __repr__(self):
 		return self.__str__()
 

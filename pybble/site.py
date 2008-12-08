@@ -2,7 +2,7 @@
 
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
-from pybble.utils import send_mail, current_request, make_permanent
+from pybble.utils import current_request, make_permanent
 from pybble.render import url_for, render_template, expose, render_my_template
 from pybble.models import Site, TM_DETAIL_PAGE
 from pybble.views import view_oid

@@ -61,23 +61,6 @@ def random_string(bytes=9, base="23456789abcdefghijkmnpqrstuvwxyz", dash="-",
 	return passwd
 
 
-import smtplib
-import email.Message
-
-def send_mail(to='', template='', **context):
-	if "site" not in context:
-		context["site"] = current_request.site
-	if "user" not in context:
-		context["user"] = current_request.user
-	rand = random_string(8)
-	for x in range(3):
-		context["id"+str(x)] = "%d.%s%d@%s" % (time(),random_string(10),x,current_request.site.domain)
-	
-	mailServer = smtplib.SMTP(settings.MAILHOST)
-	mailServer.sendmail(context["site"].owner.email, to, jinja_env.get_template(template).render(**context))
-	mailServer.quit()
-
-
 def make_permanent(request):
 	"""Make this session a permanent one."""
 	request.session['_perm'] = True

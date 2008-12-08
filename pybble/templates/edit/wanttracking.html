@@ -27,8 +27,7 @@
 	  {{ showb(form.email) }}
 	  {{ showb(form.track_mod) }}
 	  {{ showb(form.track_new) }}
-	  {{ show(form.inherit) }}
-	  {% if form.clone %}{{ show(form.clone) }}{% endif %}
+	  {{ showb(form.track_del) }}
     </table>
 	{% if error %}<div class="error">{{ error }}</div>{% endif -%}
     <input type="submit" value="Update" />

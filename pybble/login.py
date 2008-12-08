@@ -2,8 +2,8 @@
 
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
-from pybble.utils import send_mail, current_request, make_permanent
-from pybble.render import url_for, expose, render_template
+from pybble.utils import current_request, make_permanent
+from pybble.render import url_for, expose, render_template, send_mail
 from pybble.models import User, Verifier, VerifierBase
 from pybble.database import db,NoResult
 from pybble.flashing import flash
@@ -98,6 +98,7 @@ def register(request):
 	if request.method == 'POST' and form.validate():
 		u = User(form.username.data, form.password.data)
 		u.email = form.email.data
+		u.parent = request.site
 		db.session.add(u)
 
 		v = verifier.new(u)

@@ -29,5 +29,6 @@ action_initdb = make_app().init_database()
 action_initsite = make_app().init_site()
 action_initsite_replace = make_app().init_site_replace()
 action_showdb = make_app().show_database()
+action_trigger = make_app().trigger()
 
 script.run()

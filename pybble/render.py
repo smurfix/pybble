@@ -4,12 +4,14 @@ from jinja2 import Environment, BaseLoader, Markup
 from werkzeug import cached_property, Response
 from werkzeug.routing import Map, Rule
 from markdown import Markdown
-from pybble.utils import current_request, local
+from pybble.utils import current_request, local, random_string
 from pybble.models import PERM, PERM_NONE, PERM_ADD, Permission, obj_get, TemplateMatch, \
 	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class
 from pybble.database import NoResult
 from pybble.diff import textDiff
 from wtforms.validators import ValidationError
+from time import time
+import settings
 
 url_map = Map([Rule('/static/<file>', endpoint='static', build_only=True)])
 
@@ -183,6 +185,23 @@ def get_dtd():
 	except Exception:
 		pass
 	return '<?xml version="1.0" encoding="utf-8"?>\n' + pybble_dtd
+
+
+import smtplib
+import email.Message
+
+def send_mail(to='', template='', **context):
+	if "site" not in context:
+		context["site"] = current_request.site
+	if "user" not in context:
+		context["user"] = current_request.user
+	rand = random_string(8)
+	for x in range(3):
+		context["id"+str(x)] = "%d.%s%d@%s" % (time(),random_string(10),x,current_request.site.domain)
+	
+	mailServer = smtplib.SMTP(settings.MAILHOST)
+	mailServer.sendmail(context["site"].owner.email, to, jinja_env.get_template(template).render(**context))
+	mailServer.quit()
 
 
 

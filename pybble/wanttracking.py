@@ -2,7 +2,7 @@
 
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
-from pybble.utils import send_mail, current_request, make_permanent
+from pybble.utils import current_request, make_permanent
 from pybble.render import url_for, expose, render_template, valid_obj, \
 	discr_list, name_discr
 from pybble.models import Discriminator, Tracker,Change,\
@@ -45,6 +45,7 @@ class WantTrackingForm(Form):
 	email = BooleanField(u'Mail schicken?')
 	track_new = BooleanField(u'Meldung bei neuen Einträgen')
 	track_mod = BooleanField(u'Meldung bei Änderungen')
+	track_del = BooleanField(u'Meldung bei Löschung')
 
 def newer(request, parent, name=None):
 	return editor(request, parent=parent)
@@ -60,6 +61,7 @@ def editor(request, obj=None, parent=None):
 		email = bool(form.email.data)
 		track_new = bool(form.track_new.data)
 		track_mod = bool(form.track_mod.data)
+		track_del = bool(form.track_del.data)
 
 		if form.inherit.data == "Yes": inherit = True
 		elif form.inherit.data == "No": inherit = False
@@ -70,6 +72,7 @@ def editor(request, obj=None, parent=None):
 			obj = WantTracking(user, dest, discr)
 			obj.track_new=track_new
 			obj.track_mod=track_mod
+			obj.track_del=track_del
 			obj.email=email
 			obj.inherit=inherit
 
@@ -107,6 +110,7 @@ def editor(request, obj=None, parent=None):
 			form.inherit.data = "*" if obj.inherit is None else "Yes" if obj.inherit else "No"
 			form.track_new.data = obj.track_new
 			form.track_mod.data = obj.track_mod
+			form.track_del.data = obj.track_del
 			form.email.data = obj.email
 		else:
 			form.object.data = parent.oid()
@@ -115,6 +119,7 @@ def editor(request, obj=None, parent=None):
 			form.inherit.data = "*"
 			form.track_new.data = True
 			form.track_mod.data = False
+			form.track_del.data = False
 			form.email.data = False
 
 	return render_template('edit/wanttracking.html', obj=obj, parent=parent or obj.parent, form=form, title_trace=["Beobachten"])

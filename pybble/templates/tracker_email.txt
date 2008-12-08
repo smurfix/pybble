@@ -1,0 +1,12 @@
+From: {{ site.owner.name }} <{{ site.owner.email }}>
+To: {{ user.name }} <{{ user.email }}>
+Message-ID: <{{ id1 }}>
+Subject: Neues bei {{site.name}} ({{site.domain}})
+Mime-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+Hallo {{ user.name }},
+
+Es gibt Neues: {{ url_for('pybble.views.view_oid',_external=True,oid=obj.oid()) }}
+
+{{ tracker }}

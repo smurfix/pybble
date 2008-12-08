@@ -5,7 +5,7 @@ from werkzeug import Request, SharedDataMiddleware, ClosingIterator
 from werkzeug.exceptions import HTTPException, NotFound, Unauthorized
 from pybble.utils import STATIC_PATH, local, local_manager, \
 	 TEMPLATE_PATH, AuthError
-from pybble.render import expose_map, url_map
+from pybble.render import expose_map, url_map, send_mail
 from pybble.database import metadata, db, NoResult
 from sqlalchemy.sql import and_, or_, not_
 
@@ -24,6 +24,16 @@ from datetime import datetime
 
 ## Adapters
 from pybble import views,login,confirm
+
+def setup_code_env(site):
+	from pybble import utils
+	environ = {}
+	environ['wsgi.url_scheme'] = "http"
+	environ['SERVER_PORT'] = "80"
+	environ['SERVER_NAME'] = site.domain
+	environ['REQUEST_METHOD'] = "GET"
+	utils.current_request.site = site
+	utils.local.url_adapter = url_map.bind_to_environ(environ)
 
 class Pybble(object):
 
@@ -85,6 +95,7 @@ class Pybble(object):
 				u=User(u"root")
 				u.email=settings.ADMIN
 				u.sites.append(s)
+				u.parent = s
 				s.owner = u
 				db.session.add(u)
 			else:
@@ -166,7 +177,7 @@ class Pybble(object):
 						t.owner = u
 
 			for fn in os.listdir(TEMPLATE_PATH):
-				if fn.startswith(".") or not fn.endswith(".html"):
+				if fn.startswith(".") or (not fn.endswith(".html") and not fn.endswith(".txt")):
 					continue
 				get_template(fn)
 
@@ -253,6 +264,72 @@ You may continue on your own. ;-)
 			print buf.getvalue()
 		return action
 
+
+	def trigger(self):
+		def action(user=("u",""), site=("s",""), verbose=("v",False)):
+			"""Process trigger records."""
+			from pybble.models import Site,WantTracking,UserTracker,Tracker,User,Delete,Change
+			from pybble import utils
+
+			utils.local.request = Request({})
+
+			siteq = Site.q
+			if site:
+				siteq = siteq.filter_by(name=site)
+			
+			for s in siteq:
+				setup_code_env(s)
+				if user:
+					u = User.q.filter_by(site=s,name=user).value()
+				else:
+					u = None
+				tq = Tracker.q.filter_by(site=s)
+				if s.tracked:
+					tq = tq.filter(Tracker.timestamp>s.tracked)
+				if u:
+					tq = tq.filter_by(owner=u)
+
+				for t in tq.order_by(Tracker.timestamp):
+					o=t.change_obj
+					wq=WantTracking.q.filter(or_(WantTracking.discr==None,WantTracking.discr==t.change_obj.discriminator))
+					processed = set()
+					while o:
+						wantq=wq.filter_by(parent=o)
+						if processed:
+							wantq=wantq.filter(not_(or_(*( WantTracking.owner_id == i for i in processed))))
+
+						inew = None
+						imod = None
+						idel = None
+						for w in wantq:
+							processed.add(w.owner.owner_id)
+							if isinstance(t.parent,Delete):
+								if not w.track_del: continue
+								idel=t.parent
+							elif isinstance(t.parent,Change):
+								if not w.track_mod: continue
+								imod=t.parent
+							else:
+								if not w.track_new: continue
+								inew=t.parent
+
+							if UserTracker.q.filter_by(owner=w.owner, parent=t).count():
+								continue
+							ut=UserTracker(user=w.owner,tracker=t)
+							db.session.add(ut)
+							if w.email:
+								send_mail(ut.owner.email, 'tracker_email.txt',
+									tracker=ut.parent, user=ut.owner, site=s, watcher=w, obj=t.change_obj)
+
+						if o.deleted and isinstance(t.parent,Delete):
+							o=t.parent.superparent
+						else:
+							o=o.parent
+
+					if not u:
+						s.tracked=t.timestamp
+					db.session.flush()
+		return action
 
 	def dispatch(self, environ, start_response):
 		local.application = self
