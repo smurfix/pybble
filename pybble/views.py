@@ -4,9 +4,9 @@ from werkzeug import redirect, import_string
 from werkzeug.exceptions import NotFound
 from pybble.render import render_template, render_my_template, \
 	expose, url_for
-from pybble.models import TemplateMatch, TM_DETAIL_PAGE, obj_get, obj_class
+from pybble.models import TemplateMatch, TM_DETAIL_PAGE, obj_get, obj_class, Delete
 from pybble.database import db,NoResult
-from wtforms import Form, HiddenField
+from wtforms import Form, HiddenField, TextField, validators
 from pybble.flashing import flash
 
 @expose("/")
@@ -66,6 +66,7 @@ def copy_oid(request, oid, parent):
 
 class DeleteForm(Form):
 	next = HiddenField("next URL")
+	comment = TextField('Grund', [validators.length(min=3, max=200)])
 
 @expose('/delete/<oid>')
 def delete_oid(request, oid):
@@ -73,9 +74,10 @@ def delete_oid(request, oid):
 	request.user.will_delete(obj)
 	form = DeleteForm(request.form, prefix='delete')
 	if request.method == 'POST' and form.validate():
-		db.session.delete(obj)
-		flash(u"%s (%s) wurde gelöscht" % (unicode(obj),obj.oid()), True)
+		## db.session.delete(obj)
+		Delete(request.user,obj,form.comment.data)
 
+		flash(u"%s (%s) wurde gelöscht" % (unicode(obj),obj.oid()), True)
 		if form.next.data:
 			return redirect(form.next.data)
 		elif obj.parent:

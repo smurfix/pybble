@@ -1,0 +1,37 @@
+{% extends 'layout.html' %}
+{% from 'form.html' import show, showb %}
+
+{% block body %}
+  <h2>Relevante Beobachtungseinträge</h2>
+  <table><thead>
+    <tr><td>Objekt</td><td>Typ</td><td>Subpages?</td><td>Edit</td></tr>
+	</thead><tbody>
+  {%- for o in parent.uptree() %}
+    {% for p in o.trackings %}
+    	<tr><td>{{ p.parent }}</td>
+			<td>{{ name_discr(p.discr) }}</td>
+			<td>{% if p.inherit is none %}*{%elif p.inherit%}Y{%else%}N{%endif%}</td>
+			<td><a href="{{ url_for('pybble.views.edit_oid',oid=p.oid()) }}">Edit</a>
+			  | <a href="{{ url_for('pybble.views.delete_oid',oid=p.oid()) }}">Del</a></td></tr>
+	{% else %}
+    	<tr><td>{{ o }}</td><td>-</td><td>-</td><td>-</td></tr>
+	{% endfor -%}
+  {% endfor -%}
+    </tbody></table>
+  <h2>Beobachtungseintrag bearbeiten</h2>
+    <form method="post" action="{{ action }}">
+    <table>
+	  {{ show(form.user) }}
+	  {{ show(form.object) }}
+	  {{ show(form.discr) }}
+	  {{ showb(form.email) }}
+	  {{ showb(form.track_mod) }}
+	  {{ showb(form.track_new) }}
+	  {{ show(form.inherit) }}
+	  {% if form.clone %}{{ show(form.clone) }}{% endif %}
+    </table>
+	{% if error %}<div class="error">{{ error }}</div>{% endif -%}
+    <input type="submit" value="Update" />
+    </form>
+
+{% endblock %}

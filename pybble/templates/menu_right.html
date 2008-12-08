@@ -1,15 +1,23 @@
-		<div class="menu right">
+<div class="menu right">
+	<ul>
+	  {% if USER.anon -%}
+		<li><a href="{{ url_for('pybble.login.register') }}">Anmelden</a></li>
+		<li><a href="{{ url_for('pybble.login.do_login', next=url()) }}">Login</a></li>
+	  {%- else -%}
+		<li><a href="{{ url_for('pybble.views.view_oid', oid=USER.oid()) }}">Hallo, <strong>{{ USER.name }}</strong>!</a>
 			<ul>
-				{% if USER.anon -%}
-				<li><a href="{{ url_for('pybble.login.register') }}">Anmelden</a></li>
-				<li><a href="{{ url_for('pybble.login.do_login', next=url()) }}">Login</a></li>
-				{%- else -%}
-				<li><a href="{{ url_for('pybble.views.view_oid', oid=USER.oid()) }}">Hallo, <strong>{{ USER.name }}</strong>!</a>
-				<ul>
-					<li><a href="{{ url_for('pybble.views.last_visited') }}">zuletzt besucht</a></li>
-				</ul>
+				<li><a href="{{ url_for('pybble.views.last_visited') }}">zuletzt besucht</a></li>
+			  {% if obj %}
+				<li><a href="{{ url_for('pybble.views.new_oid',oid=obj.oid(),discr='WantTracking') }}">beobachten</a>
+					<ul>
+						{# <li><a href="{{ url_for('pybble.wanttracking.edit_wanttracking',oid=obj.oid()) }}">Liste</a> #}
+						<li><a href="{{ url_for('pybble.wanttracking.list_wanttracking') }}">Gesamtliste</a>
+					</ul>
 				</li>
-				<li><a href="{{ url_for('pybble.login.do_logout') }}">Logout</a></li>
-				{%- endif %}
+			  {% endif %}
 			</ul>
-		</div>
+		</li>
+		<li><a href="{{ url_for('pybble.login.do_logout') }}">Logout</a></li>
+	  {%- endif %}
+	</ul>
+</div>

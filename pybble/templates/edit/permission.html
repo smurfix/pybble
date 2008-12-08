@@ -2,7 +2,7 @@
 {% from 'form.html' import show, showb %}
 
 {% block body %}
-  <h2>Edit template for {{ name_discr(form.discr.data) }} / {{ name_permission(form.right.data) }}</h2>
+  <h2>Edit permissions for {{ name_discr(form.discr.data) }} / {{ name_permission(form.right.data) }}</h2>
     <form method="post" action="{{ action }}">
     <table>
 	  {{ show(form.user) }}

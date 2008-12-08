@@ -128,7 +128,8 @@ way to fit your requirements.
 	left:150px; 
 }
 .menu.right ul ul ul {
-//	right:150px; 
+	top:0px;
+	right:150px; 
 }
 
 /* position the third level flyout menu for a left flyout */

@@ -189,6 +189,10 @@ class Object(db.Base):
 		return Permission.q.filter_by(parent_id=self.id)
 
 	@property
+	def trackings(self):
+		return WantTracking.q.filter_by(parent=self, user=current_request.user)
+
+	@property
 	def classname(self):
 		return self.__class__.__name__
 
@@ -271,7 +275,13 @@ Object.slaves = relation(Object, remote_side=Object.owner_id, primaryjoin=(Objec
 
 def obj_class(id):
 	"""Given a discriminator ID, return the referred object's class."""
-	return Object.__mapper__.polymorphic_map[int(id)].class_
+	try:
+		return Object.__mapper__.polymorphic_map[int(id)].class_
+	except ValueError:
+		for f in Object.__mapper__.polymorphic_map.values():
+			if f.class_.__name__ == id:
+				return f.class_
+		raise KeyError(id)
 
 def obj_get(oid):
 	"""Given an object ID, return the object"""
@@ -636,6 +646,8 @@ class Site(Object):
 
 	domain = Column(Unicode(100), nullable=False, unique=True)
 	name = Column(Unicode(50), nullable=False, unique=True)
+	tracked = Column(DateTime, nullable=False)
+	## Datestamp of newest fully-processed Tracker object
 
 	def __init__(self,domain,name=None):
 		if name is None:
@@ -688,7 +700,7 @@ class TemplateMatch(Object):
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 12}
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="Group_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey('obj.id',name="template_match_id"), primary_key=True,autoincrement=False)
 
 	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="templatematch_discr"), nullable=False)
 	detail = Column(TinyInteger(1), nullable=False)
@@ -806,7 +818,7 @@ class WikiPage(Object):
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 9}
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="template_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey('obj.id',name="wikipage.id"), primary_key=True,autoincrement=False)
 
 	name = Column(String(50))
 	data = Column(Text)
@@ -834,9 +846,9 @@ class Breadcrumb(Object):
 	_no_crumbs = True
 
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="template_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey('obj.id',name="breadcrumb_id"), primary_key=True,autoincrement=False)
 
-	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="templatematch_discr"), nullable=False)
+	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="breadcrumb_discr"), nullable=False)
 	#seq = Column(Integer)
 	visited = Column(TimeStamp)
 
@@ -872,7 +884,7 @@ class Change(Object):
 	_no_crumbs = True
 
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="template_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey('obj.id',name="change_id"), primary_key=True,autoincrement=False)
 
 	timestamp = Column(TimeStamp)
 	data = Column(Text)
@@ -936,7 +948,6 @@ class Delete(Object):
 		obj.owner = None
 		obj.parent = None
 		obj.superparent = None
-		obj.deleted = True
 
 		self.timestamp = datetime.utcnow()
 		db.session.add(self)
@@ -968,7 +979,7 @@ class Tracker(Object):
 	_no_crumbs = True
 
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="template_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey('obj.id',name="tracker_id"), primary_key=True,autoincrement=False)
 
 	timestamp = Column(TimeStamp)
 
@@ -1008,7 +1019,7 @@ class UserTracker(Object):
 	_no_crumbs = True
 
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="template_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey('obj.id',name="usertracker_id"), primary_key=True,autoincrement=False)
 
 	comment = Column(Unicode(200), nullable=True)
 
@@ -1037,33 +1048,37 @@ class WantTracking(Object):
 		Parent: The object which should be tracked.
 		Owner: The user who wants the tracking.
 		email: send email when this happens.
+		track_new/_mod: track new / modified content
 		"""
-	__tablename__ = "template_match"
+	__tablename__ = "wanttracking"
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 19}
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey('obj.id',name="Group_id"), primary_key=True,autoincrement=False)
 
-	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="templatematch_discr"), nullable=False)
+	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="wanttracking_discr"), nullable=True)
 	inherit = Column(Boolean, nullable=True)
 	email = Column(Boolean, nullable=False) # send mail, not just RSS/on-site?
-	mods = Column(Boolean, nullable=False) # also alert for modifications?
+	track_new = Column(Boolean, nullable=False) # alert for new data?
+	track_mod = Column(Boolean, nullable=False) # alert for modifications?
 
 	def __init__(self, user,obj, discr=None):
 		self.parent = obj
 		self.owner = user
-		self.discr = Discriminator.get(discr,obj).id
+		self.discr = Discriminator.get(discr,obj).id if discr else None
 		self.email = False
-		sef.inherit = None
+		self.track_new = False
+		self.track_mod = False
+		self.inherit = None
 	
 	def __unicode__(self):
 		p,s,o,d = self.pso
-		if not o or not p: return super(TemplateMatch,self).__unicode__()
-		return u'‹%s%s %s: %d in %s for %s %s›' % (d,self.__class__.__name__, self.id, Discriminator.q.get_by(id=self.discr).name, unicode(p),unicode(o), "*" if self.inherit is None else "Y" if self.inherit else "N")
+		if not o or not p: return super(WantTracking,self).__unicode__()
+		return u'‹%s%s %s: %s in %s for %s %s›' % (d,self.__class__.__name__, self.id, "-" if self.discr is None else Discriminator.q.get_by(id=self.discr).name, unicode(p),unicode(o), "*" if self.inherit is None else "Y" if self.inherit else "N")
 	def __str__(self):
 		p,s,o,d = self.pso
-		if not o or not p: return super(TemplateMatch,self).__str__()
-		return '<%s%s %s: %d in %s for %s %s>' % (d,self.__class__.__name__, self.id, Discriminator.q.get_by(id=self.discr).name, str(p),str(o), "*" if self.inherit is None else "Y" if self.inherit else "N")
+		if not o or not p: return super(WantTracking,self).__str__()
+		return '<%s%s %s: %s in %s for %s %s>' % (d,self.__class__.__name__, self.id, "-" if self.discr is None else Discriminator.q.get_by(id=self.discr).name, str(p),str(o), "*" if self.inherit is None else "Y" if self.inherit else "N")
 	def __repr__(self):
 		return self.__str__()
 

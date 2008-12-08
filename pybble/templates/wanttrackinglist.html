@@ -1,0 +1,16 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h2>Beobachtungsliste</h2>
+  <table><thead>
+    <tr><td>Object</td><td>Typ</td><td>Subpages?</td><td>Edit</td></tr>
+	</thead><tbody>
+  {%- for p in data %}
+    	<tr><td>{{ p.parent }}</td>
+			<td>{{ name_discr(p.discr) }}</td>
+			<td>{% if p.inherit is none %}*{%elif p.inherit%}Y{%else%}N{%endif%}</td>
+			<td><a href="{{ url_for('pybble.views.edit_oid',oid=p.oid()) }}">Edit</a>
+			  | <a href="{{ url_for('pybble.views.delete_oid',oid=p.oid()) }}">Del</a></td></tr>
+  {% endfor -%}
+    </tbody></table>
+{% endblock %}
