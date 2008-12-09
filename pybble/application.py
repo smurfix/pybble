@@ -328,7 +328,8 @@ You may continue on your own. ;-)
 
 					if not u:
 						s.tracked=t.timestamp
-					db.session.flush()
+				db.session.commit()
+
 		return action
 
 	def dispatch(self, environ, start_response):
