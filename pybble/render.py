@@ -2,15 +2,18 @@
 
 from jinja2 import Environment, BaseLoader, Markup
 from werkzeug import cached_property, Response
+from werkzeug.http import parse_etags, remove_entity_headers
 from werkzeug.routing import Map, Rule
+from werkzeug.utils import http_date
 from markdown import Markdown
 from pybble.utils import current_request, local, random_string
 from pybble.models import PERM, PERM_NONE, PERM_ADD, Permission, obj_get, TemplateMatch, \
-	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class
+	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, StaticFile
 from pybble.database import NoResult
 from pybble.diff import textDiff
 from wtforms.validators import ValidationError
 from time import time
+from datetime import datetime,timedelta
 import settings
 
 url_map = Map([Rule('/static/<file>', endpoint='static', build_only=True)])
@@ -257,4 +260,18 @@ class Pagination(object):
 	next = property(lambda x: url_for(x.endpoint, page=x.page + 1))
 	pages = property(lambda x: max(0, x.count - 1) // x.per_page + 1)
 
+
+@expose("/static/<path:path>")
+def serve_path(request,path):
+	sf = StaticFile.q.get_by(superparent=request.site, path=path)
+	r = Response(sf.content, mimetype=sf.mimetype)
+	r.set_etag(sf.hash)
+	r.headers['Cache-Control']='public'
+	r.headers['Expiry']=http_date(datetime.utcnow()+timedelta(0,settings.STATIC_EXPIRE))
+	r.headers['Last-Modified']=http_date(sf.modified)
+
+	if parse_etags(request.environ.get('HTTP_IF_NONE_MATCH')).contains(sf.hash):
+		r.status_code = 304
+		remove_entity_headers(r.headers)
+	return r
 

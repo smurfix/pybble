@@ -18,6 +18,7 @@ SERVER_RELOAD=True
 SESSION_COOKIE_NAME="sess"
 SESSION_COOKIE_AGE=86400
 SECRET_KEY="I won't tell you."
+STATIC_EXPIRE=3600 # 1h
 
 MAILHOST="intern.smurf.noris.de"
 ADMIN="smurf@smurf.noris.de"

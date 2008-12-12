@@ -658,7 +658,7 @@ class Site(Object):
 
 	domain = Column(Unicode(100), nullable=False, unique=True)
 	name = Column(Unicode(50), nullable=False, unique=True)
-	tracked = Column(DateTime, nullable=False, default=datetime.utcnow)
+	tracked = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 	## Datestamp of newest fully-processed Tracker object
 
 	def __init__(self,domain,name=None):
@@ -692,7 +692,7 @@ class Template(Object):
 	id = Column(Integer, ForeignKey('obj.id',name="template_id"), primary_key=True,autoincrement=False)
 	name = Column(String(50), nullable=True)
 	data = Column(Text)
-	modified = Column(TimeStamp)
+	modified = Column(TimeStamp,default=datetime.utcnow, onupdate=datetime.utcnow)
 
 	def __init__(self, name, data):
 		self.name = name
@@ -787,7 +787,7 @@ class Verifier(Object):
 	base_id = Column(TinyInteger, ForeignKey('verifierbase.id',name="verifier_base"))
 	code = Column(String(50), nullable=False, unique=True)
 
-	added = Column(DateTime, nullable=False)
+	added = Column(DateTime, default=datetime.utcnow, nullable=False)
 	repeated = Column(DateTime, nullable=True)
 	timeout = Column(DateTime, nullable=False)
 
@@ -798,7 +798,6 @@ class Verifier(Object):
 		self.parent = obj
 		self.owner = user or obj
 		self.code = code or random_string(20,dash="-",dash_step=5)
-		self.added = datetime.utcnow()
 		self.timeout = datetime.utcnow() + timedelta((days or 10),0) ## ten days
 
 	@property
@@ -834,7 +833,7 @@ class WikiPage(Object):
 
 	name = Column(String(50))
 	data = Column(Text)
-	modified = Column(TimeStamp)
+	modified = Column(TimeStamp,default=datetime.utcnow,onupdate=datetime.utcnow)
 
 	def __init__(self, name, data):
 		self.name = name
@@ -862,12 +861,11 @@ class Breadcrumb(Object):
 
 	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="breadcrumb_discr"), nullable=False)
 	#seq = Column(Integer)
-	visited = Column(TimeStamp)
+	visited = Column(TimeStamp,default=datetime.utcnow)
 
 	def __init__(self, user, obj):
 		self.owner = user
 		self.parent = obj
-		self.visited = datetime.utcnow()
 		self.discr = obj.discriminator
 		#self.seq = 1+(db.engine.execute(select([func.max(Breadcrumb.seq)], and_(Breadcrumb.owner==user,Breadcrumb.discr==self.discr))).scalar() or 0)
 
@@ -898,7 +896,7 @@ class Change(Object):
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey('obj.id',name="change_id"), primary_key=True,autoincrement=False)
 
-	timestamp = Column(TimeStamp)
+	timestamp = Column(TimeStamp,default=datetime.utcnow)
 	data = Column(Text)
 	comment = Column(Unicode(200), nullable=True)
 
@@ -906,7 +904,6 @@ class Change(Object):
 		self.owner = user
 		self.parent = obj
 		self.data = data
-		self.timestamp = datetime.utcnow()
 
 		db.session.add(self)
 		db.session.add(Tracker(user,obj,self))
@@ -951,7 +948,7 @@ class Delete(Object):
 	old_superparent_id = Column(Integer(20), ForeignKey('obj.id',name="obj_super"))
 	old_owner_id = Column(Integer(20), ForeignKey('obj.id',name="obj_owner"))
 
-	timestamp = Column(TimeStamp)
+	timestamp = Column(TimeStamp,default=datetime.utcnow)
 
 	def __init__(self, user, obj, comment):
 		self.owner = user
@@ -964,7 +961,6 @@ class Delete(Object):
 		obj.parent = None
 		obj.superparent = None
 
-		self.timestamp = datetime.utcnow()
 		db.session.add(self)
 		db.session.add(Tracker(user,obj,self))
 
@@ -1001,14 +997,12 @@ class Tracker(Object):
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey('obj.id',name="tracker_id"), primary_key=True,autoincrement=False)
 
-	timestamp = Column(TimeStamp)
+	timestamp = Column(TimeStamp,default=datetime.utcnow)
 
 	def __init__(self, user, obj, site = None):
 		self.owner = user
 		self.parent = change_obj or obj
 		self.superparent = site or current_request.site
-
-		self.timestamp = datetime.utcnow()
 
 	def __unicode__(self):
 		if not self.owner or not self.superparent: return super(Tracker,self).__unicode__()
@@ -1053,7 +1047,6 @@ class UserTracker(Object):
 		self.owner = user
 		self.superparent = tracker.superparent
 		self.parent = tracker
-		self.timestamp = datetime.utcnow()
 
 	def __unicode__(self):
 		if not self.owner or not self.parent: return super(Tracker,self).__unicode__()
@@ -1358,12 +1351,16 @@ class StaticFile(Object):
 	__mapper_args__ = {'polymorphic_identity': 20, 'inherit_condition':id==Object.id}
 
 	path = Column(Unicode(200), nullable=False)
+	modified = Column(TimeStamp, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 	def __init__(self, path, bin):
 		self.path = path
 		self.superparent = current_request.site
 		self.parent = bin
 		
+	@property
+	def hash(self):
+		return self.bindata.hash
 	@property
 	def content(self):
 		return self.bindata.content

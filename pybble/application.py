@@ -35,13 +35,6 @@ def setup_code_env(site):
 	utils.current_request.site = site
 	utils.local.url_adapter = url_map.bind_to_environ(environ)
 
-@expose("/static/<path:path>")
-def serve_path(request,path):
-	from pybble.models import StaticFile
-	from werkzeug import Response
-	sf = StaticFile.q.get_by(superparent=request.site, path=path)
-	return Response(sf.content, mimetype=sf.mimetype)
-
 extensions = ( \
 	("js","text/javascript","JavaScript"), \
 	("css","text/css","CSS"), \

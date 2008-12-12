@@ -101,7 +101,7 @@ def add_user(request):
 def save_session(request, response):
 	new = request.session.new
 	session_data = request.session.serialize()
-	if True or new or request.session_data != session_data:
+	if new or request.session_data != session_data:
 		if request.session.get('_perm'):
 			expires_time = request.session.get('_ex', 0)
 			expires = cookie_date(expires_time)
