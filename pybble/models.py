@@ -8,12 +8,13 @@ from sqlalchemy.sql import select,func
 from pybble.utils import random_string, current_request, AuthError
 from pybble.database import db, NoResult
 from sqlalchemy.databases.mysql import MSTinyInteger as TinyInteger
+from sqlalchemy.databases.mysql import MSSmallInteger as SmallInteger
 from sqlalchemy.databases.mysql import MSTimeStamp as TimeStamp
 from sqlalchemy.sql import and_, or_, not_
 from pybble.decorators import add_to
 from werkzeug import import_string
 import settings
-import sys
+import sys,os
 
 try:
     from hashlib import md5
@@ -543,7 +544,7 @@ def named_group(owner, name):
 	"""Return the site-specific group with that name."""
 	return Group.q.get_by(name==name, owner==site)
 
-class Member(Object,DbRepr):
+class Member(Object):
 	"""\
 		Indicates membership of one object of another.
 		owner: the individual who's the member.
@@ -657,7 +658,7 @@ class Site(Object):
 
 	domain = Column(Unicode(100), nullable=False, unique=True)
 	name = Column(Unicode(50), nullable=False, unique=True)
-	tracked = Column(DateTime, nullable=False)
+	tracked = Column(DateTime, nullable=False, default=datetime.utcnow)
 	## Datestamp of newest fully-processed Tracker object
 
 	def __init__(self,domain,name=None):
@@ -1110,4 +1111,267 @@ class WantTracking(Object):
 
 WantTracking.obj = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.parent_id==Object.id))
 WantTracking.user = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.owner_id==Object.id))
+
+
+def add_mime(name,typ,subtyp,ext):
+	try:
+		t = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
+	except NoResult:
+		t=MIMEtype()
+		t.name = name
+		t.typ = typ
+		t.subtyp = subtyp
+		t.ext = ext
+		db.session.add(t)
+		db.session.flush()
+		return t
+	else:
+		assert name == t.name
+		if ext != t.ext:
+			try:
+				tt = MIMEext.q.get_by(ext=ext)
+			except NoResult:
+				tt = MIMEext()
+				tt.mime = t
+				tt.ext = ext
+				db.session.add(tt)
+				db.session.flush()
+		return t
+
+def mime_ext(ext):
+	try:
+		return MIMEtype.q.get_by(ext=ext)
+	except NoResult:
+		return MIMEext.q.get_by(ext=ext).mime
+
+
+class MIMEtype(db.Base,DbRepr):
+	"""Known MIME Types"""
+	__tablename__ = "mimetype"
+	__table_args__ = {'useexisting': True}
+	q = db.session.query_property(db.Query)
+	id = Column(Integer(2), primary_key=True)
+	name = Column(Unicode(30), nullable=False, unique=True)
+	typ = Column(String(15), nullable=False)
+	subtyp = Column(String(15), nullable=False)
+	ext = Column(String(15), nullable=False) # primary extension
+	
+	@property
+	def mimetype(self):
+		return "%s/%s" % (self.typ,self.subtyp)
+
+	def __str__(self):
+		return "<%s %s: .%s %s>" % (self.__class__.__name__, self.id,self.ext,self.mimetype)
+	def __unicode__(self):
+		return u"‹%s %s: .%s %s›" % (self.__class__.__name__, self.id,self.ext,self.mimetype)
+	__repr__ = __str__
+
+
+class MIMEext(db.Base):
+	"""Extensions for MIME types"""
+	__tablename__ = "mimeext"
+	__table_args__ = {'useexisting': True}
+	q = db.session.query_property(db.Query)
+	id = Column(Integer(2), primary_key=True)
+	mime_id = Column(Integer, ForeignKey(MIMEtype.id,name="mimetype_id"))
+	ext = Column(String(10), nullable=False, unique=True)
+
+	def __str__(self):
+		return "<%s %s: %s %s>" % (self.__class__.__name__, self.id,self.ext,str(self.mime))
+	def __unicode__(self):
+		return u"‹%s %s: %s %s›" % (self.__class__.__name__, self.id,self.ext,unicode(self.mime))
+	__repr__ = __str__
+
+MIMEext.mime = relation(MIMEtype, uselist=False, remote_side=MIMEtype.id, primaryjoin=(MIMEext.mime_id==MIMEtype.id))
+MIMEtype.exts = relation(MIMEext, uselist=True, remote_side=MIMEext.mime_id, primaryjoin=(MIMEext.mime_id==MIMEtype.id))
+
+class Storage(Object):
+	"""A box for binary data files"""
+	__tablename__ = "storage"
+	__table_args__ = {'useexisting': True}
+	__mapper_args__ = {'polymorphic_identity': 21}
+	_no_crumbs = True
+
+	q = db.session.query_property(db.Query)
+	id = Column(Integer, ForeignKey('obj.id',name="storage_id"), primary_key=True,autoincrement=False)
+
+	name = Column(Unicode(250), nullable=False, unique=True)
+	path = Column(String(250), nullable=False, unique=True)
+	url = Column(String(250), nullable=False, unique=True)
+
+	def __init__(self, name,path,url):
+		self.name = name
+		self.path = path
+		self.url = url
+		self.superparent = current_request.site
+		try: os.makedirs(path)
+		except OSError: pass
+
+	def __str__(self):
+		return "<%s %s: %s %s>" % (self.__class__.__name__, self.id,self.name,str(self.path))
+	def __unicode__(self):
+		return u"‹%s %s: %s %s›" % (self.__class__.__name__, self.id,self.name,unicode(self.path))
+	__repr__ = __str__
+
+class _ContentExists: pass
+def hash_data(content):
+	import sha
+	from base64 import b64encode
+	return b64encode(sha.sha(content).digest(),altchars="-_").rstrip("=")
+
+class BinData(Object):
+	"""
+		Stores one data file
+		owner: whoever uploaded the thing
+		superparent: the storage
+		"""
+	__tablename__ = "bindata"
+	__table_args__ = {'useexisting': True}
+	__mapper_args__ = {'polymorphic_identity': 22}
+	_no_crumbs = True
+	q = db.session.query_property(db.Query)
+	id = Column(Integer, ForeignKey('obj.id',name="bindata_id"), primary_key=True,autoincrement=False)
+	mime_id = Column(Integer, ForeignKey(MIMEtype.id,name="mimetype_id"))
+	name = Column(Unicode(50), nullable=False)
+	hash = Column(String(30), nullable=False, unique=True)
+	
+	@staticmethod
+	def lookup(content):
+		return BinData.q.get_by(hash=hash_data(content))
+			
+	def __init__(self,storage,name,ext,content):
+		self.superparent = storage
+		self.name = name
+		self._content = content
+		self.owner = current_request.user
+		self.mime = mime_ext(ext)
+		self.hash = hash_data(content)
+
+	def __str__(self):
+		return "<%s %s: %s %s>" % (self.__class__.__name__, self.id,self.mimetype,self.path)
+	def __unicode__(self):
+		return u"‹%s %s: %s %s›" % (self.__class__.__name__, self.id,self.mimetype,self.path)
+	__repr__ = __str__
+
+	def _get_content(self):
+		if hasattr(self,"_content"):
+			return self._content
+		return open(self.path).read()
+	def _set_content(self, data):
+		if self._content is None:
+			self._content = data
+		else:
+			raise RuntimeError("Content already set")
+	content = property(_get_content,_set_content)
+
+	@property
+	def mimetype(self):
+		try:
+			return self.mime.mimetype
+		except Exception:
+			return "???/???"
+
+	def _get_chars(self):
+		if self.id is None:
+			db.session.flush()
+			if self.id is None:
+				return "???"
+		id = self.id-1
+		chars = "23456789abcdefghjkmnopqrstuvwxyz"
+		midchars = "abcdefghjkmnopq"
+		fc = []
+		flast = chars[id % len(chars)]
+		id = id // len(chars)
+		while id:
+			c = chars[id % len(midchars)]
+			id = id // len(midchars)
+			c = chars[id % len(midchars)] + c
+			id = id // len(midchars)
+			fc.insert(0,c)
+		fc.append("_")
+		fc.append(self.name+"_"+self.hash[0:10]+flast)
+		if self.mime.ext:
+			fc[-1] += "."+self.mime.ext
+		return fc
+
+	@property
+	def path(self):
+		try:
+			fn = self.superparent.path
+		except Exception:
+			return "???"
+		fc = self._get_chars()
+		dir = os.path.join(fn,*fc[:-1])
+		if not os.path.isdir(dir):
+			os.makedirs(dir)
+		fn = os.path.join(dir,fc[-1])
+		return fn
+
+	def get_absolute_url(self):
+		fc = self._get_chars()
+		fn = self.superparent.url + "/".join(fc)
+		return fn
+	
+	def delete(self):
+		p = self.path
+		if os.path.exists(p):
+			os.remove(p)
+		super(BinData,self).delete()
+
+	def save(self):
+		if self._content is None:
+			raise RuntimeError("Need to set content before saving")
+		try:
+			self._save_content()
+		except BaseException:
+			raise
+
+	def _save_content(self):
+		if self._content is _ContentExists:
+			return
+		p = self.path
+		try:
+			open(p,"w").write(self.content)
+		except BaseException:
+			if os.path.exists(p):
+				os.remove(p)
+			raise
+
+BinData.storage = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.superparent_id==Object.id))
+BinData.mime = relation(MIMEtype, uselist=False, remote_side=MIMEtype.id, primaryjoin=(BinData.mime_id==MIMEtype.id))
+
+
+
+class StaticFile(Object):
+	"""\
+		Record that a static file belongs to a specific site.
+		Superparent: The site.
+		Parent: The storage.
+		"""
+	__tablename__ = "staticfile"
+	__table_args__ = ({'useexisting': True})
+	_no_crumbs = True
+
+	q = db.session.query_property(db.Query)
+	id = Column(Integer, ForeignKey('obj.id',name="staticfile_id"), primary_key=True,autoincrement=False)
+
+	__mapper_args__ = {'polymorphic_identity': 20, 'inherit_condition':id==Object.id}
+
+	path = Column(Unicode(200), nullable=False)
+
+	def __init__(self, path, bin):
+		self.path = path
+		self.superparent = current_request.site
+		self.parent = bin
+		
+	@property
+	def content(self):
+		return self.bindata.content
+	@property
+	def mimetype(self):
+		return self.bindata.mimetype
+
+StaticFile.bindata = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(StaticFile.parent_id==Object.id))
+
+BinData.static_files = relation(Object, uselist=True, remote_side=Object.parent_id, primaryjoin=(Object.parent_id==BinData.id))
 

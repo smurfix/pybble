@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import with_statement
-from werkzeug import Request, SharedDataMiddleware, ClosingIterator
+from werkzeug import Request, ClosingIterator
 from werkzeug.exceptions import HTTPException, NotFound, Unauthorized
 from pybble.utils import STATIC_PATH, local, local_manager, \
 	 TEMPLATE_PATH, AuthError
-from pybble.render import expose_map, url_map, send_mail
+from pybble.render import expose_map, url_map, send_mail, expose
 from pybble.database import metadata, db, NoResult
 from sqlalchemy.sql import and_, or_, not_
 
@@ -35,14 +35,30 @@ def setup_code_env(site):
 	utils.current_request.site = site
 	utils.local.url_adapter = url_map.bind_to_environ(environ)
 
+@expose("/static/<path:path>")
+def serve_path(request,path):
+	from pybble.models import StaticFile
+	from werkzeug import Response
+	sf = StaticFile.q.get_by(superparent=request.site, path=path)
+	return Response(sf.content, mimetype=sf.mimetype)
+
+extensions = ( \
+	("js","text/javascript","JavaScript"), \
+	("css","text/css","CSS"), \
+	("html","text/html","HTML"), \
+	("txt","text/plain","plain text"), \
+	("dtd","application/xml-dtd","DTD"), \
+	("png","image/png","PNG image"), \
+	("jpg","image/jpeg","JPEG image"), \
+	("jpeg","image/jpeg","JPEG image"), \
+	("gif","image/gif","GIF image"), \
+	("bin","application/binary","raw data"), \
+)
+
 class Pybble(object):
 
 	def __init__(self, db_uri):
 		local.application = self
-
-		self.dispatch = SharedDataMiddleware(self.dispatch, {
-			'/static':  STATIC_PATH
-		})
 
 	def init_database(self):
 		def action():
@@ -59,8 +75,8 @@ class Pybble(object):
 			"""Initialize a new site"""
 			# ... or in fact the first one
 
-			from pybble.models import Site,User,Object,Discriminator,Template,TemplateMatch,VerifierBase,WikiPage
-			from pybble.models import Group,Permission
+			from pybble.models import Site,User,Object,Discriminator,Template,TemplateMatch,VerifierBase,WikiPage,Storage,BinData,StaticFile
+			from pybble.models import Group,Permission, add_mime,mime_ext
 			from pybble.models import TM_DETAIL_SUBPAGE, PERM_READ,PERM_ADMIN,PERM_ADD
 			from pybble import utils
 			from werkzeug import Request
@@ -89,21 +105,72 @@ class Pybble(object):
 			utils.local.request = Request({})
 			utils.current_request.site = s
 
+			for ext,typ,name in extensions:
+				typ,subtyp = typ.split("/",1)
+				add_mime(name,typ,subtyp,ext)
+			db.session.flush()
+			try:
+				st = Storage.q.get_by(name=u"Test")
+			except NoResult:
+				st = Storage("Test","/var/tmp/testkram","localhost:5000/static")
+				db.session.add(st)
+			db.session.flush()
+
 			try:
 				u=User.q.get_one(and_(User.sites.contains(s), User.username==u"root"))
 			except NoResult:
 				u=User(u"root")
 				u.email=settings.ADMIN
 				u.sites.append(s)
-				u.parent = s
-				s.owner = u
 				db.session.add(u)
 			else:
 				print u"%s found." % u
 
 			db.session.flush()
 			u.verified=True
+			u.parent = s
+			db.session.flush()
+			s.owner = u
+			db.session.flush()
+			utils.current_request.user = u
 
+			def add_files(dir,path):
+				for f in os.listdir(dir):
+					if f.startswith("."):
+						continue
+					f = f.decode("utf-8")
+					fp = os.path.join(dir,f)
+					dp = os.path.join(path,f)
+					if os.path.isdir(fp):
+						add_files(fp,dp)
+						continue
+					dot = f.rindex(".")
+					mime = mime_ext(f[dot+1:])
+					with open(fp,"rb") as fd:
+						content = fd.read()
+						try:
+							sb = BinData.lookup(content)
+						except NoResult:
+							sb = BinData(st,f[:dot],f[dot+1:],content)
+							db.session.add(sb)
+							sb.save()
+
+						try:
+							sf = StaticFile.q.get_by(path=dp,superparent=s)
+						except NoResult:
+							sf = StaticFile(dp,sb)
+							db.session.add(sf)
+						else:
+							if content != sf.content:
+								print "Warning: StaticFile '%s' differs." % (dp,)
+								if replace_templates:
+									db.session.drop(sf)
+									sf = StaticFile(dp,sb)
+									db.session.add(sf)
+
+
+			add_files(os.path.join(u"pybble",u"static"),u"")
+		
 			try:
 				a=User.q.get_one(and_(User.sites.contains(s), User.username==u""))
 			except NoResult:
