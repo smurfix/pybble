@@ -44,8 +44,8 @@ CREATE TABLE mimeext (
 	mime_id INTEGER, 
 	ext VARCHAR(10) NOT NULL, 
 	PRIMARY KEY (id), 
-	 UNIQUE (ext), 
-	 CONSTRAINT mimetype_id FOREIGN KEY(mime_id) REFERENCES mimetype (id)
+	 CONSTRAINT mimetype_id FOREIGN KEY(mime_id) REFERENCES mimetype (id), 
+	 UNIQUE (ext)
 );
 CREATE TABLE breadcrumbs (
 	id INTEGER NOT NULL, 
@@ -62,9 +62,9 @@ CREATE TABLE storage (
 	url VARCHAR(250) NOT NULL, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT storage_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (path), 
 	 UNIQUE (url), 
-	 UNIQUE (name)
+	 UNIQUE (name), 
+	 UNIQUE (path)
 );
 CREATE TABLE sites (
 	id INTEGER NOT NULL, 
@@ -72,8 +72,8 @@ CREATE TABLE sites (
 	name VARCHAR(50) NOT NULL, 
 	tracked DATETIME NOT NULL, 
 	PRIMARY KEY (id), 
-	 UNIQUE (domain), 
 	 CONSTRAINT site_id FOREIGN KEY(id) REFERENCES obj (id), 
+	 UNIQUE (domain), 
 	 UNIQUE (name)
 );
 CREATE TABLE bindata (
@@ -81,10 +81,11 @@ CREATE TABLE bindata (
 	mime_id INTEGER, 
 	name VARCHAR(50) NOT NULL, 
 	hash VARCHAR(30) NOT NULL, 
+	timestamp TIMESTAMP, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT bindata_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (hash), 
-	 CONSTRAINT mimetype_id FOREIGN KEY(mime_id) REFERENCES mimetype (id)
+	 CONSTRAINT mimetype_id FOREIGN KEY(mime_id) REFERENCES mimetype (id), 
+	 UNIQUE (hash)
 );
 CREATE TABLE templates (
 	id INTEGER NOT NULL, 
@@ -108,7 +109,6 @@ CREATE TABLE users (
 );
 CREATE TABLE usertracking (
 	id INTEGER NOT NULL, 
-	comment VARCHAR(200), 
 	PRIMARY KEY (id), 
 	 CONSTRAINT usertracker_id FOREIGN KEY(id) REFERENCES obj (id)
 );
@@ -152,8 +152,8 @@ CREATE TABLE verifierbase (
 	name VARCHAR(30) NOT NULL, 
 	cls VARCHAR(50) NOT NULL, 
 	PRIMARY KEY (id), 
-	 UNIQUE (name), 
-	 UNIQUE (cls)
+	 UNIQUE (cls), 
+	 UNIQUE (name)
 );
 CREATE TABLE permissions (
 	id INTEGER NOT NULL, 
@@ -163,8 +163,8 @@ CREATE TABLE permissions (
 	new_discr TINYINT, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT `Group_id` FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT obj_new_discr FOREIGN KEY(new_discr) REFERENCES discriminator (id), 
-	 CONSTRAINT obj_discr FOREIGN KEY(discr) REFERENCES discriminator (id)
+	 CONSTRAINT obj_discr FOREIGN KEY(discr) REFERENCES discriminator (id), 
+	 CONSTRAINT obj_new_discr FOREIGN KEY(new_discr) REFERENCES discriminator (id)
 );
 CREATE TABLE mimetype (
 	id INTEGER NOT NULL AUTO_INCREMENT, 
@@ -188,16 +188,16 @@ CREATE TABLE obj (
 	parent_id INTEGER, 
 	superparent_id INTEGER, 
 	PRIMARY KEY (id), 
+	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id), 
 	 CONSTRAINT obj_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
 	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id), 
-	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id), 
 	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id)
 );
 CREATE TABLE site_users (
 	site_id INTEGER NOT NULL, 
 	user_id INTEGER NOT NULL, 
-	 CONSTRAINT site_users_site FOREIGN KEY(site_id) REFERENCES obj (id), 
 	 CONSTRAINT site_users_user FOREIGN KEY(user_id) REFERENCES obj (id), 
+	 CONSTRAINT site_users_site FOREIGN KEY(site_id) REFERENCES obj (id), 
 	 UNIQUE (site_id, user_id)
 );
 CREATE TABLE changes (

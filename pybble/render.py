@@ -8,7 +8,7 @@ from werkzeug.utils import http_date
 from markdown import Markdown
 from pybble.utils import current_request, local, random_string
 from pybble.models import PERM, PERM_NONE, PERM_ADD, Permission, obj_get, TemplateMatch, \
-	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, StaticFile
+	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, StaticFile, obj_get
 from pybble.database import NoResult
 from pybble.diff import textDiff
 from wtforms.validators import ValidationError
@@ -264,14 +264,35 @@ class Pagination(object):
 @expose("/static/<path:path>")
 def serve_path(request,path):
 	sf = StaticFile.q.get_by(superparent=request.site, path=path)
-	r = Response(sf.content, mimetype=sf.mimetype)
+
+	if parse_etags(request.environ.get('HTTP_IF_NONE_MATCH')).contains(sf.hash):
+		r = Response("", mimetype=sf.mimetype)
+		r.status_code = 304
+		remove_entity_headers(r.headers)
+	else:
+		r = Response(sf.content, mimetype=sf.mimetype)
 	r.set_etag(sf.hash)
 	r.headers['Cache-Control']='public'
 	r.headers['Expiry']=http_date(datetime.utcnow()+timedelta(0,settings.STATIC_EXPIRE))
 	r.headers['Last-Modified']=http_date(sf.modified)
+	return r
 
-	if parse_etags(request.environ.get('HTTP_IF_NONE_MATCH')).contains(sf.hash):
+@expose("/download/<oid>")
+@expose("/download/<oid>/<name>")
+def download(request,oid,name=None):
+	obj = obj_get(oid)
+	r = Response(obj.content, mimetype=obj.mimetype)
+
+	if parse_etags(request.environ.get('HTTP_IF_NONE_MATCH')).contains(obj.hash):
+		r = Response("", mimetype=obj.mimetype)
 		r.status_code = 304
 		remove_entity_headers(r.headers)
+	else:
+		r = Response(obj.content, mimetype=obj.mimetype)
+
+	r.set_etag(obj.hash)
+	r.headers['Cache-Control']='public'
+	r.headers['Expiry']=http_date(datetime.utcnow()+timedelta(999))
+	r.headers['Last-Modified']=http_date(obj.timestamp)
 	return r
 

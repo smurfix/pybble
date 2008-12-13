@@ -682,7 +682,8 @@ Site.users = relation(User, secondary=site_users, backref='sites',
 class Template(Object):
 	"""
 		A template for rendering.
-		superparent: Site the template applies to.
+		superparent: Site or TemplateMatch
+		             the template applies to.
 		owner: user who created the template.
 		"""
 	__tablename__ = "templates"
@@ -722,11 +723,19 @@ class TemplateMatch(Object):
 		if isinstance(data,Template):
 			t = data
 		else:
-			t = Template(None,data)
+			t = Template("%s@%s.%s" % (Discriminator.q.get_by(id=discr).name,obj.classname,obj.id),data)
+			db.session.add(t)
+			db.session.flush()
 		self.parent = obj
-		self.owner = t
 		self.discr = Discriminator.get(discr,obj).id
 		self.detail = detail
+		db.session.add(self)
+		db.session.flush()
+		if t.superparent is None:
+			t.superparent = self
+			db.session.flush()
+		self.owner = t
+		db.session.flush()
 	
 	def __unicode__(self):
 		p,s,o,d = self.pso
@@ -986,7 +995,7 @@ class Tracker(Object):
 	"""\
 		Track any kind of change, for purpose of RSSification, Emails, et al.
 		Owner: the user who did it.
-		Parent: The Change/Delete object, if any.
+		Parent: The Change/Delete object, or the new object.
 		Superparent: The site.
 		"""
 	__tablename__ = "tracking"
@@ -1040,8 +1049,6 @@ class UserTracker(Object):
 
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey('obj.id',name="usertracker_id"), primary_key=True,autoincrement=False)
-
-	comment = Column(Unicode(200), nullable=True)
 
 	def __init__(self, user, tracker):
 		self.owner = user
@@ -1227,7 +1234,8 @@ class BinData(Object):
 	mime_id = Column(Integer, ForeignKey(MIMEtype.id,name="mimetype_id"))
 	name = Column(Unicode(50), nullable=False)
 	hash = Column(String(30), nullable=False, unique=True)
-	
+	timestamp = Column(TimeStamp,default=datetime.utcnow)
+
 	@staticmethod
 	def lookup(content):
 		return BinData.q.get_by(hash=hash_data(content))
@@ -1263,6 +1271,12 @@ class BinData(Object):
 			return self.mime.mimetype
 		except Exception:
 			return "???/???"
+	@property
+	def ext(self):
+		try:
+			return self.mime.ext
+		except Exception:
+			return "???"
 
 	def _get_chars(self):
 		if self.id is None:

@@ -1,0 +1,11 @@
+  <h2>statische Datei</h2>
+    <table>
+	  <tbody>
+		<tr><th>Datei:</th><td>{{ obj }}</td></tr>
+		<tr><th>ID:</th><td>{{ obj.oid() }}</td></tr>
+		<tr><th>Quelle:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.parent.oid()) }}">{{ obj.parent }}</a> ({{ obj.parent.oid() }})</td></tr>
+		<tr><th>Pfad:</th><td><code>{{ obj.path }}</code></td></tr>
+		<tr><th>Site:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.superparent.oid()) }}">{{ obj.superparent }}</a> ({{ obj.superparent.oid() }})</td></tr>
+		<tr><th>geändert:</th><td>{{ obj.modified }}</td></tr>
+	  </tbody>
+    </table>

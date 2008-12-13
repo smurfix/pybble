@@ -107,6 +107,8 @@ class Pybble(object):
 			except NoResult:
 				st = Storage("Test","/var/tmp/testkram","localhost:5000/static")
 				db.session.add(st)
+			else:
+				st.superparent = s
 			db.session.flush()
 
 			try:
@@ -287,6 +289,7 @@ You may continue on your own. ;-)
 				ww.parent=w
 				db.session.add(ww)
 
+			db.session.flush()
 			for d in Discriminator.q.all():
 				try:
 					data = open("pybble/templates/view/%s.html" % (d.name.lower(),)).read()
@@ -303,6 +306,7 @@ You may continue on your own. ;-)
 						if replace_templates:
 							t.template.data = data
 							t.template.modified = datetime.utcnow()
+				db.session.flush()
 
 			db.session.commit()
 			print "Your root user is named '%s' and has the password '%s'." % (u.username, u.password)

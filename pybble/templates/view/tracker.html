@@ -1,12 +1,11 @@
-  <h2>Änderung</h2>
+  <h2>Änderungs-Log</h2>
     <table>
 	  <tbody>
-		<tr><th>Änderung:</th><td>{{ obj }}</td></tr>
+		<tr><th>Änderungs-Log:</th><td>{{ obj }}</td></tr>
 		<tr><th>ID:</th><td>{{ obj.oid() }}</td></tr>
 		<tr><th>User:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.owner.oid()) }}">{{ obj.owner }}</a> ({{ obj.owner.oid() }})</td></tr>
 		<tr><th>Objekt:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.parent.oid()) }}">{{ obj.parent }}</a> ({{ obj.parent.oid() }})</td></tr>
+		<tr><th>Site:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.superparent.oid()) }}">{{ obj.superparent }}</a> ({{ obj.superparent.oid() }})</td></tr>
 		<tr><th>Zeitpunkt:</th><td>{{ obj.timestamp }}</td></tr>
-		<tr><th>Kommentar:</th><td>{{ obj.comment }}</td></tr>
-		<tr><th class="top">Inhalt:</th><td class="code"><code>{% if next %}{{ diff(obj.data,next.data)|safe }}{% else %}{{ diff(obj.data,obj.parent.data)|safe }}{% endif %}</code></td></tr>
 	  </tbody>
     </table>

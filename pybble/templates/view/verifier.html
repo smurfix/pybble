@@ -1,0 +1,17 @@
+  <h2>Verifikation</h2>
+    <table>
+	  <tbody>
+		<tr><th>Verifikation:</th><td>{{ obj }}</td></tr>
+		<tr><th>ID:</th><td>{{ obj.oid() }}</td></tr>
+		<tr><th>Art:</th><td>{{ obj.base.name }} (#{{obj.base.id}}, {{ obj.base.cls }})</td></tr>
+		<tr><th>User:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.owner.oid()) }}">{{ obj.owner }}</a> ({{ obj.owner.oid() }})</td></tr>
+		<tr><th>Objekt:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.parent.oid()) }}">{{ obj.parent }}</a> ({{ obj.parent.oid() }})</td></tr>
+		<tr><th>Code:</th><td><code>{{ obj.code }}</code></td></tr>
+		<tr><th>angelegt:</th><td>{{ obj.added }}</td></tr>
+		{%- if obj.repeated %}
+		<tr><th>wiederholt:</th><td>{{ obj.repeated }}</td></tr>
+		{%- endif %}
+		<tr><th>Timeout:</th><td>{% if obj.timeout %}{{ obj.timeout }}
+		                         {%- else %}(kein Timeout){% endif %}</td></tr>
+	  </tbody>
+    </table>
