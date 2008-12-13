@@ -235,7 +235,7 @@ class Object(db.Base):
 			Return a crypto ID of an object.
 			This is done so that simply enumerating object IDs off the web pages wont work.
 			"""
-		return "%s.%d.%d.%s" % (self.classname, self.discriminator, self.id, 
+		return "%d.%d.%s" % (self.discriminator, self.id, 
 		                        md5(self.__class__.__name__ + str(self.id) + settings.SECRET_KEY)\
 		                            .digest().encode('base64').strip('\n =')[:10].replace("+","/-").replace("/","_"))
 
@@ -243,7 +243,6 @@ class Object(db.Base):
 		"""Return this object's template at a given detail level"""
 		discr = self.discriminator
 
-		print "Search template at",self,"level",detail
 		no_inherit = True
 		obj = self
 		seen = set()
@@ -296,7 +295,7 @@ def obj_class(id):
 
 def obj_get(oid):
 	"""Given an object ID, return the object"""
-	cls,cid,id,hash = oid.split(".")
+	cid,id,hash = oid.split(".")
 	cls = obj_class(int(cid))
 	obj = cls.q.get_by(id=int(id))
 	if oid != obj.oid():
@@ -915,7 +914,7 @@ class Change(Object):
 		self.data = data
 
 		db.session.add(self)
-		db.session.add(Tracker(user,obj,self))
+		db.session.add(Tracker(user,self))
 
 	def __unicode__(self):
 		p,s,o,d = self.pso
@@ -971,7 +970,7 @@ class Delete(Object):
 		obj.superparent = None
 
 		db.session.add(self)
-		db.session.add(Tracker(user,obj,self))
+		db.session.add(Tracker(user,self))
 
 	def __unicode__(self):
 		if not self.owner or not self.parent: return super(Delete,self).__unicode__()

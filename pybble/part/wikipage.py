@@ -45,7 +45,7 @@ def newer(request, parent, name=None):
 
 	form = WikiEditForm(request.form, prefix="wiki")
 	if request.method == 'POST' and form.validate():
-		obj = WikiPage(form.name.data,form.page.data)
+		obj = WikiPage(form.name.data,form.page.data.replace("\r",""))
 		obj.superparent = request.site
 		obj.parent = parent
 		db.session.add(obj)
@@ -69,7 +69,7 @@ def editor(request, obj=None):
 			c = Change(request.user, obj, obj.data)
 			c.comment = form.comment.data
 			db.session.save(c)
-			obj.data = form.page.data
+			obj.data = form.page.data.replace("\r","")
 			obj.modified = datetime.utcnow()
 
 			flash(u"Wiki-Seite '%s' gespeichert." % (obj.name), True)
