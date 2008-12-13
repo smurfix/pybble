@@ -11,9 +11,9 @@ from sqlalchemy.sql import and_, or_, not_
 
 import pybble.models
 import pybble.admin
-import pybble.wikipage
-import pybble.permission
-import pybble.wanttracking
+import pybble.part.wikipage
+import pybble.part.permission
+import pybble.part.wanttracking
 from pybble.session import add_session, add_user, add_site, save_session, \
 	add_response_headers
 

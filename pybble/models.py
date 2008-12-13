@@ -1010,7 +1010,7 @@ class Tracker(Object):
 
 	def __init__(self, user, obj, site = None):
 		self.owner = user
-		self.parent = change_obj or obj
+		self.parent = obj
 		self.superparent = site or current_request.site
 
 	def __unicode__(self):

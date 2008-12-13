@@ -42,7 +42,7 @@
 				<li><a href="{{ url_for("pybble.views.edit_oid", oid=obj.oid()) }}">Edit</a></li>
 				<li><a href="{{ url_for("pybble.views.delete_oid", oid=obj.oid()) }}">Delete</a></li>
 				<li><a href="{{ url_for("pybble.admin.edit_template", template=obj.oid()) }}">Templates</a></li>
-				<li><a href="{{ url_for("pybble.permission.edit_permission", permission=obj.oid()) }}">Permissions</a></li>
+				<li><a href="{{ url_for("pybble.part.permission.edit_permission", permission=obj.oid()) }}">Permissions</a></li>
 				{%- endif %}
 			</ul>
 		</li>

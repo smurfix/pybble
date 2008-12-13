@@ -44,11 +44,7 @@ NoResult = orm_exc.NoResultFound
 class GQuery(Query):
 	def get_by(self,*a,**k):
 		"""Make sure that there's exactly one result."""
-		try:
-			return self.filter_by(*a,**k).one()
-		except (NoResult,NonUniqueResult):
-			print >>sys.stderr,"Inputs: %s %s" % (repr(a),repr(k))
-			raise
+		return self.filter_by(*a,**k).one()
 		
 	def get_one(self,*a,**k):
 		"""Make sure that there's exactly one result."""

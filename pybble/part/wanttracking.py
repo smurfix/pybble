@@ -40,8 +40,6 @@ class WantTrackingForm(Form):
 	object = TextField('Object', [valid_obj])
 
 	discr = SelectField('Existing Object type?', choices=(("-","any object"),)+tuple((str(q.id),q.name) for q in discr_list))
-	inherit = SelectField('Applies to?', choices=(('Yes','All sub-pages'), ('No','this page only'),('*','This page and all sub-pages')))
-	clone = SelectField('Copy?', choices=(('Yes','Store new entry'),('No','Modify existing entry')))
 	email = BooleanField(u'Mail schicken?')
 	track_new = BooleanField(u'Meldung bei neuen Einträgen')
 	track_mod = BooleanField(u'Meldung bei Änderungen')
@@ -52,8 +50,6 @@ def newer(request, parent, name=None):
 
 def editor(request, obj=None, parent=None):
 	form = WantTrackingForm(request.form, prefix="perm")
-	if parent:
-		del form.clone
 	if request.method == 'POST' and form.validate():
 		user = obj_get(form.user.data)
 		dest = obj_get(form.object.data)
@@ -63,18 +59,12 @@ def editor(request, obj=None, parent=None):
 		track_mod = bool(form.track_mod.data)
 		track_del = bool(form.track_del.data)
 
-		if form.inherit.data == "Yes": inherit = True
-		elif form.inherit.data == "No": inherit = False
-		elif form.inherit.data == "*": inherit = None
-		else: assert False
-
 		if parent:
 			obj = WantTracking(user, dest, discr)
 			obj.track_new=track_new
 			obj.track_mod=track_mod
 			obj.track_del=track_del
 			obj.email=email
-			obj.inherit=inherit
 
 			db.session.add(obj)
 			db.session.flush()
@@ -90,10 +80,6 @@ def editor(request, obj=None, parent=None):
 			if obj.discr != discr:
 				chg += u"Type: %s (%s) ⇒ %s (%s)\n" % (name_discr(obj.discr),obj.discr, name_discr(discr),discr)
 				obj.discr = discr
-			if obj.inherit != inherit:
-				chg += u"Inherit: %s ⇒ %s\n" % ("*" if obj.inherit is None else "NY"[obj.inherit], 
-				                                "*" if inherit is None else "NY"[inherit])
-				obj.inherit = inherit
 			if chg:
 				Change(request.user,obj,chg)
 
@@ -101,13 +87,11 @@ def editor(request, obj=None, parent=None):
 
 		return redirect(url_for("pybble.views.view_oid", oid=(parent or dest).oid()))
 
-	
 	elif request.method == 'GET':
 		if obj: # bearbeiten / kopieren
 			form.object.data = parent.oid() if parent else obj.parent.oid()
 			form.user.data = obj.owner.oid()
 			form.discr.data = str(obj.discr)
-			form.inherit.data = "*" if obj.inherit is None else "Yes" if obj.inherit else "No"
 			form.track_new.data = obj.track_new
 			form.track_mod.data = obj.track_mod
 			form.track_del.data = obj.track_del
@@ -116,7 +100,6 @@ def editor(request, obj=None, parent=None):
 			form.object.data = parent.oid()
 			form.user.data = request.user.oid()
 			form.discr.data = "-"
-			form.inherit.data = "*"
 			form.track_new.data = True
 			form.track_mod.data = False
 			form.track_del.data = False

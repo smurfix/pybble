@@ -10,8 +10,8 @@
 			  {% if obj %}
 				<li><a href="{{ url_for('pybble.views.new_oid',oid=obj.oid(),discr='WantTracking') }}">beobachten</a>
 					<ul>
-						{# <li><a href="{{ url_for('pybble.wanttracking.edit_wanttracking',oid=obj.oid()) }}">Liste</a> #}
-						<li><a href="{{ url_for('pybble.wanttracking.list_wanttracking') }}">Gesamtliste</a>
+						{# <li><a href="{{ url_for('pybble.part.wanttracking.edit_wanttracking',oid=obj.oid()) }}">Liste</a> #}
+						<li><a href="{{ url_for('pybble.part.wanttracking.list_wanttracking') }}">Gesamtliste</a>
 					</ul>
 				</li>
 			  {% endif %}

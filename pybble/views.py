@@ -33,7 +33,7 @@ def edit_oid(request, oid):
 	obj=obj_get(oid)
 	request.user.will_write(obj)
 	try:
-		return import_string("pybble.%s.editor" % (obj.classname.lower(),))(request, obj)
+		return import_string("pybble.part.%s.editor" % (obj.classname.lower(),))(request, obj)
 	except ImportError:
 		raise 
 
@@ -46,7 +46,7 @@ def new_oid(request, oid, discr=None, name=None):
 		discr = obj.discriminator
 	request.user.will_add(obj,new_discr=discr)
 	cls = obj_class(discr)
-	v = import_string("pybble.%s.newer" % (cls.__name__.lower(),))
+	v = import_string("pybble.part.%s.newer" % (cls.__name__.lower(),))
 
 	args = {}
 	if "name" in v.func_code.co_varnames: args["name"]=name
@@ -60,7 +60,7 @@ def copy_oid(request, oid, parent):
 	parent=obj_get(parent)
 
 	request.user.will_add(parent,new_discr=obj.discriminator)
-	v = import_string("pybble.%s.editor" % (obj.classname.lower(),))
+	v = import_string("pybble.part.%s.editor" % (obj.classname.lower(),))
 	return v(request, obj=obj,parent=parent)
 
 
@@ -94,14 +94,14 @@ def view_oid(request, oid):
 	request.user.visited(obj)
 	try:
 		name = obj.name
-		v = import_string("pybble.%s.viewer" % (obj.classname.lower(),))
+		v = import_string("pybble.part.%s.viewer" % (obj.classname.lower(),))
 	except Exception:
 		return render_my_template(request, obj=obj_get(oid), detail=TM_DETAIL_PAGE)
 	else:
 		args = {}
 		if "name" in v.func_code.co_varnames: args["name"]=name
 		if "oid"  in v.func_code.co_varnames: args["oid" ]=oid
-		return redirect(url_for('pybble.%s.viewer' % (obj.classname.lower(),), **args))
+		return redirect(url_for('pybble.part.%s.viewer' % (obj.classname.lower(),), **args))
 
 
 @expose('/snippet/<t>')
