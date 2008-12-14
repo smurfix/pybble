@@ -89,7 +89,7 @@ def editor(request, obj=None, parent=None):
 				for mm in m:
 					mm.inherit = not obj.inherit
 
-		return redirect(url_for("pybble.permission.edit_permission", permission=obj.oid()))
+		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
 
 	
 	elif request.method == 'GET':

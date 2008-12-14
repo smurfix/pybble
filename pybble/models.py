@@ -411,11 +411,12 @@ class User(Object):
 	def can_do(user,obj, discr=None, new_discr=None, want=None):
 		"""Recursively get the permission of this user for that (type of) object."""
 
-		#print >>sys.stderr,"PERM",discr,new_discr,want,obj,"AT",current_request.site,u"⇒",
 		if obj is not current_request.site and \
 		   current_request.user.can_admin(current_request.site):
 			#print >>sys.stderr,"ADMIN"
 			return want if want and want < 0 else PERM_ADMIN
+
+		#print >>sys.stderr,"PERM",discr,new_discr,want,obj,"AT",current_request.site,u"⇒",
 
 		pq = Permission.q
 		if want is not None:
@@ -837,7 +838,7 @@ class WikiPage(Object):
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 9}
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="wikipage.id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey('obj.id',name="wikipage_id"), primary_key=True,autoincrement=False)
 
 	name = Column(String(50))
 	data = Column(Text)
@@ -847,10 +848,6 @@ class WikiPage(Object):
 		self.name = name
 		self.data = data
 	
-	def markup(self):
-		import markdown
-		return markdown.markdown(self.data)
-
 
 class Breadcrumb(Object):
 	"""\
@@ -1385,3 +1382,32 @@ StaticFile.bindata = relation(Object, uselist=False, remote_side=Object.id, prim
 
 BinData.static_files = relation(Object, uselist=True, remote_side=Object.parent_id, primaryjoin=(Object.parent_id==BinData.id))
 
+
+
+class Comment(Object):
+	"""\
+		A comment (or similar) page.
+		Parent: The comment or page we're referring to.
+		Superparent: The main page thus commented.
+		Owner: Whoever created the comment
+		"""
+	__tablename__ = "comment"
+	__table_args__ = ({'useexisting': True})
+	__mapper_args__ = {'polymorphic_identity': 23}
+	q = db.session.query_property(db.Query)
+	id = Column(Integer, ForeignKey('obj.id',name="comment_id"), primary_key=True,autoincrement=False)
+
+	name = Column(Unicode(250))
+	data = Column(Text)
+	added = Column(TimeStamp,default=datetime.utcnow)
+
+	def __init__(self, obj, name, data):
+		self.name = name
+		self.data = data
+		self.owner = current_request.user
+		self.parent = obj
+		if isinstance(obj,Comment):
+			self.superparent = obj.superparent
+		else:
+			self.superparent = obj
+	

@@ -7,7 +7,7 @@
 		<li><a href="{{ url_for('pybble.views.view_oid', oid=USER.oid()) }}">Hallo, <strong>{{ USER.name }}</strong>!</a>
 			<ul>
 				<li><a href="{{ url_for('pybble.views.last_visited') }}">zuletzt besucht</a></li>
-				<li><a href="{{ url_for('pybble.part.change.view_all') }}">Änderungen</a>
+				<li><a href="{{ url_for('pybble.part.usertracker.view_all') }}">Änderungen</a>
 			    {% if obj %}
 				  <ul>
 				    <li><a href="{{ url_for('pybble.views.new_oid',oid=obj.oid(),discr='WantTracking') }}">beobachten</a></li>

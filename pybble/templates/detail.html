@@ -1,6 +1,4 @@
 {% extends 'layout.html' %}
 {% block body %}
-<h1><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid()) }}">{{ obj.oid() }}</a></h1>
   {{ subpage(obj,4) }}
-
 {% endblock %}

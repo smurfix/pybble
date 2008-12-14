@@ -241,10 +241,10 @@ def send_mail(to='', template='', **context):
 for a,b in PERM.iteritems():
 	def can_do_closure(a,b):
 		def valid_do(form, field):
-			obj_get(field.data)
-			if (current_request.user.can_do(obj, discr=discr) >= a) \
+			obj = obj_get(field.data)
+			if (current_request.user.can_do(obj, discr=obj.discriminator, want=a) < a) \
 				if (a > PERM_NONE) \
-				else (current_request.user.can_do(obj, discr=discr, want=a) == a):
+				else (current_request.user.can_do(obj, discr=obj.discriminator, want=a) != a):
 				raise ValidationError(u"Kein Zugriff auf Objekt '%s' (%s)" % (field.data,b))
 
 		def can_do(env, obj=None, discr=None):

@@ -4,7 +4,7 @@ from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from pybble.utils import current_request, make_permanent
 from pybble.render import url_for, render_template, expose, render_my_template
-from pybble.models import Site, WikiPage, TM_DETAIL_PAGE, Change, Tracker
+from pybble.models import WikiPage, Site, Comment, TM_DETAIL_PAGE, Change, Tracker
 from pybble.views import view_oid
 
 from pybble.database import db,NoResult
@@ -18,13 +18,13 @@ from datetime import datetime
 
 
 ###
-### Wiki page editor
+### Comment editor
 ###
 
 def newpage(form, field):
-	q = WikiPage.q
+	q = Comment.q
 	if hasattr(form,"obj"):
-		q = q.filter(WikiPage.id != form.obj.id)
+		q = q.filter(Comment.id != form.obj.id)
 	try:
 		q.get_by(name=field.data, superparent=current_request.site)
 	except NoResult:
@@ -32,37 +32,39 @@ def newpage(form, field):
 	else:
 		raise ValidationError(u"Eine Wiki-Seite namens „%s“ gibt es bereits" % (field.data,))
 
-class WikiEditForm(Form):
+class CommentEditForm(Form):
 	name = TextField('Name', [validators.length(min=3, max=30), newpage])
 	page = TextAreaField('Page')
-	comment = TextField('Kommentar', [validators.length(min=3, max=200)])
 
 def newer(request, parent, name=None):
 	if parent is None:
 		parent = request.site
 	else:
-		assert isinstance(parent, (Site,WikiPage))
+		assert isinstance(parent, (Site,Comment,WikiPage))
 
-	form = WikiEditForm(request.form, prefix="wiki")
+	form = CommentEditForm(request.form, prefix="comment")
 	if request.method == 'POST' and form.validate():
-		obj = WikiPage(form.name.data,form.page.data.replace("\r",""))
-		obj.superparent = request.site
-		obj.parent = parent
+		obj = Comment(parent, form.name.data,form.page.data.replace("\r",""))
 		db.session.add(obj)
 		db.session.add(Tracker(request.user, obj))
 		db.session.flush()
-		flash(u"Wiki-Seite '%s' gespeichert." % (obj.name), True)
+		flash(u"Kommentar '%s' gespeichert." % (obj.name), True)
 		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
 
 	elif request.method == 'GET':
+		name = getattr(parent,"name",None)
+		if name is None:
+			name = ""
+		elif not name.startswith("Re: "):
+			name = "Re: "+name
 		form.name.data = name
 		form.page.data = ""
 
-	return render_template('edit/wikipage.html', parent=parent, form=form, name=form.name.data, title_trace=[form.name.data])
+	return render_template('edit/comment.html', parent=parent, form=form, name=form.name.data, title_trace=[form.name.data])
 
 	
 def editor(request, obj=None):
-	form = WikiEditForm(request.form, prefix="wiki")
+	form = CommentEditForm(request.form, prefix="comment")
 	form.obj = obj
 	if request.method == 'POST' and form.validate():
 		if obj.data != form.page.data:
@@ -72,7 +74,7 @@ def editor(request, obj=None):
 			obj.data = form.page.data.replace("\r","")
 			obj.modified = datetime.utcnow()
 
-			flash(u"Wiki-Seite '%s' geändert." % (obj.name), True)
+			flash(u"Kommentar '%s' geändert." % (obj.name), True)
 		else:
 			flash(u"Wiki-Seite '%s' unverändert." % (obj.name))
 
@@ -82,22 +84,6 @@ def editor(request, obj=None):
 	elif request.method == 'GET':
 		form.name.data = obj.name if obj else name
 		form.page.data = obj.data if obj else ""
-	return render_template('edit/wikipage.html', obj=obj, form=form, name=form.name.data, title_trace=[form.name.data])
+	return render_template('edit/comment.html', obj=obj, form=form, name=form.name.data, title_trace=[form.name.data])
 
-
-@expose("/wiki/<name>")
-def viewer(request, name):
-	try:
-		obj = WikiPage.q.get_by(name=name)
-	except NoResult:
-		obj = request.user.last_visited(WikiPage)
-		if request.user.can_add(obj):
-			flash("Die Seite gibt es noch nicht. Du kannst sie jetzt anlegen.")
-			return redirect(url_for("pybble.views.new_oid", oid=obj.oid(), name=name, discr=WikiPage.cls_discr()))
-		else:
-			flash("Die Seite gibt es noch nicht. Du darfst sie leider auch nicht anlegen.",False)
-			return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
-	else:
-		return render_my_template(request, obj=obj, detail=TM_DETAIL_PAGE, \
-			title_trace=[obj.name])
 

@@ -1,3 +1,11 @@
+CREATE TABLE comment (
+	id INTEGER NOT NULL, 
+	name VARCHAR(250), 
+	data TEXT, 
+	added TIMESTAMP, 
+	PRIMARY KEY (id), 
+	 CONSTRAINT comment_id FOREIGN KEY(id) REFERENCES obj (id)
+);
 CREATE TABLE template_match (
 	id INTEGER NOT NULL, 
 	discr TINYINT NOT NULL, 
@@ -15,8 +23,8 @@ CREATE TABLE wanttracking (
 	track_mod BOOL NOT NULL, 
 	track_del BOOL NOT NULL, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT wanttracking_discr FOREIGN KEY(discr) REFERENCES discriminator (id), 
-	 CONSTRAINT `Group_id` FOREIGN KEY(id) REFERENCES obj (id)
+	 CONSTRAINT `Group_id` FOREIGN KEY(id) REFERENCES obj (id), 
+	 CONSTRAINT wanttracking_discr FOREIGN KEY(discr) REFERENCES discriminator (id)
 );
 CREATE TABLE discriminator (
 	id TINYINT(1) NOT NULL AUTO_INCREMENT, 
@@ -37,7 +45,7 @@ CREATE TABLE wikipage (
 	data TEXT, 
 	modified TIMESTAMP, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT `wikipage.id` FOREIGN KEY(id) REFERENCES obj (id)
+	 CONSTRAINT wikipage_id FOREIGN KEY(id) REFERENCES obj (id)
 );
 CREATE TABLE mimeext (
 	id INTEGER NOT NULL AUTO_INCREMENT, 
@@ -62,9 +70,9 @@ CREATE TABLE storage (
 	url VARCHAR(250) NOT NULL, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT storage_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (url), 
+	 UNIQUE (path), 
 	 UNIQUE (name), 
-	 UNIQUE (path)
+	 UNIQUE (url)
 );
 CREATE TABLE sites (
 	id INTEGER NOT NULL, 
@@ -83,9 +91,9 @@ CREATE TABLE bindata (
 	hash VARCHAR(30) NOT NULL, 
 	timestamp TIMESTAMP, 
 	PRIMARY KEY (id), 
+	 UNIQUE (hash), 
 	 CONSTRAINT bindata_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT mimetype_id FOREIGN KEY(mime_id) REFERENCES mimetype (id), 
-	 UNIQUE (hash)
+	 CONSTRAINT mimetype_id FOREIGN KEY(mime_id) REFERENCES mimetype (id)
 );
 CREATE TABLE templates (
 	id INTEGER NOT NULL, 
@@ -119,9 +127,9 @@ CREATE TABLE deleted (
 	old_owner_id INTEGER, 
 	timestamp TIMESTAMP, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT obj_super FOREIGN KEY(old_superparent_id) REFERENCES obj (id), 
+	 CONSTRAINT obj_owner FOREIGN KEY(old_owner_id) REFERENCES obj (id), 
 	 CONSTRAINT delete_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT obj_owner FOREIGN KEY(old_owner_id) REFERENCES obj (id)
+	 CONSTRAINT obj_super FOREIGN KEY(old_superparent_id) REFERENCES obj (id)
 );
 CREATE TABLE groupmembers (
 	id INTEGER NOT NULL, 
@@ -152,8 +160,8 @@ CREATE TABLE verifierbase (
 	name VARCHAR(30) NOT NULL, 
 	cls VARCHAR(50) NOT NULL, 
 	PRIMARY KEY (id), 
-	 UNIQUE (cls), 
-	 UNIQUE (name)
+	 UNIQUE (name), 
+	 UNIQUE (cls)
 );
 CREATE TABLE permissions (
 	id INTEGER NOT NULL, 
@@ -188,17 +196,17 @@ CREATE TABLE obj (
 	parent_id INTEGER, 
 	superparent_id INTEGER, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id), 
 	 CONSTRAINT obj_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
-	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id), 
-	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id)
+	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id), 
+	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id), 
+	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id)
 );
 CREATE TABLE site_users (
 	site_id INTEGER NOT NULL, 
 	user_id INTEGER NOT NULL, 
-	 CONSTRAINT site_users_user FOREIGN KEY(user_id) REFERENCES obj (id), 
 	 CONSTRAINT site_users_site FOREIGN KEY(site_id) REFERENCES obj (id), 
-	 UNIQUE (site_id, user_id)
+	 UNIQUE (site_id, user_id), 
+	 CONSTRAINT site_users_user FOREIGN KEY(user_id) REFERENCES obj (id)
 );
 CREATE TABLE changes (
 	id INTEGER NOT NULL, 

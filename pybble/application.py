@@ -14,6 +14,7 @@ import pybble.admin
 import pybble.part.wikipage
 import pybble.part.permission
 import pybble.part.wanttracking
+import pybble.part.usertracker
 import pybble.part.change
 from pybble.session import add_session, add_user, add_site, save_session, \
 	add_response_headers
@@ -194,6 +195,7 @@ class Pybble(object):
 			dw = Discriminator.q.get_by(name="WikiPage")
 			ds = Discriminator.q.get_by(name="Site")
 			dp = Discriminator.q.get_by(name="Permission")
+			dk = Discriminator.q.get_by(name="Comment")
 
 			for d in (dw,ds):
 				try:
@@ -203,7 +205,7 @@ class Pybble(object):
 					p.superparent=s
 					db.session.add(p)
 
-			for d,e in ((ds,dw),(ds,dp),(dw,dw),(dw,dp)):
+			for d,e in ((ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk)):
 				try:
 					p=Permission.q.get_by(owner=u,parent=s,discr=d.id,right=PERM_ADD,new_discr=e.id)
 				except NoResult:

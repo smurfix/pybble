@@ -16,19 +16,13 @@ from wtforms.validators import ValidationError
 from sqlalchemy.sql import and_, or_, not_
 from datetime import datetime
 
-
 ###
 ### Tracking
 ###
 
-def viewer(request, obj):
-	n = Change.q.filter(and_(Change.timestamp>obj.timestamp,
-	                         Change.parent==obj.parent))\
-	            .order_by(Change.timestamp)\
-	            .first()
-	p = Change.q.filter(and_(Change.timestamp<obj.timestamp,
-	                         Change.parent==obj.parent))\
-	            .order_by(Change.timestamp.desc())\
-	            .first()
-	return render_my_template(request, obj=obj, next=n, prev=p, detail=TM_DETAIL_PAGE)
-
+@expose("/changes")
+def view_all(request):
+	return render_template("changelist.html",
+	                       changes=Tracker.q.filter_by(owner=request.user)\
+	                                        .order_by(Tracker.timestamp.desc()))
+	
