@@ -39,8 +39,8 @@ class WantTrackingForm(Form):
 	user = TextField('User', [valid_obj, valid_admin])
 	object = TextField('Object', [valid_obj, valid_read])
 
-	discr = SelectField('Existing Object type?', choices=(("-","any object"),)+tuple((str(q.id),q.name) for q in discr_list))
-	email = BooleanField(u'Mail schicken?')
+	discr = SelectField('Object type', choices=(("-","any object"),)+tuple((str(q.id),q.name) for q in discr_list))
+	email = BooleanField(u'Mail schicken')
 	track_new = BooleanField(u'Meldung bei neuen Einträgen')
 	track_mod = BooleanField(u'Meldung bei Änderungen')
 	track_del = BooleanField(u'Meldung bei Löschung')

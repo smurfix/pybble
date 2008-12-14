@@ -2,7 +2,7 @@
 	<ul>
 		<li><a href="/">Home</a>
 			<ul>
-				<li><a href="/wiki/MainPage">Das Wichtigste</a></li>
+				<li><a href="/wiki/MainPage" title="öffentliches Wiki">Das Wichtigste</a></li>
 			</ul>
 		</li>
 
@@ -35,14 +35,14 @@
 				{%- else -%}
 					{{ url_for("pybble.views.view_tree") }}
 				{%- endif -%}
-				">Admin</a>
+				" title="Detail- und Baumansicht">Admin</a>
 			<ul>
 				<li><a href="{{ url_for("pybble.admin.show_templates") }}">Named Templates</a></li>
 				{%- if obj -%}
-				<li><a href="{{ url_for("pybble.views.edit_oid", oid=obj.oid()) }}">Edit</a></li>
-				<li><a href="{{ url_for("pybble.views.delete_oid", oid=obj.oid()) }}">Delete</a></li>
-				<li><a href="{{ url_for("pybble.admin.edit_template", template=obj.oid()) }}">Templates</a></li>
-				<li><a href="{{ url_for("pybble.part.permission.edit_permission", permission=obj.oid()) }}">Permissions</a></li>
+				<li><a href="{{ url_for("pybble.views.edit_oid", oid=obj.oid()) }}" title="bearbeiten">Edit</a></li>
+				<li><a href="{{ url_for("pybble.views.delete_oid", oid=obj.oid()) }}" title="löschen">Delete</a></li>
+				<li><a href="{{ url_for("pybble.admin.edit_template", template=obj.oid()) }}" title="… für dieses Objekt">Templates</a></li>
+				<li><a href="{{ url_for("pybble.part.permission.edit_permission", permission=obj.oid()) }}" title="… für dieses Objekt">Permissions</a></li>
 				{%- endif %}
 			</ul>
 		</li>

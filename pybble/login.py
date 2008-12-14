@@ -20,7 +20,7 @@ from datetime import datetime,timedelta
 class LoginForm(Form):
 	username = TextField('Username', [validators.length(min=3, max=30)])
 	password = PasswordField('Passwort', [validators.length(min=5, max=30)])
-	remember = BooleanField('Eingeloggt bleiben?')
+	remember = BooleanField('Eingeloggt bleiben')
 	next = HiddenField("next URL")
 
 @expose("/admin/login")

@@ -86,11 +86,11 @@ tmc.sort()
 
 class TemplateForm(Form):
 	oid = TextField('OID', [valid_obj])
-	detail = SelectField('Detail?', choices=tuple((str(x),y) for x,y in tmc))
-	discr = SelectField('Object type?', choices=tuple((str(q.id),q.name) for q in discr_list))
-	inherit = SelectField('Applies to?', choices=(('Yes','All sub-pages'), ('No','this page only'),('*','This page and all sub-pages')))
+	detail = SelectField('Detail', choices=tuple((str(x),y) for x,y in tmc))
+	discr = SelectField('Object type', choices=tuple((str(q.id),q.name) for q in discr_list))
+	inherit = SelectField('Applies to', choices=(('Yes','All sub-pages'), ('No','this page only'),('*','This page and all sub-pages')))
 	page = TextAreaField('Template')
-	clone = SelectField('Copy?', choices=(('Yes','Store new template'),('Link','Add new assoc'),('No','Replace old assoc')))
+	clone = SelectField('Copy', choices=(('Yes','Store new template'),('Link','Add new assoc'),('No','Replace old assoc')))
 
 def edit_assoc_template(request, match, template, obj):
 	form = TemplateForm(request.form, prefix="template")

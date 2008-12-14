@@ -34,11 +34,11 @@ class PermissionForm(Form):
 	user = TextField('User', [valid_obj,valid_admin])
 	object = TextField('Object', [valid_obj,valid_read,valid_access('user','right')])
 
-	discr = SelectField('Existing Object type?', choices=tuple((str(q.id),q.name) for q in discr_list))
-	new_discr = SelectField('New Object type?', choices=(("-","(not applicable)"),)+tuple((str(q.id),q.name) for q in discr_list))
-	inherit = SelectField('Applies to?', choices=(('Yes','All sub-pages'), ('No','this page only'),('*','This page and all sub-pages')))
-	right = SelectField('Access to:', choices=tuple((str(x),y) for x,y in plc))
-	clone = SelectField('Copy?', choices=(('Yes','Store new permission'),('No','Modify existing permission')))
+	discr = SelectField('Existing Object type', choices=tuple((str(q.id),q.name) for q in discr_list))
+	new_discr = SelectField('New Object type', choices=(("-","(not applicable)"),)+tuple((str(q.id),q.name) for q in discr_list))
+	inherit = SelectField('Applies to', choices=(('Yes','All sub-pages'), ('No','this page only'),('*','This page and all sub-pages')))
+	right = SelectField('Access to', choices=tuple((str(x),y) for x,y in plc))
+	clone = SelectField('Copy', choices=(('Yes','Store new permission'),('No','Modify existing permission')))
 
 def newer(request, parent, name=None):
 	return editor(request, parent=parent)
