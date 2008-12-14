@@ -13,26 +13,26 @@
 
 {% endblock %}
 {% block body %}
-
-  <h1>Object trees of {{ obj }}</h1>
-  <h2>Owner</h2>
+  {{ subpage(obj,4) }}
+  <h2>Object trees of {{ obj }}</h2>
+  <h3>Owner</h3>
   <ul class="jqueryFileTree" id="jq_owner">
      <li>Javascript is disabled -- no display!</span>
 	 <!-- TODO: generate a child list -->
   </ul>
-  <h2>Parent / child</h2>
+  <h3>Parent / child</h3>
   <ul class="jqueryFileTree" id="jq_parent">
      <li>Javascript is disabled -- no display!</span>
 	 <!-- TODO: generate a child list -->
   </ul>
-  <h2>Super-Parent / child</h2>
+  <h3>Super-Parent / child</h3>
   <ul class="jqueryFileTree" id="jq_superparent">
      <li>Javascript is disabled -- no display!</span>
 	 <!-- TODO: generate a child list -->
   </ul>
 
   {% if obj.owner or obj.parent or obj.superparent %}
-  <h2>Uplinks</h2>
+  <h3>Uplinks</h3>
   <table class="uplink">
   <tbody>
     {% if obj.owner -%}

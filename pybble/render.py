@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from jinja2 import Environment, BaseLoader, Markup
+from jinja2 import Environment, BaseLoader, Markup, contextfunction
 from werkzeug import cached_property, Response
 from werkzeug.http import parse_etags, remove_entity_headers
 from werkzeug.routing import Map, Rule
@@ -30,6 +30,25 @@ def valid_obj(form, field):
 		obj_get(field.data)
 	except Exception:
 		raise ValidationError(u"Das Objekt '%s' gibt es nicht" % (field.data,))
+
+def valid_access(u,r):
+	"""\
+		Return a validator which checks that the user from field 'u' has
+		the rights from field 'r'
+		"""
+	def v_a(form, field):
+		try:
+			obj = obj_get(field.data)
+			user = obj_get(getattr(form,u).data)
+			right = int(getattr(form,r).data)
+		except Exception:
+			return # checked by others
+			raise ValidationError(u"Das Objekt '%s' gibt es nicht" % (field.data,))
+		else:
+			if not user.can_do(obj,obj.discriminator,want=right):
+				raise ValidationError(u"Kein Zugriff auf Objekt '%s' (%s)" % (field.data,PERM[right]))
+
+	return v_a
 
 class TemplateNotFound(IOError, LookupError):
 	"""
@@ -165,8 +184,18 @@ def render_template(template, resp=True,**context):
 		r = Markup(r)
 	return r
 
-jinja_env.globals['subpage'] = lambda a,b=TM_DETAIL_SUBPAGE: render_my_template(current_request,a,b,resp=False)
-jinja_env.globals['subline'] = lambda a,b=TM_DETAIL_STRING: render_my_template(current_request,a,b,resp=False)
+@contextfunction
+def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE):
+	ctx = ctx.get_all()
+	ctx["obj"] = obj
+	return render_my_template(current_request, resp=False, detail=detail, **ctx)
+
+@contextfunction
+def render_subline(ctx,obj):
+	return render_subpage(ctx,obj, detail=TM_DETAIL_STRING)
+
+jinja_env.globals['subpage'] = render_subpage
+jinja_env.globals['subline'] = render_subline
 
 
 pybble_dtd = None
@@ -211,6 +240,13 @@ def send_mail(to='', template='', **context):
 # Permission checks for templates: {% if can_edit() %} -- menu -- {% endif %}
 for a,b in PERM.iteritems():
 	def can_do_closure(a,b):
+		def valid_do(form, field):
+			obj_get(field.data)
+			if (current_request.user.can_do(obj, discr=discr) >= a) \
+				if (a > PERM_NONE) \
+				else (current_request.user.can_do(obj, discr=discr, want=a) == a):
+				raise ValidationError(u"Kein Zugriff auf Objekt '%s' (%s)" % (field.data,b))
+
 		def can_do(env, obj=None, discr=None):
 			if obj is None:
 				obj = env.vars['obj']
@@ -231,10 +267,11 @@ for a,b in PERM.iteritems():
 					raise AuthError(obj,a)
 		will_do.contextfunction = 1 # Jinja
 
-		return can_do,will_do
-	c,d = can_do_closure(a,b)
+		return can_do,will_do,valid_do
+	c,d,e = can_do_closure(a,b)
 	jinja_env.globals['can_' + b.lower()] = c
 	jinja_env.globals['will_' + b.lower()] = d
+	globals()['valid_' + b.lower()] = e
 
 
 class Pagination(object):

@@ -14,6 +14,7 @@ import pybble.admin
 import pybble.part.wikipage
 import pybble.part.permission
 import pybble.part.wanttracking
+import pybble.part.change
 from pybble.session import add_session, add_user, add_site, save_session, \
 	add_response_headers
 
@@ -70,7 +71,7 @@ class Pybble(object):
 
 			from pybble.models import Site,User,Object,Discriminator,Template,TemplateMatch,VerifierBase,WikiPage,Storage,BinData,StaticFile
 			from pybble.models import Group,Permission, add_mime,mime_ext
-			from pybble.models import TM_DETAIL_SUBPAGE, PERM_READ,PERM_ADMIN,PERM_ADD
+			from pybble.models import TM_DETAIL_SUBPAGE, PERM_READ,PERM_ADMIN,PERM_ADD, TM_DETAIL_DETAIL
 			from pybble import utils
 			from werkzeug import Request
 
@@ -294,23 +295,41 @@ You may continue on your own. ;-)
 				try:
 					data = open("pybble/templates/view/%s.html" % (d.name.lower(),)).read()
 				except (IOError,OSError):
-					continue
-				try:
-					t = TemplateMatch.q.get_by(obj=s, discr=d.id, detail=TM_DETAIL_SUBPAGE)
-				except NoResult:
-					t = TemplateMatch(obj=s, discr=d.id, detail=TM_DETAIL_SUBPAGE, data = data)
-					db.session.add(t)
+					pass
 				else:
-					if t.template.data != data:
-						print "Warning: AssocTemplate 'view/%s.html' differs." % (d.name.lower(),)
-						if replace_templates:
-							t.template.data = data
+					try:
+						t = TemplateMatch.q.get_by(obj=s, discr=d.id, detail=TM_DETAIL_SUBPAGE)
+					except NoResult:
+						t = TemplateMatch(obj=s, discr=d.id, detail=TM_DETAIL_SUBPAGE, data = data)
+						db.session.add(t)
+					else:
+						if t.template.data != data:
+							print "Warning: AssocTemplate 'view/%s.html' differs." % (d.name.lower(),)
+							if replace_templates:
+								t.template.data = data
+								t.template.modified = datetime.utcnow()
+				db.session.flush()
+
+				try:
+					data = open("pybble/templates/details/%s.html" % (d.name.lower(),)).read()
+				except (IOError,OSError):
+					pass
+				else:
+					try:
+						t = TemplateMatch.q.get_by(obj=s, discr=d.id, detail=TM_DETAIL_DETAIL)
+					except NoResult:
+						t = TemplateMatch(obj=s, discr=d.id, detail=TM_DETAIL_DETAIL, data = data)
+						db.session.add(t)
+					else:
+						if t.template.data != data:
+							print "Warning: AssocTemplate 'detail/%s.html' differs." % (d.name.lower(),)
+							if replace_templates:
+								t.template.data = data
 							t.template.modified = datetime.utcnow()
 				db.session.flush()
 
 			db.session.commit()
 			print "Your root user is named '%s' and has the password '%s'." % (u.username, u.password)
-			print "Your anon user is named '%s' and has the password '%s'." % (a.username, a.password)
 		return action
 
 	def show_database(self):

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from werkzeug import redirect, import_string
+from werkzeug.routing import BuildError
 from werkzeug.exceptions import NotFound
 from pybble.render import render_template, render_my_template, \
 	expose, url_for
@@ -93,16 +94,25 @@ def view_oid(request, oid):
 	request.user.will_read(obj)
 	request.user.visited(obj)
 	try:
-		name = obj.name
+		name = getattr(obj,"name",None)
 		v = import_string("pybble.part.%s.viewer" % (obj.classname.lower(),))
-	except Exception:
-		return render_my_template(request, obj=obj_get(oid), detail=TM_DETAIL_PAGE)
+	except Exception,e:
+		return render_my_template(request, obj=obj, detail=TM_DETAIL_PAGE)
 	else:
 		args = {}
 		if "name" in v.func_code.co_varnames: args["name"]=name
 		if "oid"  in v.func_code.co_varnames: args["oid" ]=oid
-		return redirect(url_for('pybble.part.%s.viewer' % (obj.classname.lower(),), **args))
+		try:
+			return redirect(url_for('pybble.part.%s.viewer' % (obj.classname.lower(),), **args))
+		except BuildError:
+			if "obj"  in v.func_code.co_varnames: args["obj" ]=obj
+			return v(request, **args)
 
+@expose('/detail/<oid>')
+def detail_oid(request, oid):
+	obj = obj_get(oid)
+	request.user.will_read(obj)
+	return render_template("detail.html", obj=obj)
 
 @expose('/snippet/<t>')
 def view_snippet(request, t):

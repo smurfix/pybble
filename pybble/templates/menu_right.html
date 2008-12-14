@@ -7,14 +7,15 @@
 		<li><a href="{{ url_for('pybble.views.view_oid', oid=USER.oid()) }}">Hallo, <strong>{{ USER.name }}</strong>!</a>
 			<ul>
 				<li><a href="{{ url_for('pybble.views.last_visited') }}">zuletzt besucht</a></li>
-			  {% if obj %}
-				<li><a href="{{ url_for('pybble.views.new_oid',oid=obj.oid(),discr='WantTracking') }}">beobachten</a>
-					<ul>
-						{# <li><a href="{{ url_for('pybble.part.wanttracking.edit_wanttracking',oid=obj.oid()) }}">Liste</a> #}
-						<li><a href="{{ url_for('pybble.part.wanttracking.list_wanttracking') }}">Gesamtliste</a>
-					</ul>
-				</li>
-			  {% endif %}
+				<li><a href="{{ url_for('pybble.part.change.view_all') }}">Änderungen</a>
+			    {% if obj %}
+				  <ul>
+				    <li><a href="{{ url_for('pybble.views.new_oid',oid=obj.oid(),discr='WantTracking') }}">beobachten</a></li>
+						{# <li><a href="{{ url_for('pybble.part.wanttracking.edit_wanttracking',oid=obj.oid()) }}">Liste</a></li> #}
+					<li><a href="{{ url_for('pybble.part.wanttracking.list_wanttracking') }}">Gesamtliste</a></li>
+				  </ul>
+			    {% endif %}
+			  </li>
 			</ul>
 		</li>
 		<li><a href="{{ url_for('pybble.login.do_logout') }}">Logout</a></li>

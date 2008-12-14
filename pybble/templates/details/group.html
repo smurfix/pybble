@@ -1,0 +1,10 @@
+  <h2>Daten für {{ obj.name }}</h2>
+    <table>
+	  <tbody>
+		<tr><th>Gruppe:</th><td>{{ obj }}</td></tr>
+		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.oid()) }}">{{ obj.oid() }}</a></td></tr>
+		<tr><th>Name:</th><td>{{ obj.name }}</td></tr>
+		<tr><th>Admin:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.owner.oid()) }}">{{ obj.owner }}</a> ({{ obj.owner.oid() }})</td></tr>
+		<tr><th>Mitglieder:</th><td>{{ obj.members.count() }}</td></tr>
+	  </tbody>
+    </table>

@@ -23,7 +23,7 @@ except ImportError:
 
 
 # Template detail levels
-TM_DETAIL = {1:"Page", 2:"Subpage", 3:"String"}
+TM_DETAIL = {1:"Page", 2:"Subpage", 3:"String", 4:"Detail"}
 for _x,_y in TM_DETAIL.items():
 	globals()["TM_DETAIL_"+_y.upper()] = _x
 
@@ -411,10 +411,10 @@ class User(Object):
 	def can_do(user,obj, discr=None, new_discr=None, want=None):
 		"""Recursively get the permission of this user for that (type of) object."""
 
-		print >>sys.stderr,"PERM",discr,new_discr,want,obj,"AT",current_request.site,u"⇒",
+		#print >>sys.stderr,"PERM",discr,new_discr,want,obj,"AT",current_request.site,u"⇒",
 		if obj is not current_request.site and \
 		   current_request.user.can_admin(current_request.site):
-			print >>sys.stderr,"ADMIN"
+			#print >>sys.stderr,"ADMIN"
 			return want if want and want < 0 else PERM_ADMIN
 
 		pq = Permission.q
@@ -463,13 +463,13 @@ class User(Object):
 				pass
 			else:
 				if p is not None:
-					print >>sys.stderr,p
+					#print >>sys.stderr,p
 					return p
 
 			no_inh = False
 			obj = obj.parent
 
-		print >>sys.stderr,"NONE"
+		#print >>sys.stderr,"NONE"
 		return PERM_NONE
 
 	def will_do(user,obj,discr=None, perm=PERM_NONE):
@@ -1117,7 +1117,7 @@ def add_mime(name,typ,subtyp,ext):
 		t = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
 	except NoResult:
 		t=MIMEtype()
-		t.name = name
+		t.name = unicode(name)
 		t.typ = typ
 		t.subtyp = subtyp
 		t.ext = ext
@@ -1199,7 +1199,7 @@ class Storage(Object):
 	url = Column(String(250), nullable=False, unique=True)
 
 	def __init__(self, name,path,url):
-		self.name = name
+		self.name = unicode(name)
 		self.path = path
 		self.url = url
 		self.superparent = current_request.site

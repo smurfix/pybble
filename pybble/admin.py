@@ -50,15 +50,6 @@ def edit_template_at(request, template, id, obj=None):
 	else: obj = obj_get(obj)
 	return edit_assoc_template(request,tm,t,obj)
 
-@expose("/admin/del/template/<template>/<id>/<obj>")
-def del_template_at(request, template, id, obj=None):
-	t = obj_get(template)
-	tm = TemplateMatch.q.get_by(id=id)
-	assert tm.template == t
-	if obj is None: obj = tm.obj
-	else: obj = obj_get(obj)
-	return edit_assoc_template(request,tm,t,obj)
-
 class NamedTemplateForm(Form):
 	name = TextField('Name', [validators.length(min=3, max=30)])
 	page = TextAreaField('Template')

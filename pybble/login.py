@@ -11,6 +11,7 @@ from pybble.session import logged_in
 from wtforms import Form, BooleanField, TextField, PasswordField, HiddenField, validators
 from wtforms.validators import ValidationError
 from jinja2 import Markup
+from datetime import datetime,timedelta
 
 ###
 ### Login
@@ -43,6 +44,11 @@ def do_login(request):
 				u = None
 		if u:
 			logged_in(request,u)
+
+			now = datetime.utcnow()
+			if u.last_login is None or u.last_login < now-timedelta(0,500):
+				u.last_login = now
+
 			if form.remember.data:
 				make_permanent(request)
 

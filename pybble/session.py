@@ -9,6 +9,7 @@ from random import random
 from werkzeug import cookie_date, get_host
 from werkzeug.contrib.securecookie import SecureCookie
 import settings
+from datetime import datetime,timedelta
 from pybble.models import User,Site
 from pybble.database import NoResult
 from pybble.decorators import ResultNotFound
@@ -96,6 +97,9 @@ def add_user(request):
 #		request.session.pop('uid', None)
 #		user = User.objects.get_anonymous_user()
 
+	now = datetime.utcnow()
+	if user.last_login is None or user.last_login < now-timedelta(0,500):
+		user.last_login = now
 	request.user = user
 
 def save_session(request, response):

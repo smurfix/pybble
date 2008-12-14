@@ -1,0 +1,9 @@
+  <h2>Wiki-Seite {{ obj.name }}</h2>
+    <table>
+	  <tbody>
+		<tr><th>Name:</th><td>{{ obj.name }}</td></tr>
+		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.oid()) }}">{{ obj.oid() }}</a></td></tr>
+		<tr><th>Geändert:</th><td>{{ obj.modified }}</td></tr>
+		<tr><th class="top">Inhalt:</th><td class="code"><code>{{ obj.data }}</code></td></tr>
+	  </tbody>
+    </table>

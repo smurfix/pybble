@@ -8,7 +8,7 @@
 	</thead><tbody>
       {% for o in q if o.parent %}
         <tr>
-		  <td><a href="{{url_for("pybble.views.view_oid", oid=o.parent.oid()) }}">{{ o.parent }}</a></td>
+		  <td><a href="{{url_for("pybble.views.view_oid", oid=o.parent.oid()) }}">{{ subline(o.parent) }}</a></td>
 		  <td>{{ o.visited }}</td>
 		  <td>{{ o.parent.oid() }}</td>
 		</tr>

@@ -4,7 +4,7 @@ from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from pybble.utils import current_request, make_permanent
 from pybble.render import url_for, expose, render_template, valid_obj, \
-	discr_list, name_discr
+	discr_list, name_discr, valid_read, valid_admin
 from pybble.models import Discriminator, Tracker,Change,\
 	WantTracking, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE, PERM_READ
 
@@ -36,8 +36,8 @@ plc = PERM.items()
 plc.sort()
 
 class WantTrackingForm(Form):
-	user = TextField('User', [valid_obj])
-	object = TextField('Object', [valid_obj])
+	user = TextField('User', [valid_obj, valid_admin])
+	object = TextField('Object', [valid_obj, valid_read])
 
 	discr = SelectField('Existing Object type?', choices=(("-","any object"),)+tuple((str(q.id),q.name) for q in discr_list))
 	email = BooleanField(u'Mail schicken?')

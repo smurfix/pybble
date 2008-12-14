@@ -1,0 +1,14 @@
+{% extends 'layout.html' %}
+{% block body %}
+  <h1>Änderungs-Log für {{ USER.name }}</h1>
+  <table><thead>
+    <tr><td>Object</td><td>Change</td></tr>
+	</thead><tbody>
+  {%- for o in changes %}
+    	<tr>
+			<td><a href="{{url_for("pybble.views.view_oid", oid=o.change_obj.oid()) }}">{{ o.change_obj }}</a></td>
+			<td><a href="{{url_for("pybble.views.view_oid", oid=o.oid()) }}">{{ o}}</a></td>
+			</tr>
+  {% endfor -%}
+    </tbody></table>
+{% endblock %}
