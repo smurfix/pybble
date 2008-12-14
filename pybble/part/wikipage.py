@@ -40,8 +40,6 @@ class WikiEditForm(Form):
 def newer(request, parent, name=None):
 	if parent is None:
 		parent = request.site
-	else:
-		assert isinstance(parent, (Site,WikiPage))
 
 	form = WikiEditForm(request.form, prefix="wiki")
 	if request.method == 'POST' and form.validate():

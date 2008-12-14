@@ -39,8 +39,6 @@ class CommentEditForm(Form):
 def newer(request, parent, name=None):
 	if parent is None:
 		parent = request.site
-	else:
-		assert isinstance(parent, (Site,Comment,WikiPage))
 
 	form = CommentEditForm(request.form, prefix="comment")
 	if request.method == 'POST' and form.validate():
