@@ -142,7 +142,9 @@ def addables(obj):
 	return g
 jinja_env.globals['addables'] = addables
 
-def render_my_template(request, obj, detail=None, resp=True, **context):
+class NotGiven: pass
+
+def render_my_template(request, obj, detail=None, mimetype=NotGiven, **context):
 	"""Global render"""
 
 	if isinstance(obj,basestring):
@@ -165,9 +167,9 @@ def render_my_template(request, obj, detail=None, resp=True, **context):
 	except NoResult:
 		t = "missing_%d.html" % (detail,)
 
-	return render_template(t, resp=resp, **context)
+	return render_template(t, mimetype=mimetype, **context)
 
-def render_template(template, resp=True,**context):
+def render_template(template, mimetype=NotGiven, **context):
 	if current_request:
 		from pybble.flashing import get_flashed_messages
 		context.update(
@@ -178,8 +180,10 @@ def render_template(template, resp=True,**context):
 			SITE=current_request.site,
 		)
 	r = jinja_env.get_template(template).render(**context)
-	if resp:
-		r = Response(r, mimetype='text/html')
+	if mimetype:
+		if mimetype is NotGiven:
+			mimetype="text/html"
+		r = Response(r, mimetype=mimetype)
 	else:
 		r = Markup(r)
 	return r
@@ -188,7 +192,7 @@ def render_template(template, resp=True,**context):
 def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE):
 	ctx = ctx.get_all()
 	ctx["obj"] = obj
-	return render_my_template(current_request, resp=False, detail=detail, **ctx)
+	return render_my_template(current_request, mimetype=None, detail=detail, **ctx)
 
 @contextfunction
 def render_subline(ctx,obj):

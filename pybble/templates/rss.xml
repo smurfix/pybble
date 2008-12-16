@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Changes to {{SITE.name}} for {{user.name}}</title>
+    <link>http://{{SITE.domain}}</link>
+    <language>de-de</language>
+    <pubDate>{{ now }}</pubDate>
+    <lastBuildDate>{{ SITE.tracked }}</lastBuildDate>
+    <generator>PyBBle</generator>
+    <ttl>300</ttl>
+ 
+{% for item in user.tracks %}
+    <item>
+      <title>{{ item }}</title>
+      <link>{{ url_for('pybble.views.view_oid',oid=item.oid(),_external=True) }}</link>
+      <description>{{ subpage(item) }}</description>
+      <pubDate>{{ item.parent.timestamp }}</pubDate>
+      <guid>http://{{SITE.domain}}/rss/id/{{item.oid}}</guid>
+    </item>
+{% endfor %} 
+  </channel>
+</rss>
+
+
+

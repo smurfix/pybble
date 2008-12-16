@@ -1,0 +1,29 @@
+{% extends 'layout.html' %}
+{% from 'form.html' import show, showb, hide %}
+
+{% block body %}
+  <h2>RSS-Feed konfigurieren</h2>
+    <form method="post" action="{{ action }}">
+    <table>
+	  {{ show(form.age) }}
+	  {% if USER.feed_pass %}
+	  {{ showb(form.new_id) }}
+	  {% else %}
+	  {{ hide(form.new_id) }}
+	  {% endif %}
+    </table>
+    <input type="submit" value="{% if USER.feed_pass %}Update{% else %}Anlegen{% endif %}" />
+    </form>
+<hr />
+  <h2>RSS-Info</h2>
+  <p>
+  Nach dem Klick auf die {% if USER.feed_pass %}Update{% else %}Anlegen{% endif %}-Taste kannst du deinen persönlichen RSS-Feed nutzen.
+  </p>
+  {% if new_tracker %}
+  <p>
+  Hinweis: Dein RSS-Feed ist zunächst leer. Das System wird dir einen
+  systemweiten Beobachtungseintrag anlegen, der dich ab sofort über alle
+  neuen oder geänderten Wiki-Seiten informiert.
+  </p>
+  {% endif %}
+{% endblock %}

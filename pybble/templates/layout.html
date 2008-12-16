@@ -5,6 +5,9 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>{{ (title_trace|default([]) + [SITE.name])|join(' › ') }}</title>
+	{%- if USER.feed_pass %}
+	<link href="{{ url_for('pybble.rss.do_rss', feed_pass=USER.feed_pass) }}" rel="alternate" type="application/rss+xml" title="{{ SITE.name }} RSS Feed for {{ USER.name }}" />
+	{%- endif %}
     {%- set styles = ['style.css','menu.css'] + styles|default([]) -%}
     {%- for style in styles %}
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', file='css/' + style) }}" />

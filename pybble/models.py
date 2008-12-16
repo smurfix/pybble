@@ -326,6 +326,9 @@ class User(Object):
 	first_login = Column(DateTime, nullable=False)
 	last_login = Column(DateTime)
 
+	feed_age = Column(TinyInteger, nullable=False, default=10)
+	feed_pass = Column(String(30), nullable=True)
+
 	def __init__(self, username, password=None):
 		self.username=username
 		if password is None:
@@ -516,6 +519,19 @@ class User(Object):
 			else:
 				p = p[0]
 			p.delete()
+
+	@property
+	def tracks(self):
+		return UserTracker.q.filter_by(owner=self)\
+		                    .order_by(UserTracker.id.desc())
+
+	@property
+	def trackers(self):
+		return WantTracking.q.filter_by(user=current_request.user)
+
+	@property
+	def has_trackers(self):
+		return WantTracking.q.filter_by(user=current_request.user).count()
 
 @add_to(UserQuery)
 def get_anonymous_user(self, site):

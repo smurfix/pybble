@@ -16,6 +16,7 @@ import pybble.part.permission
 import pybble.part.wanttracking
 import pybble.part.usertracker
 import pybble.part.change
+import pybble.rss
 from pybble.session import add_session, add_user, add_site, save_session, \
 	add_response_headers
 
@@ -242,7 +243,7 @@ class Pybble(object):
 						t.owner = u
 
 			for fn in os.listdir(TEMPLATE_PATH):
-				if fn.startswith(".") or (not fn.endswith(".html") and not fn.endswith(".txt")):
+				if fn.startswith(".") or (not fn.endswith(".html") and not fn.endswith(".txt") and not fn.endswith(".xml")):
 					continue
 				get_template(fn)
 

@@ -69,10 +69,10 @@ CREATE TABLE storage (
 	path VARCHAR(250) NOT NULL, 
 	url VARCHAR(250) NOT NULL, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT storage_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (path), 
 	 UNIQUE (name), 
-	 UNIQUE (url)
+	 CONSTRAINT storage_id FOREIGN KEY(id) REFERENCES obj (id), 
+	 UNIQUE (url), 
+	 UNIQUE (path)
 );
 CREATE TABLE sites (
 	id INTEGER NOT NULL, 
@@ -91,9 +91,9 @@ CREATE TABLE bindata (
 	hash VARCHAR(30) NOT NULL, 
 	timestamp TIMESTAMP, 
 	PRIMARY KEY (id), 
-	 UNIQUE (hash), 
+	 CONSTRAINT mimetype_id FOREIGN KEY(mime_id) REFERENCES mimetype (id), 
 	 CONSTRAINT bindata_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT mimetype_id FOREIGN KEY(mime_id) REFERENCES mimetype (id)
+	 UNIQUE (hash)
 );
 CREATE TABLE templates (
 	id INTEGER NOT NULL, 
@@ -112,6 +112,8 @@ CREATE TABLE users (
 	password VARCHAR(30) NOT NULL, 
 	first_login DATETIME NOT NULL, 
 	last_login DATETIME, 
+	feed_age TINYINT NOT NULL, 
+	feed_pass VARCHAR(30), 
 	PRIMARY KEY (id), 
 	 CONSTRAINT user_id FOREIGN KEY(id) REFERENCES obj (id)
 );
@@ -127,8 +129,8 @@ CREATE TABLE deleted (
 	old_owner_id INTEGER, 
 	timestamp TIMESTAMP, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT obj_owner FOREIGN KEY(old_owner_id) REFERENCES obj (id), 
 	 CONSTRAINT delete_id FOREIGN KEY(id) REFERENCES obj (id), 
+	 CONSTRAINT obj_owner FOREIGN KEY(old_owner_id) REFERENCES obj (id), 
 	 CONSTRAINT obj_super FOREIGN KEY(old_superparent_id) REFERENCES obj (id)
 );
 CREATE TABLE groupmembers (
@@ -171,8 +173,8 @@ CREATE TABLE permissions (
 	new_discr TINYINT, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT `Group_id` FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT obj_discr FOREIGN KEY(discr) REFERENCES discriminator (id), 
-	 CONSTRAINT obj_new_discr FOREIGN KEY(new_discr) REFERENCES discriminator (id)
+	 CONSTRAINT obj_new_discr FOREIGN KEY(new_discr) REFERENCES discriminator (id), 
+	 CONSTRAINT obj_discr FOREIGN KEY(discr) REFERENCES discriminator (id)
 );
 CREATE TABLE mimetype (
 	id INTEGER NOT NULL AUTO_INCREMENT, 
@@ -196,8 +198,8 @@ CREATE TABLE obj (
 	parent_id INTEGER, 
 	superparent_id INTEGER, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT obj_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
 	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id), 
+	 CONSTRAINT obj_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
 	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id), 
 	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id)
 );

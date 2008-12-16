@@ -26,3 +26,17 @@
 		</td>
       </tr>
 {% endmacro %}
+
+{% macro hide(field) -%}
+      {%- if field.errors %}
+      <tr class="error" > <th>{{ field.label|safe }}:</th>
+		  <td>
+		    {%- set br=joiner("<br />") -%}
+            {%- for e in field.errors %}
+              {{ br() }}<span class="error">{{e}}</span>
+            {%- endfor -%}
+		</td>
+      </tr>
+		{%- endif -%}
+	  <input type="hidden" name="{{field.name}}" value="{{field.data}}"/>
+{% endmacro %}
