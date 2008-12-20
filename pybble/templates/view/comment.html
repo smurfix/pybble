@@ -1,2 +1,5 @@
   <h1>{{ obj.owner.name }}: {{ obj.name }}</h1>
   {{ obj.data|markdown }}
+  {% if can_add(d_comment) %}
+  <div><a href="{{ url_for("pybble.views.new_oid",oid=obj.oid(),discr=d_comment) }}">antworten …</a></div>
+  {% endif %}

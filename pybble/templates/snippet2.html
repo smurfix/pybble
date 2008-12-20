@@ -4,7 +4,7 @@
 
 <ul style="display: none;">
 {% for o in sub %}
-	<li rel="{{o.oid()}}" class="{% if o[what] %}directory{% else %}file{% endif %} collapsed t_{{o.classname}}">
+	<li rel="{{o.oid()}}" class="{% if o[what]() %}directory{% else %}file{% endif %} collapsed t_{{o.classname}}">
 		<span class="image" />
 	    <a href="{{ url_for("pybble.views.detail_oid",oid=o.oid()) }}">
 			{{ subpage(o,3) }}

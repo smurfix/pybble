@@ -2,4 +2,13 @@
 
 {% block body %}
 {{ subpage(obj) }}
+
+  {% if obj.has_children(d_comment) %}
+    <div class="comments">
+    {% for o in obj.all_children(d_comment) %}
+	  <div><a href="{{ url_for("pybble.views.view_oid",oid=o.oid()) }}">{{ o }}<a></div>
+	{% endfor %}
+	</div>
+  {% endif %}
+
 {% endblock %}

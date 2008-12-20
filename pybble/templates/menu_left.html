@@ -6,12 +6,12 @@
 			</ul>
 		</li>
 
-		{%- if obj and ( can_write(obj) or can_add(obj) ) %}
+		{%- if obj and ( can_write() or can_add() ) %}
 		<li>
-			{%- if can_write(obj) %}<a href="{{ url_for("pybble.views.edit_oid", oid=obj.oid()) }}">Edit</a>
+			{%- if can_write() %}<a href="{{ url_for("pybble.views.edit_oid", oid=obj.oid()) }}">Edit</a>
 			{%- else %}<span>Edit</span>
 			{%- endif %}
-			{%- if can_add(obj) %}
+			{%- if can_add() %}
 			<ul>
 				<li><span>New …</span>
 					<ul>
@@ -26,7 +26,6 @@
 			{%- endif %}
 			</li>
 		{%- endif %}
-
 		{%- if can_admin(SITE) %}
 		<li>
 			<a href="

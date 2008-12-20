@@ -106,7 +106,6 @@ jinja_env.globals['url_for'] = url_for
 jinja_env.globals['url'] = lambda: current_request.url
 
 def name_discr(id):
-	from pybble.models import Discriminator
 	if id is None or id == "None":
 		return "*"
 	return Discriminator.q.get_by(id=int(id)).name
@@ -123,6 +122,9 @@ def name_permission(id):
 jinja_env.globals['name_permission'] = name_permission
 
 jinja_env.globals['diff'] = textDiff
+
+for d in discr_list:
+	jinja_env.globals[str("d_"+d.name.lower())] = d.id
 
 def addables(obj):
 	u = current_request.user
@@ -252,10 +254,16 @@ for a,b in PERM.iteritems():
 				raise ValidationError(u"Kein Zugriff auf Objekt '%s' (%s)" % (field.data,b))
 
 		def can_do(env, obj=None, discr=None):
+			if discr is None:
+				if isinstance(obj,int):
+					discr=obj
+					obj=None
 			if obj is None:
-				obj = env.vars['obj']
+				obj = env.get('obj',None)
 			if a > PERM_NONE:
 				return current_request.user.can_do(obj, discr=discr) >= a
+			elif a == PERM_ADD:
+				return current_request.user.can_do(obj, discr=obj.discriminator, new_discr=discr, want=a) == a
 			else:
 				return current_request.user.can_do(obj, discr=discr, want=a) == a
 		can_do.contextfunction = 1 # Jinja

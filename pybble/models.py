@@ -122,29 +122,56 @@ class Object(db.Base):
 	
 	#all_children = relation('Object', backref=backref("superparent", remote_side=Object.id)) 
 
-	@property
 	def has_children(self, discr=None):
 		if discr:
-			n = len(self.children.filter_by(discriminator=discr))
+			n = self.children.filter_by(discriminator=discr).count()
 		else:
-			n = len(self.children)
+			n = self.children.count()
 		return n
 
-	@property
 	def has_superchildren(self, discr=None):
 		if discr:
-			n = len(self.superchildren.filter_by(discriminator=discr))
+			n = self.superchildren.filter_by(discriminator=discr).count()
 		else:
-			n = len(self.superchildren)
+			n = self.superchildren.count()
 		return n
 
-	@property
 	def has_slaves(self, discr=None):
 		if discr:
-			n = len(self.slaves.filter_by(discriminator=discr))
+			n = self.slaves.filter_by(discriminator=discr).count()
 		else:
-			n = len(self.slaves)
+			n = self.slaves.count()
 		return n
+
+	def all_children(self, discr=None):
+		if discr:
+			return self.children.filter_by(discriminator=discr)
+		else:
+			return self.children
+
+	def all_superchildren(self, discr=None):
+		if discr:
+			return self.superchildren.filter_by(discriminator=discr)
+		else:
+			return self.superchildren
+
+	def all_slaves(self, discr=None):
+		if discr:
+			return self.slaves.filter_by(discriminator=discr)
+		else:
+			return self.slaves
+
+	@property
+	def children(self):
+		return Object.q.filter_by(parent=self)
+
+	@property
+	def superchildren(self):
+		return Object.q.filter_by(superparent=self)
+
+	@property
+	def slaves(self):
+		return Object.q.filter_by(owner=self)
 
 	@property
 	def discr_children(self):
@@ -279,9 +306,9 @@ Object.owner = relation(Object, uselist=False, remote_side=Object.id, primaryjoi
 Object.parent = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Object.parent_id==Object.id))
 Object.superparent = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Object.superparent_id==Object.id))
 
-Object.children = relation(Object, remote_side=Object.parent_id, primaryjoin=(Object.id==Object.parent_id)) 
-Object.superchildren = relation(Object, remote_side=Object.superparent_id, primaryjoin=(Object.id==Object.superparent_id)) 
-Object.slaves = relation(Object, remote_side=Object.owner_id, primaryjoin=(Object.id==Object.owner_id)) 
+#Object.children = relation(Object, remote_side=Object.parent_id, primaryjoin=(Object.id==Object.parent_id)) 
+#Object.superchildren = relation(Object, remote_side=Object.superparent_id, primaryjoin=(Object.id==Object.superparent_id)) 
+#Object.slaves = relation(Object, remote_side=Object.owner_id, primaryjoin=(Object.id==Object.owner_id)) 
 
 def obj_class(id):
 	"""Given a discriminator ID, return the referred object's class."""
@@ -427,6 +454,8 @@ class User(Object):
 				pq = pq.filter(Permission.right >= want)
 			else:
 				pq = pq.filter(Permission.right == want)
+		if discr is None and obj and want < 0:
+			discr = obj.discriminator
 		if discr is not None:
 			discr = Discriminator.get(discr).id
 			pq = pq.filter_by(discr=discr)
