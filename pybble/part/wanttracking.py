@@ -5,8 +5,8 @@ from werkzeug.exceptions import NotFound
 from pybble.utils import current_request, make_permanent
 from pybble.render import url_for, expose, render_template, valid_obj, \
 	discr_list, name_discr, valid_read, valid_admin
-from pybble.models import Discriminator, Change,\
-	WantTracking, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE, PERM_READ
+from pybble.models import Discriminator, WantTracking, obj_get, \
+	TM_DETAIL, PERM, TM_DETAIL_PAGE, PERM_READ
 
 from pybble.database import db,NoResult
 from pybble.flashing import flash
@@ -61,25 +61,17 @@ def editor(request, obj=None, parent=None):
 
 		if parent:
 			obj = WantTracking(user, dest, discr)
-			obj.track_new=track_new
-			obj.track_mod=track_mod
-			obj.track_del=track_del
-			obj.email=email
-
 			obj.record_creation()
 		else:
-			chg = ""
-			if obj.owner != user:
-				chg += u"Owner: %s (%s) ⇒ %s (%s)\n" % (obj.owner,obj.owner.oid(), user,user.oid())
-				obj.owner = user
-			if obj.parent != dest:
-				chg += u"Tracked: %s (%s) ⇒ %s (%s)\n" % (obj.parent,obj.parent.oid(), parent,parent.oid())
-				obj.parent = obj
-			if obj.discr != discr:
-				chg += u"Type: %s (%s) ⇒ %s (%s)\n" % (name_discr(obj.discr),obj.discr, name_discr(discr),discr)
-				obj.discr = discr
-			if chg:
-				Change(request.user,obj,chg)
+			obj.record_change()
+			obj.owner = user
+			obj.parent = dest
+			obj.discr = discr
+
+		obj.track_new=track_new
+		obj.track_mod=track_mod
+		obj.track_del=track_del
+		obj.email=email
 
 		flash(u"Gespeichert.",True)
 

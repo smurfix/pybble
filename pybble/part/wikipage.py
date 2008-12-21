@@ -4,7 +4,7 @@ from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from pybble.utils import current_request, make_permanent
 from pybble.render import url_for, render_template, expose, render_my_template
-from pybble.models import Site, WikiPage, TM_DETAIL_PAGE, Change
+from pybble.models import Site, WikiPage, TM_DETAIL_PAGE
 from pybble.views import view_oid
 
 from pybble.database import db,NoResult
@@ -62,9 +62,7 @@ def editor(request, obj=None):
 	form.obj = obj
 	if request.method == 'POST' and form.validate():
 		if obj.data != form.page.data:
-			c = Change(request.user, obj, obj.data)
-			c.comment = form.comment.data
-			db.session.save(c)
+			obj.record_change(comment=form.comment.data)
 			obj.data = form.page.data.replace("\r","")
 			obj.modified = datetime.utcnow()
 

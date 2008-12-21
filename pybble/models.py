@@ -103,6 +103,8 @@ class Object(db.Base):
 	parent_id = Column(Integer(20),ForeignKey('obj.id',name="obj_parent"))      # direct ancestor (replied-to comment)
 	superparent_id = Column(Integer(20),ForeignKey('obj.id',name="obj_super"))  # indirect ancestor (replied-to wiki page)
 
+	_rec_str = False
+
 	def __unicode__(self):
 		if self.deleted: d = "DEL "
 		else: d = ""
@@ -340,6 +342,11 @@ class Object(db.Base):
 	def record_deletion(self,comment=None):
 		"""Record the fact that a user killed this object, and why"""
 		Delete(current_request.user,self,comment)
+
+		self.owner = None
+		self.parent = None
+		self.superparent = None
+
 
 Object.owner = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Object.owner_id==Object.id))
 Object.parent = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Object.parent_id==Object.id))
@@ -652,12 +659,20 @@ class Member(Object):
 
 	def __unicode__(self):
 		p,s,o,d = self.pso
-		if not self.owner or not self.parent: return super(Member,self).__unicode__()
-		return u'‹%s%s %s: %s%s in %s›' % (d,self.__class__.__name__, self.id, unicode(self.owner), " NOT" if self.excluded else "", unicode(p))
+		if self._rec_str or not self.owner or not self.parent: return super(Member,self).__unicode__()
+		try:
+			self._rec_str = True
+			return u'‹%s%s %s: %s%s in %s›' % (d,self.__class__.__name__, self.id, unicode(self.owner), " NOT" if self.excluded else "", unicode(p))
+		finally:
+			self._rec_str = False
 	def __str__(self):
 		p,s,o,d = self.pso
-		if not self.owner or not self.parent: return super(Member,self).__str__()
-		return '<%s%s %s: %s%s in %s>' % (d,self.__class__.__name__, self.id, str(self.owner), " NOT" if self.excluded else "", str(p))
+		if self._rec_str or not self.owner or not self.parent: return super(Member,self).__str__()
+		try:
+			self._rec_str = True
+			return '<%s%s %s: %s%s in %s>' % (d,self.__class__.__name__, self.id, str(self.owner), " NOT" if self.excluded else "", str(p))
+		finally:
+			self._rec_str = False
 	def __repr__(self):
 		if not self.owner or not self.parent: return super(Member,self).__repr__()
 		return self.__str__()
@@ -703,12 +718,20 @@ class Permission(Object):
 	
 	def __unicode__(self):
 		p,s,o,d = self.pso
-		if not o or not p: return super(Permission,self).__unicode__()
-		return u'‹%s%s %s: %s can %s %s %s %s %s›' % (d,self.__class__.__name__, self.id, unicode(o),PERM[self.right],Discriminator.q.get_by(id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N", Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-")
+		if self._rec_str or not o or not p: return super(Permission,self).__unicode__()
+		try:
+			self._rec_str = False
+			return u'‹%s%s %s: %s can %s %s %s %s %s›' % (d,self.__class__.__name__, self.id, unicode(o),PERM[self.right],Discriminator.q.get_by(id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N", Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-")
+		finally:
+			self._rec_str = False
 	def __str__(self):
 		p,s,o,d = self.pso
-		if not o or not p: return super(Permission,self).__str__()
-		return '<%s%s %s: %s can %s %s %s %s %s>' % (d,self.__class__.__name__, self.id, str(o),PERM[self.right],Discriminator.q.get_by(id=self.discr).name,str(p), "*" if self.inherit is None else "Y" if self.inherit else "N", Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-")
+		if self._rec_str or not o or not p: return super(Permission,self).__str__()
+		try:
+			self._rec_str = True
+			return '<%s%s %s: %s can %s %s %s %s %s>' % (d,self.__class__.__name__, self.id, str(o),PERM[self.right],Discriminator.q.get_by(id=self.discr).name,str(p), "*" if self.inherit is None else "Y" if self.inherit else "N", Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-")
+		finally:
+			self._rec_str = False
 	def __repr__(self):
 		if not self.owner or not self.parent: return super(Permission,self).__repr__()
 		return self.__str__()
@@ -758,7 +781,7 @@ class Site(Object):
 
 	@property
 	def data(self):
-		return """\
+		return u"""\
 name: %s
 domain: %s
 """ % (self.name,self.domain)
@@ -833,12 +856,20 @@ class TemplateMatch(Object):
 	
 	def __unicode__(self):
 		p,s,o,d = self.pso
-		if not o or not p: return super(TemplateMatch,self).__unicode__()
-		return u'‹%s%s %s: %s for %s %s %s %s›' % (d,self.__class__.__name__, self.id, unicode(o),TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
+		if self._rec_str or not o or not p: return super(TemplateMatch,self).__unicode__()
+		try:
+			self._rec_str = True
+		finally:
+			return u'‹%s%s %s: %s for %s %s %s %s›' % (d,self.__class__.__name__, self.id, unicode(o),TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
+			self._rec_str = False
 	def __str__(self):
 		p,s,o,d = self.pso
-		if not o or not p: return super(TemplateMatch,self).__str__()
-		return '<%s%s %s: %s for %s %s %s %s>' % (d,self.__class__.__name__, self.id, str(o),TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,str(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
+		if self._rec_str or not o or not p: return super(TemplateMatch,self).__str__()
+		try:
+			self._rec_str = True
+			return '<%s%s %s: %s for %s %s %s %s>' % (d,self.__class__.__name__, self.id, str(o),TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,str(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
+		finally:
+			self._rec_str = False
 	def __repr__(self):
 		if not self.owner or not self.parent: return super(TemplateMatch,self).__repr__()
 		return self.__str__()
@@ -970,12 +1001,20 @@ class Breadcrumb(Object):
 
 	def __unicode__(self):
 		p,s,o,d = self.pso
-		if not o or not p: return super(Breadcrumb,self).__unicode__()
-		return u'‹%s%s %s: %s saw %s on %s›' % (d,self.__class__.__name__, self.id, unicode(o), unicode(p), unicode(self.visited))
+		if self._rec_str or not o or not p: return super(Breadcrumb,self).__unicode__()
+		try:
+			self._rec_str = True
+			return u'‹%s%s %s: %s saw %s on %s›' % (d,self.__class__.__name__, self.id, unicode(o), unicode(p), unicode(self.visited))
+		finally:
+			self._rec_str = False
 	def __str__(self):
 		p,s,o,d = self.pso
-		if not o or not p: return super(Breadcrumb,self).__str__()
-		return '<%s%s %s: %s saw %s on %s>' % (d,self.__class__.__name__, self.id, str(o), str(p), str(self.visited))
+		if self._rec_str or not o or not p: return super(Breadcrumb,self).__str__()
+		try:
+			self._rec_str = True
+			return '<%s%s %s: %s saw %s on %s>' % (d,self.__class__.__name__, self.id, str(o), str(p), str(self.visited))
+		finally:
+			self._rec_str = False
 	def __repr__(self):
 		return self.__str__()
 
@@ -1010,12 +1049,20 @@ class Change(Object):
 
 	def __unicode__(self):
 		p,s,o,d = self.pso
-		if not o or not p: return super(Change,self).__unicode__()
-		return u'‹%s %s: %s changed %s on %s›' % (self.__class__.__name__, self.id, unicode(o), unicode(p), unicode(self.timestamp))
+		if self._rec_str or not o or not p: return super(Change,self).__unicode__()
+		try:
+			self._rec_str = True
+			return u'‹%s %s: %s changed %s on %s›' % (self.__class__.__name__, self.id, unicode(o), unicode(p), unicode(self.timestamp))
+		finally:
+			self._rec_str = False
 	def __str__(self):
 		p,s,o,d = self.pso
-		if not o or not p: return super(Change,self).__str__()
-		return '<%s %s: %s changed %s on %s>' % (self.__class__.__name__, self.id, str(o), str(p), str(self.timestamp))
+		if self._rec_str or not o or not p: return super(Change,self).__str__()
+		try:
+			self._rec_str = True
+			return '<%s %s: %s changed %s on %s>' % (self.__class__.__name__, self.id, str(o), str(p), str(self.timestamp))
+		finally:
+			self._rec_str = False
 	def __repr__(self):
 		return self.__str__()
 
@@ -1057,19 +1104,23 @@ class Delete(Object):
 		self.superparent = obj.parent
 		self.old_superparent = obj.superparent
 
-		obj.owner = None
-		obj.parent = None
-		obj.superparent = None
-
 		db.session.add(self)
 		db.session.add(Tracker(user,self))
 
 	def __unicode__(self):
-		if not self.owner or not self.parent: return super(Delete,self).__unicode__()
-		return u'‹%s %s: %s deleted %s on %s›' % (self.__class__.__name__, self.id, unicode(self.owner), unicode(self.parent), unicode(self.timestamp))
+		if self._rec_str or not self.owner or not self.parent: return super(Delete,self).__unicode__()
+		try:
+			self._rec_str = True
+			return u'‹%s %s: %s deleted %s on %s›' % (self.__class__.__name__, self.id, unicode(self.owner), unicode(self.parent), unicode(self.timestamp))
+		finally:
+			self._rec_str = False
 	def __str__(self):
-		if not self.owner or not self.parent: return super(Delete,self).__str__()
-		return '<%s %s: %s deleted %s on %s>' % (self.__class__.__name__, self.id, str(self.owner), str(self.parent), str(self.timestamp))
+		if self._rec_str or not self.owner or not self.parent: return super(Delete,self).__str__()
+		try:
+			self._rec_str = True
+			return '<%s %s: %s deleted %s on %s>' % (self.__class__.__name__, self.id, str(self.owner), str(self.parent), str(self.timestamp))
+		finally:
+			self._rec_str = False
 	def __repr__(self):
 		return self.__str__()
 
@@ -1106,17 +1157,25 @@ class Tracker(Object):
 		db.session.add(self)
 
 	def __unicode__(self):
-		if not self.owner or not self.superparent: return super(Tracker,self).__unicode__()
-		if self.parent:
-			return u'‹%s %s: %s changed %s›' % (self.__class__.__name__, self.id, unicode(self.owner), unicode(self.parent))
-		else:
-			return u'‹%s %s: %s changed %s on %s›' % (self.__class__.__name__, self.id, unicode(self.owner), unicode(self.superparent), unicode(self.timestamp))
+		if self._rec_str or not self.owner or not self.superparent: return super(Tracker,self).__unicode__()
+		try:
+			self._rec_str = True
+			if self.parent:
+				return u'‹%s %s: %s changed %s›' % (self.__class__.__name__, self.id, unicode(self.owner), unicode(self.parent))
+			else:
+				return u'‹%s %s: %s changed %s on %s›' % (self.__class__.__name__, self.id, unicode(self.owner), unicode(self.superparent), unicode(self.timestamp))
+		finally:
+			self._rec_str = False
 	def __str__(self):
-		if not self.owner or not self.superparent: return super(Tracker,self).__str__()
-		if self.parent:
-			return '<%s %s: %s changed %s>' % (self.__class__.__name__, self.id, str(self.owner), str(self.parent))
-		else:
-			return '<%s %s: %s changed %s on %s>' % (self.__class__.__name__, self.id, str(self.owner), str(self.superparent), str(self.timestamp))
+		if self._rec_str or not self.owner or not self.superparent: return super(Tracker,self).__str__()
+		try:
+			self._rec_str = True
+			if self.parent:
+				return '<%s %s: %s changed %s>' % (self.__class__.__name__, self.id, str(self.owner), str(self.parent))
+			else:
+				return '<%s %s: %s changed %s on %s>' % (self.__class__.__name__, self.id, str(self.owner), str(self.superparent), str(self.timestamp))
+		finally:
+			self._rec_str = False
 	def __repr__(self):
 		return self.__str__()
 
@@ -1148,11 +1207,19 @@ class UserTracker(Object):
 		self.parent = tracker
 
 	def __unicode__(self):
-		if not self.owner or not self.parent: return super(Tracker,self).__unicode__()
-		return u'‹%s %s: %s for %s›' % (self.__class__.__name__, self.id, unicode(self.parent), unicode(self.owner))
+		if self._rec_str or not self.owner or not self.parent: return super(Tracker,self).__unicode__()
+		try:
+			self._rec_str = True
+			return u'‹%s %s: %s for %s›' % (self.__class__.__name__, self.id, unicode(self.parent), unicode(self.owner))
+		finally:
+			self._rec_str = False
 	def __str__(self):
-		if not self.owner or not self.parent: return super(Tracker,self).__str__()
-		return '<%s %s: %s for %s>' % (self.__class__.__name__, self.id, str(self.parent), str(self.owner))
+		if self._rec_str or not self.owner or not self.parent: return super(Tracker,self).__str__()
+		try:
+			self._rec_str = True
+			return '<%s %s: %s for %s>' % (self.__class__.__name__, self.id, str(self.parent), str(self.owner))
+		finally:
+			self._rec_str = False
 	def __repr__(self):
 		return self.__str__()
 
@@ -1192,14 +1259,41 @@ class WantTracking(Object):
 	
 	def __unicode__(self):
 		p,s,o,d = self.pso
-		if not o or not p: return super(WantTracking,self).__unicode__()
-		return u'‹%s%s %s: %s in %s for %s %s›' % (d,self.__class__.__name__, self.id, "-" if self.discr is None else Discriminator.q.get_by(id=self.discr).name, unicode(p),unicode(o), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
+		if self._rec_str or not o or not p: return super(WantTracking,self).__unicode__()
+		try:
+			self._rec_str = True
+			return u'‹%s%s %s: %s in %s for %s %s›' % (d,self.__class__.__name__, self.id, "-" if self.discr is None else Discriminator.q.get_by(id=self.discr).name, unicode(p),unicode(o), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
+		finally:
+			self._rec_str = False
 	def __str__(self):
 		p,s,o,d = self.pso
-		if not o or not p: return super(WantTracking,self).__str__()
-		return '<%s%s %s: %s in %s for %s %s>' % (d,self.__class__.__name__, self.id, "-" if self.discr is None else Discriminator.q.get_by(id=self.discr).name, str(p),str(o), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
+		if self._rec_str or not o or not p: return super(WantTracking,self).__str__()
+		try:
+			self._rec_str = True
+			return '<%s%s %s: %s in %s for %s %s>' % (d,self.__class__.__name__, self.id, "-" if self.discr is None else Discriminator.q.get_by(id=self.discr).name, str(p),str(o), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
+		finally:
+			self._rec_str = False
 	def __repr__(self):
 		return self.__str__()
+
+	@property
+	def data(self):
+		wh = []
+		if self.track_new: wh.append("New")
+		if self.track_mod: wh.append("Mod")
+		if self.track_del: wh.append("Del")
+		return u"""\
+Object: %s %s
+User: %s %s
+Type: %s
+What: %s
+Email: %s
+
+""" % (unicode(self.parent),self.parent.oid(), \
+       unicode(self.owner),self.owner.oid(), \
+	   Discriminator.q.get_by(id=self.discr).name if self.discr is not None else "None",
+	   " ".join(wh) if wh else "-", \
+	   "yes" if self.email else "no")
 
 WantTracking.obj = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.parent_id==Object.id))
 WantTracking.user = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.owner_id==Object.id))

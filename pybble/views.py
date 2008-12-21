@@ -113,7 +113,6 @@ def delete_oid(request, oid):
 
 	form = DeleteForm(request.form, prefix='delete')
 	if request.method == 'POST' and form.validate():
-		## db.session.delete(obj)
 		obj.record_deletion(form.comment.data)
 
 		flash(u"%s (%s) wurde gelöscht" % (unicode(obj),obj.oid()), True)
