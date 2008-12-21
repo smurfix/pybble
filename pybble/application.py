@@ -162,7 +162,7 @@ class Pybble(object):
 							if content != sf.content:
 								print "Warning: StaticFile '%s' differs." % (dp,)
 								if replace_templates:
-									db.session.drop(sf)
+									db.session.delete(sf)
 									sf = StaticFile(dp,sb)
 									db.session.add(sf)
 
