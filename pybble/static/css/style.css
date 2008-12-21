@@ -120,29 +120,21 @@ div.body {
 }
 
 div.body h2 {
-    margin: 0 0 0.5em 0;
+    margin: 0.5em 0 0.2em 0;
     text-align: center;
 }
 
 div.body input {
     margin: 0.2em 0 0.2em 0;
     font-family: 'Lucida Sans', 'Verdana', sans-serif;
-    font-size: 20px;
-    background-color: #CCEB98;
+    font-size: 1.2em;
+    //background-color: #CCEB98;
     color: black;
-}
-
-div.body #url {
-    // width: 400px;
 }
 
 div.body #alias {
     // width: 300px;
     margin-right: 10px;
-}
-
-div.body #submit {
-    // width: 90px;
 }
 
 div.body p {
