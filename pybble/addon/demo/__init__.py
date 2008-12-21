@@ -73,9 +73,7 @@ class Demo(Object):
 			obj = cls(parent)
 			obj.name = form.name.data
 
-			db.session.add(obj)
 			obj.record_creation()
-			db.session.flush()
 			return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
 		
 		elif current_request.method == 'GET':

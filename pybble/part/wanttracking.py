@@ -5,7 +5,7 @@ from werkzeug.exceptions import NotFound
 from pybble.utils import current_request, make_permanent
 from pybble.render import url_for, expose, render_template, valid_obj, \
 	discr_list, name_discr, valid_read, valid_admin
-from pybble.models import Discriminator, Tracker,Change,\
+from pybble.models import Discriminator, Change,\
 	WantTracking, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE, PERM_READ
 
 from pybble.database import db,NoResult
@@ -66,8 +66,7 @@ def editor(request, obj=None, parent=None):
 			obj.track_del=track_del
 			obj.email=email
 
-			db.session.add(obj)
-			Tracker(request.user,obj)
+			obj.record_creation()
 		else:
 			chg = ""
 			if obj.owner != user:

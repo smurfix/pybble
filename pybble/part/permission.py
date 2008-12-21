@@ -54,7 +54,7 @@ def editor(request, obj=None, parent=None):
 
 		if parent:
 			obj = Permission(user, dest, discr, right, inherit)
-			db.session.add(obj)
+			obj.record_creation()
 		else:
 			obj.owner = user
 			obj.parent = dest

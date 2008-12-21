@@ -98,7 +98,7 @@ def edit_assoc_template(request, match, template, obj):
 	if request.method == 'POST' and form.validate():
 		if form.clone.data == "Yes":
 			template = Template(None, form.page.data)
-			db.session.add(template)
+			template.record_creation()
 		elif template.data != form.page.data:
 			template.data = form.page.data
 			template.modified = datetime.utcnow()
@@ -122,7 +122,7 @@ def edit_assoc_template(request, match, template, obj):
 			except NoResult:
 				match = TemplateMatch(obj,int(form.discr.data),int(form.detail.data),template)
 				match.inherit = inherit
-				db.session.add(match)
+				match.record_creation()
 			else:
 				match.discr = int(form.discr.data)
 				match.detail = int(form.detail.data)

@@ -328,6 +328,7 @@ class Object(db.Base):
 
 	def record_creation(self):
 		"""Record the fact that a user created this object"""
+		db.session.add(self)
 		Tracker(current_request.user,self)
 
 	def record_change(self,content=None,comment=None):
@@ -760,7 +761,7 @@ class Site(Object):
 		return """\
 name: %s
 domain: %s
-""" (self.name,self.domain)
+""" % (self.name,self.domain)
 
 
 site_users = Table('site_users', db.Metadata,

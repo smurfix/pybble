@@ -105,7 +105,7 @@ def register(request):
 		u = User(form.username.data, form.password.data)
 		u.email = form.email.data
 		u.parent = request.site
-		db.session.add(u)
+		u.record_creation()
 
 		v = verifier.new(u)
 		db.session.add(v)
