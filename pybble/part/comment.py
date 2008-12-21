@@ -45,7 +45,6 @@ def newer(request, parent, name=None):
 		obj = Comment(parent, form.name.data,form.page.data.replace("\r",""))
 		db.session.add(obj)
 		db.session.add(Tracker(request.user, obj))
-		db.session.flush()
 		flash(u"Kommentar '%s' gespeichert." % (obj.name), True)
 		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
 

@@ -2,14 +2,13 @@
 {% from 'form.html' import show, showb %}
 
 {% block body %}
-  <h2>Edit Site {{ name }}</h2>
+  <h2>{% if obj %}Edit{% else %}New{% endif %} Site{% if obj %} {{ site.name }}{% endif %}</h2>
     <form method="post" action="{{ action }}">
     <table>
 	  {{ show(form.name) }}
 	  {{ show(form.domain) }}
     </table>
-	{% if error %}<div class="error">{{ error }}</div>{% endif -%}
-    <input type="submit" value="Update" />
+    <input type="submit" value="{% if obj %}Update{% else %}Store{% endif %}" />
     </form>
 
 {% endblock %}

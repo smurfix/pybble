@@ -21,42 +21,57 @@ from datetime import datetime
 ### Site page editor
 ###
 
-class SiteEditForm(Form):
-	name = TextField('Name', [validators.length(min=3, max=30)])
-	domain = TextField('Domain', [validators.length(min=3, max=100)])
+def free_name(form, field):
+	q = Site.q
+	try: id = form.id
+	except AttributeError: pass
+	else: q = q.filter(Site.id != id)
 
-def editor(request, obj=None, name=None, parent=None):
+	try: obj = q.get_by(name=field.data)
+	except NoResult: pass
+	else: raise ValidationError(u"Seiten namens '%s' gibt es bereits!" % (field.data,))
+
+def free_domain(form, field):
+	q = Site.q
+	try: id = form.id
+	except AttributeError: pass
+	else: q = q.filter(Site.id != id)
+
+	try: obj = q.get_by(domain=field.data)
+	except NoResult: pass
+	else: raise ValidationError(u"Seiten in der Domain '%s' gibt es bereits!" % (field.data,))
+
+
+class SiteEditForm(Form):
+	name = TextField('Name', [validators.length(min=3, max=30), free_name])
+	domain = TextField('Domain', [validators.length(min=3, max=100), free_domain])
+
+def editor(request, obj, name=None, parent=None):
 	assert parent is None
-	assert obj is not None
-	assert obj is request.site
 
 	form = SiteEditForm(request.form, prefix="site")
-	error = ""
+	form.id = obj.id
 	if request.method == 'POST' and form.validate():
-
-		try:
-			obj = Site.q.filter(Site.id != obj.id).get_by(name=form.name.data)
-		except NoResult:
-			pass
-		else:
-			error = "Seiten dieses Namens gibt es bereits!"
-
-		try:
-			obj = Site.q.filter(Site.id != obj.id).get_by(domain=form.domain.data)
-		except NoResult:
-			pass
-		else:
-			error = "Seiten unter dieser Domain gibt es bereits!"
-
-		if not error:
+		if obj.name != form.name.data or obj.domain != form.domain.data:
+			obj.record_change()
 			obj.name = form.name.data
 			obj.domain = form.domain.data
-			return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
+		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
 	
 	elif request.method == 'GET':
-		form.name.data = obj.name if obj else name
+		form.name.data = obj.name
 		form.domain.data = obj.domain
-	return render_template('edit/site.html', obj=obj, form=form, error=error, name=form.name.data, title_trace=["globale Einstellungen"])
+	return render_template('edit/site.html', obj=obj, form=form, name=form.name.data, title_trace=["globale Einstellungen"])
+
+def newer(request, parent, name=None):
+	form = SiteEditForm(request.form, prefix="site")
+	if request.method == 'POST' and form.validate():
+		obj = Site(form.domain.data, form.name.data)
+		obj.parent = parent
+		obj.record_creation()
+		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
+	
+	return render_template('edit/site.html', obj=None, form=form, title_trace=["neue Website"])
 
 
 @expose("/")

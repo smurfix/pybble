@@ -48,7 +48,6 @@ def newer(request, parent, name=None):
 		obj.parent = parent
 		db.session.add(obj)
 		db.session.add(Tracker(request.user, obj))
-		db.session.flush()
 		flash(u"Wiki-Seite '%s' gespeichert." % (obj.name), True)
 		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
 

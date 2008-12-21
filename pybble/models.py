@@ -265,6 +265,8 @@ class Object(db.Base):
 			Return a crypto ID of an object.
 			This is done so that simply enumerating object IDs off the web pages wont work.
 			"""
+		if self.id is None:
+			db.session.flush()
 		return "%d.%d.%s" % (self.discriminator, self.id, 
 		                        md5(self.__class__.__name__ + str(self.id) + settings.SECRET_KEY)\
 		                            .digest().encode('base64').strip('\n =')[:10].replace("+","/-").replace("/","_"))
@@ -752,6 +754,14 @@ class Site(Object):
 
 	def __unicode__(self):
 		return u"‹Site ‚%s‘ @ %s›" % (self.name, self.domain)
+
+	@property
+	def data(self):
+		return """\
+name: %s
+domain: %s
+""" (self.name,self.domain)
+
 
 site_users = Table('site_users', db.Metadata,
 	Column('site_id', Integer, ForeignKey(Site.id,name="site_users_site"), nullable=False),

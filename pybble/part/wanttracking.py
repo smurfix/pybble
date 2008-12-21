@@ -67,7 +67,6 @@ def editor(request, obj=None, parent=None):
 			obj.email=email
 
 			db.session.add(obj)
-			db.session.flush()
 			Tracker(request.user,obj)
 		else:
 			chg = ""
