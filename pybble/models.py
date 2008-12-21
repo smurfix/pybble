@@ -490,6 +490,8 @@ class User(Object):
 				pq = pq.filter(Permission.right >= want)
 			else:
 				pq = pq.filter(Permission.right == want)
+		else:
+			pq = pq.filter(Permission.right >= 0)
 		if discr is None and obj and want < 0:
 			discr = obj.discriminator
 		if discr is not None:
@@ -527,7 +529,7 @@ class User(Object):
 			done.add(obj)
 
 			try:
-				p = pq.filter(or_(Permission.inherit != no_inh, Permission.inherit == None)).filter(or_(*(Permission.owner == u for u in ul))).filter_by(parent=obj).order_by().value(Permission.right)
+				p = pq.filter(or_(Permission.inherit != no_inh, Permission.inherit == None)).filter(or_(*(Permission.owner == u for u in ul))).filter_by(parent=obj).order_by(Permission.right.desc()).value(Permission.right)
 			except NoResult:
 				pass
 			else:

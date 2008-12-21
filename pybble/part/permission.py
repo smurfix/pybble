@@ -6,7 +6,7 @@ from pybble.utils import current_request, make_permanent
 from pybble.render import url_for, expose, render_template, valid_obj, \
 	discr_list, valid_admin,valid_access,valid_read
 from pybble.models import Template, TemplateMatch, Discriminator, \
-	Permission, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE, PERM_READ
+	Permission, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE, PERM_NONE
 
 from pybble.database import db,NoResult
 from pybble.flashing import flash
@@ -96,12 +96,12 @@ def editor(request, obj=None, parent=None):
 		else:
 			form.object.data = parent.oid()
 			form.user.data = request.user.oid()
-			form.right.data = PERM_READ
+			form.right.data = str(PERM_NONE)
 			form.discr.data = str(parent.discriminator)
 			form.new_discr.data = "-"
 			form.inherit.data = "*"
 
-	return render_template('edit/permission.html', parent=parent, form=form, title_trace=["New permission" if parent else "Edit permission"])
+	return render_template('edit/permission.html', parent=parent, obj=obj, form=form, title_trace=["New permission" if parent else "Edit permission"])
 
 editor.no_check_perm = True
 
