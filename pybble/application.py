@@ -4,7 +4,7 @@ from __future__ import with_statement
 from werkzeug import Request, ClosingIterator
 from werkzeug.exceptions import HTTPException, NotFound, Unauthorized
 from pybble.utils import STATIC_PATH, local, local_manager, \
-	 TEMPLATE_PATH, AuthError
+	 TEMPLATE_PATH, AuthError, all_addons
 from pybble.render import expose_map, url_map, send_mail, expose
 from pybble.database import metadata, db, NoResult
 from sqlalchemy.sql import and_, or_, not_
@@ -73,9 +73,13 @@ class Pybble(object):
 
 			from pybble.models import Site,User,Object,Discriminator,Template,TemplateMatch,VerifierBase,WikiPage,Storage,BinData,StaticFile
 			from pybble.models import Group,Permission, add_mime,mime_ext
-			from pybble.models import TM_DETAIL_SUBPAGE, PERM_READ,PERM_ADMIN,PERM_ADD, TM_DETAIL_DETAIL
+			from pybble.models import TM_DETAIL_SUBPAGE, PERM_READ,PERM_ADMIN,PERM_ADD, TM_DETAIL_DETAIL, TM_DETAIL
 			from pybble import utils
 			from werkzeug import Request
+
+			addons = []
+			for addon in all_addons():
+				addons.append(addon)
 
 			for k,v in Object.__mapper__.polymorphic_map.iteritems():
 				v=v.class_
@@ -186,12 +190,11 @@ class Pybble(object):
 			db.session.flush()
 
 			for d in Discriminator.q.all():
-				try:
-					p=Permission.q.get_by(owner=u,parent=s,discr=d.id,right=PERM_ADMIN)
-				except NoResult:
-					p=Permission(u, s, d, PERM_ADMIN)
-					p.superparent=s
-					db.session.add(p)
+				if Permission.q.filter(and_(Permission.discr==d.id,Permission.right>=0)).count():
+					continue
+				p=Permission(u, s, d, PERM_ADMIN)
+				p.superparent=s
+				db.session.add(p)
 
 			dw = Discriminator.q.get_by(name="WikiPage")
 			ds = Discriminator.q.get_by(name="Site")
@@ -199,19 +202,36 @@ class Pybble(object):
 			dk = Discriminator.q.get_by(name="Comment")
 
 			for d in (dw,ds):
-				try:
-					p=Permission.q.get_by(owner=a,parent=s,discr=d.id,right=PERM_READ)
-				except NoResult:
-					p=Permission(a, s, d, PERM_READ)
+				if Permission.q.filter(and_(Permission.discr==d.id,Permission.right>=0,Permission.owner==a)).count():
+					continue
+				p=Permission(a, s, d, PERM_READ)
+				p.superparent=s
+				db.session.add(p)
+
+			for d,e in ((ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk)):
+				if Permission.q.filter(Permission.new_discr==e.id).count():
+					continue
+				p=Permission(u, s, d, PERM_ADD)
+				p.new_discr=e.id
+				p.superparent=s
+				db.session.add(p)
+
+			# View templates
+			for addon in addons:
+				for cls in addon.__dict__.values():
+					if not(isinstance(cls,type) and issubclass(cls,Object)):
+						continue
+					if cls.__name__ not in addon.__ALL__:
+						continue
+					if Permission.q.filter_by(discr=cls.cls_discr()).count():
+						continue
+					p=Permission(u, s, ds, PERM_ADMIN)
+					p.new_discr=cls.cls_discr()
 					p.superparent=s
 					db.session.add(p)
 
-			for d,e in ((ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk)):
-				try:
-					p=Permission.q.get_by(owner=u,parent=s,discr=d.id,right=PERM_ADD,new_discr=e.id)
-				except NoResult:
-					p=Permission(u, s, d, PERM_ADD)
-					p.new_discr=e.id
+					p=Permission(u, s, ds, PERM_ADD)
+					p.new_discr=cls.cls_discr()
 					p.superparent=s
 					db.session.add(p)
 
@@ -303,7 +323,7 @@ You may continue on your own. ;-)
 					try:
 						t = TemplateMatch.q.get_by(obj=s, discr=d.id, detail=TM_DETAIL_SUBPAGE)
 					except NoResult:
-						t = TemplateMatch(obj=s, discr=d.id, detail=TM_DETAIL_SUBPAGE, data = data)
+						t = TemplateMatch(obj=s, discr=d.id, detail=TM_DETAIL_SUBPAGE, data=data)
 						db.session.add(t)
 					else:
 						if t.template.data != data:
@@ -321,7 +341,7 @@ You may continue on your own. ;-)
 					try:
 						t = TemplateMatch.q.get_by(obj=s, discr=d.id, detail=TM_DETAIL_DETAIL)
 					except NoResult:
-						t = TemplateMatch(obj=s, discr=d.id, detail=TM_DETAIL_DETAIL, data = data)
+						t = TemplateMatch(obj=s, discr=d.id, detail=TM_DETAIL_DETAIL, data=data)
 						db.session.add(t)
 					else:
 						if t.template.data != data:
@@ -330,6 +350,60 @@ You may continue on your own. ;-)
 								t.template.data = data
 							t.template.modified = datetime.utcnow()
 				db.session.flush()
+
+			for addon in addons:
+				try: ai = addon.initsite
+				except AttributeError: pass
+				else: ai(replace_templates)
+
+				# Named templates
+				try: at = addon.TEMPLATES
+				except AttributeError: pass
+				else:
+					for t in at:
+						data = open(os.path.join(addon.__path__[0],t)).read()
+						fn = "%s/%s" % (os.path.split(addon.__path__[0])[1],t)
+						try:
+							t = Template.q.get_by(name=fn,parent=None,superparent=s)
+						except NoResult:
+							t = Template(name=fn,data=data)
+							t.superparent = s
+							t.owner = u
+							db.session.add(t)
+						else:
+							if t.data != data:
+								print "Warning: Template '%s' differs." % (fn,)
+								if replace_templates:
+									t.data = data
+									t.modified = datetime.utcnow()
+							if replace_templates:
+								t.superparent = s
+								t.owner = u
+					db.session.flush()
+
+				# View templates
+				for cls in addon.__dict__.values():
+					if not(isinstance(cls,type) and issubclass(cls,Object)):
+						continue
+					if cls.__name__ not in addon.__ALL__:
+						continue
+					for t,n in TM_DETAIL.items():
+						try:
+							data = open(os.path.join(addon.__path__[0],"%s.%s.html" % (cls.__name__.lower(),n.lower()))).read()
+						except (IOError,OSError):
+							continue
+						else:
+							try:
+								t = TemplateMatch.q.get_by(obj=s, discr=cls.cls_discr(), detail=t)
+							except NoResult:
+								t = TemplateMatch(obj=s, discr=cls.cls_discr(), detail=t, data=data)
+								db.session.add(t)
+							else:
+								if t.template.data != data:
+									print "Warning: AddOn-Template %s: '%s.%s.html' differs." % (addon.__name__, cls.__name__, n.lower())
+									if replace_templates:
+										t.template.data = data
+									t.template.modified = datetime.utcnow()
 
 			db.session.commit()
 			print "Your root user is named '%s' and has the password '%s'." % (u.username, u.password)

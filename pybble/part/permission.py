@@ -19,37 +19,30 @@ from datetime import datetime
 
 
 @expose("/admin/perm/<permission>")
-def edit_permission(request, permission=None):
+def show_permission(request, permission=None):
 	p = obj_get(permission)
-	if isinstance(p,Permission):
-		return editor(request,p)
-	else:
-		# show list of templates for that object
-		return render_template('permissionlist.html', obj=p, title_trace=["Permissions"])
+	return render_template('permissionlist.html', obj=p, title_trace=["Permissions"])
 
 plc = PERM.items()
 plc.sort()
 
 class PermissionForm(Form):
 	user = TextField('User', [valid_obj,valid_admin])
-	object = TextField('Object', [valid_obj,valid_read,valid_access('user','right')])
+	object = TextField('Object', [valid_obj,valid_read])
 
 	discr = SelectField('Existing Object type', choices=tuple((str(q.id),q.name) for q in discr_list))
 	new_discr = SelectField('New Object type', choices=(("-","(not applicable)"),)+tuple((str(q.id),q.name) for q in discr_list))
 	inherit = SelectField('Applies to', choices=(('Yes','All sub-pages'), ('No','this page only'),('*','This page and all sub-pages')))
-	right = SelectField('Access to', choices=tuple((str(x),y) for x,y in plc))
-	clone = SelectField('Copy', choices=(('Yes','Store new permission'),('No','Modify existing permission')))
+	right = SelectField('Access to', choices=tuple((str(x),y) for x,y in plc),validators=[valid_access('object')])
 
 def newer(request, parent, name=None):
 	return editor(request, parent=parent)
 
 def editor(request, obj=None, parent=None):
 	form = PermissionForm(request.form, prefix="perm")
-	if parent:
-		del form.clone
 	if request.method == 'POST' and form.validate():
 		user = obj_get(form.user.data)
-		obj = obj_get(form.object.data)
+		dest = obj_get(form.object.data)
 		discr = int(form.discr.data)
 		new_discr = int(form.new_discr.data) if form.new_discr.data != "-" else None
 		right = int(form.right.data)
@@ -59,13 +52,13 @@ def editor(request, obj=None, parent=None):
 		elif form.inherit.data == "*": inherit = None
 		else: assert False
 
-		if parent or form.clone.data == "Yes":
-			obj = Permission(user, obj, discr, right, inherit)
+		if parent:
+			obj = Permission(user, dest, discr, right, inherit)
 			db.session.add(obj)
 			db.session.flush()
 		else:
 			obj.owner = user
-			obj.parent = obj
+			obj.parent = dest
 			obj.discr = discr
 			obj.right = right
 			obj.inherit = inherit
@@ -89,12 +82,10 @@ def editor(request, obj=None, parent=None):
 				for mm in m:
 					mm.inherit = not obj.inherit
 
-		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
+		return redirect(url_for("pybble.views.view_oid", oid=dest.oid()))
 
 	
 	elif request.method == 'GET':
-		if not parent:
-			form.clone.data = "Yes"
 		if obj:
 			form.object.data = parent.oid() if parent else obj.parent.oid()
 			form.user.data = obj.owner.oid()
@@ -112,4 +103,8 @@ def editor(request, obj=None, parent=None):
 
 	return render_template('edit/permission.html', parent=parent, form=form, title_trace=["New permission" if parent else "Edit permission"])
 
+editor.no_check_perm = True
 
+def may_delete(obj):
+	current_request.user.will_admin(obj.owner)
+	

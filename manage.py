@@ -4,6 +4,11 @@
 from werkzeug import script
 import settings
 from werkzeug.debug import DebuggedApplication
+from pybble.utils import all_addons
+
+import sys
+if "pdb" in sys.modules:
+	settings.SERVER_RELOAD = False
 
 def res(x):
 	def r():
@@ -30,5 +35,10 @@ action_initsite = make_app().init_site()
 action_initsite_replace = make_app().init_site_replace()
 action_showdb = make_app().show_database()
 action_trigger = make_app().trigger()
+
+for addon in all_addons():
+	for a,b in addon.__dict__.iteritems():
+		if a.startswith("action_") and a in addon.__ALL__:
+			globals()[a]=b
 
 script.run()

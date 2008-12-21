@@ -31,22 +31,20 @@ def valid_obj(form, field):
 	except Exception:
 		raise ValidationError(u"Das Objekt '%s' gibt es nicht" % (field.data,))
 
-def valid_access(u,r):
+def valid_access(o):
 	"""\
-		Return a validator which checks that the user from field 'u' has
-		the rights from field 'r'
+		Return a validator which checks that the user has
+		the rights on the object in field 'o'
 		"""
 	def v_a(form, field):
 		try:
-			obj = obj_get(field.data)
-			user = obj_get(getattr(form,u).data)
-			right = int(getattr(form,r).data)
+			obj = obj_get(getattr(form,o).data)
+			right = int(field.data)
 		except Exception:
 			return # checked by others
-			raise ValidationError(u"Das Objekt '%s' gibt es nicht" % (field.data,))
 		else:
-			if not user.can_do(obj,obj.discriminator,want=right):
-				raise ValidationError(u"Kein Zugriff auf Objekt '%s' (%s)" % (field.data,PERM[right]))
+			if not current_request.user.can_do(obj,obj.discriminator,want=right):
+				raise ValidationError(u"Das darfst du selbst nicht.")
 
 	return v_a
 

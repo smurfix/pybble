@@ -4,11 +4,12 @@ from os import path
 from urlparse import urlparse
 from random import sample, randrange
 from jinja2 import Environment, BaseLoader, Markup
-from werkzeug import Local, LocalManager, cached_property
+from werkzeug import Local, LocalManager, cached_property, import_string
 from werkzeug.exceptions import Unauthorized
 from time import time
 import settings
 from markdown import Markdown
+import sys
 
 TEMPLATE_PATH = path.join(path.dirname(__file__), 'templates')
 # used for initial import only
@@ -106,4 +107,17 @@ class AuthError(Unauthorized):
 		super(AuthError,self).__init__()
 		self.obj = obj
 		self.perm = perm
+
+
+def all_addons():
+	for n in settings.ADDONS:
+		try:
+			m = import_string("pybble.addon."+n)
+		except Exception,e:
+			print >>sys.stderr,"While trying to load %s: %s" % (n,e)
+		else:
+			if hasattr(m,"__ALL__"):
+				yield m
+			else:
+				print >>sys.stderr,"While trying to load %s: no export list ('__ALL__')" % (n,)
 

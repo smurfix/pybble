@@ -16,6 +16,9 @@ from werkzeug import import_string
 import settings
 import sys,os
 
+"""Max ID of built-in tables; the rest are extensions"""
+MAX_BUILTIN = 42
+
 try:
     from hashlib import md5
 except ImportError:
@@ -23,7 +26,7 @@ except ImportError:
 
 
 # Template detail levels
-TM_DETAIL = {1:"Page", 2:"Subpage", 3:"String", 4:"Detail"}
+TM_DETAIL = {1:"Page", 2:"Subpage", 3:"String", 4:"Detail", 5:"Snippet"}
 for _x,_y in TM_DETAIL.items():
 	globals()["TM_DETAIL_"+_y.upper()] = _x
 
@@ -267,13 +270,22 @@ class Object(db.Base):
 		                            .digest().encode('base64').strip('\n =')[:10].replace("+","/-").replace("/","_"))
 
 	def get_template(self, detail=TM_DETAIL_PAGE):
-		"""Return this object's template at a given detail level"""
+		"""\
+			Return this object's template at a given detail level.
+
+			This code tries to do the right thing when confronted with
+			deleted pages (get "before" data) or nested sites (use them
+			if seen on standard parent/child path).
+			"""
 		discr = self.discriminator
 
 		no_inherit = True
 		obj = self
 		seen = set()
+		got_site = False
+		try_super = True
 		while obj:
+			p,s,o,d = obj.pso
 			seen.add(obj)
 			try:
 				t = TemplateMatch.q.filter(or_(TemplateMatch.inherit != no_inherit, TemplateMatch.inherit == None)).\
@@ -283,24 +295,48 @@ class Object(db.Base):
 			else:
 				return t
 
-			if obj is current_request.site:
+			if isinstance(obj,Site):
+				try_super = False
+				if not p:
+					got_site = True
+
+			if p is not None and p not in seen:
+				obj = p
+			elif try_super and s is not None and s not in seen:
+				obj = s
+			elif got_site:
 				break
-			elif obj.parent is not None and obj.parent not in seen:
-				obj = obj.parent
-			elif obj.superparent is not None and obj.superparent not in seen:
-				obj = obj.superparent
+			elif current_request.site not in seen:
+				obj = current_request.site # last resort
 			else:
-				obj = current_request.site
+				break
 
 			no_inherit = False
 
 		raise NoResult("Template %d for %s" % (detail,str(self)))
 
+	@property
+	def data(self):
+		raise NotImplementedError("You need to override .data")
 
 	def uptree(self):
 		while self:
 			yield self
 			self = self.parent
+
+	def record_creation(self):
+		"""Record the fact that a user created this object"""
+		Tracker(current_request.user,self)
+
+	def record_change(self,content=None,comment=None):
+		"""Record the fact that a user changed this object, and why"""
+		if content is None:
+			content = self.data
+		Change(current_request.user,self,content,comment)
+
+	def record_deletion(self,comment=None):
+		"""Record the fact that a user killed this object, and why"""
+		Delete(current_request.user,self,comment)
 
 Object.owner = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Object.owner_id==Object.id))
 Object.parent = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Object.parent_id==Object.id))
@@ -950,10 +986,11 @@ class Change(Object):
 	data = Column(Text)
 	comment = Column(Unicode(200), nullable=True)
 
-	def __init__(self, user, obj, data):
+	def __init__(self, user, obj, data, comment = None):
 		self.owner = user
 		self.parent = obj
 		self.data = data
+		self.comment = comment
 
 		db.session.add(self)
 		db.session.add(Tracker(user,self))
@@ -1053,6 +1090,7 @@ class Tracker(Object):
 		self.owner = user
 		self.parent = obj
 		self.superparent = site or current_request.site
+		db.session.add(self)
 
 	def __unicode__(self):
 		if not self.owner or not self.superparent: return super(Tracker,self).__unicode__()

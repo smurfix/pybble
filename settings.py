@@ -22,3 +22,5 @@ STATIC_EXPIRE=3600 # 1h
 
 MAILHOST="intern.smurf.noris.de"
 ADMIN="smurf@smurf.noris.de"
+
+ADDONS = ("demo",)

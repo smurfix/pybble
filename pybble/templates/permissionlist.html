@@ -2,7 +2,7 @@
 {% block body %}
   <h2>List of permissions</h2>
   <table><thead>
-    <tr><td>Object</td><td>User</td><td>Typ</td><td>neu?</td><td>Right</td><td>Subpages?</td><td>Edit?</td></tr>
+    <tr><td>Object</td><td>User</td><td>Typ</td><td>Recht</td><td>neu?</td><td>Subpages?</td><td>Edit?</td></tr>
 	</thead><tbody>
   {%- for o in obj.uptree() %}
     {% for p in o.permissions %}

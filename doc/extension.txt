@@ -1,0 +1,84 @@
+Extending Pybble
+================
+
+Extensions must be installed in pybble/addon/*. You need to list them in
+settings.py ("ADDONS" list). There is no way to make the list of
+extensions site-specific, but if there are no permissions granting
+access to the module's pages, then nobody will actually see them.
+
+
+Database tables
+---------------
+
+Each table has a line stating
+
+	__mapper_args__ = {'polymorphic_identity': 101}
+
+Extension database tables get identities >= 50. You need to keep these
+discinct.
+
+
+Database instantiation
+----------------------
+
+The module's 'initsite' procedure, if it has one, will be invoked with
+one bool parameter. You may overwrite existing templates (or whatever)
+only if this parameter is True.
+
+
+Manager hooks
+-------------
+
+Procedures named 'action_*' get installed in the Python manager if
+they're listed in "__ALL__".
+
+
+Viewer hooks
+------------
+
+The 'html_view', 'html_new', 'html_copy', and 'html_edit' methods will
+be invoked when your object is the main page, a new one is created, an
+object is copied, or an existing object is edited.
+
+html_new() should be a class method. It will always be called with a
+parent argument.
+
+The url() function can be used to redirect to an "official" URL. For
+instance, the WikiPage viewer will redirect '/view/9.90.slfjhesEi5' to
+'/wiki/MainPage'. It'll be called with a code like "html_view".
+Return None for part codes you don't know. It's your responsibility to
+use @pybble.render.expose() to register your viewer with the core.
+
+On successful creation/deletion/modification, you need to create the
+appropriate Tracker; see the record_* functions in pybble.models for
+details.
+
+The snippet() function will be called when the site wants to load
+additional hierarchical data. The default is to use the "Snippet" template.
+Check the two standard snippet templates, used for hierarchical display,
+as formatting example.
+
+
+Templates
+---------
+
+Named templates (mentioned by the code as
+"<modulename>/<whatever>.html") need to be listed in the TEMPLATES
+variable, as "<whatever>.html" (i.e. without the module name prefix).
+
+Files for unnamed templates (which the system uses internally) must be
+named "<class>.<type>.html"; the class needs to be listed in __ALL__.
+Available types are:
+
+* page: this object's page is browsed to.
+
+* subpage: this object is included in some page.
+  (Used by the default Page template.)
+  
+* string: the display name of this object.
+
+* detail: data view, should contain a table with all data fields
+
+* snippet: item for hierarchical display; see standard snippet templates
+  for details.
+

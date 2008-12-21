@@ -5,10 +5,29 @@ from werkzeug.routing import BuildError
 from werkzeug.exceptions import NotFound
 from pybble.render import render_template, render_my_template, \
 	expose, url_for
-from pybble.models import TemplateMatch, TM_DETAIL_PAGE, obj_get, obj_class, Delete
+from pybble.models import TemplateMatch, TM_DETAIL_PAGE, obj_get, obj_class, MAX_BUILTIN
 from pybble.database import db,NoResult
 from wtforms import Form, HiddenField, TextField, validators
 from pybble.flashing import flash
+
+class NoRedir(BaseException):
+	"""Dummy exception to signal that no add-on module is responsible"""
+	pass
+
+def tryAddOn(obj,req, **kw):
+	try: hv = obj.url
+	except AttributeError: pass
+	else:
+		url = hv(req)
+		if hv is not None:
+			return redirect(hv())
+
+	try: hv = getattr(obj,req)
+	except AttributeError: pass
+	else:
+		return hv(**kw)
+	
+	raise NoRedir
 
 @expose("/")
 def mainpage(request):
@@ -32,11 +51,14 @@ def view_tree(request, oid=None):
 @expose('/edit/<oid>')
 def edit_oid(request, oid):
 	obj=obj_get(oid)
-	request.user.will_write(obj)
-	try:
-		return import_string("pybble.part.%s.editor" % (obj.classname.lower(),))(request, obj)
-	except ImportError:
-		raise 
+
+	try: return tryAddOn(obj,"html_edit")
+	except NoRedir: pass
+
+	v = import_string("pybble.part.%s.editor" % (obj.classname.lower(),))
+	if not getattr(v,"no_check_perm",None):
+		request.user.will_write(obj)
+	return v(request, obj)
 
 @expose('/new/<oid>')
 @expose('/new/<oid>/<discr>')
@@ -47,22 +69,34 @@ def new_oid(request, oid, discr=None, name=None):
 		discr = obj.discriminator
 	request.user.will_add(obj,new_discr=discr)
 	cls = obj_class(discr)
-	v = import_string("pybble.part.%s.newer" % (cls.__name__.lower(),))
+	if hasattr(cls,"html_new"):
+		v = cls.html_new
+		vc = v
+	else:
+		v = import_string("pybble.part.%s.newer" % (cls.__name__.lower(),))
+		def vc(**args):
+			return v(request, **args)
 
 	args = {}
 	if "name" in v.func_code.co_varnames: args["name"]=name
 	if "parent"  in v.func_code.co_varnames: args["parent" ]=obj
-	return v(request, **args)
+	return vc(**args)
 
 @expose('/copy/<oid>/<parent>')
 def copy_oid(request, oid, parent):
-	"""Create a copy of <oid> wich lives beyond / controls / whatever <parent>."""
+	"""Create a copy of <oid> which lives beyond / controls / whatever <parent>."""
 	obj=obj_get(oid)
 	parent=obj_get(parent)
 
+	try: return tryAddOn(obj,"html_copy", parent=parent)
+	except NoRedir: pass
+
 	request.user.will_add(parent,new_discr=obj.discriminator)
-	v = import_string("pybble.part.%s.editor" % (obj.classname.lower(),))
-	return v(request, obj=obj,parent=parent)
+	if hasattr(obj,"html_edit"):
+		return cls.html_edit(parent=parent)
+	else:
+		v = import_string("pybble.part.%s.editor" % (obj.classname.lower(),))
+		return v(request, obj=obj,parent=parent)
 
 
 class DeleteForm(Form):
@@ -73,10 +107,14 @@ class DeleteForm(Form):
 def delete_oid(request, oid):
 	obj=obj_get(oid)
 	request.user.will_delete(obj)
+
+	try: return tryAddOn(obj,"html_delete")
+	except NoRedir: pass
+
 	form = DeleteForm(request.form, prefix='delete')
 	if request.method == 'POST' and form.validate():
 		## db.session.delete(obj)
-		Delete(request.user,obj,form.comment.data)
+		obj.record_deletion(form.comment.data)
 
 		flash(u"%s (%s) wurde gelöscht" % (unicode(obj),obj.oid()), True)
 		if form.next.data:
@@ -93,6 +131,10 @@ def view_oid(request, oid):
 	obj = obj_get(oid)
 	request.user.will_read(obj)
 	request.user.visited(obj)
+
+	try: return tryAddOn(obj,"html_view")
+	except NoRedir: pass
+
 	try:
 		name = getattr(obj,"name",None)
 		v = import_string("pybble.part.%s.viewer" % (obj.classname.lower(),))

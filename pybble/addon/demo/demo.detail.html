@@ -1,0 +1,7 @@
+  <h2>Demo {{ obj.name }}</h2>
+    <table>
+	  <tbody>
+		<tr><th>Name:</th><td>{{ obj.name }}</td></tr>
+		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid()) }}">{{ obj.oid() }}</a></td></tr>
+	  </tbody>
+    </table>
