@@ -1,19 +1,17 @@
 {% extends 'layout.html' %}
-{% from 'form.html' import show, showb %}
+{% from 'form.html' import show %}
 
 {% block body %}
-  <h2>Edit template for {{ name_discr(form.discr.data) }} / {{ name_detail(form.detail.data) }}</h2>
+  <h2>{% if not parent %}Edit{% else %}New{% endif %} template for {{ name_discr(form.discr.data) }} / {{ name_detail(form.detail.data) }}</h2>
     <form method="post" action="{{ action }}">
     <table>
 	  {{ show(form.oid) }}
 	  {{ show(form.discr) }}
 	  {{ show(form.detail) }}
 	  {{ show(form.inherit) }}
-	  {{ show(form.clone) }}
 	  {{ show(form.page, cols=80,rows=20) }}
     </table>
-	{% if error %}<div class="error">{{ error }}</div>{% endif -%}
-    <input type="submit" value="Update" />
+    <input type="submit" value="{% if not parent %}Update{% else %}Store{% endif %}" />
     </form>
 
 {% endblock %}

@@ -246,10 +246,9 @@ class Pybble(object):
 						raise
 
 				try:
-					t = Template.q.get_by(name=fn,parent=None,superparent=s)
+					t = Template.q.get_by(name=fn,parent=s)
 				except NoResult:
-					t = Template(name=fn,data=data)
-					t.superparent = s
+					t = Template(name=fn,data=data,parent=s)
 					t.owner = u
 					db.session.add(t)
 				else:
@@ -257,7 +256,6 @@ class Pybble(object):
 						print "Warning: Template '%s' differs." % (fn,)
 						if replace_templates:
 							t.data = data
-							t.modified = datetime.utcnow()
 					if replace_templates:
 						t.superparent = s
 						t.owner = u
@@ -272,6 +270,7 @@ class Pybble(object):
 					continue
 				get_template(os.path.join("edit",fn))
 
+			db.session.flush()
 
 			try:
 				v = VerifierBase.q.get_by(name="register")
@@ -326,11 +325,10 @@ You may continue on your own. ;-)
 						t = TemplateMatch(obj=s, discr=d.id, detail=TM_DETAIL_SUBPAGE, data=data)
 						db.session.add(t)
 					else:
-						if t.template.data != data:
+						if t.data != data:
 							print "Warning: AssocTemplate 'view/%s.html' differs." % (d.name.lower(),)
 							if replace_templates:
-								t.template.data = data
-								t.template.modified = datetime.utcnow()
+								t.data = data
 				db.session.flush()
 
 				try:
@@ -344,11 +342,10 @@ You may continue on your own. ;-)
 						t = TemplateMatch(obj=s, discr=d.id, detail=TM_DETAIL_DETAIL, data=data)
 						db.session.add(t)
 					else:
-						if t.template.data != data:
+						if t.data != data:
 							print "Warning: AssocTemplate 'detail/%s.html' differs." % (d.name.lower(),)
 							if replace_templates:
-								t.template.data = data
-							t.template.modified = datetime.utcnow()
+								t.data = data
 				db.session.flush()
 
 			for addon in addons:
@@ -375,7 +372,6 @@ You may continue on your own. ;-)
 								print "Warning: Template '%s' differs." % (fn,)
 								if replace_templates:
 									t.data = data
-									t.modified = datetime.utcnow()
 							if replace_templates:
 								t.superparent = s
 								t.owner = u
@@ -399,11 +395,10 @@ You may continue on your own. ;-)
 								t = TemplateMatch(obj=s, discr=cls.cls_discr(), detail=t, data=data)
 								db.session.add(t)
 							else:
-								if t.template.data != data:
+								if t.data != data:
 									print "Warning: AddOn-Template %s: '%s.%s.html' differs." % (addon.__name__, cls.__name__, n.lower())
 									if replace_templates:
-										t.template.data = data
-									t.template.modified = datetime.utcnow()
+										t.data = data
 
 			db.session.commit()
 			print "Your root user is named '%s' and has the password '%s'." % (u.username, u.password)
@@ -451,7 +446,10 @@ You may continue on your own. ;-)
 
 				for t in tq.order_by(Tracker.timestamp):
 					o=t.change_obj
-					wq=WantTracking.q.filter(or_(WantTracking.discr==None,WantTracking.discr==t.change_obj.discriminator))
+					if o is None:
+						print "ChangeObj??",t
+						continue
+					wq=WantTracking.q.filter(or_(WantTracking.discr==None,WantTracking.discr==o.discriminator))
 					processed = set()
 					while o:
 						wantq=wq.filter_by(parent=o)

@@ -293,7 +293,7 @@ class Object(db.Base):
 			seen.add(obj)
 			try:
 				t = TemplateMatch.q.filter(or_(TemplateMatch.inherit != no_inherit, TemplateMatch.inherit == None)).\
-									get_by(obj=obj, discr=discr, detail=detail).template
+									get_by(obj=obj, discr=discr, detail=detail)
 			except NoResult:
 				pass
 			else:
@@ -335,8 +335,10 @@ class Object(db.Base):
 
 	def record_change(self,content=None,comment=None):
 		"""Record the fact that a user changed this object, and why"""
+		print "REC",repr(self),repr(content),repr(comment)
 		if content is None:
 			content = self.data
+			print "REC",repr(self),repr(content),repr(comment)
 		Change(current_request.user,self,content,comment)
 
 	def record_deletion(self,comment=None):
@@ -799,8 +801,8 @@ Site.users = relation(User, secondary=site_users, backref='sites',
 class Template(Object):
 	"""
 		A template for rendering.
-		superparent: Site or TemplateMatch
-		             the template applies to.
+		parent: Site or TemplateMatch the template applies to.
+		superparent: Site the template applies to.
 		owner: user who created the template.
 		"""
 	__tablename__ = "templates"
@@ -812,9 +814,11 @@ class Template(Object):
 	data = Column(Text)
 	modified = Column(TimeStamp,default=datetime.utcnow, onupdate=datetime.utcnow)
 
-	def __init__(self, name, data):
+	def __init__(self, name, data, parent=None):
 		self.name = name
 		self.data = data
+		self.parent = parent or current_request.site
+		self.superparent = current_request.site
 
 	def __repr__(self):
 		return "'<%s:%d>'" % (self.__class__.__name__,self.id)
@@ -824,7 +828,7 @@ class TemplateMatch(Object):
 	"""
 		Associate a template to an object.
 		Parent: The object which the template is for.
-		Owner: The template.
+		Owner: The template this is associating.
 		"""
 	__tablename__ = "template_match"
 	__table_args__ = ({'useexisting': True})
@@ -832,26 +836,20 @@ class TemplateMatch(Object):
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey('obj.id',name="template_match_id"), primary_key=True,autoincrement=False)
 
+	data = Column(Text)
+	modified = Column(TimeStamp,default=datetime.utcnow, onupdate=datetime.utcnow)
+
 	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="templatematch_discr"), nullable=False)
 	detail = Column(TinyInteger(1), nullable=False)
 	inherit = Column(Boolean, nullable=True)
 
 	def __init__(self, obj,discr,detail, data):
-		if isinstance(data,Template):
-			t = data
-		else:
-			t = Template("%s@%s.%s" % (Discriminator.q.get_by(id=discr).name,obj.classname,obj.id),data)
-			db.session.add(t)
-			db.session.flush()
-		self.parent = obj
 		self.discr = Discriminator.get(discr,obj).id
 		self.detail = detail
+		self.data = data
 		db.session.add(self)
 		db.session.flush()
-		if t.superparent is None:
-			t.superparent = self
-			db.session.flush()
-		self.owner = t
+		self.parent = obj
 		db.session.flush()
 	
 	def __unicode__(self):
@@ -871,11 +869,10 @@ class TemplateMatch(Object):
 		finally:
 			self._rec_str = False
 	def __repr__(self):
-		if not self.owner or not self.parent: return super(TemplateMatch,self).__repr__()
-		return self.__str__()
+		if not self.owner or not self.parent: return "'"+super(TemplateMatch,self).__repr__()+"'"
+		return "'"+self.__str__()+"'"
 
 TemplateMatch.obj = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.parent_id==Object.id))
-TemplateMatch.template = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.owner_id==Object.id))
 
 Object.templates = relation(TemplateMatch, remote_side=TemplateMatch.parent_id, uselist=True, primaryjoin=(TemplateMatch.parent_id==Object.id)) 
 Template.matches = relation(Object, remote_side=TemplateMatch.owner_id, uselist=True, primaryjoin=(Object.owner_id==Template.id), foreign_keys=[Object.owner_id]) 
@@ -1182,6 +1179,18 @@ class Tracker(Object):
 	@property
 	def change_obj(self):
 		return self.parent.change_obj
+	
+	@property
+	def is_new(self):
+		return not isinstance(self.parent, (Change,Delete))
+
+	@property
+	def is_mod(self):
+		return isinstance(self.parent, Change)
+
+	@property
+	def is_del(self):
+		return isinstance(self.parent, Delete)
 
 Tracker.site = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Tracker.superparent_id==Object.id))
 
@@ -1409,6 +1418,7 @@ class BinData(Object):
 	"""
 		Stores one data file
 		owner: whoever uploaded the thing
+		parent: some object this is attached to
 		superparent: the storage
 		"""
 	__tablename__ = "bindata"
@@ -1426,8 +1436,9 @@ class BinData(Object):
 	def lookup(content):
 		return BinData.q.get_by(hash=hash_data(content))
 			
-	def __init__(self,storage,name,ext,content):
+	def __init__(self,storage,name,ext,content, parent=None):
 		self.superparent = storage
+		self.parent = parent or current_request.site
 		self.name = name
 		self._content = content
 		self.owner = current_request.user

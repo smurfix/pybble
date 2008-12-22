@@ -8,6 +8,7 @@
 		{%- if obj.owner %}
 		<tr><th>Creator:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.owner.oid()) }}">{{ obj.owner }}</a> ({{ obj.owner.oid() }})</td></tr>
 		{%- endif %}
+		<tr><th>Geändert:</th><td>{{ obj.modified }}</td></tr>
 		<tr><th class="top">Inhalt:</th><td class="code"><code>{{ obj.data }}</code></td></tr>
 	  </tbody>
     </table>

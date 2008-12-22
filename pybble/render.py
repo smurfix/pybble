@@ -7,7 +7,7 @@ from werkzeug.routing import Map, Rule
 from werkzeug.utils import http_date
 from markdown import Markdown
 from pybble.utils import current_request, local, random_string
-from pybble.models import PERM, PERM_NONE, PERM_ADD, Permission, obj_get, TemplateMatch, \
+from pybble.models import PERM, PERM_NONE, PERM_ADD, Permission, obj_get, TemplateMatch, Template, \
 	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, StaticFile, obj_get
 from pybble.database import NoResult
 from pybble.diff import textDiff
@@ -59,10 +59,7 @@ class TemplateNotFound(IOError, LookupError):
 
 class DatabaseLoader(BaseLoader):
 	def get_source(self, environment, template):
-		from pybble.models import Template
-		from pybble.database import NoResult
-
-		if isinstance(template,Template):
+		if isinstance(template,(Template,TemplateMatch)):
 			t = template
 		else:
 			try:
@@ -71,7 +68,7 @@ class DatabaseLoader(BaseLoader):
 				raise TemplateNotFound(template)
 		mtime = t.modified
 		return (t.data,
-				"//db/%s/%s/%s" % (t.__class__.__name__,t.id,template),
+				"//db/%s/%s" % (t.__class__.__name__,t.oid),
 				lambda: True ) # t.modified != mtime) 
 	
 jinja_env = Environment(loader=DatabaseLoader(), autoescape=True)
