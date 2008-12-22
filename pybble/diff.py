@@ -9,6 +9,9 @@ __copyright__ = '(C) 2003 Aaron Swartz. GNU GPL 2.'
 __version__ = '0.22'
 
 import difflib, string
+from jinja2 import Markup
+esc = Markup.escape
+m = Markup
 
 def isTag(x): return x[0] == "<" and x[-1] == ">"
 
@@ -23,17 +26,17 @@ def textDiff(a, b):
 			# @@ need to do something more complicated here
 			# call textDiff but not for html, but for some html... ugh
 			# gonna cop-out for now
-			out.append('<del class="diff modified">'+''.join(a[e[1]:e[2]]) + '</del><ins class="diff modified">'+''.join(b[e[3]:e[4]])+"</ins>")
+			out.append(m('<del class="diff modified">')+esc(''.join(a[e[1]:e[2]])) + m('</del><ins class="diff modified">')+esc(''.join(b[e[3]:e[4]]))+m("</ins>"))
 		elif e[0] == "delete":
-			out.append('<del class="diff">'+ ''.join(a[e[1]:e[2]]) + "</del>")
+			out.append(m('<del class="diff">')+esc(''.join(a[e[1]:e[2]])) + m("</del>"))
 		elif e[0] == "insert":
-			out.append('<ins class="diff">'+''.join(b[e[3]:e[4]]) + "</ins>")
+			out.append(m('<ins class="diff">')+esc(''.join(b[e[3]:e[4]])) + m("</ins>"))
 		elif e[0] == "equal":
 			s = "".join(b[e[3]:e[4]])
 			ss = s.split("\n")
 			if len(ss) > 6:
 				s = "\n".join(ss[:3]+[u"[…]"]+ss[-3:])
-			out.append(s)
+			out.append(esc(s))
 		else: 
 			raise "Um, something's broken. I didn't expect a '" + `e[0]` + "'."
 	return ''.join(out)
@@ -43,19 +46,20 @@ def html2list(x, b=0):
 	cur = ''
 	out = []
 	for c in x:
-		if mode == 'tag':
-			if c == '>': 
-				if b: cur += ']'
-				else: cur += c
-				out.append(cur); cur = ''; mode = 'char'
+		if c.isspace():
+			out.append(cur+c);
+			cur = ''
+		elif mode == 'special':
+			if c.isalnum():
+				out.append(cur)
+				cur = c
+				mode = 'special'
 			else: cur += c
 		elif mode == 'char':
-			if c == '<': 
+			if not c.isalnum():
 				out.append(cur)
-				if b: cur = '['
-				else: cur = c
-				mode = 'tag'
-			elif c in string.whitespace: out.append(cur+c); cur = ''
+				cur = c
+				mode = 'special'
 			else: cur += c
 	out.append(cur)
 	return filter(lambda x: x is not '', out)
