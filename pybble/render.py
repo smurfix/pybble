@@ -214,7 +214,7 @@ def get_dtd():
 	"""
 	global pybble_dtd
 	if pybble_dtd is None:
-		dtd_path = url_for('static', file='xhtml1-strict-uu.dtd')
+		dtd_path = url_for('static', file='xhtml1-strict-pybble.dtd')
 		pybble_dtd = '<!DOCTYPE html SYSTEM "%s">' % dtd_path
 	try:
 		ua = UserAgent(current_request.META['HTTP_USER_AGENT'])

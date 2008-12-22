@@ -10,7 +10,7 @@
     <form method="post" action="{{ action }}">
     <table>
   	  {%- if obj %}
-	  <tr><th>Eintrag:</th><td>{{ obj }}</td></tr>
+	  <tr><th>Eintrag:</th><td>{{ subline(obj) }}</td></tr>
       {%- endif %}
 	  {{ show(form.user) }}
 	  {{ show(form.object) }}
@@ -26,24 +26,31 @@
 <hr />
   <h2>vorhandene Beobachtungseinträge</h2>
   <table><thead>
-    <tr><td>Objekt</td><td>Typ</td><td>Subpages?</td><td>Edit</td></tr>
+    <tr><th>Objekt</th><th>Typ</th><th>Subpages?</th><th>Edit</th></tr>
 	</thead><tbody>
   {%- for o in parent.uptree() %}
     {% for p in o.trackings %}
-    	<tr><td><a href="#nogo" class="pickup">{{ p.parent }}</a></td>
+    	<tr><td><a href="#nogo" class="pickup" oid="{{p.parent.oid()}}">{{ p.parent }}</a></td>
 			<td>{{ name_discr(p.discr) }}</td>
 			<td>{% if p.inherit is none %}*{%elif p.inherit%}Y{%else%}N{%endif%}</td>
 			<td><a href="{{ url_for('pybble.views.edit_oid',oid=p.oid()) }}">Edit</a>
 			  | <a href="{{ url_for('pybble.views.delete_oid',oid=p.oid()) }}">Del</a></td></tr>
 	{% else %}
-    	<tr><td>{{ o }}</td><td>-</td><td>-</td><td>-</td></tr>
+    	<tr><td><a href="#nogo" class="pickup" oid="{{o.oid()}}">{{ subline(o) }}</a></td><td>-</td><td>-</td><td>-</td></tr>
 	{% endfor -%}
   {% endfor -%}
     </tbody></table>
 	<p>
 	  Diese Liste zeigt die system-interne Objekthierarchie der
-	  aktuellen Seite, und die Beobachtungseinträge, die du bereits
-	  angelegt hast. Du kannst einen Eintrag auf der Ebene
+	  aktuellen Seite, und die Beobachtungseinträge, die du dort bereits
+	  angelegt hast.<br />Du kannst einen Eintrag auf der Ebene
 	  anlegen, wo er dir am besten passt.
 	</p>
+<script type="text/javascript">
+	$(document).ready( function() {
+		$("a.pickup").click( function() {
+			$("input#perm_object").val($(this).attr("oid"));
+		});
+	});
+</script>
 {% endblock %}

@@ -90,6 +90,9 @@
 <!ENTITY % Coords "CDATA">
     <!-- comma separated list of lengths -->
 
+<!ENTITY % OID "CDATA">
+    <!-- pybble: internal object ID -->
+
 <!--=================== Generic Attributes ===============================-->
 
 <!-- core attributes common to most elements
@@ -504,6 +507,7 @@
   rev         %LinkTypes;    #IMPLIED
   shape       %Shape;        "rect"
   coords      %Coords;       #IMPLIED
+  oid         %OID;          #IMPLIED
   >
 
 <!--===================== Inline Elements ================================-->
