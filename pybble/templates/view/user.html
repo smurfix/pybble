@@ -1,0 +1,16 @@
+  <h2>Daten für {{ obj.name }}</h2>
+    <table>
+	  <tbody>
+		<tr><th>Benutzer:</th><td>{{ obj }}</td></tr>
+		{%- if obj.anon %}
+		<tr><th>Art:</th><td>anonymer Benutzer von <a href="{{ url_for("pybble.views.detail_oid", oid=obj.superparent.oid()) }}">{{ subline(obj.superparent) }}</a></td></tr>
+		{%- else %}
+		<tr><th>Username:</th><td>{{ obj.username }}</td></tr>
+		<tr><th>Password:</th><td>(nicht angezeigt)</td></tr>
+		<tr><th>Name:</th><td>{{ obj.name }}</td></tr>
+		<tr><th>Email:</th><td><a href="mailto:{{obj.email}}">{{ obj.email }}</a></td></tr>
+		<tr><th>erster Login:</th><td>{{ obj.first_login }}</td></tr>
+		<tr><th>letzter Login:</th><td>{{ obj.last_login }}</td></tr>
+		{%- endif %}
+	  </tbody>
+    </table>

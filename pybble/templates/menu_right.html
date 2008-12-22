@@ -1,40 +1,40 @@
 <div class="menu right">
 	<ul>
 	  {% if USER.anon -%}
-		<li><a href="{{ url_for('pybble.login.register') }}">Anmelden</a></li>
-		<li><a href="{{ url_for('pybble.login.do_login', next=url()) }}">Login</a></li>
+		<li><a href="{{ url_for('pybble.login.register') }}" title="für neue Benutzer">Anmelden</a></li>
+		<li><a href="{{ url_for('pybble.login.do_login', next=url()) }}" title="für bereits registrierte Benutzer">Login</a></li>
 	  {%- else -%}
 		<li>
-		  <a href="{{ url_for('pybble.views.view_oid', oid=USER.oid()) }}">Hallo, <strong>{{ USER.name }}</strong>!</a>
+		  <a href="{{ url_for('pybble.views.view_oid', oid=USER.oid()) }}" title="Status">Hallo, <strong>{{ USER.name }}</strong>!</a>
 		  <ul>
 		    <li>
-			  <a href="{{ url_for('pybble.views.last_visited') }}">zuletzt besucht</a></li>
-			<li><a href="{{ url_for('pybble.part.usertracker.view_all') }}" title="laut Beobachtungsliste">Änderungen</a>
+			  <a href="{{ url_for('pybble.views.last_visited') }}" title="die letzten paar von dir besuchten Seiten bei uns">zuletzt besucht</a></li>
+			<li><a href="{{ url_for('pybble.part.usertracker.view_all') }}" title="laut RSS">Änderungen</a>
 			  <ul>
 				<li>
 				  {% if USER.feed_pass %}
-					<a href="{{ url_for('pybble.rss.do_rss', feed_pass=USER.feed_pass) }}">RSS</a>
+					<a href="{{ url_for('pybble.rss.do_rss', feed_pass=USER.feed_pass) }}" title="Link für deinen persönlichen RSS-Feed">RSS</a>
 					<ul>
 						<li>
-						<a href="{{ url_for('pybble.rss.config_rss') }}">Einstellungen</a>
+						<a href="{{ url_for('pybble.rss.config_rss') }}">… konfigurieren</a>
 						</li>
 					</ul>
 					{% else %}
-					<a href="{{ url_for('pybble.rss.config_rss') }}">RSS aktivieren</a>
+					<a href="{{ url_for('pybble.rss.config_rss') }}">RSS aktivieren …</a>
 				  {% endif %}
 				</li>
 
 				{% if obj %}
 					<li><a href="{{ url_for('pybble.views.new_oid',oid=obj.oid(),discr='WantTracking') }}">beobachten</a></li>
-						{# <li><a href="{{ url_for('pybble.part.wanttracking.edit_wanttracking',oid=obj.oid()) }}">Liste</a></li> #}
-					<li><a href="{{ url_for('pybble.part.wanttracking.list_wanttracking') }}">Gesamtliste</a></li>
+						{# <li><a href="{{ url_for('pybble.part.wanttracking.edit_wanttracking',oid=obj.oid()) }}" title="relevante beobachtete Seiten">Liste</a></li> #}
+					<li><a href="{{ url_for('pybble.part.wanttracking.list_wanttracking') }}" title="alle beobachteten Seiten">Gesamtliste</a></li>
 				{% endif %}
 			  </ul>
 			</li>
 		  </ul>
 		</li>
 		<li>
-		  <a href="{{ url_for('pybble.login.do_logout') }}">Logout</a>
+		  <a href="{{ url_for('pybble.login.do_logout') }}" title="Abmelden">Logout</a>
 		</li>
 	  {%- endif %}
 	</ul>
