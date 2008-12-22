@@ -801,8 +801,7 @@ Site.users = relation(User, secondary=site_users, backref='sites',
 class Template(Object):
 	"""
 		A template for rendering.
-		parent: Site or TemplateMatch the template applies to.
-		superparent: Site the template applies to.
+		parent: Site the template applies to.
 		owner: user who created the template.
 		"""
 	__tablename__ = "templates"
@@ -810,7 +809,7 @@ class Template(Object):
 	__mapper_args__ = {'polymorphic_identity': 6}
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey('obj.id',name="template_id"), primary_key=True,autoincrement=False)
-	name = Column(String(50), nullable=True)
+	name = Column(String(50), nullable=False)
 	data = Column(Text)
 	modified = Column(TimeStamp,default=datetime.utcnow, onupdate=datetime.utcnow)
 

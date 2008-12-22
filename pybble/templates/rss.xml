@@ -15,7 +15,7 @@
       <link>{{ url_for('pybble.views.view_oid',oid=item.oid(),_external=True) }}</link>
       <description>{{ subpage(item) }}</description>
       <pubDate>{{ item.parent.timestamp }}</pubDate>
-      <guid>http://{{SITE.domain}}/rss/id/{{item.oid}}</guid>
+      <guid>http://{{SITE.domain}}/rss/id/{{item.oid()}}</guid>
     </item>
 {% endfor %} 
   </channel>

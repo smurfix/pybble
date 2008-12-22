@@ -361,7 +361,7 @@ You may continue on your own. ;-)
 						data = open(os.path.join(addon.__path__[0],t)).read()
 						fn = "%s/%s" % (os.path.split(addon.__path__[0])[1],t)
 						try:
-							t = Template.q.get_by(name=fn,parent=None,superparent=s)
+							t = Template.q.get_by(name=fn,superparent=s)
 						except NoResult:
 							t = Template(name=fn,data=data)
 							t.superparent = s

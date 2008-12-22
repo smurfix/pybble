@@ -62,13 +62,18 @@ class DatabaseLoader(BaseLoader):
 		if isinstance(template,(Template,TemplateMatch)):
 			t = template
 		else:
-			try:
-				t = Template.q.get_by(name=template)
-			except NoResult:
+			s = current_request.site
+			t = None
+			while s:
+				try: t = Template.q.get_by(name=template)
+				except NoResult: pass
+				else: break
+				s = s.parent
+			if t is None:
 				raise TemplateNotFound(template)
 		mtime = t.modified
 		return (t.data,
-				"//db/%s/%s" % (t.__class__.__name__,t.oid),
+				"//db/%s/%s" % (t.__class__.__name__,getattr(t,"name",t.oid())),
 				lambda: True ) # t.modified != mtime) 
 	
 jinja_env = Environment(loader=DatabaseLoader(), autoescape=True)

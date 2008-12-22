@@ -36,11 +36,11 @@
 				{%- endif -%}
 				" title="Detail- und Baumansicht">Admin</a>
 			<ul>
-				<li><a href="{{ url_for("pybble.admin.show_templates") }}">Named Templates</a></li>
+				<li><a href="{{ url_for("pybble.admin.list_templates") }}">Named Templates</a></li>
 				{%- if obj -%}
 				<li><a href="{{ url_for("pybble.views.edit_oid", oid=obj.oid()) }}" title="bearbeiten">Edit</a></li>
 				<li><a href="{{ url_for("pybble.views.delete_oid", oid=obj.oid()) }}" title="löschen">Delete</a></li>
-				<li><a href="{{ url_for("pybble.admin.edit_template", template=obj.oid()) }}" title="… für dieses Objekt">Templates</a></li>
+				<li><a href="{{ url_for("pybble.admin.show_templates", oid=obj.oid()) }}" title="… für dieses Objekt">Templates</a></li>
 				<li><a href="{{ url_for("pybble.part.permission.show_permission", permission=obj.oid()) }}" title="… für dieses Objekt">Permissions</a></li>
 				{%- endif %}
 			</ul>

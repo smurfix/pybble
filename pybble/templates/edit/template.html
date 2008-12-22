@@ -1,14 +1,14 @@
 {% extends 'layout.html' %}
-{% from 'form.html' import show, showb %}
+{% from 'form.html' import show %}
 
 {% block body %}
-  <h2>Edit template {{templ.name }}</h2>
+  <h2>Edit template {{ obj.name }}</h2>
     <form method="post" action="{{ action }}">
     <table>
+	  {{ show(form.site) }}
 	  {{ show(form.name) }}
 	  {{ show(form.page, cols=80,rows=20) }}
     </table>
-	{% if error %}<div class="error">{{ error }}</div>{% endif -%}
     <input type="submit" value="Update" />
     </form>
 

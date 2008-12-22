@@ -5,8 +5,11 @@
     <tr><td>Name</td><td>by</td><td>modified</td><td>Edit?</td></tr>
 	</thead><tbody>
   {%- for t in templates %}
-    <tr><td>{{ t.name }}</td><td>{{ t.owner.name|default('unknown') }}</td><td>{{ t.modified }}</td><td><a
-	href="{{ url_for('pybble.admin.edit_template',template=t.oid()) }}">E</a></td></tr>
+    <tr><td><a href="{{ url_for('pybble.views.detail_oid',oid=t.oid()) }}">{{ t.name }}</td><td>{{ t.owner.name|default('unknown') }}</td><td>{{ t.modified }}</td><td>
+	<a href="{{ url_for('pybble.views.edit_oid',oid=t.oid()) }}">Edit</a> | 
+	<a href="{{ url_for('pybble.views.copy_oid',oid=t.oid(), parent=(obj or t.parent).oid()) }}">Copy</a> | 
+	<a href="{{ url_for('pybble.views.delete_oid',oid=t.oid()) }}">Del</a>
+	</td></tr>
   {% endfor -%}
     </tbody></table>
   </ul>
