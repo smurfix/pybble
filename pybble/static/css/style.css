@@ -40,6 +40,15 @@ code del {
 	color: red;
 }
 
+div.comments div.new {
+	float: right;
+	font-size: 0.9em;
+}
+
+div.comments div.content {
+	margin-left: 34px;
+	font-size: 0.9em;
+}
 code ins {
 	color: green;
 }

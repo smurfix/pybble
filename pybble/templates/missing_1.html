@@ -1,14 +1,36 @@
 {% extends 'layout.html' %}
 
+{% if obj.has_children(d_comment) %}
+{%- set styles = ['SubTree.css'] + styles|default([]) -%}
+{%- set scripts = ['jQuery.SubTree.js'] + scripts|default([]) -%}
+{% endif %}
+{% block add_header %}
+{% if obj.has_children(d_comment) %}
+<script type="text/javascript">
+	$(document).ready( function() {
+		$('div.comments ul li').subTree({ script: '/snippet/{{d_comment}}', discr: '{{d_comment}}', cscript: '/snippet/hierarchy'});
+	});
+</script>
+{% endif %}
+{% endblock %}
+
+
 {% block body %}
 {{ subpage(obj) }}
 
-  {% if obj.has_children(d_comment) %}
-    <div class="comments">
-    {% for o in obj.all_children(d_comment) %}
-	  <div><a href="{{ url_for("pybble.views.view_oid",oid=o.oid()) }}">{{ o }}<a></div>
-	{% endfor %}
-	</div>
+  {% if obj.has_children(d_comment) or can_add(d_comment) %}
+  <div class="comments">
+  {% if can_add(d_comment) %}
+  <div class="new"><a href="{{ url_for("pybble.views.new_oid",oid=obj.oid(),discr=d_comment) }}">Diese Seite kommentieren</a></div>
   {% endif %}
 
+  {% if obj.has_children(d_comment) %}
+    <ul class="SubTree">
+    {% for o in obj.all_children(d_comment) %}
+	  {{ subpage(o,tm_snippet,d_comment) }}
+	{% endfor %}
+	</ul>
+  {% endif %}
+  </div>
+  {% endif %}
 {% endblock %}

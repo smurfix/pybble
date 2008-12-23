@@ -35,6 +35,7 @@ def newpage(form, field):
 class CommentEditForm(Form):
 	name = TextField('Name', [validators.length(min=3, max=30), newpage])
 	page = TextAreaField('Page')
+	comment = TextField('Grund', [validators.length(min=3)])
 
 def newer(request, parent, name=None):
 	if parent is None:
@@ -54,7 +55,16 @@ def newer(request, parent, name=None):
 		elif not name.startswith("Re: "):
 			name = "Re: "+name
 		form.name.data = name
-		form.page.data = ""
+		data = getattr(parent,"data",None) or ""
+		if data:
+			data = """\n
+<cite>
+
+%s
+
+</cite>
+""" % (data,)
+		form.page.data = data
 
 	return render_template('edit/comment.html', parent=parent, form=form, name=form.name.data, title_trace=[form.name.data])
 

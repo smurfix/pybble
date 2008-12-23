@@ -73,7 +73,7 @@ class Pybble(object):
 
 			from pybble.models import Site,User,Object,Discriminator,Template,TemplateMatch,VerifierBase,WikiPage,Storage,BinData,StaticFile
 			from pybble.models import Group,Permission, add_mime,mime_ext
-			from pybble.models import TM_DETAIL_SUBPAGE, PERM_READ,PERM_ADMIN,PERM_ADD, TM_DETAIL_DETAIL, TM_DETAIL
+			from pybble.models import TM_DETAIL_SUBPAGE, PERM_READ,PERM_ADMIN,PERM_ADD, TM_DETAIL_DETAIL, TM_DETAIL, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY
 			from pybble import utils
 			from werkzeug import Request
 
@@ -314,39 +314,26 @@ You may continue on your own. ;-)
 
 			db.session.flush()
 			for d in Discriminator.q.all():
-				try:
-					data = open("pybble/templates/view/%s.html" % (d.name.lower(),)).read()
-				except (IOError,OSError):
-					pass
-				else:
+				for detail,name in ((TM_DETAIL_SUBPAGE,"view"),
+					(TM_DETAIL_DETAIL,"details"),
+					(TM_DETAIL_HIERARCHY,"hierarchy"),
+					(TM_DETAIL_SNIPPET,"snippet")):
 					try:
-						t = TemplateMatch.q.get_by(obj=s, discr=d.id, detail=TM_DETAIL_SUBPAGE)
-					except NoResult:
-						t = TemplateMatch(obj=s, discr=d.id, detail=TM_DETAIL_SUBPAGE, data=data)
-						db.session.add(t)
+						data = open("pybble/templates/%s/%s.html" % (name,d.name.lower(),)).read()
+					except (IOError,OSError):
+						pass
 					else:
-						if t.data != data:
-							print "Warning: AssocTemplate 'view/%s.html' differs." % (d.name.lower(),)
-							if replace_templates:
-								t.data = data
-				db.session.flush()
-
-				try:
-					data = open("pybble/templates/details/%s.html" % (d.name.lower(),)).read()
-				except (IOError,OSError):
-					pass
-				else:
-					try:
-						t = TemplateMatch.q.get_by(obj=s, discr=d.id, detail=TM_DETAIL_DETAIL)
-					except NoResult:
-						t = TemplateMatch(obj=s, discr=d.id, detail=TM_DETAIL_DETAIL, data=data)
-						db.session.add(t)
-					else:
-						if t.data != data:
-							print "Warning: AssocTemplate 'detail/%s.html' differs." % (d.name.lower(),)
-							if replace_templates:
-								t.data = data
-				db.session.flush()
+						try:
+							t = TemplateMatch.q.get_by(obj=s, discr=d.id, detail=detail)
+						except NoResult:
+							t = TemplateMatch(obj=s, discr=d.id, detail=detail, data=data)
+							db.session.add(t)
+						else:
+							if t.data != data:
+								print "Warning: AssocTemplate '%s/%s.html' differs." % (name,d.name.lower())
+								if replace_templates:
+									t.data = data
+					db.session.flush()
 
 			for addon in addons:
 				try: ai = addon.initsite

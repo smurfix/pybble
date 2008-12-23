@@ -8,10 +8,10 @@
 //
 // Visit http://abeautifulsite.net/notebook.php?article=58 for more information
 //
-// Usage: $('.fileTreeDemo').fileTree( options, callback )
+// Usage: $('.fileTreeDemo').objTree( options, callback )
 //
 // Options:  root           - root folder to display; default = /
-//           script         - location of the serverside AJAX file to use; default = jqueryFileTree.php
+//           script         - location of the serverside AJAX file to use; for pybble, use /snippet/owner|parent|superparent
 //           folderEvent    - event to trigger expand/collapse; default = click
 //           expandSpeed    - default = 500 (ms); use -1 for no animation
 //           collapseSpeed  - default = 500 (ms); use -1 for no animation
@@ -25,7 +25,7 @@
 // 1.01 - updated to work with foreign characters in directory/file names (12 April 2008)
 // 1.00 - released (24 March 2008)
 //
-// modified by Matthias Urlichs <matthias@urlichs.de> for Pybble
+// heavily modified by Matthias Urlichs <matthias@urlichs.de> for Pybble
 //
 // TERMS OF USE
 // 
@@ -35,7 +35,7 @@
 if(jQuery) (function($){
 	
 	$.extend($.fn, {
-		fileTree: function(o) {
+		objTree: function(o) {
 			// Defaults
 			if( !o ) var o = {};
 			if( o.root == undefined ) o.root = '/';

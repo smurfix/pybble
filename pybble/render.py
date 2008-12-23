@@ -8,7 +8,7 @@ from werkzeug.utils import http_date
 from markdown import Markdown
 from pybble.utils import current_request, local, random_string
 from pybble.models import PERM, PERM_NONE, PERM_ADD, Permission, obj_get, TemplateMatch, Template, \
-	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, StaticFile, obj_get
+	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, StaticFile, obj_get, TM_DETAIL
 from pybble.database import NoResult
 from pybble.diff import textDiff
 from wtforms.validators import ValidationError
@@ -95,7 +95,7 @@ marker = Markdown(
                                       ('base_url', '/wiki/'), 
                                       ('end_url', ''), 
                                       ('html_class', 'wiki') ]},
-    safe_mode = True,
+    safe_mode = False
 )
 jinja_env.filters['markdown'] = lambda a: Markup(marker.convert(a))
 
@@ -125,6 +125,9 @@ jinja_env.globals['diff'] = textDiff
 
 for d in discr_list:
 	jinja_env.globals[str("d_"+d.name.lower())] = d.id
+
+for tm,name in TM_DETAIL.items():
+	jinja_env.globals[str("tm_"+name.lower())] = tm
 
 def addables(obj):
 	u = current_request.user
@@ -191,9 +194,11 @@ def render_template(template, mimetype=NotGiven, **context):
 	return r
 
 @contextfunction
-def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE):
+def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE, discr=None):
 	ctx = ctx.get_all()
 	ctx["obj"] = obj
+	if discr is not None:
+		ctx["sub"] = obj_class(discr).q.filter_by(parent=obj).count()
 	return render_my_template(current_request, mimetype=None, detail=detail, **ctx)
 
 @contextfunction

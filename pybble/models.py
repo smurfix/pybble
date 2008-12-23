@@ -16,6 +16,8 @@ from werkzeug import import_string
 import settings
 import sys,os
 
+DEBUG_ACCESS=False
+
 """Max ID of built-in tables; the rest are extensions"""
 MAX_BUILTIN = 42
 
@@ -26,7 +28,8 @@ except ImportError:
 
 
 # Template detail levels
-TM_DETAIL = {1:"Page", 2:"Subpage", 3:"String", 4:"Detail", 5:"Snippet"}
+TM_DETAIL = {1:"Page", 2:"Subpage", 3:"String", 4:"Detail", 5:"Snippet",
+	6:"Hierarchy"}
 for _x,_y in TM_DETAIL.items():
 	globals()["TM_DETAIL_"+_y.upper()] = _x
 
@@ -128,10 +131,9 @@ class Object(db.Base):
 	#all_children = relation('Object', backref=backref("superparent", remote_side=Object.id)) 
 
 	def has_children(self, discr=None):
-		if discr:
-			n = self.children.filter_by(discriminator=discr).count()
-		else:
-			n = self.children.count()
+		n=0
+		for o in self.all_children(discr=discr):
+			n += 1
 		return n
 
 	def has_superchildren(self, discr=None):
@@ -148,11 +150,13 @@ class Object(db.Base):
 			n = self.slaves.count()
 		return n
 
-	def all_children(self, discr=None):
+	def all_children(self, discr=None, want=PERM_LIST):
+		q = self.children
 		if discr:
-			return self.children.filter_by(discriminator=discr)
-		else:
-			return self.children
+			q = q.filter_by(discriminator=discr)
+		for o in q:
+			if current_request.user.can_do(o, discr=discr, want=want):
+				yield o
 
 	def all_superchildren(self, discr=None):
 		if discr:
@@ -491,10 +495,12 @@ class User(Object):
 
 		if obj is not current_request.site and \
 		   current_request.user.can_admin(current_request.site):
-			#print >>sys.stderr,"ADMIN"
+			if DEBUG_ACCESS:
+				print >>sys.stderr,"ADMIN"
 			return want if want and want < 0 else PERM_ADMIN
 
-		#print >>sys.stderr,"PERM",discr,new_discr,want,obj,"AT",current_request.site,u"⇒",
+		if DEBUG_ACCESS:
+			print >>sys.stderr,"PERM",discr,new_discr,want,obj,"AT",current_request.site,u"⇒",
 
 		pq = Permission.q
 		if want is not None:
@@ -546,13 +552,15 @@ class User(Object):
 				pass
 			else:
 				if p is not None:
-					#print >>sys.stderr,p
+					if DEBUG_ACCESS:
+						print >>sys.stderr,p
 					return p
 
 			no_inh = False
 			obj = obj.parent
 
-		#print >>sys.stderr,"NONE"
+		if DEBUG_ACCESS:
+			print >>sys.stderr,"NONE"
 		return PERM_NONE
 
 	def will_do(user,obj,discr=None, perm=PERM_NONE):

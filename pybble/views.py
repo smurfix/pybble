@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from werkzeug import redirect, import_string
+from werkzeug import redirect, import_string, Response
 from werkzeug.routing import BuildError
 from werkzeug.exceptions import NotFound
 from pybble.render import render_template, render_my_template, \
 	expose, url_for
-from pybble.models import TemplateMatch, TM_DETAIL_PAGE, obj_get, obj_class, MAX_BUILTIN
+from pybble.models import TemplateMatch, TM_DETAIL_PAGE, obj_get, obj_class, MAX_BUILTIN, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY
 from pybble.database import db,NoResult
 from wtforms import Form, HiddenField, TextField, validators
 from pybble.flashing import flash
@@ -155,6 +155,11 @@ def detail_oid(request, oid):
 	request.user.will_read(obj)
 	return render_template("detail.html", obj=obj)
 
+@expose('/last_visited')
+def last_visited(request):
+	return render_template("last_visited.html", q=request.user.all_visited(), title_trace=[u"zuletzt besucht"])
+	
+
 @expose('/snippet/<t>')
 def view_snippet(request, t):
 	oid = request.values["dir"]
@@ -162,15 +167,25 @@ def view_snippet(request, t):
 		oid,discr = oid.split('/',1)
 	else:
 		discr = request.values.get("discr",None)
-	if discr:
-		return view_snippet2(request, t, oid,discr)
+	try:
+		t = int(t)
+	except ValueError:
+		if discr:
+			return view_snippet2(request, t, oid,discr)
+		else:
+			return view_snippet1(request, t, oid)
 	else:
-		return view_snippet1(request, t, oid)
-
-@expose('/last_visited')
-def last_visited(request):
-	return render_template("last_visited.html", q=request.user.all_visited(), title_trace=[u"zuletzt besucht"])
-	
+		c = obj_class(t)
+		obj = obj_get(oid)
+		if discr:
+			res = []
+			for o in obj.all_children(discr):
+				sub = o.has_children(discr)
+				res.append(render_my_template(request, o, detail=TM_DETAIL_SNIPPET, discr=t, sub=sub, mimetype=None))
+			return Response("\n".join(res), mimetype="text/html")
+		else:
+			sub = c.q.filter_by(parent=obj).all()
+			return render_my_template(request, obj, detail=TM_DETAIL_SNIPPET, discr=t, sub=sub)
 
 @expose('/snippet/<t>/<oid>')
 def view_snippet1(request, t, oid):
@@ -181,15 +196,18 @@ def view_snippet1(request, t, oid):
 		sub = obj.discr_superchildren
 	elif t == "owner":
 		sub = obj.discr_slaves
+	elif t == "hierarchy":
+		return render_my_template(request, obj, detail=TM_DETAIL_HIERARCHY)
+		
 	else:
 		raise NotFound()
 
-	return render_template("snippet1.html", obj=obj_get(oid), t=t, sub=list(sub))
+	return render_template("snippet1.html", obj=obj, t=t, sub=list(sub))
 
 @expose('/snippet/<t>/<oid>/<discr>')
 def view_snippet2(request, t, oid, discr):
 	c = obj_class(discr)
-	obj=obj_get(oid)
+	obj = obj_get(oid)
 	if t == "parent":
 		sub = c.q.filter_by(parent=obj)
 		what = "has_children"
