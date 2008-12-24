@@ -72,10 +72,25 @@ class Pybble(object):
 			# ... or in fact the first one
 
 			from pybble.models import Site,User,Object,Discriminator,Template,TemplateMatch,VerifierBase,WikiPage,Storage,BinData,StaticFile
-			from pybble.models import Group,Permission, add_mime,mime_ext
+			from pybble.models import Group,Permission, add_mime,mime_ext, Renderer
 			from pybble.models import TM_DETAIL_SUBPAGE, PERM_READ,PERM_ADMIN,PERM_ADD, TM_DETAIL_DETAIL, TM_DETAIL, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY
 			from pybble import utils
 			from werkzeug import Request
+
+			for rn in ("markdown",):
+				rc = "pybble.render.render_"+rn
+				try:
+					r = Renderer.q.get_by(name=rn)
+				except NoResult:
+					r = Renderer(rn,rc)
+					db.session.add(r)
+				else:
+					if r.cls != rc:
+						print "Warning: Renderer '%s' differs (%s | %s)." % (rn,r.cls,rc)
+						if replace_templates:
+							r.cls = rc
+
+			db.session.flush()
 
 			addons = []
 			for addon in all_addons():

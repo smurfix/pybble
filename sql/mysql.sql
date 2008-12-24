@@ -3,8 +3,10 @@ CREATE TABLE comment (
 	name VARCHAR(250), 
 	data TEXT, 
 	added TIMESTAMP, 
+	renderer_id TINYINT, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT comment_id FOREIGN KEY(id) REFERENCES obj (id)
+	 CONSTRAINT comment_id FOREIGN KEY(id) REFERENCES obj (id), 
+	 CONSTRAINT cmt_renderer FOREIGN KEY(renderer_id) REFERENCES renderer (id)
 );
 CREATE TABLE template_match (
 	id INTEGER NOT NULL, 
@@ -60,8 +62,8 @@ CREATE TABLE mimeext (
 	mime_id INTEGER, 
 	ext VARCHAR(10) NOT NULL, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT mimetype_id FOREIGN KEY(mime_id) REFERENCES mimetype (id), 
-	 UNIQUE (ext)
+	 UNIQUE (ext), 
+	 CONSTRAINT mimetype_id FOREIGN KEY(mime_id) REFERENCES mimetype (id)
 );
 CREATE TABLE breadcrumbs (
 	id INTEGER NOT NULL, 
@@ -77,9 +79,9 @@ CREATE TABLE storage (
 	path VARCHAR(250) NOT NULL, 
 	url VARCHAR(250) NOT NULL, 
 	PRIMARY KEY (id), 
-	 UNIQUE (path), 
-	 CONSTRAINT storage_id FOREIGN KEY(id) REFERENCES obj (id), 
 	 UNIQUE (name), 
+	 CONSTRAINT storage_id FOREIGN KEY(id) REFERENCES obj (id), 
+	 UNIQUE (path), 
 	 UNIQUE (url)
 );
 CREATE TABLE sites (
@@ -89,8 +91,8 @@ CREATE TABLE sites (
 	tracked DATETIME NOT NULL, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT site_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (domain), 
-	 UNIQUE (name)
+	 UNIQUE (name), 
+	 UNIQUE (domain)
 );
 CREATE TABLE bindata (
 	id INTEGER NOT NULL, 
@@ -99,9 +101,9 @@ CREATE TABLE bindata (
 	hash VARCHAR(30) NOT NULL, 
 	timestamp TIMESTAMP, 
 	PRIMARY KEY (id), 
+	 UNIQUE (hash), 
 	 CONSTRAINT bindata_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT mimetype_id FOREIGN KEY(mime_id) REFERENCES mimetype (id), 
-	 UNIQUE (hash)
+	 CONSTRAINT mimetype_id FOREIGN KEY(mime_id) REFERENCES mimetype (id)
 );
 CREATE TABLE templates (
 	id INTEGER NOT NULL, 
@@ -180,8 +182,8 @@ CREATE TABLE permissions (
 	discr TINYINT NOT NULL, 
 	new_discr TINYINT, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT `Group_id` FOREIGN KEY(id) REFERENCES obj (id), 
 	 CONSTRAINT obj_new_discr FOREIGN KEY(new_discr) REFERENCES discriminator (id), 
+	 CONSTRAINT `Group_id` FOREIGN KEY(id) REFERENCES obj (id), 
 	 CONSTRAINT obj_discr FOREIGN KEY(discr) REFERENCES discriminator (id)
 );
 CREATE TABLE mimetype (
@@ -207,16 +209,16 @@ CREATE TABLE obj (
 	superparent_id INTEGER, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT obj_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
-	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id), 
+	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id), 
 	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id), 
-	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id)
+	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id)
 );
 CREATE TABLE site_users (
 	site_id INTEGER NOT NULL, 
 	user_id INTEGER NOT NULL, 
+	 UNIQUE (site_id, user_id), 
 	 CONSTRAINT site_users_site FOREIGN KEY(site_id) REFERENCES obj (id), 
-	 CONSTRAINT site_users_user FOREIGN KEY(user_id) REFERENCES obj (id), 
-	 UNIQUE (site_id, user_id)
+	 CONSTRAINT site_users_user FOREIGN KEY(user_id) REFERENCES obj (id)
 );
 CREATE TABLE changes (
 	id INTEGER NOT NULL, 
@@ -225,5 +227,13 @@ CREATE TABLE changes (
 	comment VARCHAR(200), 
 	PRIMARY KEY (id), 
 	 CONSTRAINT change_id FOREIGN KEY(id) REFERENCES obj (id)
+);
+CREATE TABLE renderer (
+	id TINYINT(1) NOT NULL AUTO_INCREMENT, 
+	name VARCHAR(30) NOT NULL, 
+	cls VARCHAR(50) NOT NULL, 
+	PRIMARY KEY (id), 
+	 UNIQUE (cls), 
+	 UNIQUE (name)
 );
 

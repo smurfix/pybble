@@ -99,6 +99,16 @@ marker = Markdown(
 )
 jinja_env.filters['markdown'] = lambda a: Markup(marker.convert(a))
 
+def render(obj, *a,**kw):
+	if hasattr(obj,"render"):
+		return obj.render(*a,**kw)
+	else:
+		return Markup.escape(unicode(obj))
+jinja_env.filters['render'] = render
+
+def render_markdown(obj):
+	return Markup(marker.convert(obj.data))
+
 def url_for(endpoint, _external=False, **values):
 	return local.url_adapter.build(endpoint, values, force_external=_external)
 jinja_env.globals['url_for'] = url_for

@@ -40,7 +40,7 @@ code del {
 	color: red;
 }
 
-div.comments div.new {
+div.comments div.new, div.new_comment {
 	float: right;
 	font-size: 0.9em;
 }
@@ -48,7 +48,12 @@ div.comments div.new {
 div.comments div.content {
 	margin-left: 34px;
 	font-size: 0.9em;
+	border-bottom-color:#CCCCCC;
+	border-bottom-style:solid;
+	border-bottom-width:1px;
+	margin-bottom:2px;
 }
+
 code ins {
 	color: green;
 }

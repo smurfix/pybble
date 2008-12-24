@@ -16,19 +16,29 @@
 
 
 {% block body %}
-{{ subpage(obj) }}
-
-  {% if obj.has_children(d_comment) or can_add(d_comment) %}
-  <div class="comments">
   {% if can_add(d_comment) %}
-  <div class="new"><a href="{{ url_for("pybble.views.new_oid",oid=obj.oid(),discr=d_comment) }}">Diese Seite kommentieren</a></div>
+  <div class="new_comment"><a href="{{ url_for("pybble.views.new_oid",oid=obj.oid(),discr=d_comment) }}">{% if obj.discriminator == d_comment %}antworten{% else %}Diese Seite kommentieren{% endif %}</a></div>
   {% endif %}
 
-  {% if obj.has_children(d_comment) %}
+{{ subpage(obj) }}
+
+  {% if can_read(d_comment) or can_add(d_comment) %}
+  <div class="comments">
+  {% if can_read(d_comment) %}
+    {% set nc = obj.has_children(d_comment) %}
     <ul class="SubTree">
-    {% for o in obj.all_children(d_comment) %}
-	  {{ subpage(o,tm_snippet,d_comment) }}
-	{% endfor %}
+	  <li class="t_Comments collapsed" rel="{{ obj.oid() }}">
+		<span class="image"></span>
+		<span href="#nogo" class="contents">
+			{%- if not nc -%}
+				keine Kommentare
+			{%- elif nc == 1 -%}
+				ein Kommentar
+			{%- else -%}
+				{{ nc }} Kommentare
+			{%- endif -%}
+		</span>
+	  </li>
 	</ul>
   {% endif %}
   </div>

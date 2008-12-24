@@ -13,6 +13,7 @@ from sqlalchemy.databases.mysql import MSTimeStamp as TimeStamp
 from sqlalchemy.sql import and_, or_, not_
 from pybble.decorators import add_to
 from werkzeug import import_string
+from jinja2.utils import Markup
 import settings
 import sys,os
 
@@ -90,6 +91,30 @@ class Discriminator(db.Base,DbRepr):
 			assert isinstance(discr, int)
 			return Discriminator.q.get_by(id=discr)
 
+class Renderer(db.Base,DbRepr):
+	"""Render method for object content"""
+	__tablename__ = "renderer"
+	__table_args__ = {'useexisting': True}
+	q = db.session.query_property(db.Query)
+	id = Column(TinyInteger(1), primary_key=True)
+	name = Column(String(30), nullable=False, unique=True)
+	cls = Column(String(50), nullable=False, unique=True)
+	_mod = None
+
+	def __init__(self, name, cls):
+		self.name = name
+		self.cls = cls
+
+	def __init__(self, name, cls):
+		self.name = name
+		self.cls = cls
+
+	@property
+	def _module(self):
+		if self._mod is None:
+			self._mod = import_string(self.cls)
+		return self._mod
+	
 class Object(db.Base):
 	"""The base type of all pointed-to objects"""
 	__tablename__ = "obj"
@@ -380,6 +405,33 @@ def obj_get(oid):
 	if oid != obj.oid():
 		raise ValueError("This object does not exist: " % (oid,))
 	return obj
+
+class renderObject(Object):
+	"""\
+		An object with render().
+		You do need to add a renderer_id foreign key, and a data field.
+		"""
+
+	def __init__(self,renderer = None):
+		if renderer is not None:
+			if not isinstance(renderer,Renderer):
+				renderer = Renderer.q.get_by(name=renderer)
+			self.renderer_id = renderer.id
+	
+	@property
+	def render(self):
+		if self.renderer_id is None:
+			return None
+		def _wrap(r):
+			def _call(*a,**k):
+				r(self,*a,**k)
+			return _call
+		try:
+			return _wrap(Renderer.q.get_by(id=self.renderer_id)._module)
+		except NoResult:
+			def _wr(*a,**k):
+				return "<pre>"+Markup.escape(self.data)+"<pre>\n"
+			return _wr
 
 class UserQuery(db.Query):
 	pass # defined below
@@ -1592,7 +1644,7 @@ BinData.static_files = relation(Object, uselist=True, remote_side=Object.parent_
 
 
 
-class Comment(Object):
+class Comment(renderObject):
 	"""\
 		A comment (or similar) page.
 		Parent: The comment or page we're referring to.
@@ -1608,8 +1660,9 @@ class Comment(Object):
 	name = Column(Unicode(250))
 	data = Column(Text)
 	added = Column(TimeStamp,default=datetime.utcnow)
+	renderer_id = Column(TinyInteger, ForeignKey('renderer.id',name="cmt_renderer"), nullable=True)
 
-	def __init__(self, obj, name, data):
+	def __init__(self, obj, name, data, renderer = None):
 		self.name = name
 		self.data = data
 		self.owner = current_request.user
@@ -1618,4 +1671,6 @@ class Comment(Object):
 			self.superparent = obj.superparent
 		else:
 			self.superparent = obj
-	
+
+		super(Comment,self).__init__(renderer)
+

@@ -11,6 +11,10 @@ UL.SubTree LI {
 	margin: 0px;
 }
 
+UL.SubTree SPAN.contents {
+	font-style: italic;
+}
+
 UL.SubTree A {
 	color: #333;
 	// text-decoration: none;
@@ -32,6 +36,7 @@ UL.SubTree SPAN.image {
 	display: block;
 	float: left;
 	padding-left: 17px;
+	cursor: pointer;
 }
 
 /* Core Styles */
