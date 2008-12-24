@@ -77,9 +77,9 @@ CREATE TABLE storage (
 	path VARCHAR(250) NOT NULL, 
 	url VARCHAR(250) NOT NULL, 
 	PRIMARY KEY (id), 
-	 UNIQUE (name), 
-	 CONSTRAINT storage_id FOREIGN KEY(id) REFERENCES obj (id), 
 	 UNIQUE (path), 
+	 CONSTRAINT storage_id FOREIGN KEY(id) REFERENCES obj (id), 
+	 UNIQUE (name), 
 	 UNIQUE (url)
 );
 CREATE TABLE sites (
@@ -105,7 +105,7 @@ CREATE TABLE bindata (
 );
 CREATE TABLE templates (
 	id INTEGER NOT NULL, 
-	name VARCHAR(50), 
+	name VARCHAR(50) NOT NULL, 
 	data TEXT, 
 	modified TIMESTAMP, 
 	PRIMARY KEY (id), 
@@ -138,8 +138,8 @@ CREATE TABLE deleted (
 	timestamp TIMESTAMP, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT delete_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT obj_owner FOREIGN KEY(old_owner_id) REFERENCES obj (id), 
-	 CONSTRAINT obj_super FOREIGN KEY(old_superparent_id) REFERENCES obj (id)
+	 CONSTRAINT obj_super FOREIGN KEY(old_superparent_id) REFERENCES obj (id), 
+	 CONSTRAINT obj_owner FOREIGN KEY(old_owner_id) REFERENCES obj (id)
 );
 CREATE TABLE groupmembers (
 	id INTEGER NOT NULL, 
@@ -170,8 +170,8 @@ CREATE TABLE verifierbase (
 	name VARCHAR(30) NOT NULL, 
 	cls VARCHAR(50) NOT NULL, 
 	PRIMARY KEY (id), 
-	 UNIQUE (name), 
-	 UNIQUE (cls)
+	 UNIQUE (cls), 
+	 UNIQUE (name)
 );
 CREATE TABLE permissions (
 	id INTEGER NOT NULL, 
@@ -207,16 +207,16 @@ CREATE TABLE obj (
 	superparent_id INTEGER, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT obj_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
-	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id), 
+	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id), 
 	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id), 
-	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id)
+	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id)
 );
 CREATE TABLE site_users (
 	site_id INTEGER NOT NULL, 
 	user_id INTEGER NOT NULL, 
-	 UNIQUE (site_id, user_id), 
 	 CONSTRAINT site_users_site FOREIGN KEY(site_id) REFERENCES obj (id), 
-	 CONSTRAINT site_users_user FOREIGN KEY(user_id) REFERENCES obj (id)
+	 CONSTRAINT site_users_user FOREIGN KEY(user_id) REFERENCES obj (id), 
+	 UNIQUE (site_id, user_id)
 );
 CREATE TABLE changes (
 	id INTEGER NOT NULL, 
