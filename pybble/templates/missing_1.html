@@ -1,6 +1,6 @@
 {% extends 'layout.html' %}
 
-{% if obj.has_children(d_comment) %}
+{% if can_read(d_comment) or can_add(d_comment) %}
 {%- set styles = ['SubTree.css'] + styles|default([]) -%}
 {%- set scripts = ['jQuery.SubTree.js'] + scripts|default([]) -%}
 {% endif %}
@@ -14,23 +14,28 @@
 {% endif %}
 {% endblock %}
 
-
-{% block body %}
+  {% block body %}
   {% if can_add(d_comment) %}
   <div class="new_comment"><a href="{{ url_for("pybble.views.new_oid",oid=obj.oid(),discr=d_comment) }}">{% if obj.discriminator == d_comment %}antworten{% else %}Diese Seite kommentieren{% endif %}</a></div>
   {% endif %}
 
+<div class="subpage">
 {{ subpage(obj) }}
+</div>
 
-  {% if can_read(d_comment) or can_add(d_comment) %}
-  <div class="comments">
   {% if can_read(d_comment) %}
     {% set nc = obj.has_children(d_comment) %}
+  {% else %}
+    {% set nc = -1 %}
+  {% endif %}
+  {% if nc > 0 or can_add(d_comment) %}
+  <div class="comments">
+  {% if can_read(d_comment) %}
     <ul class="SubTree">
 	  <li class="t_Comments collapsed" rel="{{ obj.oid() }}">
 		<span class="image"></span>
 		<span href="#nogo" class="contents">
-			{%- if not nc -%}
+			{%- if nc <= 0 -%}
 				keine Kommentare
 			{%- elif nc == 1 -%}
 				ein Kommentar

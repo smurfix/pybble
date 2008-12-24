@@ -106,6 +106,18 @@ if(jQuery) (function($){
 					$(t).find('span.image').bind(o.folderEvent, function() {
 						return clickExpand($(this).parent());
 					});
+					$(t).find('span.image').bind("mousedown", function() {
+						$(this).addClass("moused");
+						return true;
+					});
+					$(t).find('span.image').bind("mouseup", function() {
+						$(this).removeClass("moused");
+						return true;
+					});
+					$(t).find('span.image').bind("mouseout", function() {
+						$(this).removeClass("moused");
+						return true;
+					});
 //					$(t).find('a.content').unbind(o.folderEvent);
 //					$(t).find('a.content').bind(o.folderEvent, function() {
 //						return clickLoad($(this).parent());

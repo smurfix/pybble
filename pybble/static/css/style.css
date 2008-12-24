@@ -48,7 +48,9 @@ div.comments div.new, div.new_comment {
 div.comments div.content {
 	margin-left: 34px;
 	font-size: 0.9em;
-	border-bottom-color:#CCCCCC;
+}
+div.comments div.content, div.subpage {
+	border-bottom-color:#ccc;
 	border-bottom-style:solid;
 	border-bottom-width:1px;
 	margin-bottom:2px;
@@ -128,6 +130,7 @@ div.footer a {
 div.body {
     margin: 0 auto 0 auto;
     padding: 20px;
+    padding-bottom: 10px;
     // width: 460px;
     background-color: #ffc;
     color: black;
