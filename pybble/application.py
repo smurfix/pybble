@@ -66,7 +66,7 @@ class Pybble(object):
 		return self.init_site(replace_templates=True)
 
 	def init_site(self, replace_templates=False):
-		def action(domain=("d","localhost:5000"),name=("n",u"Lokaler Debug-Kram")):
+		def action(domain=("d","localhost:5000"),name=("n",u"local debug site")):
 
 			"""Initialize a new site"""
 			# ... or in fact the first one
