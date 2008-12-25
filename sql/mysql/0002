@@ -197,10 +197,10 @@ Do("""CREATE TABLE verifiers (
 Do("""CREATE TABLE wanttracking (
     `id` integer NOT NULL,
     `discr` tinyint(4) DEFAULT NULL,
-    `email` bool NOT NULL DEFAULT '',
-    `track_new` bool NOT NULL DEFAULT '',
-    `track_mod` bool NOT NULL DEFAULT '',
-    `track_del` bool NOT NULL DEFAULT '',
+    `email` bool NOT NULL,
+    `track_new` bool NOT NULL,
+    `track_mod` bool NOT NULL,
+    `track_del` bool NOT NULL,
      PRIMARY KEY(`id`),
      CONSTRAINT `wanttracking_discr` FOREIGN KEY (`discr`) REFERENCES `discriminator` (`id`) ON UPDATE cascade ON DELETE restrict,
      CONSTRAINT `wanttracking_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
