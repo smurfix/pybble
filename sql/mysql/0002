@@ -103,9 +103,9 @@ Do("""CREATE TABLE permissions (
     `discr` tinyint(4) NOT NULL DEFAULT '0',
     `new_discr` tinyint(4) DEFAULT NULL,
      PRIMARY KEY(`id`),
-     CONSTRAINT `obj_discr` FOREIGN KEY (`discr`) REFERENCES `discriminator` (`id`) ON UPDATE cascade ON DELETE restrict,
+     CONSTRAINT `permission_discr` FOREIGN KEY (`discr`) REFERENCES `discriminator` (`id`) ON UPDATE cascade ON DELETE restrict,
      CONSTRAINT `permissions_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict,
-     CONSTRAINT `obj_new_discr` FOREIGN KEY (`new_discr`) REFERENCES `discriminator` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
+     CONSTRAINT `permission_new_discr` FOREIGN KEY (`new_discr`) REFERENCES `discriminator` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE site_users (
     `site_id` integer NOT NULL,
     `user_id` integer NOT NULL,

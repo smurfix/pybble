@@ -768,8 +768,8 @@ class Permission(Object):
 
 	right = Column(Integer(1), nullable=False)
 	inherit = Column(Boolean, nullable=True)
-	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="obj_discr"), nullable=False)
-	new_discr = Column(TinyInteger, ForeignKey('discriminator.id',name="obj_new_discr"), nullable=True)
+	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="permission_discr"), nullable=False)
+	new_discr = Column(TinyInteger, ForeignKey('discriminator.id',name="permission_new_discr"), nullable=True)
 
 	def __init__(self, user, obj, discr, right, inherit=None, new_discr=None):
 		self.owner = user
