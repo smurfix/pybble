@@ -1,5 +1,5 @@
 Do("""CREATE TABLE bindata (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
     `mime_id` integer DEFAULT NULL,
     `name` varchar(50) COLLATE utf8_general_ci NOT NULL DEFAULT '',
     `hash` varchar(30) COLLATE utf8_general_ci NOT NULL DEFAULT '',
@@ -9,21 +9,21 @@ Do("""CREATE TABLE bindata (
      CONSTRAINT `mimetype_id` FOREIGN KEY (`mime_id`) REFERENCES `mimetype` (`id`) ON UPDATE cascade ON DELETE restrict,
      CONSTRAINT `bindata_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE breadcrumbs (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
     `discr` tinyint(4) NOT NULL DEFAULT '0',
     `visited` timestamp,
      PRIMARY KEY(`id`),
      CONSTRAINT `breadcrumb_discr` FOREIGN KEY (`discr`) REFERENCES `discriminator` (`id`) ON UPDATE cascade ON DELETE restrict,
      CONSTRAINT `breadcrumb_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE changes (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
     `timestamp` timestamp,
     `data` text COLLATE utf8_general_ci DEFAULT NULL,
     `comment` varchar(200) COLLATE utf8_general_ci DEFAULT NULL,
      PRIMARY KEY(`id`),
      CONSTRAINT `change_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE comment (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
     `name` varchar(250) COLLATE utf8_general_ci DEFAULT NULL,
     `data` text COLLATE utf8_general_ci DEFAULT NULL,
     `added` timestamp,
@@ -32,7 +32,7 @@ Do("""CREATE TABLE comment (
      CONSTRAINT `comment_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict,
      CONSTRAINT `cmt_renderer` FOREIGN KEY (`renderer_id`) REFERENCES `renderer` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE deleted (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
     `comment` varchar(200) COLLATE utf8_general_ci DEFAULT NULL,
     `old_superparent_id` integer DEFAULT NULL,
     `old_owner_id` integer DEFAULT NULL,
@@ -42,7 +42,7 @@ Do("""CREATE TABLE deleted (
      CONSTRAINT `obj_super` FOREIGN KEY (`old_superparent_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict,
      CONSTRAINT `obj_owner` FOREIGN KEY (`old_owner_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE demo (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
     `name` varchar(250) COLLATE utf8_general_ci DEFAULT NULL,
      PRIMARY KEY(`id`),
      CONSTRAINT `comment_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
@@ -52,12 +52,12 @@ Do("""CREATE TABLE discriminator (
      PRIMARY KEY(`id`),
      UNIQUE KEY `x_1`(`name`)) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE groupmembers (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
     `excluded` bool NOT NULL DEFAULT '',
      PRIMARY KEY(`id`),
      CONSTRAINT `group_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE groups (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
     `name` varchar(30) COLLATE utf8_general_ci DEFAULT NULL,
      PRIMARY KEY(`id`),
      CONSTRAINT `group_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
@@ -88,8 +88,8 @@ Do("""CREATE TABLE obj (
      CONSTRAINT `obj_discr` FOREIGN KEY (`discriminator`) REFERENCES `discriminator` (`id`) ON UPDATE cascade ON DELETE restrict,
      CONSTRAINT `obj_parent` FOREIGN KEY (`parent_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE permissions (
-    `id` integer NOT NULL DEFAULT '',
-    `right` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
+    `right` integer NOT NULL,
     `inherit` bool DEFAULT NULL,
     `discr` tinyint(4) NOT NULL DEFAULT '0',
     `new_discr` tinyint(4) DEFAULT NULL,
@@ -105,13 +105,13 @@ Do("""CREATE TABLE renderer (
      UNIQUE KEY `x_15`(`name`),
      UNIQUE KEY `x_14`(`cls`)) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE site_users (
-    `site_id` integer NOT NULL DEFAULT '',
-    `user_id` integer NOT NULL DEFAULT '',
+    `site_id` integer NOT NULL,
+    `user_id` integer NOT NULL,
      UNIQUE KEY `x_13`(`site_id`,`user_id`),
      CONSTRAINT `site_users_user` FOREIGN KEY (`user_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict,
      CONSTRAINT `site_users_site` FOREIGN KEY (`site_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE sites (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
     `domain` varchar(100) COLLATE utf8_general_ci NOT NULL DEFAULT '',
     `name` varchar(50) COLLATE utf8_general_ci NOT NULL DEFAULT '',
     `tracked` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
@@ -120,13 +120,13 @@ Do("""CREATE TABLE sites (
      UNIQUE KEY `x_6`(`domain`),
      CONSTRAINT `site_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE staticfile (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
     `path` varchar(200) COLLATE utf8_general_ci NOT NULL DEFAULT '',
     `modified` timestamp,
      PRIMARY KEY(`id`),
      CONSTRAINT `staticfile_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE storage (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
     `name` varchar(250) COLLATE utf8_general_ci NOT NULL DEFAULT '',
     `path` varchar(250) COLLATE utf8_general_ci NOT NULL DEFAULT '',
     `url` varchar(250) COLLATE utf8_general_ci NOT NULL DEFAULT '',
@@ -136,7 +136,7 @@ Do("""CREATE TABLE storage (
      UNIQUE KEY `x_3`(`path`),
      CONSTRAINT `storage_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE template_match (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
     `data` text COLLATE utf8_general_ci DEFAULT NULL,
     `modified` timestamp,
     `discr` tinyint(4) NOT NULL DEFAULT '0',
@@ -146,19 +146,19 @@ Do("""CREATE TABLE template_match (
      CONSTRAINT `templatematch_discr` FOREIGN KEY (`discr`) REFERENCES `discriminator` (`id`) ON UPDATE cascade ON DELETE restrict,
      CONSTRAINT `template_match_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE templates (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
     `name` varchar(50) COLLATE utf8_general_ci NOT NULL DEFAULT '',
     `data` text COLLATE utf8_general_ci DEFAULT NULL,
     `modified` timestamp,
      PRIMARY KEY(`id`),
      CONSTRAINT `template_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE tracking (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
     `timestamp` timestamp,
      PRIMARY KEY(`id`),
      CONSTRAINT `tracker_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE users (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
     `username` varchar(30) COLLATE utf8_general_ci NOT NULL DEFAULT '',
     `first_name` varchar(30) COLLATE utf8_general_ci DEFAULT NULL,
     `last_name` varchar(30) COLLATE utf8_general_ci DEFAULT NULL,
@@ -171,7 +171,7 @@ Do("""CREATE TABLE users (
      PRIMARY KEY(`id`),
      CONSTRAINT `user_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE usertracking (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
      PRIMARY KEY(`id`),
      CONSTRAINT `usertracker_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE verifierbase (
@@ -182,7 +182,7 @@ Do("""CREATE TABLE verifierbase (
      UNIQUE KEY `x_10`(`name`),
      UNIQUE KEY `x_11`(`cls`)) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE verifiers (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
     `base_id` tinyint(4) DEFAULT NULL,
     `code` varchar(50) COLLATE utf8_general_ci NOT NULL DEFAULT '',
     `added` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
@@ -193,7 +193,7 @@ Do("""CREATE TABLE verifiers (
      CONSTRAINT `verifier_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict,
      CONSTRAINT `verifier_base` FOREIGN KEY (`base_id`) REFERENCES `verifierbase` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE wanttracking (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
     `discr` tinyint(4) DEFAULT NULL,
     `email` bool NOT NULL DEFAULT '',
     `track_new` bool NOT NULL DEFAULT '',
@@ -203,7 +203,7 @@ Do("""CREATE TABLE wanttracking (
      CONSTRAINT `wanttracking_discr` FOREIGN KEY (`discr`) REFERENCES `discriminator` (`id`) ON UPDATE cascade ON DELETE restrict,
      CONSTRAINT `group_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE wikipage (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
     `name` varchar(50) COLLATE utf8_general_ci DEFAULT NULL,
     `data` text COLLATE utf8_general_ci DEFAULT NULL,
     `modified` timestamp,
