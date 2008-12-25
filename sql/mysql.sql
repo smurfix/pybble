@@ -79,10 +79,10 @@ CREATE TABLE storage (
 	path VARCHAR(250) NOT NULL, 
 	url VARCHAR(250) NOT NULL, 
 	PRIMARY KEY (id), 
-	 UNIQUE (name), 
 	 CONSTRAINT storage_id FOREIGN KEY(id) REFERENCES obj (id), 
 	 UNIQUE (path), 
-	 UNIQUE (url)
+	 UNIQUE (url), 
+	 UNIQUE (name)
 );
 CREATE TABLE sites (
 	id INTEGER NOT NULL, 
@@ -91,8 +91,8 @@ CREATE TABLE sites (
 	tracked DATETIME NOT NULL, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT site_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (name), 
-	 UNIQUE (domain)
+	 UNIQUE (domain), 
+	 UNIQUE (name)
 );
 CREATE TABLE bindata (
 	id INTEGER NOT NULL, 
@@ -101,8 +101,8 @@ CREATE TABLE bindata (
 	hash VARCHAR(30) NOT NULL, 
 	timestamp TIMESTAMP, 
 	PRIMARY KEY (id), 
-	 UNIQUE (hash), 
 	 CONSTRAINT bindata_id FOREIGN KEY(id) REFERENCES obj (id), 
+	 UNIQUE (hash), 
 	 CONSTRAINT mimetype_id FOREIGN KEY(mime_id) REFERENCES mimetype (id)
 );
 CREATE TABLE templates (
@@ -139,8 +139,8 @@ CREATE TABLE deleted (
 	old_owner_id INTEGER, 
 	timestamp TIMESTAMP, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT delete_id FOREIGN KEY(id) REFERENCES obj (id), 
 	 CONSTRAINT obj_super FOREIGN KEY(old_superparent_id) REFERENCES obj (id), 
+	 CONSTRAINT delete_id FOREIGN KEY(id) REFERENCES obj (id), 
 	 CONSTRAINT obj_owner FOREIGN KEY(old_owner_id) REFERENCES obj (id)
 );
 CREATE TABLE groupmembers (
@@ -157,9 +157,9 @@ CREATE TABLE verifiers (
 	repeated DATETIME, 
 	timeout DATETIME NOT NULL, 
 	PRIMARY KEY (id), 
+	 CONSTRAINT verifier_base FOREIGN KEY(base_id) REFERENCES verifierbase (id), 
 	 CONSTRAINT verifier_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (code), 
-	 CONSTRAINT verifier_base FOREIGN KEY(base_id) REFERENCES verifierbase (id)
+	 UNIQUE (code)
 );
 CREATE TABLE groups (
 	id INTEGER NOT NULL, 
@@ -172,8 +172,8 @@ CREATE TABLE verifierbase (
 	name VARCHAR(30) NOT NULL, 
 	cls VARCHAR(50) NOT NULL, 
 	PRIMARY KEY (id), 
-	 UNIQUE (cls), 
-	 UNIQUE (name)
+	 UNIQUE (name), 
+	 UNIQUE (cls)
 );
 CREATE TABLE permissions (
 	id INTEGER NOT NULL, 
@@ -208,17 +208,17 @@ CREATE TABLE obj (
 	parent_id INTEGER, 
 	superparent_id INTEGER, 
 	PRIMARY KEY (id), 
+	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id), 
 	 CONSTRAINT obj_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
 	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id), 
-	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id), 
-	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id)
+	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id)
 );
 CREATE TABLE site_users (
 	site_id INTEGER NOT NULL, 
 	user_id INTEGER NOT NULL, 
-	 UNIQUE (site_id, user_id), 
 	 CONSTRAINT site_users_site FOREIGN KEY(site_id) REFERENCES obj (id), 
-	 CONSTRAINT site_users_user FOREIGN KEY(user_id) REFERENCES obj (id)
+	 CONSTRAINT site_users_user FOREIGN KEY(user_id) REFERENCES obj (id), 
+	 UNIQUE (site_id, user_id)
 );
 CREATE TABLE changes (
 	id INTEGER NOT NULL, 
