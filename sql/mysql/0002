@@ -11,6 +11,13 @@ Do("""CREATE TABLE mimetype (
     `ext` varchar(15) COLLATE utf8_general_ci NOT NULL DEFAULT '',
      PRIMARY KEY(`id`),
      UNIQUE KEY `x_12`(`name`)) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
+Do("""CREATE TABLE renderer (
+    `id` tinyint(1) NOT NULL AUTO_INCREMENT DEFAULT NULL,
+    `name` varchar(30) COLLATE utf8_general_ci NOT NULL DEFAULT '',
+    `cls` varchar(50) COLLATE utf8_general_ci NOT NULL DEFAULT '',
+     PRIMARY KEY(`id`),
+     UNIQUE KEY `x_15`(`name`),
+     UNIQUE KEY `x_14`(`cls`)) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE obj (
     `id` integer NOT NULL AUTO_INCREMENT DEFAULT NULL,
     `discriminator` tinyint(4) DEFAULT NULL,
@@ -99,13 +106,6 @@ Do("""CREATE TABLE permissions (
      CONSTRAINT `obj_discr` FOREIGN KEY (`discr`) REFERENCES `discriminator` (`id`) ON UPDATE cascade ON DELETE restrict,
      CONSTRAINT `group_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict,
      CONSTRAINT `obj_new_discr` FOREIGN KEY (`new_discr`) REFERENCES `discriminator` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
-Do("""CREATE TABLE renderer (
-    `id` tinyint(1) NOT NULL AUTO_INCREMENT DEFAULT NULL,
-    `name` varchar(30) COLLATE utf8_general_ci NOT NULL DEFAULT '',
-    `cls` varchar(50) COLLATE utf8_general_ci NOT NULL DEFAULT '',
-     PRIMARY KEY(`id`),
-     UNIQUE KEY `x_15`(`name`),
-     UNIQUE KEY `x_14`(`cls`)) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE site_users (
     `site_id` integer NOT NULL,
     `user_id` integer NOT NULL,
