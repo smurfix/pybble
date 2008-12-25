@@ -1,18 +1,25 @@
 #!/bin/bash
 set -ex
 
-### This script is called by git to upgrade the web presence
+DEST=/srv/www/pybble
 
-settings=$(tempfile)
-sed -ne 's/^\([A-Z_]*\)=\([0-9][0-9]*\|"[^"]*"\)/\1=${\1:-\2}/p' settings.py > $settings
-. $settings
-rm -f $settings
+### This script is called by git to upgrade the web presence
 
 newrev=$1
 test -n "$newrev"
+
+settings=$(tempfile)
+(
+  git-ls-tree $newrev settings.py | while read a b c d ; do
+	git-cat-file blob $c
+  done
+  cat $DEST/localsettings.py 2>/dev/null || true
+) | sed -ne 's/^\([A-Z_]*\)=\([0-9][0-9]*\|"[^"]*"\)/\1=${\1:-\2}/p' > $settings
+. $settings
+rm -f $settings
+
 VFILE=sql/$DATABASE_TYPE.version
 
-DEST=/srv/www/pybble
 if test -z "$GIT_DIR" ; then
 	if test -d .git ; then GIT_DIR=".git" ; \
 	elif test -d ../.git ; then GIT_DIR="../.git" ; \
