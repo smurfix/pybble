@@ -42,7 +42,7 @@ cd "$DEST"
 # Unpack source
 
 git-archive --format=tar $newrev | \
-	tar -x -f - --anchored --exclude=$VFILE --exclude=pybble/static --exclude=pybble/templates
+	tar -x -f - --anchored --exclude=$VFILE
 comm -23 <(find * -type f -print |sort) <(git-ls-tree -r --name-only $newrev |sort) | fgrep -v -x localsettings.py | \
 	while read f ; do rm -f "$f" ; done
 
@@ -64,6 +64,7 @@ else
 fi
 
 python manage.py initsite || exit 1
+rm -r pybble/static pybble/templates
 
 # Kill FCGIs
 ps axuw|grep "^pybble .*python .*\\.fcg\$"|while read a b c ; do kill $b; done
