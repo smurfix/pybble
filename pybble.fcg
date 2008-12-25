@@ -1,0 +1,13 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+from flup.server.fcgi_fork import WSGIServer
+import settings
+
+import os,sys
+sys.path.insert(0,"/srv/www/pybble/")
+
+from flup.server.fcgi_fork import WSGIServer
+WSGIServer(application, minSpare=3, maxSpare=8, maxChildren=8, debug=settings.SERVER_DEBUG).run()
+
+
