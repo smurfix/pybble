@@ -10,10 +10,10 @@ test -n "$newrev"
 
 settings=$(tempfile)
 (
+  cat $DEST/localsettings.py  || true
   git-ls-tree $newrev settings.py | while read a b c d ; do
 	git-cat-file blob $c
   done
-  cat $DEST/localsettings.py  || true
 ) | sed -ne 's/^\([A-Z_]*\)=\([0-9][0-9]*\|"[^"]*"\)/\1=${\1:-\2}/p' > $settings
 . $settings
 rm -f $settings
