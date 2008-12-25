@@ -492,6 +492,16 @@ You may continue on your own. ;-)
 
 		return action
 
+	def dbscript(self):
+		def action(script=("s")):
+			"""Run a script on the database."""
+			def Do(stmt):
+				db.session.execute(stmt)
+
+			execfile(script, globals(),locals())
+
+		return action
+
 	def dispatch(self, environ, start_response):
 		local.application = self
 		request = Request(environ)

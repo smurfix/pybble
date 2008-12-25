@@ -1,0 +1,64 @@
+#!/bin/bash
+set -ex
+
+### This script is called by git to upgrade the web presence
+
+settings=$(tempfile)
+sed -ne 's/^\([A-Z_]*\)=\([0-9][0-9]*\|"[^"]*"\)/\1=${\1:-\2}/p' settings.py > $settings
+. $settings
+rm -f $settings
+
+newrev=$1
+test -n "$newrev"
+VFILE=sql/$DATABASE_TYPE.version
+
+DEST=/srv/www/pybble
+if test -z "$GIT_DIR" ; then
+	if test -d .git ; then GIT_DIR=".git" ; \
+	elif test -d ../.git ; then GIT_DIR="../.git" ; \
+	else echo >&2 "GIT_DIR not set"; exit 1; fi
+fi
+export GIT_DIR="$(cd "$GIT_DIR"; pwd)"
+
+version=$(tempfile)
+git-ls-tree $newrev $VFILE | while read a b c d ; do
+	test -s $version && exit 1
+	git-cat-file blob $c > $version
+done
+test -s $version || exit 1
+VERSION=$(cat $version)
+rm -f $version
+
+mkdir -p "$DEST"
+cd "$DEST"
+
+# Unpack source
+
+git-archive --format=tar $newrev | \
+	tar -x -f - --anchored --exclude=$VFILE --exclude=pybble/static --exclude=pybble/templates
+comm -23 <(find * -type f -print |sort) <(git-ls-tree -r --name-only $newrev |sort) | \
+	while read f ; do rm -f "$f" ; done
+
+# update version
+if test -s $VFILE ; then
+	V=$(cat $VFILE)
+	while test $VERSION -gt $V ; do
+		V=$(expr $V + 1)
+		fn=$(printf sql/$DATABASE_TYPE/%04d $V)
+		if test -f $fn ; then
+			python manage.py dbscript $fn || exit 1
+		else
+			echo No update script for version $V
+		fi
+		echo $V > $VFILE
+	done
+else
+	echo $VERSION > $VFILE
+fi
+
+python manage.py initsite || exit 1
+
+# Kill FCGIs
+ps axuw|grep "^pybble .*python .*\\.fcg\$"|while read a b c ; do kill $b; done
+
+

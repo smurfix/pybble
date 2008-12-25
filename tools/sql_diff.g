@@ -995,8 +995,7 @@ def main():
 	for t in db1.dump(tables=args,skip_flags=opts.skip_flags):
 		if t is None: continue
 
-		t += ";"
-		print t
+		print Do """%s""" % (t,)
 
 		exitcode=2
 
