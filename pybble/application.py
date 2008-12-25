@@ -53,7 +53,7 @@ extensions = ( \
 
 class Pybble(object):
 
-	def __init__(self, db_uri):
+	def __init__(self):
 		local.application = self
 
 	def init_database(self):

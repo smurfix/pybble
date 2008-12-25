@@ -17,8 +17,7 @@ def res(x):
 
 def make_app():
 	from pybble.application import Pybble
-	app = Pybble('sqlite:///'+settings.DATABASE_FILE)
-	return app
+	return Pybble()
 
 def make_shell():
 	from pybble import models, utils
