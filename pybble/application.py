@@ -107,6 +107,7 @@ class Pybble(object):
 				else:
 					if o.name != v.__name__:
 						raise ValueError("Discriminator '%d' pointed at '%s', now '%s'!" % (k,o.name,v.__name__))
+			db.session.flush()
 
 			domain=domain.decode("utf-8")
 			try:
@@ -124,6 +125,7 @@ class Pybble(object):
 				typ,subtyp = typ.split("/",1)
 				add_mime(name,typ,subtyp,ext)
 			db.session.flush()
+
 			try:
 				st = Storage.q.get_by(name=u"Test")
 			except NoResult:
