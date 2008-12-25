@@ -17,7 +17,7 @@ app = Pybble()
 if settings.SERVER_DEBUG:
 	app = DebuggedApplication(app, evalex=True, show_hidden_frames=True)
 
-WSGIServer(application, minSpare=3, maxSpare=8, maxChildren=8, debug=settings.SERVER_DEBUG).run()
+WSGIServer(app, minSpare=3, maxSpare=8, maxChildren=8, debug=settings.SERVER_DEBUG).run()
 
 
 
