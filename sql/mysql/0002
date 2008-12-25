@@ -1,3 +1,22 @@
+Do("""CREATE TABLE mimetype (
+    `id` integer NOT NULL AUTO_INCREMENT DEFAULT NULL,
+    `name` varchar(30) COLLATE utf8_general_ci NOT NULL DEFAULT '',
+    `typ` varchar(15) COLLATE utf8_general_ci NOT NULL DEFAULT '',
+    `subtyp` varchar(15) COLLATE utf8_general_ci NOT NULL DEFAULT '',
+    `ext` varchar(15) COLLATE utf8_general_ci NOT NULL DEFAULT '',
+     PRIMARY KEY(`id`),
+     UNIQUE KEY `x_12`(`name`)) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
+Do("""CREATE TABLE obj (
+    `id` integer NOT NULL AUTO_INCREMENT DEFAULT NULL,
+    `discriminator` tinyint(4) DEFAULT NULL,
+    `owner_id` integer DEFAULT NULL,
+    `parent_id` integer DEFAULT NULL,
+    `superparent_id` integer DEFAULT NULL,
+     PRIMARY KEY(`id`),
+     CONSTRAINT `obj_owner` FOREIGN KEY (`owner_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict,
+     CONSTRAINT `obj_super` FOREIGN KEY (`superparent_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict,
+     CONSTRAINT `obj_discr` FOREIGN KEY (`discriminator`) REFERENCES `discriminator` (`id`) ON UPDATE cascade ON DELETE restrict,
+     CONSTRAINT `obj_parent` FOREIGN KEY (`parent_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE bindata (
     `id` integer NOT NULL,
     `mime_id` integer DEFAULT NULL,
@@ -68,25 +87,6 @@ Do("""CREATE TABLE mimeext (
      PRIMARY KEY(`id`),
      UNIQUE KEY `x_2`(`ext`),
      CONSTRAINT `mimetype_id` FOREIGN KEY (`mime_id`) REFERENCES `mimetype` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
-Do("""CREATE TABLE mimetype (
-    `id` integer NOT NULL AUTO_INCREMENT DEFAULT NULL,
-    `name` varchar(30) COLLATE utf8_general_ci NOT NULL DEFAULT '',
-    `typ` varchar(15) COLLATE utf8_general_ci NOT NULL DEFAULT '',
-    `subtyp` varchar(15) COLLATE utf8_general_ci NOT NULL DEFAULT '',
-    `ext` varchar(15) COLLATE utf8_general_ci NOT NULL DEFAULT '',
-     PRIMARY KEY(`id`),
-     UNIQUE KEY `x_12`(`name`)) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
-Do("""CREATE TABLE obj (
-    `id` integer NOT NULL AUTO_INCREMENT DEFAULT NULL,
-    `discriminator` tinyint(4) DEFAULT NULL,
-    `owner_id` integer DEFAULT NULL,
-    `parent_id` integer DEFAULT NULL,
-    `superparent_id` integer DEFAULT NULL,
-     PRIMARY KEY(`id`),
-     CONSTRAINT `obj_owner` FOREIGN KEY (`owner_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict,
-     CONSTRAINT `obj_super` FOREIGN KEY (`superparent_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict,
-     CONSTRAINT `obj_discr` FOREIGN KEY (`discriminator`) REFERENCES `discriminator` (`id`) ON UPDATE cascade ON DELETE restrict,
-     CONSTRAINT `obj_parent` FOREIGN KEY (`parent_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE permissions (
     `id` integer NOT NULL,
     `right` integer NOT NULL,
