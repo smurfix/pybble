@@ -1486,7 +1486,7 @@ class BinData(Object):
 	_no_crumbs = True
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey('obj.id',name="bindata_id"), primary_key=True,autoincrement=False)
-	mime_id = Column(Integer, ForeignKey(MIMEtype.id,name="bindata_id"))
+	mime_id = Column(Integer, ForeignKey(MIMEtype.id,name="bindata_mimeid"))
 	name = Column(Unicode(50), nullable=False)
 	hash = Column(String(30), nullable=False, unique=True)
 	timestamp = Column(TimeStamp,default=datetime.utcnow)

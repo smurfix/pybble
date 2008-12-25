@@ -39,7 +39,7 @@ Do("""CREATE TABLE bindata (
     `timestamp` timestamp,
      PRIMARY KEY(`id`),
      UNIQUE KEY `x_8`(`hash`),
-     CONSTRAINT `bindata_id` FOREIGN KEY (`mime_id`) REFERENCES `mimetype` (`id`) ON UPDATE cascade ON DELETE restrict,
+     CONSTRAINT `bindata_mimeid` FOREIGN KEY (`mime_id`) REFERENCES `mimetype` (`id`) ON UPDATE cascade ON DELETE restrict,
      CONSTRAINT `bindata_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE breadcrumbs (
     `id` integer NOT NULL,
