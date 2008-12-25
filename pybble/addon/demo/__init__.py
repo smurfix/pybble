@@ -36,7 +36,7 @@ class Demo(Object):
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 101}
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="comment_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey('obj.id',name="demo_id"), primary_key=True,autoincrement=False)
 
 	name = Column(Unicode(250))
 
