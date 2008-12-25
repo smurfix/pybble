@@ -72,8 +72,8 @@ Do("""CREATE TABLE deleted (
     `timestamp` timestamp,
      PRIMARY KEY(`id`),
      CONSTRAINT `delete_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict,
-     CONSTRAINT `obj_super` FOREIGN KEY (`old_superparent_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict,
-     CONSTRAINT `obj_owner` FOREIGN KEY (`old_owner_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
+     CONSTRAINT `delobj_super` FOREIGN KEY (`old_superparent_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict,
+     CONSTRAINT `delobj_owner` FOREIGN KEY (`old_owner_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE demo (
     `id` integer NOT NULL,
     `name` varchar(250) COLLATE utf8_general_ci DEFAULT NULL,
