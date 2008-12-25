@@ -1148,8 +1148,8 @@ class Delete(Object):
 	comment = Column(Unicode(200), nullable=True)
 
 	## The old parent is in self.superparent
-	old_superparent_id = Column(Integer(20), ForeignKey('obj.id',name="obj_super"))
-	old_owner_id = Column(Integer(20), ForeignKey('obj.id',name="obj_owner"))
+	old_superparent_id = Column(Integer(20), ForeignKey('obj.id',name="delobj_super"))
+	old_owner_id = Column(Integer(20), ForeignKey('obj.id',name="delobj_owner"))
 
 	timestamp = Column(TimeStamp,default=datetime.utcnow)
 
