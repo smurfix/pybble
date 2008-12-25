@@ -43,7 +43,7 @@ cd "$DEST"
 
 git-archive --format=tar $newrev | \
 	tar -x -f - --anchored --exclude=$VFILE --exclude=pybble/static --exclude=pybble/templates
-comm -23 <(find * -type f -print |sort) <(git-ls-tree -r --name-only $newrev |sort) | \
+comm -23 <(find * -type f -print |sort) <(git-ls-tree -r --name-only $newrev |sort) | fgrep -v -x localsettings.py | \
 	while read f ; do rm -f "$f" ; done
 
 # update version
