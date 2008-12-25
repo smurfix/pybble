@@ -686,7 +686,7 @@ class Group(Object):
 	__table_args__ = {'useexisting': True}
 	__mapper_args__ = {'polymorphic_identity': 4}
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="Group_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey('obj.id',name="group_id"), primary_key=True,autoincrement=False)
 	        
 	name = Column(Unicode(30))
 
@@ -710,7 +710,7 @@ class Member(Object):
 	__mapper_args__ = {'polymorphic_identity': 13}
 	_no_crumbs = True
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="Group_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey('obj.id',name="member_id"), primary_key=True,autoincrement=False)
 
 	excluded = Column(Boolean, nullable=False)
 
@@ -764,7 +764,7 @@ class Permission(Object):
 	__mapper_args__ = {'polymorphic_identity': 10}
 	_no_crumbs = True
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="Group_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey('obj.id',name="permission_id"), primary_key=True,autoincrement=False)
 
 	right = Column(Integer(1), nullable=False)
 	inherit = Column(Boolean, nullable=True)
@@ -1307,7 +1307,7 @@ class WantTracking(Object):
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 19}
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="Group_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey('obj.id',name="wanttracking_id"), primary_key=True,autoincrement=False)
 
 	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="wanttracking_discr"), nullable=True)
 	email = Column(Boolean, nullable=False) # send mail, not just RSS/on-site?
