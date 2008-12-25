@@ -1,3 +1,8 @@
+Do("""CREATE TABLE discriminator (
+    `id` tinyint(1) NOT NULL AUTO_INCREMENT DEFAULT NULL,
+    `name` varchar(30) COLLATE utf8_general_ci NOT NULL DEFAULT '',
+     PRIMARY KEY(`id`),
+     UNIQUE KEY `x_1`(`name`)) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE mimetype (
     `id` integer NOT NULL AUTO_INCREMENT DEFAULT NULL,
     `name` varchar(30) COLLATE utf8_general_ci NOT NULL DEFAULT '',
@@ -12,11 +17,13 @@ Do("""CREATE TABLE obj (
     `owner_id` integer DEFAULT NULL,
     `parent_id` integer DEFAULT NULL,
     `superparent_id` integer DEFAULT NULL,
-     PRIMARY KEY(`id`),
-     CONSTRAINT `obj_owner` FOREIGN KEY (`owner_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict,
-     CONSTRAINT `obj_super` FOREIGN KEY (`superparent_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict,
-     CONSTRAINT `obj_discr` FOREIGN KEY (`discriminator`) REFERENCES `discriminator` (`id`) ON UPDATE cascade ON DELETE restrict,
-     CONSTRAINT `obj_parent` FOREIGN KEY (`parent_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
+     PRIMARY KEY(`id`)
+	 ) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
+Do("""ALTER TABLE obj
+     ADD CONSTRAINT `obj_owner` FOREIGN KEY (`owner_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict,
+     ADD CONSTRAINT `obj_super` FOREIGN KEY (`superparent_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict,
+     ADD CONSTRAINT `obj_discr` FOREIGN KEY (`discriminator`) REFERENCES `discriminator` (`id`) ON UPDATE cascade ON DELETE restrict,
+     ADD CONSTRAINT `obj_parent` FOREIGN KEY (`parent_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict""")
 Do("""CREATE TABLE bindata (
     `id` integer NOT NULL,
     `mime_id` integer DEFAULT NULL,
@@ -65,11 +72,6 @@ Do("""CREATE TABLE demo (
     `name` varchar(250) COLLATE utf8_general_ci DEFAULT NULL,
      PRIMARY KEY(`id`),
      CONSTRAINT `comment_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
-Do("""CREATE TABLE discriminator (
-    `id` tinyint(1) NOT NULL AUTO_INCREMENT DEFAULT NULL,
-    `name` varchar(30) COLLATE utf8_general_ci NOT NULL DEFAULT '',
-     PRIMARY KEY(`id`),
-     UNIQUE KEY `x_1`(`name`)) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
 Do("""CREATE TABLE groupmembers (
     `id` integer NOT NULL,
     `excluded` bool NOT NULL DEFAULT '',
