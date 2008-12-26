@@ -5,7 +5,6 @@ from werkzeug import cached_property, Response
 from werkzeug.http import parse_etags, remove_entity_headers
 from werkzeug.routing import Map, Rule
 from werkzeug.utils import http_date
-from markdown import Markdown
 from pybble.utils import current_request, local, random_string
 from pybble.models import PERM, PERM_NONE, PERM_ADD, Permission, obj_get, TemplateMatch, Template, \
 	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, StaticFile, obj_get, TM_DETAIL
@@ -90,6 +89,7 @@ def expose(rule, **kw):
 
 ## jinja extensions
 try:
+	from markdown import Markdown
 	marker = Markdown(
     	extensions = ['wikilinks'], 
     	extension_configs = {'wikilinks': [
@@ -100,6 +100,7 @@ try:
 	)
 	jinja_env.filters['markdown'] = lambda a: Markup(marker.convert(a))
 except TypeError: # old markdown
+	from markdown import markdown
 	jinja_env.filters['markdown'] = markdown.markdown
 
 def render(obj, *a,**kw):
