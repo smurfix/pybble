@@ -89,15 +89,18 @@ def expose(rule, **kw):
 	return decorate
 
 ## jinja extensions
-marker = Markdown(
-    extensions = ['wikilinks'], 
-    extension_configs = {'wikilinks': [
-                                      ('base_url', '/wiki/'), 
-                                      ('end_url', ''), 
-                                      ('html_class', 'wiki') ]},
-    safe_mode = False
-)
-jinja_env.filters['markdown'] = lambda a: Markup(marker.convert(a))
+try:
+	marker = Markdown(
+    	extensions = ['wikilinks'], 
+    	extension_configs = {'wikilinks': [
+	                                      ('base_url', '/wiki/'), 
+	                                      ('end_url', ''), 
+	                                      ('html_class', 'wiki') ]},
+    	safe_mode = False
+	)
+	jinja_env.filters['markdown'] = lambda a: Markup(marker.convert(a))
+except TypeError: # old markdown
+	jinja_env.filters['markdown'] = markdown.markdown
 
 def render(obj, *a,**kw):
 	if hasattr(obj,"render"):
