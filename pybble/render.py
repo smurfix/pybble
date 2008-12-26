@@ -101,7 +101,7 @@ try:
 	jinja_env.filters['markdown'] = lambda a: Markup(marker.convert(a))
 except TypeError: # old markdown
 	from markdown import markdown
-	jinja_env.filters['markdown'] = markdown.markdown
+	jinja_env.filters['markdown'] = markdown
 
 def render(obj, *a,**kw):
 	if hasattr(obj,"render"):
