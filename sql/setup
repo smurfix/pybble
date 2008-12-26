@@ -67,6 +67,6 @@ python manage.py initsite -d pybble.smurf.noris.de || exit 1
 rm -r pybble/static pybble/templates
 
 # Kill FCGIs
-ps axuw|grep "^pybble .*python .*\\.fcg\$"|while read a b c ; do kill $b; done
+ps axuw|grep "^pybble .*python .*\\.fcg\$"|while read a b c ; do kill $b; done || true
 
 
