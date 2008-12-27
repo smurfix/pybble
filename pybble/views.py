@@ -5,7 +5,7 @@ from werkzeug.routing import BuildError
 from werkzeug.exceptions import NotFound
 from pybble.render import render_template, render_my_template, \
 	expose, url_for
-from pybble.models import TemplateMatch, TM_DETAIL_PAGE, obj_get, obj_class, MAX_BUILTIN, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY
+from pybble.models import TemplateMatch, TM_DETAIL_PAGE, obj_get, obj_class, MAX_BUILTIN, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY, Site
 from pybble.database import db,NoResult
 from wtforms import Form, HiddenField, TextField, validators
 from pybble.flashing import flash
