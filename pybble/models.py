@@ -677,7 +677,7 @@ class User(Object):
 @add_to(UserQuery)
 def get_anonymous_user(self, site):
 	try:
-		self.get_one(and_(User.username=="", User.password=="",User.superparent==site))
+		return self.get_one(and_(User.username=="", User.password=="",User.superparent==site))
 	except NoResult:
 		if site.parent:
 			return self.get_anonymous_user(site.parent)
