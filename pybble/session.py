@@ -114,7 +114,7 @@ def save_session(request, response):
 		response.set_cookie(settings.SESSION_COOKIE_NAME, session_data, httponly=True, expires=expires)
 
 def add_response_headers(request,response):
-	s = getattr(request,"session")
+	s = getattr(request,"session",None)
 	if not s:
 		return
 	if s.should_vary:
