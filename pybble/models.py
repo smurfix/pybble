@@ -1033,10 +1033,10 @@ class WikiPage(Object):
 	
 	def url_html_view(self):
 		from pybble.render import url_for
-		if isinstance(self.parent,WikiPage):
-			return url_for("pybble.part.wikipage.viewer", name=self.name, parent=self.parent.name)
-		else:
+		if isinstance(self.parent,Site):
 			return url_for("pybble.part.wikipage.viewer", name=self.name)
+		if isinstance(self.parent,WikiPage) and isinstance(self.parent.parent,Site):
+			return url_for("pybble.part.wikipage.viewer", name=self.name, parent=self.parent.name)
 
 class Breadcrumb(Object):
 	"""\
