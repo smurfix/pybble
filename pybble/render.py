@@ -194,7 +194,7 @@ def render_template(template, mimetype=NotGiven, **context):
 		context.update(
 			XHTML_DTD=Markup(get_dtd()),
 			# CURRENT_URL=current_request.build_absolute_uri(),
-			USER=current_request.user,
+			USER=getattr(current_request,"user",None),
 			MESSAGES=get_flashed_messages(),
 			SITE=current_request.site,
 		)
