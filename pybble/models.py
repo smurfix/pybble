@@ -499,11 +499,13 @@ class User(Object):
 	
 	def last_visited(self,cls):
 		try:
-			return Breadcrumb.q.filter_by(owner=self,discr=cls.cls_discr()) \
+			r = Breadcrumb.q.filter_by(owner=self,discr=cls.cls_discr()) \
 			                   .order_by(Breadcrumb.visited.desc()) \
-			                   .first().parent
+			                   .first()
 		except NoResult:
 			return None
+		if r:
+			return r.parent
 	
 	def all_visited(self, cls=None):
 		if cls:
