@@ -282,9 +282,9 @@ for a,b in PERM.iteritems():
 			u = getattr(current_request,"user",None)
 			if not u:
 				raise ValidationError(u"Kein Benutzer")
-			if (current_request.user.can_do(obj, discr=obj.discriminator, want=a) < a) \
+			if (u.can_do(obj, discr=obj.discriminator, want=a) < a) \
 				if (a > PERM_NONE) \
-				else (current_request.user.can_do(obj, discr=obj.discriminator, want=a) != a):
+				else (u.can_do(obj, discr=obj.discriminator, want=a) != a):
 				raise ValidationError(u"Kein Zugriff auf Objekt '%s' (%s)" % (field.data,b))
 
 		def can_do(env, obj=None, discr=None):
@@ -294,22 +294,28 @@ for a,b in PERM.iteritems():
 					obj=None
 			if obj is None:
 				obj = env.get('obj',None)
+			u = getattr(current_request,"user",None)
+			if not u:
+				return False
 			if a > PERM_NONE:
-				return current_request.user.can_do(obj, discr=discr) >= a
+				return u.can_do(obj, discr=discr) >= a
 			elif a == PERM_ADD:
-				return current_request.user.can_do(obj, discr=obj.discriminator, new_discr=discr, want=a) == a
+				return u.can_do(obj, discr=obj.discriminator, new_discr=discr, want=a) == a
 			else:
-				return current_request.user.can_do(obj, discr=discr, want=a) == a
+				return u.can_do(obj, discr=discr, want=a) == a
 		can_do.contextfunction = 1 # Jinja
 
 		def will_do(env, obj=None):
 			if obj is None:
 				obj = env.vars['obj']
+			u = getattr(current_request,"user",None)
+			if not u:
+				raise AuthError(obj,a)
 			if a > PERM_NONE:
-				if current_request.user.can_do(obj) < a:
+				if u.can_do(obj) < a:
 					raise AuthError(obj,a)
 			else:
-				if current_request.user.can_do(obj, want=a) != a:
+				if u.can_do(obj, want=a) != a:
 					raise AuthError(obj,a)
 		will_do.contextfunction = 1 # Jinja
 
