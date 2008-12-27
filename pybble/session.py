@@ -39,11 +39,11 @@ def add_site(request):
 		url = 'http://%s%s' % (host[4:], request.get_full_path())
 		return HttpResponsePermanentRedirect(url)
 	try:
-		site = Site.q.get_by(domain=host)
+		site = Site.q.get_by(domain=host.decode("idna"))
 	except NoResult:
 		print "host '%s' ... not found!" % (host,)
 		try:
-			site = Site.q.get_by(id=1)
+			site = Site.q.filter_by(parent=None,superparent=None).order_by(Site.id).first()
 		except NoResult:
 			site = Site(domain=host,name='Unknown domain «%s%»' % (host,))
 		raise
