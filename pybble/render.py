@@ -279,6 +279,9 @@ for a,b in PERM.iteritems():
 	def can_do_closure(a,b):
 		def valid_do(form, field):
 			obj = obj_get(field.data)
+			u = getattr(current_request,"user",None)
+			if not u:
+				raise ValidationError(u"Kein Benutzer")
 			if (current_request.user.can_do(obj, discr=obj.discriminator, want=a) < a) \
 				if (a > PERM_NONE) \
 				else (current_request.user.can_do(obj, discr=obj.discriminator, want=a) != a):
