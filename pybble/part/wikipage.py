@@ -40,6 +40,8 @@ class WikiEditForm(Form):
 def newer(request, parent, name=None):
 	if parent is None:
 		parent = request.site
+	elif isinstance(parent.parent,WikiPage):
+		parent = parent.parent
 
 	form = WikiEditForm(request.form, prefix="wiki")
 	if request.method == 'POST' and form.validate():
@@ -80,9 +82,14 @@ def editor(request, obj=None):
 
 
 @expose("/wiki/<name>")
-def viewer(request, name):
+@expose("/wiki/<parent>/<name>")
+def viewer(request, name, parent=None):
 	try:
-		obj = WikiPage.q.get_by(name=name)
+		if parent and parent != name:
+			parent = WikiPage.q.get_by(name=name, parent=request.site)
+			obj = WikiPage.q.get_by(name=name, parent=parent)
+		else:
+			obj = WikiPage.q.get_by(name=name, parent=request.site)
 	except NoResult:
 		obj = request.user.last_visited(WikiPage)
 		if request.user.can_add(obj):

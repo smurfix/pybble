@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from jinja2 import Environment, BaseLoader, Markup, contextfunction
+from jinja2 import Environment, BaseLoader, Markup, contextfunction, contextfilter
 from werkzeug import cached_property, Response
 from werkzeug.http import parse_etags, remove_entity_headers
 from werkzeug.routing import Map, Rule
@@ -98,7 +98,18 @@ try:
 	                                      ('html_class', 'wiki') ]},
     	safe_mode = False
 	)
-	jinja_env.filters['markdown'] = lambda a: Markup(marker.convert(a))
+
+	@contextfilter
+	def convert(ctx,s):
+		b = "/wiki"
+		if "obj" in ctx:
+			if isinstance(obj.parent,WikiPage):
+				b += "/"+obj.parent.name
+			elif isinstance(obj,WikiPage):
+				b += "/"+obj.name
+		marker.inlinePatterns["wikilink"].config["base_url"][0] = b
+		s = lambda a: Markup(marker.convert(a))
+	jinja_env.filters['markdown'] = convert
 except TypeError: # old markdown
 	from markdown import markdown
 	jinja_env.filters['markdown'] = lambda a: Markup(markdown(a))
