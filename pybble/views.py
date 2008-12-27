@@ -142,7 +142,7 @@ def view_oid(request, oid):
 	else:
 		try:
 			if not isinstance(obj,Site) or obj == request.site:
-				return redirect(url_for('pybble.part.%s.viewer' % (obj.classname.lower(),), **args))
+				return redirect(url_for('pybble.part.%s.viewer' % (obj.classname.lower(),)))
 		except BuildError:
 			pass
 		args = {}
