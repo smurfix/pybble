@@ -6,7 +6,7 @@ from werkzeug.http import parse_etags, remove_entity_headers
 from werkzeug.routing import Map, Rule
 from werkzeug.utils import http_date
 from pybble.utils import current_request, local, random_string
-from pybble.models import PERM, PERM_NONE, PERM_ADD, Permission, obj_get, TemplateMatch, Template, \
+from pybble.models import PERM, PERM_NONE, PERM_ADD, Permission, obj_get, TemplateMatch, Template, WikiPage, \
 	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, StaticFile, obj_get, TM_DETAIL
 from pybble.database import NoResult
 from pybble.diff import textDiff
@@ -101,14 +101,15 @@ try:
 
 	@contextfilter
 	def convert(ctx,s):
-		b = "/wiki"
-		if "obj" in ctx:
+		b = "/wiki/"
+		obj = ctx.get("obj",None)
+		if obj:
 			if isinstance(obj.parent,WikiPage):
-				b += "/"+obj.parent.name
+				b += obj.parent.name+"/"
 			elif isinstance(obj,WikiPage):
-				b += "/"+obj.name
+				b += obj.name+"/"
 		marker.inlinePatterns["wikilink"].config["base_url"][0] = b
-		s = lambda a: Markup(marker.convert(a))
+		return Markup(marker.convert(s))
 	jinja_env.filters['markdown'] = convert
 except TypeError: # old markdown
 	from markdown import markdown

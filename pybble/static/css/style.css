@@ -49,11 +49,18 @@ div.comments div.content {
 	margin-left: 34px;
 	font-size: 0.9em;
 }
-div.comments div.content, div.subpage {
+div.comments div.content {
 	border-bottom-color:#ccc;
 	border-bottom-style:solid;
 	border-bottom-width:1px;
 	margin-bottom:2px;
+}
+
+div.comments {
+	border-top-color:#ccc;
+	border-top-style:solid;
+	border-top-width:1px;
+	margin-top:2px;
 }
 
 code ins {

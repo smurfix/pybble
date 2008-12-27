@@ -30,9 +30,8 @@
   {% endif %}
   {% if nc > 0 or can_add(d_comment) %}
   <div class="comments">
-  {% if can_read(d_comment) %}
     <ul class="SubTree">
-	  <li class="t_Comments collapsed" rel="{{ obj.oid() }}">
+	  <li class="t_Comments {% if nc>0 %}collapsed{% else %}terminal{% endif %}" rel="{{ obj.oid() }}">
 		<span class="image"></span>
 		<span href="#nogo" class="contents">
 			{%- if nc <= 0 -%}
@@ -45,7 +44,6 @@
 		</span>
 	  </li>
 	</ul>
-  {% endif %}
   </div>
   {% endif %}
 {% endblock %}

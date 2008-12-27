@@ -42,6 +42,7 @@ UL.SubTree SPAN.image {
 /* Core Styles */
 UL.SubTree LI.collapsed > SPAN.image { background: url(/static/img/arrow-right.png) left top no-repeat; }
 UL.SubTree LI.expanded > SPAN.image { background: url(/static/img/arrow-down.png) left top no-repeat; }
+UL.SubTree LI.terminal > SPAN.image { background: url(/static/img/green.png) left top no-repeat; }
 
 UL.SubTree LI.collapsed > SPAN.image:hover { background: url(/static/img/arrow-right-hl.png) left top no-repeat; }
 UL.SubTree LI.expanded > SPAN.image:hover { background: url(/static/img/arrow-down-hl.png) left top no-repeat; }

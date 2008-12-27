@@ -15,12 +15,12 @@ class NoRedir(BaseException):
 	pass
 
 def tryAddOn(obj,req, **kw):
-	try: hv = obj.url
+	try: hv = getattr(obj,"url_"+req)
 	except AttributeError: pass
 	else:
-		url = hv(req)
+		hv = hv()
 		if hv is not None:
-			return redirect(hv())
+			return redirect(hv)
 
 	try: hv = getattr(obj,req)
 	except AttributeError: pass
