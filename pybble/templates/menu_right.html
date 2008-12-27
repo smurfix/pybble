@@ -1,5 +1,6 @@
 <div class="menu right">
 	<ul>
+	  {% if USER -%}
 	  {% if USER.anon -%}
 		<li><a href="{{ url_for('pybble.login.register') }}" title="für neue Benutzer">Anmelden</a></li>
 		<li><a href="{{ url_for('pybble.login.do_login', next=url()) }}" title="für bereits registrierte Benutzer">Login</a></li>
@@ -36,6 +37,9 @@
 		<li>
 		  <a href="{{ url_for('pybble.login.do_logout') }}" title="Abmelden">Logout</a>
 		</li>
+	  {%- endif %}
+	  {%- else %}
+	    <li><span>(Error)</span></li>
 	  {%- endif %}
 	</ul>
 </div>
