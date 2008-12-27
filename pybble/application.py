@@ -527,9 +527,13 @@ You may continue on your own. ;-)
 			response.status_code = 403
 		except HTTPException, e:
 			response = e
+		except Exception, e:
+			print >>sys.stderr,repr(e)
+			raise
 		try:
 			add_response_headers(request,response)
-		except Exception:
+		except Exception, e:
+			print >>sys.stderr,repr(e)
 			raise
 		return ClosingIterator(response(environ, start_response),
 							   [db.session.remove, local_manager.cleanup])
