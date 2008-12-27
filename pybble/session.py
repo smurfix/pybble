@@ -13,6 +13,7 @@ from datetime import datetime,timedelta
 from pybble.models import User,Site
 from pybble.database import NoResult
 from pybble.decorators import ResultNotFound
+import sys
 
 class Session(SecureCookie):
 	@property
@@ -41,15 +42,9 @@ def add_site(request):
 	try:
 		site = Site.q.get_by(domain=host.decode("idna"))
 	except NoResult:
-		print "host '%s' ... not found!" % (host,)
-		try:
-			site = Site.q.filter_by(parent=None,superparent=None).order_by(Site.id).first()
-		except NoResult:
-			site = Site(domain=host,name='Unknown domain «%s%»' % (host,))
-		raise
+		print >>sys.stderr,"host '%s' ... not found!" % (host,)
+		site = Site(domain=host,name='Unknown domain «%s%»' % (host,))
 	finally:
-		if site is None:
-			raise
 		request.site = site
 
 def add_session(request):
