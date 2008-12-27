@@ -61,13 +61,13 @@ class DatabaseLoader(BaseLoader):
 		if isinstance(template,(Template,TemplateMatch)):
 			t = template
 		else:
-			s = current_request.site
+			site = current_request.site
 			t = None
-			while s:
-				try: t = Template.q.get_by(name=template)
+			while site:
+				try: t = Template.q.get_by(name=template,superparent=site)
 				except NoResult: pass
 				else: break
-				s = s.parent
+				site = s.parent
 			if t is None:
 				raise TemplateNotFound(template)
 		mtime = t.modified
