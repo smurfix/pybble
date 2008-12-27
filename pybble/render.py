@@ -355,7 +355,7 @@ def serve_path(request,path):
 	site = request.site
 	while site:
 		try:
-			sf = StaticFile.q.get_by(superparent=request.site, path=path)
+			sf = StaticFile.q.get_by(superparent=site, path=path)
 		except NoResult:
 			site = site.parent
 			if not site:
