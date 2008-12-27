@@ -140,14 +140,16 @@ def view_oid(request, oid):
 	except Exception,e:
 		return render_my_template(request, obj=obj, detail=TM_DETAIL_PAGE)
 	else:
+		try:
+			if not isinstance(obj,Site) or obj == request.site:
+				return redirect(url_for('pybble.part.%s.viewer' % (obj.classname.lower(),), **args))
+		except BuildError:
+			pass
 		args = {}
 		if "name" in v.func_code.co_varnames: args["name"]=name
 		if "oid"  in v.func_code.co_varnames: args["oid" ]=oid
-		try:
-			return redirect(url_for('pybble.part.%s.viewer' % (obj.classname.lower(),), **args))
-		except BuildError:
-			if "obj"  in v.func_code.co_varnames: args["obj" ]=obj
-			return v(request, **args)
+		if "obj"  in v.func_code.co_varnames: args["obj" ]=obj
+		return v(request, **args)
 
 @expose('/detail/<oid>')
 def detail_oid(request, oid):
