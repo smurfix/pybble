@@ -519,7 +519,7 @@ You may continue on your own. ;-)
 			response = handler(request, **values)
 			save_session(request,response)
 			db.session.commit()
-		except NotFound, e:
+		except (NotFound,NoResult), e:
 			response = views.not_found(request, request.url)
 			response.status_code = 404
 		except AuthError, e:
@@ -527,9 +527,6 @@ You may continue on your own. ;-)
 			response.status_code = 403
 		except HTTPException, e:
 			response = e
-		except Exception, e:
-			print >>sys.stderr,repr(e)
-			raise
 		try:
 			add_response_headers(request,response)
 		except Exception, e:
