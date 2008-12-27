@@ -67,7 +67,7 @@ class DatabaseLoader(BaseLoader):
 				try: t = Template.q.get_by(name=template,superparent=site)
 				except NoResult: pass
 				else: break
-				site = s.parent
+				site = site.parent
 			if t is None:
 				raise TemplateNotFound(template)
 		mtime = t.modified
