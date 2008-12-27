@@ -352,7 +352,15 @@ class Pagination(object):
 
 @expose("/static/<path:path>")
 def serve_path(request,path):
-	sf = StaticFile.q.get_by(superparent=request.site, path=path)
+	site = request.site
+	while site:
+		try:
+			sf = StaticFile.q.get_by(superparent=request.site, path=path)
+		except NoResult:
+			site = site.parent
+			if not site:
+				raise
+		break
 
 	if parse_etags(request.environ.get('HTTP_IF_NONE_MATCH')).contains(sf.hash):
 		r = Response("", mimetype=sf.mimetype)
