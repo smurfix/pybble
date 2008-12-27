@@ -43,7 +43,7 @@ def add_site(request):
 		site = Site.q.get_by(domain=host.decode("idna"))
 	except NoResult:
 		print >>sys.stderr,"host '%s' ... not found!" % (host,)
-		site = Site(domain=host,name='Unknown domain «%s%»' % (host,))
+		site = Site(domain=host,name='Unknown domain «%s»' % (host,))
 	finally:
 		request.site = site
 
