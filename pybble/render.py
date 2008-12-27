@@ -360,7 +360,8 @@ def serve_path(request,path):
 			site = site.parent
 			if not site:
 				raise
-		break
+		else:
+			break
 
 	if parse_etags(request.environ.get('HTTP_IF_NONE_MATCH')).contains(sf.hash):
 		r = Response("", mimetype=sf.mimetype)
