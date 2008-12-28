@@ -8,7 +8,7 @@ from time import time
 from random import random
 from werkzeug import cookie_date, get_host
 from werkzeug.contrib.securecookie import SecureCookie
-import settings
+from pybble import _settings as settings
 from datetime import datetime,timedelta
 from pybble.models import User,Site
 from pybble.database import NoResult

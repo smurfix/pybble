@@ -25,8 +25,3 @@ ADMIN="smurf@smurf.noris.de"
 
 ADDONS = ("demo",)
 
-### do not change
-try:
-	from localsettings import *
-except ImportError:
-	pass

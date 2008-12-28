@@ -13,7 +13,7 @@ from pybble.diff import textDiff
 from wtforms.validators import ValidationError
 from time import time
 from datetime import datetime,timedelta
-import settings
+from pybble import _settings as settings
 
 url_map = Map([Rule('/static/<file>', endpoint='static', build_only=True)])
 

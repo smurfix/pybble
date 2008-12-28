@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import settings
+from pybble import _settings as settings
 from werkzeug.debug import DebuggedApplication
 from flup.server.fcgi_fork import WSGIServer
 import sys

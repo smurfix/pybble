@@ -14,7 +14,7 @@ from sqlalchemy.sql import and_, or_, not_
 from pybble.decorators import add_to
 from werkzeug import import_string
 from jinja2.utils import Markup
-import settings
+from pybble import _settings as settings
 import sys,os
 
 DEBUG_ACCESS=False

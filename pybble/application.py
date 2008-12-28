@@ -21,7 +21,7 @@ from pybble.session import add_session, add_user, add_site, save_session, \
 	add_response_headers
 
 import StringIO
-import settings
+from pybble import _settings as settings
 import sys,os
 from datetime import datetime
 

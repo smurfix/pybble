@@ -7,7 +7,7 @@ from jinja2 import Environment, BaseLoader, Markup
 from werkzeug import Local, LocalManager, cached_property, import_string
 from werkzeug.exceptions import Unauthorized
 from time import time
-import settings
+from pybble import _settings as settings
 from markdown import Markdown
 import sys
 

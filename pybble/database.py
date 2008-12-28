@@ -2,7 +2,7 @@
 
 import os
 import sys
-import settings
+from pybble import _settings as settings
 
 from types import ModuleType, FunctionType
 from werkzeug import cached_property

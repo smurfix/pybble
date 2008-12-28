@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from werkzeug import script
-import settings
+from pybble import _settings as settings
 from werkzeug.debug import DebuggedApplication
 from pybble.utils import all_addons
 
