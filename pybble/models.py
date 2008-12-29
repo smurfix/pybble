@@ -240,8 +240,20 @@ class Object(db.Base):
 		return n
 
 	@property
-	def has_memberships(self):
-		return self.memberships.count()
+	def memberships(self):
+		for t in self._member_rules:
+			q={t.src:self}
+			for m in t.table.filter_by(**q):
+				yield m
+	_member_rules = []
+	class _rules(object):
+		def __init__(self, table,src,dst):
+			self.table = table
+			self.src = src
+			self.dst = dst
+	@classmethod
+	def new_member_rule(cls, table,src,dst):
+		cls._member_rules.append(cls._rules(table,src,dst))
 
 	@property
 	def has_permissions(self):
@@ -566,11 +578,27 @@ class User(Object):
 			pq = pq.filter(Permission.right >= 0)
 		if discr is None and obj and want < 0:
 			discr = obj.discriminator
+
 		if discr is not None:
-			discr = Discriminator.get(discr).id
+			if isinstance(discr,Discriminator):
+				discr = discr.id
+			elif isinstance(discr,type) and issubclass(discr,Object):
+				discr = discr.cls_discr()
+			elif isinstance(discr,Object):
+				discr = discr.classdiscr
+			else:
+				discr = Discriminator.get(discr).id
 			pq = pq.filter_by(discr=discr)
+
 		if new_discr is not None:
-			new_discr = Discriminator.get(new_discr).id
+			if isinstance(new_discr,Discriminator):
+				new_discr = new_discr.id
+			elif isinstance(new_discr,type) and issubclass(new_discr,Object):
+				new_discr = new_discr.cls_discr()
+			elif isinstance(new_discr,Object):
+				discr = new_discr.classdiscr
+			else:
+				new_discr = Discriminator.get(new_discr).id
 			pq = pq.filter_by(new_discr=new_discr)
 
 		ul = getattr(current_request.user,"_memberships",None)
@@ -583,7 +611,7 @@ class User(Object):
 				u = ulq.pop(0)
 				for m in u.memberships:
 					g = m.group
-					if m.excluded:
+					if getattr(m,"excluded",False):
 						uld.add(g)
 						continue
 					if g not in uld:
@@ -749,9 +777,7 @@ class Member(Object):
 
 Member.user = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.owner_id==Object.id))
 Member.group = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.parent_id==Object.id))
-
-Object.memberships = relation(Member, remote_side=Member.owner_id, uselist=True, primaryjoin=(Member.owner_id==Object.id)) 
-Object.members = relation(Member, remote_side=Member.parent_id, uselist=True, primaryjoin=(Member.parent_id==Object.id)) 
+Object.new_member_rule(Member.q, "owner","parent")
 
 class Permission(Object):
 	"""
@@ -966,9 +992,18 @@ class VerifierBase(db.Base,DbRepr):
 	@property
 	def _module(self):
 		if self._mod is None:
-			self._mod = import_string(self.cls)
+			self._mod = import_string(str(self.cls))
 		return self._mod
 
+	@staticmethod
+	def register(name, cls):
+		try:
+			v = VerifierBase.q.get_by(name=name)
+		except NoResult:
+			v=VerifierBase(name=name, cls=cls)
+			db.session.add(v)
+		else:
+			assert v.cls == cls
 
 class Verifier(Object):
 	"""

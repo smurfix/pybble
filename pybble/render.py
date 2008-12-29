@@ -42,7 +42,7 @@ def valid_access(o):
 		except Exception:
 			return # checked by others
 		else:
-			if not current_request.user.can_do(obj,obj.discriminator,want=right):
+			if not current_request.user.can_do(obj, discr=obj,want=right):
 				raise ValidationError(u"Das darfst du selbst nicht.")
 
 	return v_a
@@ -282,9 +282,9 @@ for a,b in PERM.iteritems():
 			u = getattr(current_request,"user",None)
 			if not u:
 				raise ValidationError(u"Kein Benutzer")
-			if (u.can_do(obj, discr=obj.discriminator, want=a) < a) \
+			if (u.can_do(obj, discr=obj, want=a) < a) \
 				if (a > PERM_NONE) \
-				else (u.can_do(obj, discr=obj.discriminator, want=a) != a):
+				else (u.can_do(obj, discr=obj, want=a) != a):
 				raise ValidationError(u"Kein Zugriff auf Objekt '%s' (%s)" % (field.data,b))
 
 		def can_do(env, obj=None, discr=None):
@@ -300,7 +300,7 @@ for a,b in PERM.iteritems():
 			if a > PERM_NONE:
 				return u.can_do(obj, discr=discr) >= a
 			elif a == PERM_ADD:
-				return u.can_do(obj, discr=obj.discriminator, new_discr=discr, want=a) == a
+				return u.can_do(obj, discr=obj, new_discr=discr, want=a) == a
 			else:
 				return u.can_do(obj, discr=discr, want=a) == a
 		can_do.contextfunction = 1 # Jinja
@@ -380,6 +380,11 @@ def serve_path(request,path):
 def download(request,oid,name=None):
 	obj = obj_get(oid)
 	r = Response(obj.content, mimetype=obj.mimetype)
+	if name:
+		n = obj.name
+		if obj.mime.ext:
+			n += "."+obj.mime.ext
+		assert n == name
 
 	if parse_etags(request.environ.get('HTTP_IF_NONE_MATCH')).contains(obj.hash):
 		r = Response("", mimetype=obj.mimetype)

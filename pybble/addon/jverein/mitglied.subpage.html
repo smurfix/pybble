@@ -1,0 +1,9 @@
+  <h2>Mitgliedschaftseintrag</h2>
+  <p>
+  	{% if obj.aktiv %}
+	{{ subline(obj.owner) }} ist Mitglied im Verein {{ subline(obj.parent) }}.
+	{% else %}
+	{{ subline(obj.owner) }} hat sich als Mitglied im Verein {{ subline(obj.parent) }} gemeldet.<br />
+	Diese ist aber noch nicht bestätigt.
+	{% endif %}
+  </p>

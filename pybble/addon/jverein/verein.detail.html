@@ -1,0 +1,8 @@
+  <h2>Verein „{{ obj.name }}“</h2>
+    <table>
+	  <tbody>
+		<tr><th>Name:</th><td>{{ obj.name }}</td></tr>
+		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid()) }}">{{ obj.oid() }}</a></td></tr>
+		<tr><th>Daten:</th><td>{{ obj.database }}</td></tr>
+	  </tbody>
+    </table>

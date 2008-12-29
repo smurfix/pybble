@@ -111,13 +111,9 @@ class AuthError(Unauthorized):
 
 def all_addons():
 	for n in settings.ADDONS:
-		try:
-			m = import_string("pybble.addon."+n)
-		except Exception,e:
-			print >>sys.stderr,"While trying to load %s: %s" % (n,e)
+		m = import_string("pybble.addon."+n)
+		if hasattr(m,"__ALL__"):
+			yield m
 		else:
-			if hasattr(m,"__ALL__"):
-				yield m
-			else:
-				print >>sys.stderr,"While trying to load %s: no export list ('__ALL__')" % (n,)
+			print >>sys.stderr,"While trying to load %s: no export list ('__ALL__')" % (n,)
 
