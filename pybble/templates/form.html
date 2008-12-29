@@ -6,7 +6,7 @@
 		  </td></tr><tr><td>&nbsp;</td><td>
 		    {%- set br=joiner("<br />") -%}
             {%- for e in field.errors %}
-              {{ br() }}<span class="error">{{e}}</span>
+              {{ br()|safe }}<span class="error">{{e}}</span>
             {%- endfor -%}
           {%- endif -%}
 		</td>
@@ -20,7 +20,7 @@
 		  </td></tr><tr><td>&nbsp;</td><td>
 		    {%- set br=joiner("<br />") -%}
             {%- for e in field.errors %}
-              {{ br() }}<span class="error">{{e}}</span>
+              {{ br()|safe }}<span class="error">{{e}}</span>
             {%- endfor -%}
           {%- endif -%}
 		</td>
@@ -33,7 +33,7 @@
 		  <td>
 		    {%- set br=joiner("<br />") -%}
             {%- for e in field.errors %}
-              {{ br() }}<span class="error">{{e}}</span>
+              {{ br()|safe }}<span class="error">{{e}}</span>
             {%- endfor -%}
 		</td>
       </tr>
