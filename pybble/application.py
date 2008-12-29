@@ -289,14 +289,7 @@ class Pybble(object):
 
 			db.session.flush()
 
-			try:
-				v = VerifierBase.q.get_by(name="register")
-			except NoResult:
-				v=VerifierBase(name="register",cls="pybble.login.verifier")
-				db.session.add(v)
-			else:
-				print "%s found." % v
-
+			VerifierBase.register("register","pybble.login.verifier")
 			db.session.flush()
 
 
