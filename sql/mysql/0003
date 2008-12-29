@@ -1,0 +1,27 @@
+Do("""ALTER TABLE bindata
+    DROP FOREIGN KEY `mimetype_id`""")
+Do("""ALTER TABLE deleted
+    DROP FOREIGN KEY `obj_super`,
+    DROP FOREIGN KEY `obj_owner`""")
+Do("""ALTER TABLE demo
+    DROP FOREIGN KEY `comment_id`""")
+Do("""ALTER TABLE groupmembers
+    DROP FOREIGN KEY `group_id`""")
+Do("""ALTER TABLE permissions
+    DROP FOREIGN KEY `obj_discr`,
+    DROP FOREIGN KEY `group_id`,
+    DROP FOREIGN KEY `obj_new_discr`""")
+Do("""CREATE TABLE verein (
+    `id` integer NOT NULL DEFAULT '',
+    `name` varchar(250) COLLATE utf8_general_ci DEFAULT NULL,
+    `database` varchar(30) COLLATE utf8_general_ci DEFAULT NULL,
+     PRIMARY KEY(`id`),
+     CONSTRAINT `verein_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
+Do("""CREATE TABLE verein_member (
+    `id` integer NOT NULL DEFAULT '',
+    `mitglied_id` integer DEFAULT NULL,
+    `aktiv` bool DEFAULT NULL,
+     PRIMARY KEY(`id`),
+     CONSTRAINT `vereinmember_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
+Do("""ALTER TABLE wanttracking
+    DROP FOREIGN KEY `group_id`""")
