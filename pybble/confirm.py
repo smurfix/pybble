@@ -5,6 +5,7 @@ from pybble.flashing import flash
 from pybble.models import Verifier, VerifierBase
 from pybble.database import db,NoResult
 from wtforms import Form, TextField, validators
+from werkzeug.exceptions import NotFound
 
 ###
 ### Confirm
@@ -35,4 +36,10 @@ def confirm(request, code=None):
 	return render_template('confirm.html', form=form, title_trace=[u"Bestätigung"])
 	
 	
-
+@expose('/admin/confirmed/<oid>')
+def confirmed(request, oid):
+	if request.method == 'POST':
+		obj = obj_get(oid)
+		if isinstance(obj,Verifier) and request.user.can_admin(obj.parent):
+			return v.entered()
+	raise NotFound()
