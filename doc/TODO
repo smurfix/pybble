@@ -1,3 +1,17 @@
+Email specific to wanttracking, link to that
+Hook usertrackers to wanttracking object
+
+translation lookaside objects
+language in path
+
+blog -- use zine?
+
+image object (sizes!)
+image gallery
+
+book list
+book reservation
+
 add user prefs how much to expand comments
 auto-open new comments
 show parents with fold-out when viewing single comments
@@ -18,6 +32,4 @@ User info editor
 OpenID
 
 Comments via email
-
-ability to translate stuff
 
