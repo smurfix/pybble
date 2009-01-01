@@ -1312,9 +1312,9 @@ Tracker.site = relation(Object, uselist=False, remote_side=Object.id, primaryjoi
 class UserTracker(Object):
 	"""\
 		Record that a change be reported to a user. This will be auto-built from Tracker and WantTracking objects.
-		Owner: the user in question.
-		Parent: The tracker object.
-		Superparent: The tracked object itself.
+		Owner: the user who owns the tracker.
+		Parent: The tracker object this is reporting on.
+		Superparent: the WantTracker that's responsible.
 		"""
 	__tablename__ = "usertracking"
 	__table_args__ = ({'useexisting': True})
@@ -1324,9 +1324,9 @@ class UserTracker(Object):
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey('obj.id',name="usertracker_id"), primary_key=True,autoincrement=False)
 
-	def __init__(self, user, tracker):
+	def __init__(self, user, tracker, want):
 		self.owner = user
-		self.superparent = tracker.superparent
+		self.superparent = want
 		self.parent = tracker
 
 	def __unicode__(self):
@@ -1350,8 +1350,6 @@ class UserTracker(Object):
 	def change_obj(self):
 		return self.parent.change_obj
 
-#UserTracker.tracker = relation(Tracker, remote_side=Tracker.id, uselist=False, primaryjoin=(Object.parent_id==Tracker.id), foreign_keys=(Tracker.id,UserTracker.parent_id))
-UserTracker.obj = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.superparent_id==Object.id))
 UserTracker.user = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.owner_id==Object.id))
 	
 

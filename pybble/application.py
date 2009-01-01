@@ -470,7 +470,7 @@ You may continue on your own. ;-)
 
 							if UserTracker.q.filter_by(owner=w.owner, parent=t).count():
 								continue
-							ut=UserTracker(user=w.owner,tracker=t)
+							ut=UserTracker(user=w.owner,tracker=t,want=w)
 							db.session.add(ut)
 							if w.email:
 								send_mail(ut.owner.email, 'tracker_email.txt',
