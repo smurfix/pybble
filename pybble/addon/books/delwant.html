@@ -1,0 +1,16 @@
+{% extends 'layout.html' %}
+{% from 'form.html' import show, showb %}
+
+{% block body %}
+  <h2>Bücherwunsch löschen</h2>
+  <p>
+  	Du willst das Buch „{{ book.title }}“ von {{ book.author }} nicht mehr ausleihen?
+  </p>
+  <p>
+  Dieses Buch gehört zum Bücherregal <a href="{{ url_for("pybble.views.detail_oid", oid=book.parent.oid()) }}">{{ book.parent.name }}</a>.
+  </p>
+<form>
+<input type="submit" value="Nein danke" />
+</form>
+
+{% endblock %}

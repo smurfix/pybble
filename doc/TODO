@@ -6,8 +6,9 @@ blog -- use zine?
 image object (sizes!)
 image gallery
 
-book list
-book reservation
+book reservation: notification emails
+book reservation: send-on verifiers and stuff
+book order
 
 add user prefs how much to expand comments
 auto-open new comments

@@ -1,0 +1,14 @@
+<h2>Bücherregal „{{ obj.name }}“</h2>
+<p>
+{{obj.info}}
+</p>
+<p>
+{% set n = obj.has_children(d_book) -%}
+{% if n == 0 -%}
+Das Regal ist leer.
+{% elif n == 1 -%}
+Das Regal enthält nur ein Buch.
+{% else -%}
+Im Regal befinden sich {{ n }} Bücher.
+{% endif %}
+</p>

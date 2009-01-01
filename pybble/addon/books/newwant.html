@@ -1,0 +1,26 @@
+{% extends 'layout.html' %}
+{% from 'form.html' import show, showb %}
+
+{% block body %}
+  <h2>Bücherwunsch</h2>
+  <p>
+  	Du willst das Buch „{{ book.title }}“ von {{ book.author }} ausleihen und lesen?
+  </p>
+  <p>
+  Dieses Buch gehört zum Bücherregal <a href="{{ url_for("pybble.views.detail_oid", oid=book.parent.oid()) }}">{{ book.parent.name }}</a>.<br />
+  {% if n == 0 %}
+  Momentan ist es bei <a href="{{ url_for("pybble.views.detail_oid", oid=book.superparent.oid()) }}">{{ book.superparent.name }}</a>, der benachrichtigt wird, es dir
+  zu schicken.
+  {% elif n == 1 %}
+  Momentan ist es bei <a href="{{ url_for("pybble.views.detail_oid", oid=book.superparent.oid()) }}">{{ book.superparent.name }}</a>. Vor dir will es noch
+  <a href="{{ url_for("pybble.views.detail_oid", oid=owner.oid()) }}">{{ owner.name }}</a> lesen, der es dann zu dir schickt.
+  {% else %}
+  Momentan ist es bei <a href="{{ url_for("pybble.views.detail_oid", oid=book.superparent.oid()) }}">{{ book.superparent.name }}</a>. Vor dir wollen es noch
+  {{ n }} Leute lesen. Der Letzte davon ist <a href="{{ url_for("pybble.views.detail_oid", oid=owner.oid()) }}">{{ owner.name }}</a>, der es zu dir weiterschicken wird.
+  {% endif %}
+  </p>
+<form method="post" action="{{ action }}">
+<input type="submit" value="Ja" />
+</form>
+
+{% endblock %}

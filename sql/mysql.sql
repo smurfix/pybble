@@ -32,6 +32,15 @@ CREATE TABLE verein_member (
 	PRIMARY KEY (id), 
 	 CONSTRAINT vereinmember_id FOREIGN KEY(id) REFERENCES obj (id)
 );
+CREATE TABLE books (
+	id INTEGER NOT NULL, 
+	title VARCHAR(250), 
+	author VARCHAR(250), 
+	upc VARCHAR(15), 
+	info TEXT, 
+	PRIMARY KEY (id), 
+	 CONSTRAINT book_id FOREIGN KEY(id) REFERENCES obj (id)
+);
 CREATE TABLE wanttracking (
 	id INTEGER NOT NULL, 
 	discr TINYINT, 
@@ -86,10 +95,10 @@ CREATE TABLE storage (
 	path VARCHAR(250) NOT NULL, 
 	url VARCHAR(250) NOT NULL, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT storage_id FOREIGN KEY(id) REFERENCES obj (id), 
 	 UNIQUE (url), 
-	 UNIQUE (path), 
-	 UNIQUE (name)
+	 CONSTRAINT storage_id FOREIGN KEY(id) REFERENCES obj (id), 
+	 UNIQUE (name), 
+	 UNIQUE (path)
 );
 CREATE TABLE sites (
 	id INTEGER NOT NULL, 
@@ -108,9 +117,15 @@ CREATE TABLE bindata (
 	hash VARCHAR(30) NOT NULL, 
 	timestamp TIMESTAMP, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT bindata_mimeid FOREIGN KEY(mime_id) REFERENCES mimetype (id), 
 	 CONSTRAINT bindata_id FOREIGN KEY(id) REFERENCES obj (id), 
+	 CONSTRAINT bindata_mimeid FOREIGN KEY(mime_id) REFERENCES mimetype (id), 
 	 UNIQUE (hash)
+);
+CREATE TABLE bookwant (
+	id INTEGER NOT NULL, 
+	requested DATETIME, 
+	PRIMARY KEY (id), 
+	 CONSTRAINT book_id FOREIGN KEY(id) REFERENCES obj (id)
 );
 CREATE TABLE templates (
 	id INTEGER NOT NULL, 
@@ -234,6 +249,13 @@ CREATE TABLE site_users (
 	 CONSTRAINT site_users_site FOREIGN KEY(site_id) REFERENCES obj (id), 
 	 UNIQUE (site_id, user_id), 
 	 CONSTRAINT site_users_user FOREIGN KEY(user_id) REFERENCES obj (id)
+);
+CREATE TABLE bookstore (
+	id INTEGER NOT NULL, 
+	name VARCHAR(250), 
+	info VARCHAR(250), 
+	PRIMARY KEY (id), 
+	 CONSTRAINT bookstore_id FOREIGN KEY(id) REFERENCES obj (id)
 );
 CREATE TABLE changes (
 	id INTEGER NOT NULL, 

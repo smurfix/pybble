@@ -1,0 +1,14 @@
+{% extends 'layout.html' %}
+{% from 'form.html' import show, showb %}
+
+{% block body %}
+  <h2>neues Bücherregal{% if name %} „{{ name }}“{% endif %}</h2>
+    <form method="post" action="{{ action }}">
+    <table>
+	  {{ show(form.name) }}
+	  {{ show(form.info) }}
+    </table>
+    <input type="submit" value="Speichern" />
+    </form>
+
+{% endblock %}
