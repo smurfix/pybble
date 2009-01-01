@@ -3,5 +3,5 @@
 *.pyc
 *.pyo
 tools/sql_diff.py
-./localsettings.py
-./pybble.db
+/localsettings.py
+/pybble.db
