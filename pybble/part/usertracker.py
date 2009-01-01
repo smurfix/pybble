@@ -1,20 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from werkzeug import redirect
-from werkzeug.exceptions import NotFound
-from pybble.utils import current_request, make_permanent
-from pybble.render import url_for, render_template, expose, render_my_template
-from pybble.models import Site, WikiPage, TM_DETAIL_PAGE, Tracker
-from pybble.views import view_oid
-
-from pybble.database import db,NoResult
-from pybble.flashing import flash
-from pybble.session import logged_in
-from wtforms import Form, BooleanField, TextField, TextAreaField, \
-	SelectField, PasswordField, HiddenField, validators
-from wtforms.validators import ValidationError
+from pybble.utils import current_request
+from pybble.render import render_template, expose
+from pybble.models import UserTracker
 from sqlalchemy.sql import and_, or_, not_
-from datetime import datetime
+
+from datetime import datetime,timedelta
+from time import time
 
 ###
 ### Tracking
@@ -22,7 +14,16 @@ from datetime import datetime
 
 @expose("/changes")
 def view_all(request):
-	return render_template("changelist.html",
-	                       changes=Tracker.q.filter_by(owner=request.user)\
-	                                        .order_by(Tracker.timestamp.desc()))
+	user = request.user
+	f = (UserTracker.owner == user)
+	last = request.session.get("chg_",None)
+	if last and time()-last[0] < 2*60:
+		if last[1]:
+			f = and_(f,UserTracker.tracker.timestamp < last[1])
+	else:
+		request.session["chg_"] = (int(time()), user.feed_read)
+		user.feed_read = datetime.utcnow()
+
+	r = render_template("changelist.html",
+	                       changes=f.order_by(UserTracker.id.desc()))
 	
