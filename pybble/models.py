@@ -511,20 +511,21 @@ class User(Object):
 			s.visited = datetime.utcnow()
 	
 	def last_visited(self,cls):
+		q = Breadcrumb.q.filter_by(owner=self)
+		if cls:
+			q = q.filter_by(discr=cls.cls_discr())
 		try:
-			r = Breadcrumb.q.filter_by(owner=self,discr=cls.cls_discr()) \
-			                   .order_by(Breadcrumb.visited.desc()) \
-			                   .first()
+			r = Breadcrumb.q.order_by(Breadcrumb.visited.desc()).first()
 		except NoResult:
 			return None
 		if r:
 			return r.parent
 	
 	def all_visited(self, cls=None):
+		q = Breadcrumb.q.filter_by(owner=self)
 		if cls:
-			return Breadcrumb.q.filter_by(owner=self,discr=cls.cls_discr()).order_by(Breadcrumb.visited.desc())
-		else:
-			return Breadcrumb.q.filter_by(owner=self).order_by(Breadcrumb.visited.desc())
+			q = q.filter_by(discr=cls.cls_discr())
+		return q.order_by(Breadcrumb.visited.desc())
 
 	def _get_verified(self):
 		
@@ -556,6 +557,27 @@ class User(Object):
 		except Exception:
 			return u"‹User %d:anon @ ???›" % (self.id,)
 
+	@property
+	def groups(self):
+		ul = getattr(self,"_memberships",None)
+		if ul is None:
+			ul = [self]
+			uld = set((self,))
+
+			ulq = [self]
+			while ulq:
+				u = ulq.pop(0)
+				for m in u.memberships:
+					g = m.group
+					if getattr(m,"excluded",False):
+						uld.add(g)
+						continue
+					if g not in uld:
+						ul.append(g)
+					ulq.append(g)
+					uld.add(g)
+			current_request.user._memberships = ul
+		return ul
 
 	def can_do(user,obj, discr=None, new_discr=None, want=None):
 		"""Recursively get the permission of this user for that (type of) object."""
@@ -602,25 +624,6 @@ class User(Object):
 				new_discr = Discriminator.get(new_discr).id
 			pq = pq.filter_by(new_discr=new_discr)
 
-		ul = getattr(current_request.user,"_memberships",None)
-		if ul is None:
-			ul = [user]
-			uld = set((user,))
-
-			ulq = [user]
-			while ulq:
-				u = ulq.pop(0)
-				for m in u.memberships:
-					g = m.group
-					if getattr(m,"excluded",False):
-						uld.add(g)
-						continue
-					if g not in uld:
-						ul.append(g)
-					ulq.append(g)
-					uld.add(g)
-			current_request.user._memberships = ul
-
 		no_inh = True
 
 		done = set()
@@ -630,7 +633,7 @@ class User(Object):
 			done.add(obj)
 
 			try:
-				p = pq.filter(or_(Permission.inherit != no_inh, Permission.inherit == None)).filter(or_(*(Permission.owner == u for u in ul))).filter_by(parent=obj).order_by(Permission.right.desc()).value(Permission.right)
+				p = pq.filter(or_(Permission.inherit != no_inh, Permission.inherit == None)).filter(or_(*(Permission.owner == u for u in user.groups))).filter_by(parent=obj).order_by(Permission.right.desc()).value(Permission.right)
 			except NoResult:
 				pass
 			else:

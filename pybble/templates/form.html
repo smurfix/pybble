@@ -12,6 +12,27 @@
 		</td>
       </tr>
 {% endmacro %}
+
+{% macro showoid(field,crumbs) -%}
+      <tr {%- if field.errors %} class="error" {%- endif -%} >
+        <th>{{ field.label|safe }}:</th>
+        <td>{{ field(**kwargs)|safe }}
+		  {% for o in crumbs %}
+		  	{% if loop.first %}<ul class="popup">{% endif %}
+			<li>{{ o.name }}</li>
+		  	{% if loop.last %}</ul>{% endif %}
+		  {% endfor %}
+          {%- if field.errors -%}
+		  </td></tr><tr><td>&nbsp;</td><td>
+		    {%- set br=joiner("<br />") -%}
+            {%- for e in field.errors %}
+              {{ br()|safe }}<span class="error">{{e}}</span>
+            {%- endfor -%}
+          {%- endif -%}
+		</td>
+      </tr>
+{% endmacro %}
+
 {% macro showb(field) -%}
       <tr {%- if field.errors %} class="error" {%- endif -%} >
 		<td>&nbsp;</td>

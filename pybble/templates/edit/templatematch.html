@@ -1,11 +1,11 @@
 {% extends 'layout.html' %}
-{% from 'form.html' import show %}
+{% from 'form.html' import show, showoid %}
 
 {% block body %}
   <h2>{% if not parent %}Edit{% else %}New{% endif %} template for {{ name_discr(form.discr.data) }} / {{ name_detail(form.detail.data) }}</h2>
     <form method="post" action="{{ action }}">
     <table>
-	  {{ show(form.oid) }}
+	  {{ showoid(form.oid,CRUMBS) }}
 	  {{ show(form.discr) }}
 	  {{ show(form.detail) }}
 	  {{ show(form.inherit) }}
