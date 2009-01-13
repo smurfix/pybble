@@ -871,6 +871,7 @@ class Site(Object):
 			name="Here be "+domain
 		self.domain=domain
 		self.name=name
+		self.owner = current_request.user
 
 	def __unicode__(self):
 		return u"‹Site ‚%s‘ @ %s›" % (self.name, self.domain)
