@@ -1,0 +1,9 @@
+  <h2>Buch gesucht</h2>
+    <table>
+	  <tbody>
+		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid()) }}">{{ obj.oid() }}</a></td></tr>
+		<tr><th>Buch:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.parent.oid()) }}">{{ obj.parent }}</a></td></tr>
+		<tr><th>Suchender:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.owner.oid()) }}">{{ obj.owner }}</a></td></tr>
+		<tr><th>Besitzer:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.superparent.oid()) }}">{{ obj.superparent }}</a></td></tr>
+	  </tbody>
+    </table>

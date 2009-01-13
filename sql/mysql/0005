@@ -1,0 +1,19 @@
+Do("""CREATE TABLE books (
+    `id` integer NOT NULL DEFAULT '',
+    `title` varchar(250) COLLATE utf8_general_ci DEFAULT NULL,
+    `author` varchar(250) COLLATE utf8_general_ci DEFAULT NULL,
+    `upc` varchar(15) COLLATE utf8_general_ci DEFAULT NULL,
+    `info` text COLLATE utf8_general_ci DEFAULT NULL,
+     PRIMARY KEY(`id`),
+     CONSTRAINT `book_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
+Do("""CREATE TABLE bookstore (
+    `id` integer NOT NULL DEFAULT '',
+    `name` varchar(250) COLLATE utf8_general_ci DEFAULT NULL,
+    `info` varchar(250) COLLATE utf8_general_ci DEFAULT NULL,
+     PRIMARY KEY(`id`),
+     CONSTRAINT `bookstore_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
+Do("""CREATE TABLE bookwant (
+    `id` integer NOT NULL DEFAULT '',
+    `requested` datetime DEFAULT NULL,
+     PRIMARY KEY(`id`),
+     CONSTRAINT `book_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")

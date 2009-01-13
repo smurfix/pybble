@@ -471,6 +471,7 @@ class User(Object):
 
 	feed_age = Column(TinyInteger, nullable=False, default=10)
 	feed_pass = Column(String(30), nullable=True)
+	feed_read = Column(DateTime, nullable=True)
 
 	def __init__(self, username, password=None):
 		self.username=username
@@ -510,20 +511,21 @@ class User(Object):
 			s.visited = datetime.utcnow()
 	
 	def last_visited(self,cls):
+		q = Breadcrumb.q.filter_by(owner=self)
+		if cls:
+			q = q.filter_by(discr=cls.cls_discr())
 		try:
-			r = Breadcrumb.q.filter_by(owner=self,discr=cls.cls_discr()) \
-			                   .order_by(Breadcrumb.visited.desc()) \
-			                   .first()
+			r = Breadcrumb.q.order_by(Breadcrumb.visited.desc()).first()
 		except NoResult:
 			return None
 		if r:
 			return r.parent
 	
 	def all_visited(self, cls=None):
+		q = Breadcrumb.q.filter_by(owner=self)
 		if cls:
-			return Breadcrumb.q.filter_by(owner=self,discr=cls.cls_discr()).order_by(Breadcrumb.visited.desc())
-		else:
-			return Breadcrumb.q.filter_by(owner=self).order_by(Breadcrumb.visited.desc())
+			q = q.filter_by(discr=cls.cls_discr())
+		return q.order_by(Breadcrumb.visited.desc())
 
 	def _get_verified(self):
 		
@@ -555,6 +557,27 @@ class User(Object):
 		except Exception:
 			return u"‹User %d:anon @ ???›" % (self.id,)
 
+	@property
+	def groups(self):
+		ul = getattr(self,"_memberships",None)
+		if ul is None:
+			ul = [self]
+			uld = set((self,))
+
+			ulq = [self]
+			while ulq:
+				u = ulq.pop(0)
+				for m in u.memberships:
+					g = m.group
+					if getattr(m,"excluded",False):
+						uld.add(g)
+						continue
+					if g not in uld:
+						ul.append(g)
+					ulq.append(g)
+					uld.add(g)
+			current_request.user._memberships = ul
+		return ul
 
 	def can_do(user,obj, discr=None, new_discr=None, want=None):
 		"""Recursively get the permission of this user for that (type of) object."""
@@ -601,25 +624,6 @@ class User(Object):
 				new_discr = Discriminator.get(new_discr).id
 			pq = pq.filter_by(new_discr=new_discr)
 
-		ul = getattr(current_request.user,"_memberships",None)
-		if ul is None:
-			ul = [user]
-			uld = set((user,))
-
-			ulq = [user]
-			while ulq:
-				u = ulq.pop(0)
-				for m in u.memberships:
-					g = m.group
-					if getattr(m,"excluded",False):
-						uld.add(g)
-						continue
-					if g not in uld:
-						ul.append(g)
-					ulq.append(g)
-					uld.add(g)
-			current_request.user._memberships = ul
-
 		no_inh = True
 
 		done = set()
@@ -629,7 +633,7 @@ class User(Object):
 			done.add(obj)
 
 			try:
-				p = pq.filter(or_(Permission.inherit != no_inh, Permission.inherit == None)).filter(or_(*(Permission.owner == u for u in ul))).filter_by(parent=obj).order_by(Permission.right.desc()).value(Permission.right)
+				p = pq.filter(or_(Permission.inherit != no_inh, Permission.inherit == None)).filter(or_(*(Permission.owner == u for u in user.groups))).filter_by(parent=obj).order_by(Permission.right.desc()).value(Permission.right)
 			except NoResult:
 				pass
 			else:
@@ -695,12 +699,17 @@ class User(Object):
 		                    .order_by(UserTracker.id.desc())
 
 	@property
+	def changes(self):
+		return Tracker.q.filter_by(owner=self).order_by(Tracker.timestamp.desc())
+
+	@property
 	def trackers(self):
-		return WantTracking.q.filter_by(user=current_request.user)
+		return WantTracking.q.filter_by(owner=self)
 
 	@property
 	def has_trackers(self):
-		return WantTracking.q.filter_by(user=current_request.user).count()
+		return WantTracking.q.filter_by(owner=self).count()
+
 
 @add_to(UserQuery)
 def get_anonymous_user(self, site):
@@ -1307,9 +1316,9 @@ Tracker.site = relation(Object, uselist=False, remote_side=Object.id, primaryjoi
 class UserTracker(Object):
 	"""\
 		Record that a change be reported to a user. This will be auto-built from Tracker and WantTracking objects.
-		Owner: the user in question.
-		Parent: The tracker object.
-		Superparent: The tracked object itself.
+		Owner: the user who owns the tracker.
+		Parent: The tracker object this is reporting on.
+		Superparent: the WantTracker that's responsible.
 		"""
 	__tablename__ = "usertracking"
 	__table_args__ = ({'useexisting': True})
@@ -1319,9 +1328,9 @@ class UserTracker(Object):
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey('obj.id',name="usertracker_id"), primary_key=True,autoincrement=False)
 
-	def __init__(self, user, tracker):
+	def __init__(self, user, tracker, want):
 		self.owner = user
-		self.superparent = tracker.superparent
+		self.superparent = want
 		self.parent = tracker
 
 	def __unicode__(self):
@@ -1341,7 +1350,10 @@ class UserTracker(Object):
 	def __repr__(self):
 		return self.__str__()
 
-UserTracker.obj = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.superparent_id==Object.id))
+	@property
+	def change_obj(self):
+		return self.parent.change_obj
+
 UserTracker.user = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.owner_id==Object.id))
 	
 
@@ -1486,7 +1498,7 @@ class MIMEext(db.Base):
 		return u"‹%s %s: %s %s›" % (self.__class__.__name__, self.id,self.ext,unicode(self.mime))
 	__repr__ = __str__
 
-MIMEext.mime = relation(MIMEtype, uselist=False, remote_side=MIMEtype.id, primaryjoin=(MIMEext.mime_id==MIMEtype.id))
+#MIMEext.mime = relation(MIMEtype, uselist=False, remote_side=MIMEtype.id, primaryjoin=(MIMEext.mime_id==MIMEtype.id))
 MIMEtype.exts = relation(MIMEext, uselist=True, remote_side=MIMEext.mime_id, primaryjoin=(MIMEext.mime_id==MIMEtype.id))
 
 class Storage(Object):

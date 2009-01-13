@@ -203,12 +203,14 @@ def render_my_template(request, obj, detail=None, mimetype=NotGiven, **context):
 def render_template(template, mimetype=NotGiven, **context):
 	if current_request:
 		from pybble.flashing import get_flashed_messages
+		user = getattr(current_request,"user",None)
 		context.update(
 			XHTML_DTD=Markup(get_dtd()),
 			# CURRENT_URL=current_request.build_absolute_uri(),
 			USER=getattr(current_request,"user",None),
 			MESSAGES=get_flashed_messages(),
 			SITE=current_request.site,
+			CRUMBS=(user.groups+list(p.parent for p in user.all_visited()[0:20])) if user else None,
 		)
 	r = jinja_env.get_template(template).render(**context)
 	if mimetype:

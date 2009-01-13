@@ -1,0 +1,9 @@
+  <h2>Buch gesucht</h2>
+    <table>
+	  <tbody>
+	    Der User <a href="{{ url_for("pybble.views.detail_oid", oid=obj.owner.oid()) }}">{{ obj.owner.name }}</a> will sich das Buch <a href="{{ url_for("pybble.views.detail_oid", oid=obj.parent.oid()) }}">„{{ obj.parent.title }}“</a> von {{ obj.parent.author }} ausleihen.
+		{%- if obj.parent.superparent != obj.superparent %}<br />
+		Momentan befindet es sich bei <a href="{{ url_for("pybble.views.detail_oid", oid=obj.parent.superparent.oid()) }}">{{ obj.parent.superparent.name }}</a>.<br />
+		{%- endif %}
+	  </tbody>
+    </table>

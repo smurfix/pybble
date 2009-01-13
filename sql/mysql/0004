@@ -1,0 +1,2 @@
+Do("""ALTER TABLE users
+    ADD COLUMN `feed_read` datetime NULL DEFAULT NULL""")

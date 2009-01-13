@@ -329,7 +329,7 @@ You may continue on your own. ;-)
 					(TM_DETAIL_HIERARCHY,"hierarchy"),
 					(TM_DETAIL_SNIPPET,"snippet")):
 					try:
-						data = open("pybble/templates/%s/%s.html" % (name,d.name.lower(),)).read()
+						data = open("pybble/templates/%s/%s.html" % (name,d.name.lower(),)).read().decode("utf-8")
 					except (IOError,OSError):
 						pass
 					else:
@@ -355,7 +355,7 @@ You may continue on your own. ;-)
 				except AttributeError: pass
 				else:
 					for t in at:
-						data = open(os.path.join(addon.__path__[0],t)).read()
+						data = open(os.path.join(addon.__path__[0],t)).read().decode("utf-8")
 						fn = "%s/%s" % (os.path.split(addon.__path__[0])[1],t)
 						try:
 							t = Template.q.get_by(name=fn,superparent=s)
@@ -382,7 +382,7 @@ You may continue on your own. ;-)
 						continue
 					for t,n in TM_DETAIL.items():
 						try:
-							data = open(os.path.join(addon.__path__[0],"%s.%s.html" % (cls.__name__.lower(),n.lower()))).read()
+							data = open(os.path.join(addon.__path__[0],"%s.%s.html" % (cls.__name__.lower(),n.lower()))).read().decode("utf-8")
 						except (IOError,OSError):
 							continue
 						else:
@@ -470,7 +470,7 @@ You may continue on your own. ;-)
 
 							if UserTracker.q.filter_by(owner=w.owner, parent=t).count():
 								continue
-							ut=UserTracker(user=w.owner,tracker=t)
+							ut=UserTracker(user=w.owner,tracker=t,want=w)
 							db.session.add(ut)
 							if w.email:
 								send_mail(ut.owner.email, 'tracker_email.txt',

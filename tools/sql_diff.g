@@ -214,6 +214,11 @@ class Field(object):
 				else: rp.append("!autoinc")
 
 		if self.defval is not NotGiven:
+			if self.defval == "":
+				if self.tname in INTs:
+					self.defval = "0"
+				elif self.tname == "datetime":
+					self.defval = "0000-00-00 00:00:00"
 			r += " DEFAULT " + valprint(self.defval)
 		if oc:
 			if self.defval != oc.defval:

@@ -1,0 +1,26 @@
+<h2>Buch „{{ obj.title }}“</h2>
+<p>
+Details:
+</p>
+<table>
+<tr><th>Titel:</th><td>{{ obj.title }}</td></tr>
+<tr><th>Autor:</th><td>{{ obj.author }}</td></tr>
+<tr><th>UPC:</th><td>{{ obj.upc }}</td></tr>
+</table>
+<div>{{obj.info|markdown}}</div>
+<h3>Ausleihwunschliste</h3>
+{% endif %}
+<p><a href="{{url_for("pybble.views.new_oid",oid=w.owner.oid())}}">{{w.owner.name}}</a> am {{w.requested}}.</p>
+{% else %}
+<i>keine Ausleihwünsche.</i>
+{% endfor %}
+</div>
+
+<div>
+<a href="{{url_for("pybble.views.new_oid",oid=obj.oid(), discr=d_bookwant)}}">Buch ausleihen</a>
+|
+<i>Bestell-Link folgt</i>
+</div>
+<div>
+{% for w in obj.wanted %}
+{% if loop.first %}
