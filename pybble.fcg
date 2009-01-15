@@ -7,17 +7,10 @@ from flup.server.fcgi_fork import WSGIServer
 import sys
 sys.path.insert(0,"/srv/www/pybble/")
 
-def res(x):
-	def r():
-		return x
-	return r
-
 from pybble.application import Pybble
 app = Pybble()
 if settings.SERVER_DEBUG:
 	app = DebuggedApplication(app, evalex=True, show_hidden_frames=True)
 
 WSGIServer(app, minSpare=3, maxSpare=8, maxChildren=8, debug=settings.SERVER_DEBUG).run()
-
-
 
