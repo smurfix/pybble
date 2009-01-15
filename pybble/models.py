@@ -766,18 +766,18 @@ class Member(Object):
 
 	def __unicode__(self):
 		p,s,o,d = self.pso
-		if self._rec_str or not self.owner or not self.parent: return super(Member,self).__unicode__()
+		if self._rec_str or not o or not p: return super(Member,self).__str__()
 		try:
 			self._rec_str = True
-			return u'‹%s%s %s: %s%s in %s›' % (d,self.__class__.__name__, self.id, unicode(self.owner), " NOT" if self.excluded else "", unicode(p))
+			return u'‹%s%s %s: %s%s in %s›' % (d,self.__class__.__name__, self.id, unicode(o), " NOT" if self.excluded else "", unicode(p))
 		finally:
 			self._rec_str = False
 	def __str__(self):
 		p,s,o,d = self.pso
-		if self._rec_str or not self.owner or not self.parent: return super(Member,self).__str__()
+		if self._rec_str or not o or not p: return super(Member,self).__str__()
 		try:
 			self._rec_str = True
-			return '<%s%s %s: %s%s in %s>' % (d,self.__class__.__name__, self.id, str(self.owner), " NOT" if self.excluded else "", str(p))
+			return '<%s%s %s: %s%s in %s>' % (d,self.__class__.__name__, self.id, str(o), " NOT" if self.excluded else "", str(p))
 		finally:
 			self._rec_str = False
 	def __repr__(self):
@@ -1042,6 +1042,26 @@ class Verifier(Object):
 		self.owner = user or obj
 		self.code = code or random_string(20,dash="-",dash_step=5)
 		self.timeout = datetime.utcnow() + timedelta((days or 10),0) ## ten days
+
+	def __unicode__(self):
+		p,s,o,d = self.pso
+		if self._rec_str or not p: return super(Member,self).__unicode__()
+		try:
+			self._rec_str = True
+			return u'‹%s%s %s: %s for %s›' % (d,self.__class__.__name__, self.id, self.base.name, unicode(p))
+		finally:
+			self._rec_str = False
+	def __str__(self):
+		p,s,o,d = self.pso
+		if self._rec_str or not p: return super(Member,self).__str__()
+		try:
+			self._rec_str = True
+			return '<%s%s %s: %s for %s>' % (d,self.__class__.__name__, self.id, self.base.name, str(p))
+		finally:
+			self._rec_str = False
+	def __repr__(self):
+		if not self.parent: return super(Member,self).__repr__()
+		return self.__str__()
 
 	@property
 	def expired(self):
