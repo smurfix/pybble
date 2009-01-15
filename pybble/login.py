@@ -152,7 +152,7 @@ class verifier(object):
 			return redirect(url_for("pybble.login.do_login"))
 	
 	@staticmethod
-	def confirmed(verified):
+	def confirmed(verifier):
 		u = verifier.parent
 		flash(u"Du bist jetzt verifiziert.", True)
 
