@@ -88,7 +88,7 @@ class Discriminator(db.Base,DbRepr):
 		elif discr is None and obj is not None:
 			return Discriminator.q.get_by(id=obj.discriminator)
 		else:
-			assert isinstance(discr, int),repr(discr)
+			assert isinstance(discr, (int,long)),repr(discr)
 			return Discriminator.q.get_by(id=discr)
 
 class Renderer(db.Base,DbRepr):

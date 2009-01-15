@@ -291,7 +291,7 @@ for a,b in PERM.iteritems():
 
 		def can_do(env, obj=None, discr=None):
 			if discr is None:
-				if isinstance(obj,int):
+				if isinstance(obj,(int,long)):
 					discr=obj
 					obj=None
 			if obj is None:
