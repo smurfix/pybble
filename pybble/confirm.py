@@ -49,7 +49,7 @@ def confirmed(request, oid):
 
 
 @expose('/admin/do_confirm/<oid>')
-def confirmed(request, oid):
+def do_confirm(request, oid):
 	if request.method == 'POST':
 		obj = obj_get(oid)
 		if isinstance(obj,Verifier) and request.user.can_admin(obj.parent):
