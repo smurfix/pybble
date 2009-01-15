@@ -142,9 +142,7 @@ class verifier(object):
 	def entered(verifier):
 		u = verifier.parent
 		if not u.is_verified(verifier.superparent):
-			print >>sys.stderr,"START veri"
 			u.add_verified(True,verifier.superparent)
-			print >>sys.stderr,"DIDIT veri"
 			return redirect(url_for("pybble.confirm.confirmed",oid=verified.oid()))
 
 		if current_request.user == u:
