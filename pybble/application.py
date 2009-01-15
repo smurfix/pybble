@@ -503,12 +503,11 @@ You may continue on your own. ;-)
 
 	def dispatch(self, environ, start_response):
 		local.application = self
-		local.session = create_session(bind=db.engine, autocommit=True, autoflush=False)
+		local.session = create_session(bind=db.engine.connect(), autocommit=True, autoflush=False)
 		request = Request(environ)
 		local.request = request
 		local.url_adapter = adapter = url_map.bind_to_environ(environ)
 		try:
-			print >>sys.stderr,"Session",id(local.session)
 			session.begin()
 			add_site(request)
 			add_session(request)
