@@ -6,9 +6,10 @@ from werkzeug.exceptions import HTTPException, NotFound, Unauthorized
 from pybble.utils import STATIC_PATH, local, local_manager, \
 	 TEMPLATE_PATH, AuthError, all_addons, session
 from pybble.render import expose_map, url_map, send_mail, expose
-from pybble.database import metadata, db, NoResult
+from pybble.database import metadata, db, NoResult, dsn
 from sqlalchemy.sql import and_, or_, not_
 from sqlalchemy.orm import create_session
+from sqlalchemy import create_engine
 
 import pybble.models
 import pybble.admin
@@ -503,7 +504,8 @@ You may continue on your own. ;-)
 
 	def dispatch(self, environ, start_response):
 		local.application = self
-		local.session = create_session(bind=db.engine.connect(), autocommit=True, autoflush=False)
+		engine = create_engine(dsn, pool_recycle=10, convert_unicode=True, echo=settings.DATABASE_DEBUG)
+		local.session = create_session(bind=engine, autocommit=True, autoflush=False)
 		request = Request(environ)
 		local.request = request
 		local.url_adapter = adapter = url_map.bind_to_environ(environ)
