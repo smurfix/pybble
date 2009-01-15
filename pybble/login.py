@@ -140,8 +140,20 @@ class verifier(object):
 	@staticmethod
 	def entered(verifier):
 		u = verifier.parent
-		u.verified = True
-		flash(u"Du bist jetzt verifiziert.")
+		if not u.verified:
+			u.verified = True
+			return redirect(url_for("pybble.confirm.confirmed",oid=verified.oid()))
+
+		flash(u"Du bist bereits verifiziert.")
+
+		if current_request.user == u:
+			return redirect(url_for("pybble.views.mainpage"))
+		else:
+			return redirect(url_for("pybble.login.do_login"))
+	
+	@staticmethod
+	def confirmed(verified):
+		flash(u"Du bist jetzt verifiziert.", True)
 
 		if current_request.user == u:
 			return redirect(url_for("pybble.views.mainpage"))

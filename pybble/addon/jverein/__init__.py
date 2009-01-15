@@ -237,7 +237,14 @@ class verifier(object):
 	@staticmethod
 	def entered(verifier):
 		obj = verifier.parent
-		obj.aktiv = True
+		if not obj.aktiv:
+			obj.aktiv = True
+			return redirect(url_for("pybble.confirm.confirmed",oid=verified.oid()))
+		flash(u"Du bist bereits als Mitglied aktiviert.")
+		return redirect(url_for("pybble.views.mainpage"))
+
+	@staticmethod
+	def confirmed(verifier):
 		flash(u"Du bist jetzt als Mitglied aktiviert.", True)
 
 		return redirect(url_for("pybble.views.mainpage"))

@@ -1055,6 +1055,10 @@ class Verifier(Object):
 		"""The user entered the code. Redirect to whatever."""
 		return self.base._module.entered(self,*a,**k)
 
+	def confirmed(self,*a,**k):
+		"""Confirmation page. Redirect to whatever."""
+		return self.base._module.confirmed(self,*a,**k)
+
 	def retry(self,*a,**k):
 		"""The user entered the code too late, or whaveter. Redirect to request page."""
 		return self.base._module.retry(self,*a,**k)
