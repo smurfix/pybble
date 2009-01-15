@@ -2,7 +2,7 @@
 
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
-from pybble.utils import current_request, make_permanent
+from pybble.utils import current_request, make_permanent, session
 from pybble.render import url_for, expose, render_template, send_mail
 from pybble.models import User, Verifier, VerifierBase
 from pybble.database import db,NoResult
@@ -108,7 +108,7 @@ def register(request):
 		u.record_creation()
 
 		v = verifier.new(u)
-		db.session.add(v)
+		session.add(v)
 		v.send()
 
 		flash(Markup(u"Wir haben soeben eine Email an dich geschickt. <br />" + \

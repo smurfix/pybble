@@ -21,6 +21,7 @@ URL_CHARS = 'abcdefghijkmpqrstuvwxyzABCDEFGHIJKLMNPQRST23456789'
 local = Local()
 local_manager = LocalManager([local])
 application = local('application')
+session = local('session') # current database session
 current_request = local('request')
 
 

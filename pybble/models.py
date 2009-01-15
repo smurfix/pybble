@@ -5,7 +5,7 @@ from sqlalchemy import Table, Column, String, Unicode, Boolean, DateTime, Intege
 	UniqueConstraint, Text
 from sqlalchemy.orm import relation,backref
 from sqlalchemy.sql import select,func
-from pybble.utils import random_string, current_request, AuthError
+from pybble.utils import random_string, current_request, AuthError, session
 from pybble.database import db, NoResult
 from sqlalchemy.databases.mysql import MSTinyInteger as TinyInteger
 from sqlalchemy.databases.mysql import MSSmallInteger as SmallInteger
@@ -309,7 +309,7 @@ class Object(db.Base):
 			This is done so that simply enumerating object IDs off the web pages wont work.
 			"""
 		if self.id is None:
-			db.session.flush()
+			session.flush()
 		return "%d.%d.%s" % (self.discriminator, self.id, 
 		                        md5(self.__class__.__name__ + str(self.id) + settings.SECRET_KEY)\
 		                            .digest().encode('base64').strip('\n =')[:10].replace("+","/-").replace("/","_"))
@@ -371,7 +371,7 @@ class Object(db.Base):
 
 	def record_creation(self):
 		"""Record the fact that a user created this object"""
-		db.session.add(self)
+		session.add(self)
 		Tracker(current_request.user,self)
 
 	def record_change(self,content=None,comment=None):
@@ -504,9 +504,9 @@ class User(Object):
 			s = q.get_by(parent=obj)
 		except NoResult:
 			for b in q.order_by(Breadcrumb.visited)[10:]:
-				db.session.delete(b)
+				session.delete(b)
 			b = Breadcrumb(self,obj)
-			db.session.add(b)
+			session.add(b)
 		else:
 			s.visited = datetime.utcnow()
 	
@@ -542,10 +542,10 @@ class User(Object):
 			m = Member.q.get_by(user=self,group=g)
 		except NoResult:
 			if v:
-				db.session.add(Member(user=self,group=g))
+				session.add(Member(user=self,group=g))
 		else:
 			if not v:
-				db.session.delete(m)
+				session.delete(m)
 	verified = property(_get_verified,_set_verified)
 				
 	def __unicode__(self):
@@ -676,7 +676,7 @@ class User(Object):
 			p.right = right
 		else:
 			p = Permission(user,obj,discr,right,inherit)
-			db.session.add(p)
+			session.add(p)
 
 	def forbid(user,obj, discr=None, inherit=None):
 		discr = Discriminator.get(discr,obj).id
@@ -685,7 +685,7 @@ class User(Object):
 		if len(p) > 0:
 			if inherit is None:
 				while p:
-					db.session.delete(p.pop())
+					session.delete(p.pop())
 				return
 			elif len(p) > 1 and p[1].inherit == inherit:
 				p = p[1]
@@ -950,10 +950,10 @@ class TemplateMatch(Object):
 		self.discr = Discriminator.get(discr,obj).id
 		self.detail = detail
 		self.data = data
-		db.session.add(self)
-		db.session.flush()
+		session.add(self)
+		session.flush()
 		self.parent = obj
-		db.session.flush()
+		session.flush()
 	
 	def __unicode__(self):
 		p,s,o,d = self.pso
@@ -1011,7 +1011,7 @@ class VerifierBase(db.Base,DbRepr):
 			v = VerifierBase.q.get_by(name=name)
 		except NoResult:
 			v=VerifierBase(name=name, cls=cls)
-			db.session.add(v)
+			session.add(v)
 		else:
 			assert v.cls == cls
 
@@ -1159,8 +1159,8 @@ class Change(Object):
 		self.data = data
 		self.comment = comment
 
-		db.session.add(self)
-		db.session.add(Tracker(user,self))
+		session.add(self)
+		session.add(Tracker(user,self))
 
 	def __unicode__(self):
 		p,s,o,d = self.pso
@@ -1219,8 +1219,8 @@ class Delete(Object):
 		self.superparent = obj.parent
 		self.old_superparent = obj.superparent
 
-		db.session.add(self)
-		db.session.add(Tracker(user,self))
+		session.add(self)
+		session.add(Tracker(user,self))
 
 	def __unicode__(self):
 		if self._rec_str or not self.owner or not self.parent: return super(Delete,self).__unicode__()
@@ -1269,7 +1269,7 @@ class Tracker(Object):
 		self.owner = user
 		self.parent = obj
 		self.superparent = site or current_request.site
-		db.session.add(self)
+		session.add(self)
 
 	def __unicode__(self):
 		if self._rec_str or not self.owner or not self.superparent: return super(Tracker,self).__unicode__()
@@ -1438,8 +1438,8 @@ def add_mime(name,typ,subtyp,ext):
 		t.typ = typ
 		t.subtyp = subtyp
 		t.ext = ext
-		db.session.add(t)
-		db.session.flush()
+		session.add(t)
+		session.flush()
 		return t
 	else:
 		assert name == t.name
@@ -1450,8 +1450,8 @@ def add_mime(name,typ,subtyp,ext):
 				tt = MIMEext()
 				tt.mime = t
 				tt.ext = ext
-				db.session.add(tt)
-				db.session.flush()
+				session.add(tt)
+				session.flush()
 		return t
 
 def mime_ext(ext):
@@ -1598,7 +1598,7 @@ class BinData(Object):
 
 	def _get_chars(self):
 		if self.id is None:
-			db.session.flush()
+			session.flush()
 			if self.id is None:
 				return "???"
 		id = self.id-1

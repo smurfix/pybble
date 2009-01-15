@@ -5,7 +5,7 @@ from pybble.database import db
 from pybble.models import Object
 from sqlalchemy import Column, Unicode, Integer, ForeignKey
 from wtforms import Form,TextField,validators
-from pybble.utils import current_request
+from pybble.utils import current_request,session
 from pybble.render import url_for, render_template
 
 __ALL__ = ("action_demo","Demo")

@@ -2,7 +2,7 @@
 
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
-from pybble.utils import current_request, make_permanent
+from pybble.utils import current_request, make_permanent, session
 from pybble.render import url_for, expose, render_template, valid_obj, \
 	discr_list
 from pybble.models import Template, TemplateMatch, Discriminator, \
@@ -67,7 +67,7 @@ def editor(request, obj=None, parent=None):
 		if parent:
 			obj = TemplateMatch(parent,int(form.discr.data),int(form.detail.data),form.page.data.replace("\r",""))
 			obj.record_creation()
-			db.session.flush()
+			session.flush()
 		else:
 			obj.record_change()
 			obj.data = form.page.data.replace("\r","")
@@ -75,7 +75,7 @@ def editor(request, obj=None, parent=None):
 		obj.discr = int(form.discr.data)
 		obj.detail = int(form.detail.data)
 		obj.inherit = inherit
-		db.session.flush()
+		session.flush()
 
 		flash(u"Gespeichert.",True)
 
@@ -89,7 +89,7 @@ def editor(request, obj=None, parent=None):
 			if m.count():
 				flash(u"Vorherige Assoziation(en) entfernt.")
 				for mm in m:
-					db.session.delete(mm)
+					session.delete(mm)
 		else:
 			if m.count():
 				flash(u"Bestehende Assoziation eingeschränkt.")

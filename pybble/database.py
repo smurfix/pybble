@@ -10,7 +10,7 @@ from sqlalchemy import MetaData, create_engine, Table, String, Boolean,\
     Integer, Column, Text, Float, ForeignKey, DateTime
 from sqlalchemy.types import TypeDecorator, MutableType
 from sqlalchemy.orm import scoped_session, create_session, relation, Query, \
-    MapperExtension, scoped_session
+    MapperExtension
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 from pybble.utils import local_manager
 
