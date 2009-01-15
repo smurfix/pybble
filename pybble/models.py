@@ -939,7 +939,6 @@ class TemplateMatch(Object):
 	"""
 		Associate a template to an object.
 		Parent: The object which the template is for.
-		Owner: The template this is associating.
 		"""
 	__tablename__ = "template_match"
 	__table_args__ = ({'useexisting': True})
@@ -965,22 +964,22 @@ class TemplateMatch(Object):
 	
 	def __unicode__(self):
 		p,s,o,d = self.pso
-		if self._rec_str or not o or not p: return super(TemplateMatch,self).__unicode__()
+		if self._rec_str or not p: return super(TemplateMatch,self).__unicode__()
 		try:
 			self._rec_str = True
 		finally:
-			return u'‹%s%s %s: %s for %s %s %s %s›' % (d,self.__class__.__name__, self.id, unicode(o),TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
+			return u'‹%s%s %s: %s %s %s %s›' % (d,self.__class__.__name__, self.id, TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
 			self._rec_str = False
 	def __str__(self):
 		p,s,o,d = self.pso
-		if self._rec_str or not o or not p: return super(TemplateMatch,self).__str__()
+		if self._rec_str or not p: return super(TemplateMatch,self).__str__()
 		try:
 			self._rec_str = True
-			return '<%s%s %s: %s for %s %s %s %s>' % (d,self.__class__.__name__, self.id, str(o),TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,str(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
+			return '<%s%s %s: %s %s %s %s>' % (d,self.__class__.__name__, self.id, TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,str(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
 		finally:
 			self._rec_str = False
 	def __repr__(self):
-		if not self.owner or not self.parent: return "'"+super(TemplateMatch,self).__repr__()+"'"
+		if not self.parent: return "'"+super(TemplateMatch,self).__repr__()+"'"
 		return "'"+self.__str__()+"'"
 
 TemplateMatch.obj = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.parent_id==Object.id))
