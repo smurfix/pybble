@@ -153,6 +153,7 @@ class verifier(object):
 	
 	@staticmethod
 	def confirmed(verified):
+		u = verifier.parent
 		flash(u"Du bist jetzt verifiziert.", True)
 
 		if current_request.user == u:
