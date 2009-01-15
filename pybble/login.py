@@ -126,6 +126,7 @@ class verifier(object):
 	@staticmethod
 	def new(user):
 		v=Verifier("register",user)
+		v.superparent = current_request.site
 		return v
 
 	@staticmethod
@@ -140,25 +141,33 @@ class verifier(object):
 	@staticmethod
 	def entered(verifier):
 		u = verifier.parent
-		if not u.verified:
-			u.verified = True
+		if not u.is_verified(verifier.superparent):
+			u.add_verified(True,verifier.superparent)
 			return redirect(url_for("pybble.confirm.confirmed",oid=verified.oid()))
 
-		flash(u"Du bist bereits verifiziert.")
 
 		if current_request.user == u:
+			flash(u"Du bist bereits verifiziert.")
+			return redirect(url_for("pybble.views.mainpage"))
+		elif not current_request.user.anon:
+			flash(u"Der User ist bereits verifiziert.")
 			return redirect(url_for("pybble.views.mainpage"))
 		else:
+			flash(u"Du bist bereits verifiziert, musst dich aber einloggen.")
 			return redirect(url_for("pybble.login.do_login"))
 	
 	@staticmethod
 	def confirmed(verifier):
 		u = verifier.parent
-		flash(u"Du bist jetzt verifiziert.", True)
 
 		if current_request.user == u:
+			flash(u"Du bist jetzt verifiziert.", True)
+			return redirect(url_for("pybble.views.mainpage"))
+		elif not current_request.user.anon:
+			flash(u"Der User ist jetzt verifiziert.", True)
 			return redirect(url_for("pybble.views.mainpage"))
 		else:
+			flash(u"Du bist jetzt verifiziert, musst dich aber noch einloggen.", True)
 			return redirect(url_for("pybble.login.do_login"))
 
 

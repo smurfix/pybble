@@ -527,26 +527,28 @@ class User(Object):
 			q = q.filter_by(discr=cls.cls_discr())
 		return q.order_by(Breadcrumb.visited.desc())
 
-	def _get_verified(self):
+	def is_verified(self, site=None):
 		
-		g = current_request.site
+		if site is None:
+			site = current_request.site
 		try:
-			m = Member.q.get_by(user=self,group=g)
+			m = Member.q.get_by(user=self,group=site)
 		except NoResult:
 			return False
 		else:
 			return not m.excluded
-	def _set_verified(self,v):
-		g = current_request.site
+	def add_verified(self,v,site=None):
+		if site is None:
+			site = current_request.site
 		try:
-			m = Member.q.get_by(user=self,group=g)
+			m = Member.q.get_by(user=self,group=site)
 		except NoResult:
 			if v:
-				session.add(Member(user=self,group=g))
+				session.add(Member(user=self,group=site))
 		else:
 			if not v:
 				session.delete(m)
-	verified = property(_get_verified,_set_verified)
+	verified = property(is_verified,add_verified)
 				
 	def __unicode__(self):
 		if self.username != "":
