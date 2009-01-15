@@ -504,8 +504,7 @@ You may continue on your own. ;-)
 
 	def dispatch(self, environ, start_response):
 		local.application = self
-		engine = create_engine(dsn, pool_recycle=10, convert_unicode=True, echo=settings.DATABASE_DEBUG)
-		local.session = create_session(bind=engine, autocommit=True, autoflush=False)
+		local.session = db.session()
 		request = Request(environ)
 		local.request = request
 		local.url_adapter = adapter = url_map.bind_to_environ(environ)
