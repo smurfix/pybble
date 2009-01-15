@@ -53,5 +53,5 @@ def do_confirm(request, oid):
 	if request.method == 'POST':
 		obj = obj_get(oid)
 		if isinstance(obj,Verifier) and request.user.can_admin(obj.parent):
-			return v.entered()
+			return obj.entered()
 	raise NotFound()
