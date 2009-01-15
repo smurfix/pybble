@@ -2,7 +2,7 @@
 
 from pybble.render import render_template, expose
 from pybble.flashing import flash
-from pybble.models import Verifier, VerifierBase
+from pybble.models import Verifier, VerifierBase, obj_get
 from pybble.database import db,NoResult
 from wtforms import Form, TextField, validators
 from werkzeug.exceptions import NotFound
