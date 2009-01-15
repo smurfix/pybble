@@ -26,14 +26,18 @@ class ConfirmForm(Form):
 @expose('/admin/confirm')
 @expose('/admin/confirm/<code>')
 def confirm(request, code=None):
-	form = ConfirmForm(request.values, prefix='confirm')
-	if request.method == 'POST' and form.validate():
-		v=Verifier.q.get_by(code=form.code.data.lower())
-		if v.expired:
-			flash(u"Die Anfrage ist schon zu alt. Bitte schicke sie nochmal ab!")
-			return v.retry()
-		return v.entered()
-	return render_template('confirm.html', form=form, title_trace=[u"Bestätigung"])
+	if code is None:
+		form = ConfirmForm(request.values, prefix='confirm')
+
+		if request.method != 'POST' or not form.validate():
+			return render_template('confirm.html', form=form, title_trace=[u"Bestätigung"])
+		code=form.code.data.lower()
+
+	v=Verifier.q.get_by(code=form.code.data.lower())
+	if v.expired:
+		flash(u"Die Anfrage ist schon zu alt. Bitte schicke sie nochmal ab!")
+		return v.retry()
+	return v.entered()
 	
 	
 @expose('/admin/confirmed/<oid>')
