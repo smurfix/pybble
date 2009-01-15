@@ -509,7 +509,6 @@ You may continue on your own. ;-)
 		local.request = request
 		local.url_adapter = adapter = url_map.bind_to_environ(environ)
 		try:
-			session.begin()
 			add_site(request)
 			add_session(request)
 			add_user(request)
