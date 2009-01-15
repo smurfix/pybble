@@ -40,5 +40,5 @@ def confirm(request, code=None):
 def confirmed(request, oid):
 	obj = obj_get(oid)
 	if isinstance(obj,Verifier):
-		return v.confirmed()
+		return obj.confirmed()
 	raise NotFound()
