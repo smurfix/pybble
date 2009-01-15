@@ -880,7 +880,7 @@ class Site(Object):
 			name="Here be "+domain
 		self.domain=domain
 		self.name=name
-		self.owner = current_request.user
+		self.owner = getattr(current_request,"user",None)
 
 	def __unicode__(self):
 		return u"‹Site ‚%s‘ @ %s›" % (self.name, self.domain)
