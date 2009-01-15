@@ -194,7 +194,7 @@ class BookWant(Object):
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 107}
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="book_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey('obj.id',name="bookwant_id"), primary_key=True,autoincrement=False)
 
 	requested = Column(DateTime,default=datetime.utcnow)
 

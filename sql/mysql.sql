@@ -125,7 +125,7 @@ CREATE TABLE bookwant (
 	id INTEGER NOT NULL, 
 	requested DATETIME, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT book_id FOREIGN KEY(id) REFERENCES obj (id)
+	 CONSTRAINT bookwant_id FOREIGN KEY(id) REFERENCES obj (id)
 );
 CREATE TABLE templates (
 	id INTEGER NOT NULL, 
