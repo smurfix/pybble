@@ -532,7 +532,7 @@ You may continue on your own. ;-)
 			print >>sys.stderr,repr(e)
 			raise
 		return ClosingIterator(response(environ, start_response),
-							   [session.remove, local_manager.cleanup])
+							   [local_manager.cleanup])
 
 	def __call__(self, environ, start_response):
 		return self.dispatch(environ, start_response)

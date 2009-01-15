@@ -539,12 +539,19 @@ class User(Object):
 	def add_verified(self,v,site=None):
 		if site is None:
 			site = current_request.site
+		print >>sys.stderr,"VER",repr(site),repr(self)
 		try:
 			m = Member.q.get_by(user=self,group=site)
 		except NoResult:
 			if v:
-				session.add(Member(user=self,group=site))
+				print >>sys.stderr,"NONE"
+				v = Member(user=self,group=site)
+				session.add(v)
+				print >>sys.stderr,"NONE",repr(v)
+			else:
+				print >>sys.stderr,"NO",v
 		else:
+			print >>sys.stderr,"GOT",repr(v)
 			if not v:
 				session.delete(m)
 	verified = property(is_verified,add_verified)
