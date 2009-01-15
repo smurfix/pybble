@@ -528,7 +528,6 @@ class User(Object):
 		return q.order_by(Breadcrumb.visited.desc())
 
 	def is_verified(self, site=None):
-		
 		if site is None:
 			site = current_request.site
 		try:
