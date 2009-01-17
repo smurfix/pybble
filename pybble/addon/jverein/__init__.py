@@ -27,7 +27,6 @@ def initsite(replace_templates):
 	VerifierBase.register("jverein","pybble.addon.jverein.verifier")
 	
 dbname_re = re.compile(r"^[a-zA-Z][_a-zA-Z0-9]+\.[a-zA-Z][_a-zA-Z0-9]+$")
-#dbname_re = re.compile(r"^[a-zA-Z][_a-zA-Z0-9]+$")
 def sel_ok(form, field):
 	if not dbname_re.match(field.data):
 		raise ValidationError("Dies ist kein Datenbankname")
@@ -44,7 +43,7 @@ def sel_ok(form, field):
 ## Verein: the base
 class VereinForm(Form):
 	name = TextField('Name', [validators.length(min=3, max=250)])
-	database = TextField('Database', [validators.length(min=10, max=30), sel_ok])
+	database = TextField('Database', [validators.length(min=3, max=30), sel_ok])
 
 class Verein(Object):
 	"""\
