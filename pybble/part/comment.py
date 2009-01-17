@@ -57,13 +57,7 @@ def newer(request, parent, name=None):
 		form.name.data = name
 		data = getattr(parent,"data",None) or ""
 		if data:
-			data = """\n
-<cite>
-
-%s
-
-</cite>
-""" % (data,)
+			data = "> "+data.rstrip().replace("\n","\n> ")+"\n"
 		form.page.data = data
 
 	return render_template('edit/comment.html', parent=parent, form=form, name=form.name.data, title_trace=[form.name.data])
