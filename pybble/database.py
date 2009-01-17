@@ -34,7 +34,7 @@ metadata = Base.metadata
 
 Model = declarative_base(metadata=metadata,
                          mapper=Session.mapper)
-#Model.query = session.query_property()
+#Model.query = db.session.query_property()
 
 from sqlalchemy.orm import exc as orm_exc
 

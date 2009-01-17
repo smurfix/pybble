@@ -6,7 +6,7 @@ from pybble.models import Object,User,obj_get, VerifierBase, Verifier
 from sqlalchemy import Column, Unicode, Integer, ForeignKey, String, Boolean
 from wtforms import Form,TextField,validators
 from wtforms.validators import ValidationError
-from pybble.utils import current_request,session
+from pybble.utils import current_request
 from pybble.render import url_for, render_template, valid_obj, valid_admin, send_mail
 from pybble.flashing import flash
 from jinja2 import Markup
@@ -100,7 +100,7 @@ database: %s
 				v = repr(v)
 			print "R",k,v
 			sel="id,email,vorname,name"
-			r = session.execute("select %s from %s where `%s` = %s" % (sel,parent.database, k,v)).fetchone()
+			r = db.session.execute("select %s from %s where `%s` = %s" % (sel,parent.database, k,v)).fetchone()
 			if r is None:
 				raise NoResult
 			for s in sel.split(","):
@@ -111,7 +111,7 @@ database: %s
 	
 	@property
 	def num_mitglieder(self):
-		return session.execute("select count(id) from %s where email is not null" % (self.database,)).fetchone()[0]
+		return db.session.execute("select count(id) from %s where email is not null" % (self.database,)).fetchone()[0]
 
 	@property
 	def num_reg_mitglieder(self):

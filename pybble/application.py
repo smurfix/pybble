@@ -4,12 +4,11 @@ from __future__ import with_statement
 from werkzeug import Request, ClosingIterator
 from werkzeug.exceptions import HTTPException, NotFound, Unauthorized
 from pybble.utils import STATIC_PATH, local, local_manager, \
-	 TEMPLATE_PATH, AuthError, all_addons, session
+	 TEMPLATE_PATH, AuthError, all_addons
 from pybble.render import expose_map, url_map, send_mail, expose
 from pybble.database import metadata, db, NoResult, dsn
 from sqlalchemy.sql import and_, or_, not_
 from sqlalchemy.orm import create_session
-from sqlalchemy import create_engine
 
 import pybble.models
 import pybble.admin
@@ -79,8 +78,7 @@ class Pybble(object):
 			from pybble import utils
 			from werkzeug import Request
 
-			local.session = create_session(bind=db.engine, autocommit=True, autoflush=False)
-			session.begin()
+			session = db.session
 			
 			for rn in ("markdown",):
 				rc = "pybble.render.render_"+rn

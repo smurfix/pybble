@@ -5,7 +5,7 @@ from sqlalchemy import Table, Column, String, Unicode, Boolean, DateTime, Intege
 	UniqueConstraint, Text
 from sqlalchemy.orm import relation,backref
 from sqlalchemy.sql import select,func
-from pybble.utils import random_string, current_request, AuthError, session
+from pybble.utils import random_string, current_request, AuthError
 from pybble.database import db, NoResult
 from sqlalchemy.databases.mysql import MSTinyInteger as TinyInteger
 from sqlalchemy.databases.mysql import MSSmallInteger as SmallInteger

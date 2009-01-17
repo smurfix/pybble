@@ -2,7 +2,7 @@
 
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
-from pybble.utils import current_request, make_permanent, session
+from pybble.utils import current_request, make_permanent
 from pybble.render import url_for, expose, render_template, valid_obj, \
 	discr_list, valid_admin,valid_access,valid_read
 from pybble.models import Template, TemplateMatch, Discriminator, \
@@ -74,7 +74,7 @@ def editor(request, obj=None, parent=None):
 			if m.count():
 				flash(u"Vorherige Berechtigung(en) entfernt.")
 				for mm in m:
-					session.delete(mm)
+					db.session.delete(mm)
 		else:
 			if m.count():
 				flash(u"Vorherige Berechtigung(en) entfernt.")
