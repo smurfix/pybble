@@ -3,7 +3,7 @@
 
 from pybble import _settings as settings
 from werkzeug.debug import DebuggedApplication
-from flup.server.fcgi_fork import WSGIServer
+from flup.server.fcgi import WSGIServer
 import sys
 sys.path.insert(0,"/srv/www/pybble/")
 
@@ -12,5 +12,5 @@ app = Pybble()
 if settings.SERVER_DEBUG:
 	app = DebuggedApplication(app, evalex=True, show_hidden_frames=True)
 
-WSGIServer(app, minSpare=3, maxSpare=8, maxChildren=8, debug=settings.SERVER_DEBUG).run()
+WSGIServer(app, minSpare=3, maxSpare=8, debug=settings.SERVER_DEBUG).run()
 
