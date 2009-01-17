@@ -63,7 +63,7 @@ else
 	echo $VERSION > $VFILE
 fi
 
-python manage.py initsite_replace -d pybble.smurf.noris.de || exit 1
+python manage.py initsite -d pybble.smurf.noris.de || exit 1
 rm -r pybble/static pybble/templates
 
 # Kill FCGIs
