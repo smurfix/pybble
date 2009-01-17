@@ -56,6 +56,10 @@ class Pybble(object):
 
 	def __init__(self):
 		local.application = self
+		self.addons = []
+		for addon in all_addons():
+			self.addons.append(addon)
+
 
 	def init_database(self):
 		def action():
@@ -92,10 +96,6 @@ class Pybble(object):
 							r.cls = rc
 
 			db.session.flush()
-
-			addons = []
-			for addon in all_addons():
-				addons.append(addon)
 
 			for k,v in Object.__mapper__.polymorphic_map.iteritems():
 				v=v.class_
@@ -235,7 +235,7 @@ class Pybble(object):
 				db.session.add(p)
 
 			# View templates
-			for addon in addons:
+			for addon in self.addons:
 				for cls in addon.__dict__.values():
 					if not(isinstance(cls,type) and issubclass(cls,Object)):
 						continue
@@ -346,7 +346,7 @@ You may continue on your own. ;-)
 									t.data = data
 					db.session.flush()
 
-			for addon in addons:
+			for addon in self.addons:
 				try: ai = addon.initsite
 				except AttributeError: pass
 				else: ai(replace_templates)
