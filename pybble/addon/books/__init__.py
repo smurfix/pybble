@@ -5,7 +5,7 @@ from pybble.database import db, NoResult
 from pybble.models import Object
 from sqlalchemy import Column, String, Text, Unicode, Integer, DateTime, ForeignKey
 from wtforms import Form,TextField,TextAreaField,validators
-from pybble.utils import current_request,session
+from pybble.utils import current_request
 from pybble.render import url_for, render_template
 from datetime import datetime
 
