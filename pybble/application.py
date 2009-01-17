@@ -78,22 +78,20 @@ class Pybble(object):
 			from pybble import utils
 			from werkzeug import Request
 
-			session = db.session
-			
 			for rn in ("markdown",):
 				rc = "pybble.render.render_"+rn
 				try:
 					r = Renderer.q.get_by(name=rn)
 				except NoResult:
 					r = Renderer(rn,rc)
-					session.add(r)
+					db.session.add(r)
 				else:
 					if r.cls != rc:
 						print "Warning: Renderer '%s' differs (%s | %s)." % (rn,r.cls,rc)
 						if replace_templates:
 							r.cls = rc
 
-			session.flush()
+			db.session.flush()
 
 			addons = []
 			for addon in all_addons():
@@ -106,18 +104,18 @@ class Pybble(object):
 					o=Discriminator.q.get_by(id=k)
 				except NoResult:
 					o=Discriminator(v)
-					session.add(o)
+					db.session.add(o)
 				else:
 					if o.name != v.__name__:
 						raise ValueError("Discriminator '%d' pointed at '%s', now '%s'!" % (k,o.name,v.__name__))
-			session.flush()
+			db.session.flush()
 
 			domain=domain.decode("utf-8")
 			try:
 				s=Site.q.get_by(domain=domain)
 			except NoResult:
 				s=Site(domain,name=name)
-				session.add(s)
+				db.session.add(s)
 			else:
 				print u"%s found." % s
 
@@ -127,16 +125,16 @@ class Pybble(object):
 			for ext,typ,name in extensions:
 				typ,subtyp = typ.split("/",1)
 				add_mime(name,typ,subtyp,ext)
-			session.flush()
+			db.session.flush()
 
 			try:
 				st = Storage.q.get_by(name=u"Test")
 			except NoResult:
 				st = Storage("Test","/var/tmp/testkram","localhost:5000/static")
-				session.add(st)
+				db.session.add(st)
 			else:
 				st.superparent = s
-			session.flush()
+			db.session.flush()
 
 			try:
 				u=User.q.get_one(and_(User.sites.contains(s), User.username==u"root"))
@@ -144,16 +142,16 @@ class Pybble(object):
 				u=User(u"root")
 				u.email=settings.ADMIN
 				u.sites.append(s)
-				session.add(u)
+				db.session.add(u)
 			else:
 				print u"%s found." % u
 
-			session.flush()
+			db.session.flush()
 			u.verified=True
 			u.parent = s
-			session.flush()
+			db.session.flush()
 			s.owner = u
-			session.flush()
+			db.session.flush()
 			utils.current_request.user = u
 
 			def add_files(dir,path):
@@ -174,21 +172,21 @@ class Pybble(object):
 							sb = BinData.lookup(content)
 						except NoResult:
 							sb = BinData(st,f[:dot],f[dot+1:],content)
-							session.add(sb)
+							db.session.add(sb)
 							sb.save()
 
 						try:
 							sf = StaticFile.q.get_by(path=dp,superparent=s)
 						except NoResult:
 							sf = StaticFile(dp,sb)
-							session.add(sf)
+							db.session.add(sf)
 						else:
 							if content != sf.content:
 								print "Warning: StaticFile '%s' differs." % (dp,)
 								if replace_templates:
-									session.delete(sf)
+									db.session.delete(sf)
 									sf = StaticFile(dp,sb)
-									session.add(sf)
+									db.session.add(sf)
 
 
 			add_files(os.path.join(u"pybble",u"static"),u"")
@@ -200,21 +198,21 @@ class Pybble(object):
 				a.owner = u
 				a.superparent = s
 				a.sites.append(s)
-				session.add(a)
+				db.session.add(a)
 			else:
 				print u"%s found." % a
 
-			session.flush()
+			db.session.flush()
 			a.verified=False
 
-			session.flush()
+			db.session.flush()
 
 			for d in Discriminator.q.all():
 				if Permission.q.filter(and_(Permission.discr==d.id,Permission.right>=0)).count():
 					continue
 				p=Permission(u, s, d, PERM_ADMIN)
 				p.superparent=s
-				session.add(p)
+				db.session.add(p)
 
 			dw = Discriminator.q.get_by(name="WikiPage")
 			ds = Discriminator.q.get_by(name="Site")
@@ -226,7 +224,7 @@ class Pybble(object):
 					continue
 				p=Permission(a, s, d, PERM_READ)
 				p.superparent=s
-				session.add(p)
+				db.session.add(p)
 
 			for d,e in ((ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk)):
 				if Permission.q.filter(Permission.new_discr==e.id).count():
@@ -234,7 +232,7 @@ class Pybble(object):
 				p=Permission(u, s, d, PERM_ADD)
 				p.new_discr=e.id
 				p.superparent=s
-				session.add(p)
+				db.session.add(p)
 
 			# View templates
 			for addon in addons:
@@ -248,14 +246,14 @@ class Pybble(object):
 					p=Permission(u, s, ds, PERM_ADMIN)
 					p.new_discr=cls.cls_discr()
 					p.superparent=s
-					session.add(p)
+					db.session.add(p)
 
 					p=Permission(u, s, ds, PERM_ADD)
 					p.new_discr=cls.cls_discr()
 					p.superparent=s
-					session.add(p)
+					db.session.add(p)
 
-			session.flush()
+			db.session.flush()
 
 			def get_template(fn):
 				with file(os.path.join(TEMPLATE_PATH,fn)) as f:
@@ -270,7 +268,7 @@ class Pybble(object):
 				except NoResult:
 					t = Template(name=fn,data=data,parent=s)
 					t.owner = u
-					session.add(t)
+					db.session.add(t)
 				else:
 					if t.data != data:
 						print "Warning: Template '%s' differs." % (fn,)
@@ -290,10 +288,10 @@ class Pybble(object):
 					continue
 				get_template(os.path.join("edit",fn))
 
-			session.flush()
+			db.session.flush()
 
 			VerifierBase.register("register","pybble.login.verifier")
-			session.flush()
+			db.session.flush()
 
 
 			try:
@@ -309,7 +307,7 @@ There's also a [[SubPage]] somewhere.
 """)
 				w.owner=u
 				w.parent=s
-				session.add(w)
+				db.session.add(w)
 			try:
 				ww = WikiPage.q.get_by(name="SubPage")
 			except NoResult:
@@ -323,9 +321,9 @@ You may continue on your own. ;-)
 """)
 				ww.owner=u
 				ww.parent=w
-				session.add(ww)
+				db.session.add(ww)
 
-			session.flush()
+			db.session.flush()
 			for d in Discriminator.q.all():
 				for detail,name in ((TM_DETAIL_SUBPAGE,"view"),
 					(TM_DETAIL_DETAIL,"details"),
@@ -340,13 +338,13 @@ You may continue on your own. ;-)
 							t = TemplateMatch.q.get_by(obj=s, discr=d.id, detail=detail)
 						except NoResult:
 							t = TemplateMatch(obj=s, discr=d.id, detail=detail, data=data)
-							session.add(t)
+							db.session.add(t)
 						else:
 							if t.data != data:
 								print "Warning: AssocTemplate '%s/%s.html' differs." % (name,d.name.lower())
 								if replace_templates:
 									t.data = data
-					session.flush()
+					db.session.flush()
 
 			for addon in addons:
 				try: ai = addon.initsite
@@ -366,7 +364,7 @@ You may continue on your own. ;-)
 							t = Template(name=fn,data=data)
 							t.superparent = s
 							t.owner = u
-							session.add(t)
+							db.session.add(t)
 						else:
 							if t.data != data:
 								print "Warning: Template '%s' differs." % (fn,)
@@ -375,7 +373,7 @@ You may continue on your own. ;-)
 							if replace_templates:
 								t.superparent = s
 								t.owner = u
-					session.flush()
+					db.session.flush()
 
 				# View templates
 				for cls in addon.__dict__.values():
@@ -393,14 +391,14 @@ You may continue on your own. ;-)
 								t = TemplateMatch.q.get_by(obj=s, discr=cls.cls_discr(), detail=t)
 							except NoResult:
 								t = TemplateMatch(obj=s, discr=cls.cls_discr(), detail=t, data=data)
-								session.add(t)
+								db.session.add(t)
 							else:
 								if t.data != data:
 									print "Warning: AddOn-Template %s: '%s.%s.html' differs." % (addon.__name__, cls.__name__, n.lower())
 									if replace_templates:
 										t.data = data
 
-			session.commit()
+			db.session.commit()
 			print "Your root user is named '%s' and has the password '%s'." % (u.username, u.password)
 		return action
 
@@ -474,7 +472,7 @@ You may continue on your own. ;-)
 							if UserTracker.q.filter_by(owner=w.owner, parent=t).count():
 								continue
 							ut=UserTracker(user=w.owner,tracker=t,want=w)
-							session.add(ut)
+							db.session.add(ut)
 							if w.email:
 								send_mail(ut.owner.email, 'tracker_email.txt',
 									tracker=ut.parent, user=ut.owner, site=s, watcher=w, obj=t.change_obj)
@@ -486,7 +484,7 @@ You may continue on your own. ;-)
 
 					if not u:
 						s.tracked=t.timestamp
-				session.commit()
+				db.session.commit()
 
 		return action
 
@@ -494,7 +492,7 @@ You may continue on your own. ;-)
 		def action(script=("s")):
 			"""Run a script on the database."""
 			def Do(stmt):
-				session.execute(stmt)
+				db.session.execute(stmt)
 
 			execfile(script, globals(),locals())
 
@@ -515,7 +513,7 @@ You may continue on your own. ;-)
 			handler = expose_map[endpoint]
 			response = handler(request, **values)
 			save_session(request,response)
-			session.commit()
+			db.session.commit()
 		except (NotFound,NoResult), e:
 			response = views.not_found(request, request.url)
 			response.status_code = 404
