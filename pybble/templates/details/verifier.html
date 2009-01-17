@@ -14,8 +14,8 @@
 		<tr><th>Timeout:</th><td>{% if obj.timeout %}{{ obj.timeout }}
 		                         {%- else %}(kein Timeout){% endif %}</td></tr>
 	    {%- if USER.can_admin(obj.parent) %}
-		<tr><tr>Auslöser:</th><td>
-		  <form action="{{ url_for("pybble.confirm.do_confirm", oid=obj.oid()) }}">
+		<tr><th>Auslöser:</th><td>
+		  <form action="{{ url_for("pybble.confirm.do_confirm", oid=obj.oid()) }}" method="post">
 		    <input type="Submit">Code-Eingabe simulieren</input>
 		  </form>
 		</td></tr>
