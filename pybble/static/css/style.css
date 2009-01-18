@@ -167,8 +167,8 @@ div.body p {
 }
 
 div.body ul {
-    margin: 1em 0 1em 0;
-    padding: 0;
+    margin: 0;
+    padding: 0 1em;
     list-style: none;
 }
 
