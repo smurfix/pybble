@@ -46,7 +46,12 @@ def newer(request, parent, name=None):
 	form = WikiEditForm(request.form, prefix="wiki")
 	if request.method == 'POST' and form.validate():
 		obj = WikiPage(form.name.data,form.page.data.replace("\r",""))
-		obj.superparent = request.site
+		if isinstance(parent,Site):
+			obj.superparent = parent
+		elif isinstance(parent.parent,Site):
+			obj.superparent = parent.parent
+		else:
+			obj.superparent = request.site
 		obj.parent = parent
 		obj.record_creation()
 		flash(u"Wiki-Seite '%s' gespeichert." % (obj.name), True)
