@@ -245,6 +245,12 @@ class Object(db.Base):
 			q={t.src:self}
 			for m in t.table.filter_by(**q):
 				yield m
+	@property
+	def members(self):
+		for t in self._member_rules:
+			q={t.dst:self}
+			for m in t.table.filter_by(**q):
+				yield m
 	_member_rules = []
 	class _rules(object):
 		def __init__(self, table,src,dst):
