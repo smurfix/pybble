@@ -53,6 +53,7 @@ def newer(request, parent, name=None):
 		else:
 			obj.superparent = request.site
 		obj.parent = parent
+		obj.owner = request.user
 		obj.record_creation()
 		flash(u"Wiki-Seite '%s' gespeichert." % (obj.name), True)
 		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
