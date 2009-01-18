@@ -289,6 +289,18 @@ for a,b in PERM.iteritems():
 				else (u.can_do(obj, discr=obj, want=a) != a):
 				raise ValidationError(u"Kein Zugriff auf Objekt '%s' (%s)" % (field.data,b))
 
+		def valid_do_self(form, field):
+			obj = obj_get(field.data)
+			u = getattr(current_request,"user",None)
+			if not u:
+				raise ValidationError(u"Kein Benutzer")
+			if u is obj:
+				return
+			if (u.can_do(obj, discr=obj, want=a) < a) \
+				if (a > PERM_NONE) \
+				else (u.can_do(obj, discr=obj, want=a) != a):
+				raise ValidationError(u"Kein Zugriff auf Objekt '%s' (%s)" % (field.data,b))
+
 		def can_do(env, obj=None, discr=None):
 			if discr is None:
 				if isinstance(obj,(int,long)):
@@ -321,11 +333,12 @@ for a,b in PERM.iteritems():
 					raise AuthError(obj,a)
 		will_do.contextfunction = 1 # Jinja
 
-		return can_do,will_do,valid_do
-	c,d,e = can_do_closure(a,b)
+		return can_do,will_do,valid_do,valid_do_self
+	c,d,e,f = can_do_closure(a,b)
 	jinja_env.globals['can_' + b.lower()] = c
 	jinja_env.globals['will_' + b.lower()] = d
 	globals()['valid_' + b.lower()] = e
+	globals()['valid_' + b.lower() + '_self'] = f
 
 
 class Pagination(object):
