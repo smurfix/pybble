@@ -521,12 +521,12 @@ class User(Object):
 		else:
 			s.visited = datetime.utcnow()
 	
-	def last_visited(self,cls):
+	def last_visited(self,cls=None):
 		q = Breadcrumb.q.filter_by(owner=self)
 		if cls:
 			q = q.filter_by(discr=cls.cls_discr())
 		try:
-			r = Breadcrumb.q.order_by(Breadcrumb.visited.desc()).first()
+			r = q.order_by(Breadcrumb.visited.desc()).first()
 		except NoResult:
 			return None
 		if r:
