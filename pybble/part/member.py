@@ -37,9 +37,11 @@ def editor(request, obj=None, parent=None):
 			obj = Member(user, group)
 			obj.record_creation()
 		else:
+			data = obj.data
 			obj.owner = user
 			obj.parent = group
 			obj.excluded = excluded
+			obj.record_change(data)
 
 		flash(u"Gespeichert.",True)
 

@@ -776,6 +776,14 @@ class Member(Object):
 		self.parent = group
 		self.excluded = False
 
+	@property
+	def data(self):
+		return """\
+User: %s
+Group: %s
+Member: %s
+""" % (self.owner, self.parent, "Yes" if not self.excluded else "No")
+
 	def __unicode__(self):
 		p,s,o,d = self.pso
 		if self._rec_str or not o or not p: return super(Member,self).__str__()
