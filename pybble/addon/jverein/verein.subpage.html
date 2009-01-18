@@ -1,5 +1,12 @@
   <h2>Verein</h2>
   <p>
-    Dies sind die Seiten des Vereins „{{ obj.name }}“.
+    Dies ist die Webseite des Vereins „{{ obj.name }}“.
   </p>
   <p>Er hat {{ obj.num_mitglieder }} Mitglieder; davon sind {{ obj.num_reg_mitglieder }} hier registriert.</p>
+  {% if obj in USER.groups %}
+  <p>Du bist Vereinsmitglied.</p>
+  {% else %}
+  <p>Du bist nicht als Mitglied des Vereins registriert.<br />
+  <a href="{{ url_for("pybble.views.new_oid", oid=obj.oid(), discr=d_mitglied) }}">Hier</a> kannst du dich registrieren.
+  </p>
+  {% endif %}

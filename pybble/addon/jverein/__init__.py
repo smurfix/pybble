@@ -10,6 +10,7 @@ from pybble.utils import current_request
 from pybble.render import url_for, render_template, valid_obj, valid_admin, send_mail
 from pybble.flashing import flash
 from jinja2 import Markup
+from pybble import _settings as settings
 
 import re,sys
 
@@ -26,12 +27,15 @@ def action_verein():
 def initsite(replace_templates):
 	VerifierBase.register("jverein","pybble.addon.jverein.verifier")
 	
-dbname_re = re.compile(r"^[a-zA-Z][_a-zA-Z0-9]+\.[a-zA-Z][_a-zA-Z0-9]+$")
+if settings.DATABASE_TYPE == "sqlite":
+	dbname_re = re.compile(r"^[a-zA-Z][_a-zA-Z0-9]+$")
+else:
+	dbname_re = re.compile(r"^[a-zA-Z][_a-zA-Z0-9]+\.[a-zA-Z][_a-zA-Z0-9]+$")
 def sel_ok(form, field):
 	if not dbname_re.match(field.data):
 		raise ValidationError("Dies ist kein Datenbankname")
 	try:
-		r = db.session.execute("select count(id) from %s where email is not null" % (field.data,))
+		r = db.session.execute("select count(id) from %s where email is not null and austritt is null and kuendigung is null" % (field.data,))
 	except NoResult:
 		raise ValidationError("Diese Tabelle ist leer")
 	except Exception,e:
@@ -102,15 +106,15 @@ database: %s
 			r = db.session.execute("select %s from %s where `%s` = %s" % (sel,parent.database, k,v)).fetchone()
 			if r is None:
 				raise NoResult
-			for s in sel.split(","):
-				setattr(self,s,r.pop(0))
+			for s,t in zip(sel.split(","),r):
+				setattr(self,s,t)
 
 	def mitglied_data(self, k,v):
 		return self._mitglied_data(self, k,v)
 	
 	@property
 	def num_mitglieder(self):
-		return db.session.execute("select count(id) from %s where email is not null" % (self.database,)).fetchone()[0]
+		return db.session.execute("select count(id) from %s where email is not null and austritt is null and kuendigung is null" % (self.database,)).fetchone()[0]
 
 	@property
 	def num_reg_mitglieder(self):
@@ -201,7 +205,7 @@ class Mitglied(Object):
 					u"Klicke auf den darin enhaltenen Link oder tippe den Bestätigungscode hier ein."))
 
 				v = verifier.new(obj)
-				session.add(v)
+				db.session.add(v)
 				v.send()
 				return redirect(url_for("pybble.confirm.confirm"))
 		
@@ -238,7 +242,7 @@ class verifier(object):
 		obj = verifier.parent
 		if not obj.aktiv:
 			obj.aktiv = True
-			return redirect(url_for("pybble.confirm.confirmed",oid=verified.oid()))
+			return redirect(url_for("pybble.confirm.confirmed",oid=verifier.oid()))
 		flash(u"Du bist bereits als Mitglied aktiviert.")
 		return redirect(url_for("pybble.views.mainpage"))
 
