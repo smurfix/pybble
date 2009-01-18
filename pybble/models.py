@@ -479,6 +479,15 @@ class User(Object):
 			password = random_string(9)
 		self.password=password
 		self.first_login = datetime.utcnow()
+		db.session.add(self)
+
+		if not self.anon:
+			try:
+				m = Member(self,current_request.site.anon_user)
+			except (AttributeError,RuntimeError):
+				pass
+			else:
+				db.session.add(m)
 	
 	@property
 	def anon(self):
@@ -885,7 +894,15 @@ class Site(Object):
 			self.owner = current_request.user
 		except (AttributeError,RuntimeError):
 			self.owner = None
+		db.session.add(self)
+		u = User("","")
+		u.superparent = self
+		db.session.add(u)
 
+	@property
+	def anon_user(self):
+		return User.q.get_by(superparent=self,password="")
+		
 	def __unicode__(self):
 		return u"‹Site ‚%s‘ @ %s›" % (self.name, self.domain)
 
