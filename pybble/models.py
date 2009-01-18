@@ -17,7 +17,7 @@ from jinja2.utils import Markup
 from pybble import _settings as settings
 import sys,os
 
-DEBUG_ACCESS=False
+DEBUG_ACCESS=settings.ACCESS_DEBUG
 
 """Max ID of built-in tables; the rest are extensions"""
 MAX_BUILTIN = 42
