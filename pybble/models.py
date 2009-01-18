@@ -251,6 +251,13 @@ class Object(db.Base):
 			q={t.dst:self}
 			for m in t.table.filter_by(**q):
 				yield m
+	@property
+	def members_count(self):
+		n = 0
+		for t in self._member_rules:
+			q={t.dst:self}
+			n += t.table.filter_by(**q).count()
+		return n
 	_member_rules = []
 	class _rules(object):
 		def __init__(self, table,src,dst):
