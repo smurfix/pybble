@@ -1431,7 +1431,6 @@ class WantTracking(Object):
 		self.track_new = False
 		self.track_mod = False
 		self.track_del = False
-		self.inherit = None
 	
 	def __unicode__(self):
 		p,s,o,d = self.pso
