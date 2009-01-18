@@ -367,6 +367,8 @@ class Object(db.Base):
 	def uptree(self):
 		while self:
 			yield self
+			if isinstance(self,Site) and not current_request.user.can_admin(self):
+				return
 			self = self.parent
 
 	def record_creation(self):
