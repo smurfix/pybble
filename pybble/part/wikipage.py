@@ -69,8 +69,9 @@ def editor(request, obj=None):
 	form = WikiEditForm(request.form, prefix="wiki")
 	form.obj = obj
 	if request.method == 'POST' and form.validate():
-		if obj.data != form.page.data:
+		if obj.data != form.page.data or obj.name != form.name.data:
 			obj.record_change(comment=form.comment.data)
+			obj.name = form.name.data
 			obj.data = form.page.data.replace("\r","")
 			obj.modified = datetime.utcnow()
 
