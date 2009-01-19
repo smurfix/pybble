@@ -233,9 +233,15 @@ class Object(db.Base):
 
 	@property
 	def site(self):
+		found = set()
 		while self:
 			if isinstance(self,Site):
 				return self
+
+			if self in found:
+				return None
+			found.add(self)
+
 			if self.deleted:
 				try:
 					d = Delete.q.get_by(parent=self)
@@ -244,7 +250,7 @@ class Object(db.Base):
 				else:
 					self = d.superparent
 			else:
-				self = self.parent
+				self = self.parent or self.superparent
 
 	@property
 	def has_templates(self, discriminator=None):
