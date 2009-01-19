@@ -1,0 +1,21 @@
+  <h2>Löschung</h2>
+    <table>
+	  <tbody>
+		<tr><th>Löschung:</th><td>{{ obj }}</td></tr>
+		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid()) }}">{{ obj.oid() }}</a></td></tr>
+		<tr><th>User:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.owner.oid()) }}">{{ obj.owner }}</a> ({{ obj.owner.oid() }})</td></tr>
+		<tr><th>Objekt:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.parent.oid()) }}">{{ obj.parent }}</a> ({{ obj.parent.oid() }})</td></tr>
+		<tr><th>Zeitpunkt:</th><td>{{ obj.timestamp }}</td></tr>
+		{%- if obj.superparent %}
+		<tr><th>Parent:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.superparent.oid()) }}">{{ obj.superparent }}</a> ({{ obj.superparent.oid() }})</td></tr>
+		{%- endif %}
+		{%- if obj.old_superparent %}
+		<tr><th>SuperParent:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.old_superparent.oid()) }}">{{ obj.old_superparent }}</a> ({{ obj.old_superparent.oid() }})</td></tr>
+		{%- endif %}
+		{%- if obj.old_owner %}
+		<tr><th>Owner:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.old_owner.oid()) }}">{{ obj.old_owner }}</a> ({{ obj.old_owner.oid() }})</td></tr>
+		{%- endif %}
+		<tr><th>Kommentar:</th><td>{{ obj.comment }}</td></tr>
+
+	  </tbody>
+    </table>
