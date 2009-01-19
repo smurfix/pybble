@@ -295,7 +295,7 @@ class Pybble(object):
 
 
 			try:
-				w = WikiPage.q.get_by(name="MainPage")
+				w = WikiPage.q.get_by(name="MainPage",parent=s)
 			except NoResult:
 				w = WikiPage("MainPage","""\
 Hello
@@ -309,7 +309,7 @@ There's also a [[SubPage]] somewhere.
 				w.parent=s
 				db.session.add(w)
 			try:
-				ww = WikiPage.q.get_by(name="SubPage")
+				ww = WikiPage.q.get_by(name="SubPage",parent=w)
 			except NoResult:
 				ww = WikiPage("SubPage","""\
 Hello
