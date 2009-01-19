@@ -72,7 +72,7 @@ class DatabaseLoader(BaseLoader):
 				raise TemplateNotFound(template)
 		mtime = t.modified
 		return (t.data,
-				"//db/%s/%s/%s" % (t.__class__.__name__,t.superparent.domain,getattr(t,"name",t.oid())),
+				"//db/%s/%s/%s" % (t.__class__.__name__,(t.superparent or current_request.site).domain,getattr(t,"name",t.oid())),
 				lambda: False ) # t.modified != mtime) 
 	
 jinja_env = Environment(loader=DatabaseLoader(), autoescape=True)
