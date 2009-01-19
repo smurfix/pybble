@@ -501,6 +501,7 @@ You may continue on your own. ;-)
 	def dispatch(self, environ, start_response):
 		local.application = self
 		local.session = db.session()
+		local.session.rollback() # basic protection
 		request = Request(environ)
 		local.request = request
 		local.url_adapter = adapter = url_map.bind_to_environ(environ)
