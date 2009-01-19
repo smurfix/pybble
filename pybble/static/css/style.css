@@ -67,27 +67,6 @@ code ins {
 	color: green;
 }
 
-blockquote {
-	border-left: 2px solid gray;
-	border-style: solid;
-	border-width: 0 0 0 2px;
-	margin: 0 15px;
-	padding: 0 0 0 4px;
-}
-
-blockquote h1 {
-	font-size:1.3em;
-	text-align:left;
-}
-blockquote h2 {
-	font-size:1.2em;
-	text-align:left;
-}
-blockquote h3, blockquote h4, blockquote h5, blockquote h6 {
-	font-size:1.3em;
-	text-align:left;
-}
-
 th.top {
 	vertical-align: top;
 }
@@ -204,3 +183,25 @@ div.error {
 div.pagination {
     font-size: 13px;
 }
+
+blockquote {
+	border-left: 2px solid gray;
+	border-style: solid;
+	border-width: 0 0 0 2px;
+	margin: 0 15px;
+	padding: 0 0 0 4px;
+}
+
+blockquote h1 {
+	font-size:1.3em;
+	text-align:left;
+}
+blockquote h2 {
+	font-size:1.2em;
+	text-align:left;
+}
+blockquote h3, blockquote h4, blockquote h5, blockquote h6 {
+	font-size:1.3em;
+	text-align:left;
+}
+
