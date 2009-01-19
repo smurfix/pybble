@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0">
   <channel>
-    <title>Changes to {{SITE.name}} for {{user.name}}</title>
+    <title>Changes to {{SITE.name}} for {{USER.name}}</title>
     <link>http://{{SITE.domain}}</link>
     <language>de-de</language>
     <pubDate>{{ now }}</pubDate>
@@ -9,7 +9,7 @@
     <generator>PyBBle</generator>
     <ttl>300</ttl>
  
-{% for item in user.tracks %}
+{% for item in USER.tracks %}
     <item>
       <title>{{ item }}</title>
       <link>{{ url_for('pybble.views.view_oid',oid=item.oid(),_external=True) }}</link>
