@@ -391,10 +391,8 @@ class Object(db.Base):
 
 	def record_change(self,content=None,comment=None):
 		"""Record the fact that a user changed this object, and why"""
-		print "REC",repr(self),repr(content),repr(comment)
 		if content is None:
 			content = self.data
-			print "REC",repr(self),repr(content),repr(comment)
 		Change(current_request.user,self,content,comment)
 
 	def record_deletion(self,comment=None):
