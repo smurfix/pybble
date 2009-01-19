@@ -14,7 +14,6 @@ from wtforms.validators import ValidationError
 from time import time
 from datetime import datetime,timedelta
 from pybble import _settings as settings
-import sys
 
 url_map = Map([Rule('/static/<file>', endpoint='static', build_only=True)])
 
@@ -65,18 +64,16 @@ class DatabaseLoader(BaseLoader):
 			site = current_request.site
 			t = None
 			while site:
-				print >>sys.stderr,"TEMPL",template,site
 				try: t = Template.q.get_by(name=template,superparent=site)
 				except NoResult: pass
 				else: break
 				site = site.parent
 			if t is None:
 				raise TemplateNotFound(template)
-			print >>sys.stderr,"TEMPL","OK"
 		mtime = t.modified
 		return (t.data,
-				"//db/%s/%s" % (t.__class__.__name__,getattr(t,"name",t.oid())),
-				lambda: True ) # t.modified != mtime) 
+				"//db/%s/%s/%s" % (t.__class__.__name__,site.domain,getattr(t,"name",t.oid())),
+				lambda: False ) # t.modified != mtime) 
 	
 jinja_env = Environment(loader=DatabaseLoader(), autoescape=True)
 
