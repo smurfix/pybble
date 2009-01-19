@@ -627,7 +627,7 @@ class User(Object):
 		"""Recursively get the permission of this user for that (type of) object."""
 
 		if obj is not current_request.site and \
-		   current_request.user.can_admin(current_request.site):
+		   current_request.user.can_admin(current_request.site, discr=current_request.site.classdiscr):
 			if DEBUG_ACCESS:
 				print >>sys.stderr,"ADMIN"
 			return want if want and want < 0 else PERM_ADMIN
