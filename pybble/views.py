@@ -47,7 +47,10 @@ def view_tree(request, oid=None):
 		title_trace=["Objects"]
 	else:
 		title_trace=[unicode(obj),"Objects"]
-	return render_template('tree.html', obj=obj, title_trace=title_trace)
+
+	p,s,o,d = obj.pso
+	return render_template('tree.html', obj=obj, obj_parent=p, obj_superparent=s, obj_owner=o, obj_deleted=d,
+	                                    title_trace=title_trace)
 
 @expose('/edit/<oid>')
 def edit_oid(request, oid):
