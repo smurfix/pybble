@@ -613,7 +613,7 @@ class User(Object):
 				print >>sys.stderr,"ADMIN"
 			return want if want and want < 0 else PERM_ADMIN
 
-		if want>0 and want<=PERM_READ and obj.owner==user:
+		if want>=0 and want<=PERM_READ and obj.owner==user:
 			return want
 
 		if DEBUG_ACCESS:
