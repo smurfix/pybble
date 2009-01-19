@@ -19,7 +19,7 @@ def list_templates(request,oid=None):
 		s = s.parent
 	return render_template('templates.html', templates=t, obj=obj, title_trace=["Templates",request.site.name])
 	
-@expose("/admin/template/<oid>")
+@expose("/admin/template_for/<oid>")
 def show_templates(request, oid):
 	"""show list of templates for that object"""
 	obj = obj_get(oid)
