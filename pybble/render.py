@@ -64,12 +64,14 @@ class DatabaseLoader(BaseLoader):
 			site = current_request.site
 			t = None
 			while site:
+				print >>sys.stderr,"TEMPL",template,site
 				try: t = Template.q.get_by(name=template,superparent=site)
 				except NoResult: pass
 				else: break
 				site = site.parent
 			if t is None:
 				raise TemplateNotFound(template)
+			print >>sys.stderr,"TEMPL","OK"
 		mtime = t.modified
 		return (t.data,
 				"//db/%s/%s" % (t.__class__.__name__,getattr(t,"name",t.oid())),
