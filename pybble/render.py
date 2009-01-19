@@ -90,12 +90,15 @@ def expose(rule, **kw):
 ## jinja extensions
 try:
 	from markdown import Markdown
+	from pybble.md_quotes import makeExtension as md_quotes
 	marker = Markdown(
-    	extensions = ['wikilinks'], 
+    	extensions = ['wikilinks','headerid',md_quotes()], 
     	extension_configs = {'wikilinks': [
 	                                      ('base_url', '/wiki/'), 
 	                                      ('end_url', ''), 
-	                                      ('html_class', 'wiki') ]},
+	                                      ('html_class', 'wiki') ],
+		                     'headerid': [('level',2), ('forceid',False)],
+										  },
     	safe_mode = False
 	)
 

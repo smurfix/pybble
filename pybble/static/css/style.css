@@ -67,6 +67,14 @@ code ins {
 	color: green;
 }
 
+blockquote {
+	border-left: 2px solid gray;
+	border-style: solid;
+	border-width: 0 0 0 2px;
+	margin: 0 15px;
+	padding: 0 0 0 4px;
+}
+
 th.top {
 	vertical-align: top;
 }
