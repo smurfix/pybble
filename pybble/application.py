@@ -515,9 +515,13 @@ You may continue on your own. ;-)
 			save_session(request,response)
 			db.session.commit()
 		except (NotFound,NoResult), e:
+			from traceback import print_exc
+			print_exc(file=sys.stderr)
 			response = views.not_found(request, request.url)
 			response.status_code = 404
 		except AuthError, e:
+			from traceback import print_exc
+			print_exc(file=sys.stderr)
 			response = views.not_allowed(request, e.obj,e.perm)
 			response.status_code = 403
 		except HTTPException, e:
