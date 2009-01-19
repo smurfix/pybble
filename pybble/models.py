@@ -613,7 +613,7 @@ class User(Object):
 				print >>sys.stderr,"ADMIN"
 			return want if want and want < 0 else PERM_ADMIN
 
-		if want>=0 and want<=PERM_READ and obj.owner==user:
+		if want>0 and want<=PERM_READ and obj.owner==user:
 			return want
 
 		if DEBUG_ACCESS:
@@ -882,14 +882,14 @@ for a,b in PERM.iteritems():
 	def can_do_closure(a,b):
 		def can_do(self, obj, discr=None, new_discr=None):
 			if a > PERM_NONE:
-				return self.can_do(obj, discr=discr, new_discr=new_discr) >= a
+				return self.can_do(obj, discr=discr, new_discr=new_discr, want=a) >= a
 			else:
 				return self.can_do(obj, discr=discr, new_discr=new_discr, want=a) == a
 		can_do.__doc__ = "Check if this user/group/whatever can %s an object" % \
 			(b.lower() if a > PERM_NONE else "do nothing with",)
 
 		def will_do(self, obj, discr=None, new_discr=None):
-			if not can_do(self, obj, discr=discr, new_discr=new_discr):
+			if not can_do(self, obj, discr=discr, new_discr=new_discr, want=a):
 				raise AuthError(obj,a)
 
 		return can_do,will_do
