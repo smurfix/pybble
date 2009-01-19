@@ -3,10 +3,10 @@
 	  <tbody>
 		<tr><th>Änderung:</th><td>{{ obj }}</td></tr>
 		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid()) }}">{{ obj.oid() }}</a></td></tr>
-		<tr><th>User:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.owner.oid()) }}">{{ obj.owner }}</a> ({{ obj.owner.oid() }})</td></tr>
-		<tr><th>Objekt:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.parent.oid()) }}">{{ obj.parent }}</a> ({{ obj.parent.oid() }})</td></tr>
+		<tr><th>User:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_owner.oid()) }}">{{ obj_owner }}</a> ({{ obj_owner.oid() }})</td></tr>
+		<tr><th>Objekt:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_parent.oid()) }}">{{ obj_parent }}</a> ({{ obj_parent.oid() }})</td></tr>
 		<tr><th>Zeitpunkt:</th><td>{{ obj.timestamp }}</td></tr>
 		<tr><th>Kommentar:</th><td>{{ obj.comment }}</td></tr>
-		<tr><th class="top">Inhalt:</th><td class="code"><code>{{ diff(obj.data,obj.parent.data)|safe }}</code></td></tr>
+		<tr><th class="top">Inhalt:</th><td class="code"><code>{{ diff(obj.data,obj_parent.data)|safe }}</code></td></tr>
 	  </tbody>
     </table>

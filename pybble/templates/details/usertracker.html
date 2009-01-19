@@ -3,8 +3,8 @@
 	  <tbody>
 		<tr><th>Änderungs-Info:</th><td>{{ obj }}</td></tr>
 		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid()) }}">{{ obj.oid() }}</a></td></tr>
-		<tr><th>User:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.owner.oid()) }}">{{ obj.owner }}</a> ({{ obj.owner.oid() }})</td></tr>
-		<tr><th>Tracker:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.parent.oid()) }}">{{ obj.parent }}</a> ({{ obj.parent.oid() }})</td></tr>
-		<tr><th>Logger:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.superparent.oid()) }}">{{ obj.superparent }}</a> ({{ obj.superparent.oid() }})</td></tr>
+		<tr><th>User:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_owner.oid()) }}">{{ obj_owner }}</a> ({{ obj_owner.oid() }})</td></tr>
+		<tr><th>Tracker:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_parent.oid()) }}">{{ obj_parent }}</a> ({{ obj_parent.oid() }})</td></tr>
+		<tr><th>Logger:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_superparent.oid()) }}">{{ obj_superparent }}</a> ({{ obj_superparent.oid() }})</td></tr>
 	  </tbody>
     </table>

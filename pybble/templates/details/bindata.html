@@ -5,9 +5,9 @@
 		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid()) }}">{{ obj.oid() }}</a></td></tr>
 		<tr><th>Name:</th><td><code>{{ obj.name }}</code></td></tr>
 		<tr><th>Typ:</th><td><code>{{ obj.mimetype }}</code></td></tr>
-		<tr><th>von User:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.owner.oid()) }}">{{ obj.owner }}</a> ({{ obj.owner.oid() }})</td></tr>
-		<tr><th>für Objekt:</th><td>{% if obj.parent %}<a href="{{ url_for("pybble.views.detail_oid", oid=obj.parent.oid()) }}">{{ obj.parent }}</a> ({{ obj.parent.oid() }}){% else %}(ncht gesetzt){% endif %}</td></tr>
-		<tr><th>in Storage:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.superparent.oid()) }}">{{ obj.superparent }}</a> ({{ obj.superparent.oid() }})</td></tr>
+		<tr><th>von User:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_owner.oid()) }}">{{ obj_owner }}</a> ({{ obj_owner.oid() }})</td></tr>
+		<tr><th>für Objekt:</th><td>{% if obj_parent %}<a href="{{ url_for("pybble.views.detail_oid", oid=obj_parent.oid()) }}">{{ obj_parent }}</a> ({{ obj_parent.oid() }}){% else %}(ncht gesetzt){% endif %}</td></tr>
+		<tr><th>in Storage:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_superparent.oid()) }}">{{ obj_superparent }}</a> ({{ obj_superparent.oid() }})</td></tr>
 		<tr><th>Zeitpunkt:</th><td><code>{{ obj.timestamp }}</code></td></tr>
 		<tr><th>Hash:</th><td><code>{{ obj.hash }}</code></td></tr>
 		<tr><th>Download:</th><td><a href="{{ url_for("pybble.render.download", oid=obj.oid(),name=obj.name+"."+obj.ext) }}"><code>{{ obj.name }}.{{obj.ext}}</code></a></td></tr>

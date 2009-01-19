@@ -4,8 +4,8 @@
 		<tr><th>Verifikation:</th><td>{{ obj }}</td></tr>
 		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid()) }}">{{ obj.oid() }}</a></td></tr>
 		<tr><th>Art:</th><td>{{ obj.base.name }} (#{{obj.base.id}}, {{ obj.base.cls }})</td></tr>
-		<tr><th>User:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.owner.oid()) }}">{{ obj.owner }}</a> ({{ obj.owner.oid() }})</td></tr>
-		<tr><th>Objekt:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.parent.oid()) }}">{{ obj.parent }}</a> ({{ obj.parent.oid() }})</td></tr>
+		<tr><th>User:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_owner.oid()) }}">{{ obj_owner }}</a> ({{ obj_owner.oid() }})</td></tr>
+		<tr><th>Objekt:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_parent.oid()) }}">{{ obj_parent }}</a> ({{ obj_parent.oid() }})</td></tr>
 		<tr><th>Code:</th><td><code>{{ obj.code }}</code></td></tr>
 		<tr><th>angelegt:</th><td>{{ obj.added }}</td></tr>
 		{%- if obj.repeated %}
@@ -13,7 +13,7 @@
 		{%- endif %}
 		<tr><th>Timeout:</th><td>{% if obj.timeout %}{{ obj.timeout }}
 		                         {%- else %}(kein Timeout){% endif %}</td></tr>
-	    {%- if USER.can_admin(obj.parent) %}
+	    {%- if USER.can_admin(obj_parent) %}
 		<tr><th>Auslöser:</th><td>
 		  <form action="{{ url_for("pybble.confirm.do_confirm", oid=obj.oid()) }}" method="post">
 		    <input type="Submit">Code-Eingabe simulieren</input>

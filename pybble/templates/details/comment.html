@@ -3,8 +3,8 @@
 	  <tbody>
 		<tr><th>Titel:</th><td>{{ obj.name }}</td></tr>
 		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid()) }}">{{ obj.oid() }}</a></td></tr>
-		<tr><th>von:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.owner.oid()) }}">{{ obj.owner }}</a></td></tr>
-		<tr><th>unter:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.parent.oid()) }}">{{ obj.parent }}</a></td></tr>
+		<tr><th>von:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_owner.oid()) }}">{{ obj_owner }}</a></td></tr>
+		<tr><th>unter:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_parent.oid()) }}">{{ obj_parent }}</a></td></tr>
 		<tr><th>Angelegt:</th><td>{{ obj.added }}</td></tr>
 		<tr><th class="top">Inhalt:</th><td class="code"><code>{{ obj.data }}</code></td></tr>
 	  </tbody>

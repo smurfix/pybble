@@ -155,7 +155,8 @@ def view_oid(request, oid):
 def detail_oid(request, oid):
 	obj = obj_get(oid)
 	request.user.will_read(obj)
-	return render_template("detail.html", obj=obj)
+	p,s,o,d = obj.pso
+	return render_template("detail.html", obj=obj, obj_parent=p, obj_superparent=s, obj_owner=o, obj_deleted=d)
 
 @expose('/last_visited')
 def last_visited(request):
