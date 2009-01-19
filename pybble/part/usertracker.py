@@ -18,8 +18,9 @@ def view_all(request):
 	f = (UserTracker.owner == user)
 	last = request.session.get("chg_",None)
 	if last and time()-last[0] < 2*60:
-		if last[1]:
-			f = and_(f,UserTracker.tracker.timestamp < last[1])
+		pass
+#		if last[1]:
+#			f = and_(f,UserTracker.tracker.timestamp < last[1])
 	else:
 		request.session["chg_"] = (int(time()), user.feed_read)
 		user.feed_read = datetime.utcnow()
