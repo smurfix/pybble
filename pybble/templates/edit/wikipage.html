@@ -13,6 +13,7 @@
 	  {{ show(form.page, cols=80,rows=20) }}
 	  {{ show(form.comment) }}
     </table>
+	{{ form.hash|safe }}
     <input type="submit" value="{% if obj %}Ändern{% else %}Speichern{% endif %}" />
     </form>
 

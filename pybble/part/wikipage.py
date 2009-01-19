@@ -15,6 +15,9 @@ from wtforms import Form, BooleanField, TextField, TextAreaField, \
 from wtforms.validators import ValidationError
 from sqlalchemy.sql import and_, or_, not_
 from datetime import datetime
+from pybble import _settings as settings
+try: from hashlib import md5
+except ImportError: from md5 import md5
 
 
 ###
@@ -35,6 +38,7 @@ def newpage(form, field):
 class WikiEditForm(Form):
 	name = TextField('Name', [validators.length(min=3, max=30), newpage])
 	page = TextAreaField('Page')
+	hash = HiddenField('Hash')
 	comment = TextField('Kommentar', [validators.length(min=3, max=200)])
 
 def newer(request, parent, name=None):
@@ -69,6 +73,10 @@ def editor(request, obj=None):
 	form = WikiEditForm(request.form, prefix="wiki")
 	form.obj = obj
 	if request.method == 'POST' and form.validate():
+		if form.hash.data != md5("%s.%s.%s" % (settings.SECRET_KEY, obj.id, obj.data)).digest().encode('base64').strip('\n ='):
+			flash("Die Seite hat sich zwischenzeitlich geändert!",False)
+			return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
+
 		if obj.data != form.page.data or obj.name != form.name.data:
 			obj.record_change(comment=form.comment.data)
 			obj.name = form.name.data
@@ -80,11 +88,12 @@ def editor(request, obj=None):
 			flash(u"Wiki-Seite '%s' unverändert." % (obj.name))
 
 		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
-
 	
 	elif request.method == 'GET':
-		form.name.data = obj.name if obj else name
-		form.page.data = obj.data if obj else ""
+		form.name.data = obj.name
+		form.page.data = obj.data
+		form.hash.data = md5("%s.%s.%s" % (settings.SECRET_KEY, obj.id, obj.data)).digest().encode('base64').strip('\n =')
+
 	return render_template('edit/wikipage.html', obj=obj, form=form, name=form.name.data, title_trace=[form.name.data])
 
 
