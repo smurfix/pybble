@@ -9,6 +9,7 @@ from pybble.models import TemplateMatch, TM_DETAIL_PAGE, obj_get, obj_class, MAX
 from pybble.database import db,NoResult
 from wtforms import Form, HiddenField, TextField, validators
 from pybble.flashing import flash
+import inspect
 
 class NoRedir(BaseException):
 	"""Dummy exception to signal that no add-on module is responsible"""
@@ -78,8 +79,9 @@ def new_oid(request, oid, discr=None, name=None):
 			return v(request, **args)
 
 	args = {}
-	if "name" in v.func_code.co_varnames: args["name"]=name
-	if "parent"  in v.func_code.co_varnames: args["parent" ]=obj
+	fn = inspect.getargspec(v)[0]
+	if "name" in fn: args["name"]=name
+	if "parent" in fn: args["parent"]=obj
 	return vc(**args)
 
 @expose('/copy/<oid>/<parent>')
@@ -146,9 +148,10 @@ def view_oid(request, oid):
 		except BuildError:
 			pass
 		args = {}
-		if "name" in v.func_code.co_varnames: args["name"]=name
-		if "oid"  in v.func_code.co_varnames: args["oid" ]=oid
-		if "obj"  in v.func_code.co_varnames: args["obj" ]=obj
+		fn = inspect.getargspec(v)[0]
+		if "obj" in fn: args["obj"]=obj
+		if "oid" in fn: args["oid"]=oid
+		if "name" in fn: args["name"]=name
 		return v(request, **args)
 
 @expose('/detail/<oid>')
