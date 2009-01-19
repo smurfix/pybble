@@ -2,14 +2,14 @@
 {% from 'form.html' import show %}
 
 {% block body %}
-  <h2>Edit template {{ obj.name }}</h2>
+  <h2>{% if parent %}New{% else %}Edit{% endif %} template {{ obj.name }}</h2>
     <form method="post" action="{{ action }}">
     <table>
 	  {{ show(form.site) }}
 	  {{ show(form.name) }}
 	  {{ show(form.page, cols=80,rows=20) }}
     </table>
-    <input type="submit" value="Update" />
+    <input type="submit" value="{% if parent %}Store{% else %}Update{% endif %}" />
     </form>
 
 {% endblock %}

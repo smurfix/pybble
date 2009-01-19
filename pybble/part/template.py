@@ -56,7 +56,7 @@ def editor(request, obj, parent=None):
 		form.site.data = parent.oid() if parent else obj.parent.oid()
 		form.name.data = obj.name if obj else ""
 		form.page.data = obj.data if obj else ""
-	return render_template('edit/template.html', obj=obj, form=form, title_trace=[obj.name,"Template-Editor"])
+	return render_template('edit/template.html', obj=obj, form=form, parent=parent, title_trace=[obj.name,"Template-Editor"])
 
 
 def newer(request, parent):
