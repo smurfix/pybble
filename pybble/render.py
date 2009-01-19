@@ -311,6 +311,8 @@ for a,b in PERM.iteritems():
 					obj=None
 			if obj is None:
 				obj = env.get('obj',None)
+			if isinstance(obj,basestring):
+				obj = obj_get(obj)
 			u = getattr(current_request,"user",None)
 			if not u:
 				return False
@@ -325,6 +327,8 @@ for a,b in PERM.iteritems():
 		def will_do(env, obj=None):
 			if obj is None:
 				obj = env.vars['obj']
+			if isinstance(obj,basestring):
+				obj = obj_get(obj)
 			u = getattr(current_request,"user",None)
 			if not u:
 				raise AuthError(obj,a)
