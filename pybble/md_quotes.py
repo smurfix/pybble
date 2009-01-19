@@ -22,7 +22,7 @@ class BQproc(Preprocessor):
 					if depth != -1:
 						res.append("")
 					depth = c
-					res.append("> "*c + l[m.end():])
+				res.append("> "*c + l[m.end():])
 		return res
 
 class BQExtension(markdown.Extension):
