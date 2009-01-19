@@ -36,7 +36,7 @@
 				{%- endif -%}
 				" title="Detail- und Baumansicht">Admin</a>
 			<ul>
-				<li><a href="{{ url_for("pybble.admin.list_templates", oid=SITE.oid()) }}">Named Templates</a></li>
+				<li><a href="{{ url_for("pybble.admin.list_templates", oid=(obj.site if obj else SITE).oid()) }}">Named Templates</a></li>
 				{%- if obj -%}
 				<li><a href="{{ url_for("pybble.views.edit_oid", oid=obj.oid()) }}" title="bearbeiten">Edit</a></li>
 				<li><a href="{{ url_for("pybble.views.delete_oid", oid=obj.oid()) }}" title="löschen">Delete</a></li>

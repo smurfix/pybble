@@ -232,6 +232,21 @@ class Object(db.Base):
 			yield c, c.q.filter_by(owner=self), num
 
 	@property
+	def site(self):
+		while self:
+			if isinstance(self,Site):
+				return self
+			if self.deleted:
+				try:
+					d = Delete.q.get_by(parent=self)
+				except NoResult:
+					return (None,None,None,None)
+				else:
+					self = d.superparent
+			else:
+				self = self.parent
+
+	@property
 	def has_templates(self, discriminator=None):
 		if discriminator:
 			n = len(self.templates.filter_by(discriminator=discriminator))
