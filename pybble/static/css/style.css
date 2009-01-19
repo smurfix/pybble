@@ -75,6 +75,19 @@ blockquote {
 	padding: 0 0 0 4px;
 }
 
+blockquote h1 {
+	font-size:1.3em;
+	text-align:left;
+}
+blockquote h2 {
+	font-size:1.2em;
+	text-align:left;
+}
+blockquote h3, blockquote h4, blockquote h5, blockquote h6 {
+	font-size:1.3em;
+	text-align:left;
+}
+
 th.top {
 	vertical-align: top;
 }
