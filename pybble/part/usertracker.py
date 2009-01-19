@@ -24,6 +24,6 @@ def view_all(request):
 		request.session["chg_"] = (int(time()), user.feed_read)
 		user.feed_read = datetime.utcnow()
 
-	r = render_template("changelist.html",
+	return render_template("changelist.html",
 	                       changes=UserTracker.q.filter(f).order_by(UserTracker.id.desc()))
 	
