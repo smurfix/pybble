@@ -1423,6 +1423,7 @@ class UserTracker(Object):
 		return self.parent.change_obj
 
 UserTracker.user = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.owner_id==Object.id))
+UserTracker.tracker = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.parent_id==Object.id))
 	
 
 class WantTracking(Object):
