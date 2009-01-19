@@ -35,7 +35,6 @@ def newpage(form, field):
 class CommentEditForm(Form):
 	name = TextField('Name', [validators.length(min=3, max=30), newpage])
 	page = TextAreaField('Page')
-	comment = TextField('Grund', [validators.length(min=3)])
 
 def newer(request, parent, name=None):
 	if parent is None:
@@ -60,7 +59,7 @@ def newer(request, parent, name=None):
 			data = "> "+data.rstrip().replace("\n","\n> ")+"\n"
 		form.page.data = data
 
-	return render_template('edit/comment.html', parent=parent, form=form, name=form.name.data, title_trace=[form.name.data])
+	return render_template('edit/comment.html', parent=parent, form=form, name=form.name.data, title_trace=["Kommentieren"])
 
 	
 def editor(request, obj=None):
@@ -68,7 +67,7 @@ def editor(request, obj=None):
 	form.obj = obj
 	if request.method == 'POST' and form.validate():
 		if obj.data != form.page.data:
-			obj.record_change(comment=form.comment.data)
+			obj.record_change(comment=form.name.data)
 			obj.data = form.page.data.replace("\r","")
 			obj.modified = datetime.utcnow()
 
@@ -82,6 +81,6 @@ def editor(request, obj=None):
 	elif request.method == 'GET':
 		form.name.data = obj.name if obj else name
 		form.page.data = obj.data if obj else ""
-	return render_template('edit/comment.html', obj=obj, form=form, name=form.name.data, title_trace=[form.name.data])
+	return render_template('edit/comment.html', obj=obj, form=form, name=form.name.data, title_trace=["Kommentar editieren"])
 
 
