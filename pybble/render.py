@@ -228,6 +228,11 @@ def render_template(template, mimetype=NotGiven, **context):
 def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE, discr=None):
 	ctx = ctx.get_all()
 	ctx["obj"] = obj
+	p,s,o,d = obj.pso
+	ctx["obj_parent"] = p
+	ctx["obj_superparent"] = s
+	ctx["obj_owner"] = o
+	ctx["obj_deleted"] = d
 	if discr is not None:
 		ctx["sub"] = obj_class(discr).q.filter_by(parent=obj).count()
 	return render_my_template(current_request, mimetype=None, detail=detail, **ctx)
