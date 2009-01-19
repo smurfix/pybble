@@ -889,7 +889,7 @@ for a,b in PERM.iteritems():
 			(b.lower() if a > PERM_NONE else "do nothing with",)
 
 		def will_do(self, obj, discr=None, new_discr=None):
-			if not can_do(self, obj, discr=discr, new_discr=new_discr, want=a):
+			if not can_do(self, obj, discr=discr, new_discr=new_discr):
 				raise AuthError(obj,a)
 
 		return can_do,will_do
