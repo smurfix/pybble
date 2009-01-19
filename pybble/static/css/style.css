@@ -184,7 +184,7 @@ div.pagination {
     font-size: 13px;
 }
 
-blockquote {
+div.body blockquote {
 	border-left: 2px solid gray;
 	border-style: solid;
 	border-width: 0 0 0 2px;
@@ -192,15 +192,18 @@ blockquote {
 	padding: 0 0 0 4px;
 }
 
-blockquote h1 {
+div.body blockquote h1 {
 	font-size:1.3em;
 	text-align:left;
 }
-blockquote h2 {
+div.body blockquote h2 {
 	font-size:1.2em;
 	text-align:left;
 }
-blockquote h3, blockquote h4, blockquote h5, blockquote h6 {
+div.body blockquote h3,
+div.body blockquote h4,
+div.body blockquote h5,
+div.body blockquote h6 {
 	font-size:1.3em;
 	text-align:left;
 }
