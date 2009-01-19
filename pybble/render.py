@@ -14,6 +14,7 @@ from wtforms.validators import ValidationError
 from time import time
 from datetime import datetime,timedelta
 from pybble import _settings as settings
+import sys
 
 url_map = Map([Rule('/static/<file>', endpoint='static', build_only=True)])
 
