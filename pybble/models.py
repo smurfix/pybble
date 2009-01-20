@@ -986,6 +986,7 @@ class Template(Object):
 	def __init__(self, name, data, parent=None):
 		self.name = name
 		self.data = data
+		self.owner = current_request.user
 		self.parent = parent or current_request.site
 		self.superparent = parent.site or current_request.site
 
