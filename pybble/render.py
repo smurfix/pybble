@@ -97,7 +97,7 @@ try:
 	                                      ('base_url', '/wiki/'), 
 	                                      ('end_url', ''), 
 	                                      ('html_class', 'wiki') ],
-		                     'headerid': [('level',2), ('forceid',False)],
+		                     'headerid': [('level',1), ('forceid',False)],
 										  },
     	safe_mode = False
 	)
