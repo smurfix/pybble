@@ -50,7 +50,7 @@ def editor(request, obj, parent=None):
 			obj.name = form.name.data
 			obj.data = form.page.data.replace("\r","")
 		flash(u"Template '%s' gespeichert." % (form.name.data,), True)
-		return redirect(url_for("pybble.admin.list_templates"))
+		return redirect(url_for("pybble.admin.list_templates", oid=obj.parent.oid()))
 	
 	elif request.method == 'GET':
 		form.site.data = parent.oid() if parent else obj.parent.oid()
