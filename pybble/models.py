@@ -1153,9 +1153,11 @@ Verifier.base = relation(VerifierBase, remote_side=VerifierBase.id, primaryjoin=
 class WikiPage(Object):
 	"""\
 		A wiki (or similar) page.
-		Parent: The "main" wikipage we're a parent of
-		Superparent: Our site
+		Parent: The "main" wikipage we're a parent of, or whatever parent there is
+		Superparent: Our site (main page) or empty (subpage)
 		Owner: Whoever created the page
+
+		Wiki pages are not (yet?) nested.
 		"""
 	__tablename__ = "wikipage"
 	__table_args__ = ({'useexisting': True})

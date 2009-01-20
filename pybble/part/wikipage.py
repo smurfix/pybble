@@ -52,10 +52,10 @@ def newer(request, parent, name=None):
 		obj = WikiPage(form.name.data,form.page.data.replace("\r",""))
 		if isinstance(parent,Site):
 			obj.superparent = parent
-		elif isinstance(parent.parent,Site):
-			obj.superparent = parent.parent
+		elif isinstance(parent,WikiPage):
+			obj.superparent = None
 		else:
-			obj.superparent = request.site
+			obj.superparent = parent.site
 		obj.parent = parent
 		obj.owner = request.user
 		obj.record_creation()
