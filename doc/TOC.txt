@@ -1,0 +1,8 @@
+# Pybble Documentation
+
+Not much here yet, I'm afraid.
+
+* [[TODO]] lists things to work on.
+
+* [[extension]] contains some info on how to write a Pybble extension module.
+

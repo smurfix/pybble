@@ -1,5 +1,4 @@
-Extending Pybble
-================
+# Extending Pybble
 
 Extensions must be installed in pybble/addon/*. You need to list them in
 settings.py ("ADDONS" list). There is no way to make the list of
@@ -7,34 +6,30 @@ extensions site-specific, but if there are no permissions granting
 access to the module's pages, then nobody will actually see them.
 
 
-Database tables
----------------
+## Database tables
 
 Each table has a line stating
 
 	__mapper_args__ = {'polymorphic_identity': 101}
 
 Extension database tables get identities >= 50. You need to keep these
-discinct.
+distinct.
 
 
-Database instantiation
-----------------------
+## Database instantiation
 
 The module's 'initsite' procedure, if it has one, will be invoked with
 one bool parameter. You may overwrite existing templates (or whatever)
 only if this parameter is True.
 
 
-Manager hooks
--------------
+## Manager hooks
 
 Procedures named 'action_*' get installed in the Python manager if
 they're listed in "__ALL__".
 
 
-Viewer hooks
-------------
+## Viewer hooks
 
 The 'html_view', 'html_new', 'html_copy', and 'html_edit' methods will
 be invoked when your object is the main page, a new one is created, an
@@ -59,8 +54,7 @@ Check the two standard snippet templates, used for hierarchical display,
 as formatting example.
 
 
-Templates
----------
+## Templates
 
 Named templates (mentioned by the code as
 "<modulename>/<whatever>.html") need to be listed in the TEMPLATES

@@ -1,0 +1,66 @@
+# TODO items
+
+Unordered list of things to do …
+
+## Translation
+
+* translation lookaside objects
+
+* language in path
+
+## main features
+
+* add a blog
+
+### Images
+
+* image object (sizes!)
+
+* image gallery
+
+### Book module
+
+* book reservation: notification emails
+
+* book reservation: send-on verifiers and stuff
+
+* book order
+
+### RSS
+
+* RSS feed verification
+
+* install an initial observer
+
+* Atom feed
+
+### comment subsystem
+
+* move to an add-on
+
+* Comments via email
+
+* add user prefs how much to expand comments
+
+* auto-open new comments
+
+* show parents with fold-out when viewing single comments
+
+### org members
+
+* Vereinsmitglieder-Liste
+
+## editor
+
+* OID pop-ups in forms
+
+## user
+
+* Lost PW recovery
+
+* Support Captcha for registration
+
+* Support OpenID for login
+
+* User info editor
+
