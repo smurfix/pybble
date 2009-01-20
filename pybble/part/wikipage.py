@@ -104,10 +104,10 @@ def viewer(request, name, parent=None):
 		if parent:
 			if parent == name:
 				return redirect(url_for("pybble.part.wikipage.viewer", name=name))
-			parent = WikiPage.q.get_by(name=parent, parent=request.site)
+			parent = WikiPage.q.get_by(name=parent, superparent=request.site)
 			obj = WikiPage.q.get_by(name=name, parent=parent)
 		else:
-			obj = WikiPage.q.get_by(name=name, parent=request.site)
+			obj = WikiPage.q.get_by(name=name, superparent=request.site)
 	except NoResult:
 		if not isinstance(parent,WikiPage):
 			raise NotFound()
