@@ -99,7 +99,13 @@ def editor(request, obj=None):
 
 @expose("/wiki/<name>")
 @expose("/wiki/<parent>/<name>")
-def viewer(request, name, parent=None):
+def viewer(request, name, parent=None, obj=None):
+	if obj:
+		if isinstance(obj.parent,WikiPage):
+			return redirect(url_for("pybble.part.wikipage.viewer", name=name, parent=obj.parent.name))
+		else:
+			return redirect(url_for("pybble.part.wikipage.viewer", name=obj.name))
+
 	try:
 		if parent:
 			if parent == name:
@@ -109,8 +115,10 @@ def viewer(request, name, parent=None):
 		else:
 			obj = WikiPage.q.get_by(name=name, superparent=request.site)
 	except NoResult:
+		if not parent:
+			raise
 		if not isinstance(parent,WikiPage):
-			raise NotFound()
+			raise
 		if request.user.can_add(parent):
 			flash("Die Seite gibt es noch nicht. Du kannst sie jetzt anlegen.")
 			return redirect(url_for("pybble.views.new_oid", oid=parent.oid(), name=name, discr=WikiPage.cls_discr()))
@@ -119,5 +127,5 @@ def viewer(request, name, parent=None):
 			return redirect(url_for("pybble.views.view_oid", oid=parent.oid()))
 	else:
 		return render_my_template(request, obj=obj, detail=TM_DETAIL_PAGE, \
-			title_trace=[obj.name])
+			title_trace=([obj.name, parent.name] if parent else [obj.name]))
 

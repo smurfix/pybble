@@ -307,6 +307,7 @@ There's also a [[SubPage]] somewhere.
 """)
 				w.owner=u
 				w.parent=s
+				w.superparent=s
 				db.session.add(w)
 			try:
 				ww = WikiPage.q.get_by(name="SubPage",parent=w)
@@ -321,6 +322,7 @@ You may continue on your own. ;-)
 """)
 				ww.owner=u
 				ww.parent=w
+				ww.superparent=s
 				db.session.add(ww)
 
 			db.session.flush()
