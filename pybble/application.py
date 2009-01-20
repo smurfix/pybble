@@ -294,36 +294,55 @@ class Pybble(object):
 			db.session.flush()
 
 
+			with file(os.path.join("doc","TOC.txt")) as f:
+				try:
+					data = f.read().decode("utf-8")
+				except Exception:
+					print >>sys.stderr,"While reading",fn
+					raise
+			
 			try:
-				w = WikiPage.q.get_by(name="MainPage",parent=s)
+				w = WikiPage.q.get_by(name="Documentation",superparent=s)
 			except NoResult:
-				w = WikiPage("MainPage","""\
-Hello
-=====
-
-Welcome to the first page of the rest of your life.
-
-There's also a [[SubPage]] somewhere.
-""")
+				w = WikiPage("Documentation",data)
 				w.owner=u
 				w.parent=s
 				w.superparent=s
 				db.session.add(w)
-			try:
-				ww = WikiPage.q.get_by(name="SubPage",parent=w)
-			except NoResult:
-				ww = WikiPage("SubPage","""\
-Hello
-=====
+			else:
+				if w.data != data:
+					print "Warning: DocPage 'TOC' differs."
+					if replace_templates:
+						w.data = data
 
-Welcome to the second page of the rest of your life.
-
-You may continue on your own. ;-)
-""")
-				ww.owner=u
-				ww.parent=w
-				ww.superparent=s
-				db.session.add(ww)
+			for fn in os.listdir("doc"):
+				if fn.startswith("."):
+					continue
+				if fn == "TOC.txt":
+					continue
+				if not fn.endswith(".txt"):
+					continue
+				fn = fn.decode("utf-8")
+				with file(os.path.join("doc",fn)) as f:
+					try:
+						data = f.read().decode("utf-8")
+					except Exception:
+						print >>sys.stderr,"While reading",fn
+						raise
+				fn = fn[:-4]
+				
+				try:
+					ww = WikiPage.q.get_by(name=fn,parent=w)
+				except NoResult:
+					ww = WikiPage(fn,data)
+					ww.owner=u
+					ww.parent=w
+					db.session.add(ww)
+				else:
+					if w.data != data:
+						print "Warning: DocPage '%s' differs." % (fn,)
+						if replace_templates:
+							ww.data = data
 
 			db.session.flush()
 			for d in Discriminator.q.all():
