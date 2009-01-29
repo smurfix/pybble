@@ -37,8 +37,8 @@ def add_site(request):
 	host = get_host(request.environ)
 	site = None
 	if host.startswith("www."):
-		url = 'http://%s%s' % (host[4:], request.get_full_path())
-		return HttpResponsePermanentRedirect(url)
+		request.environ['HTTP_X_FORWARDED_HOST'] = host[4:]
+		return HttpResponsePermanentRedirect(request.url)
 	try:
 		site = Site.q.get_by(domain=host.decode("idna"))
 	except NoResult:
