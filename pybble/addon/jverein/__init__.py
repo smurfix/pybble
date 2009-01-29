@@ -143,18 +143,23 @@ def verein_mail(form, field):
 		m = form.parent.mitglied_data("email",field.data)
 	except NoResult:
 		raise ValidationError("Diese Adresse ist nicht bekannt")
+	if not getattr(form,"user",None):
+		check_unassoc(form, current_request.user)
 	form.vid = m.id
 	
 def verein_unassoc(form, field):
+	return check_unassoc(form, obj_get(field.data))
+
+def check_unassoc(form, user):
 	try:
-		m = Mitglied.q.get_by(parent=form.parent, owner=obj_get(field.data))
+		m = Mitglied.q.get_by(parent=form.parent, owner=user)
 	except NoResult:
 		pass
 	else:
 		if m.aktiv:
 			raise ValidationError("Du bist schon Mitglied!")
 		else:
-			raise ValidationError("Du musst dich nur noch freischalten!")
+			raise ValidationError("Du musst dich freischalten!")
 
 class MitgliedForm(Form):
 	user = TextField('User', [valid_obj,valid_admin, verein_unassoc])
