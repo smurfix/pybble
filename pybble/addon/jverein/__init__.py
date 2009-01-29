@@ -169,7 +169,7 @@ class Mitglied(Object):
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 103}
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="vereinmember_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="vereinmember_id"), primary_key=True,autoincrement=False)
 
 	mitglied_id = Column(Integer)
 	aktiv = Column(Boolean, default=False)
@@ -189,11 +189,14 @@ class Mitglied(Object):
 
 		form = MitgliedForm(current_request.form)
 		form.parent = parent
+		if not current_request.user.can_admin(parent):
+			del form.user
+
 		if current_request.method == 'POST' and form.validate():
 			obj = cls()
 			obj.mitglied_id = form.vid
 			obj.parent = parent
-			obj.owner = obj_get(form.user.data)
+			obj.owner = obj_get(form.user.data) if hasattr(form,"user") else current_request.user
 
 			obj.record_creation()
 			if obj.record.email == current_request.user.email:
@@ -211,7 +214,7 @@ class Mitglied(Object):
 		
 		elif current_request.method == 'GET':
 			u = current_request.user.last_visited(User) or current_request.user
-			form.user.data = u.oid()
+			if hasattr(form,"user"): form.user.data = u.oid()
 			form.email.data = u.email
 
 		return render_template('jverein/newuser.html', parent=parent, form=form, title_trace=["Neumitglied","Verein"])

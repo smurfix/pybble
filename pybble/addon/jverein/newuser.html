@@ -5,7 +5,9 @@
   <h2>Mitglied zuordnen für {{ parent.name }}</h2>
     <form method="post" action="{{ action }}">
     <table>
+	  {% if USER.can_admin(parent) %}
 	  {{ show(form.user) }}
+	  {% endif %}
 	  {{ show(form.email) }}
     </table>
     <input type="submit" value="Store" />
