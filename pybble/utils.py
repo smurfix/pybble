@@ -102,12 +102,6 @@ class AuthError(Unauthorized):
 		self.obj = obj
 		self.perm = perm
 
-class AuthError(Unauthorized):
-	def __init__(self,obj,perm):
-		super(AuthError,self).__init__()
-		self.obj = obj
-		self.perm = perm
-
 
 def all_addons():
 	for n in settings.ADDONS:
