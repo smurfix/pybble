@@ -196,7 +196,7 @@ class Mitglied(Object):
 			obj = cls()
 			obj.mitglied_id = form.vid
 			obj.parent = parent
-			obj.owner = obj_get(form.user.data) if hasattr(form,"user") else current_request.user
+			obj.owner = obj_get(form.user.data) if getattr(form,"user",None) else current_request.user
 
 			obj.record_creation()
 			if obj.record.email == current_request.user.email:
@@ -214,7 +214,7 @@ class Mitglied(Object):
 		
 		elif current_request.method == 'GET':
 			u = current_request.user.last_visited(User) or current_request.user
-			if hasattr(form,"user"): form.user.data = u.oid()
+			if getattr(form,"user",None): form.user.data = u.oid()
 			form.email.data = u.email
 
 		return render_template('jverein/newuser.html', parent=parent, form=form, title_trace=["Neumitglied","Verein"])
