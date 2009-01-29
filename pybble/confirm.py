@@ -33,7 +33,7 @@ def confirm(request, code=None):
 			return render_template('confirm.html', form=form, title_trace=[u"Bestätigung"])
 		code=form.code.data.lower()
 
-	v=Verifier.q.get_by(code=form.code.data.lower())
+	v=Verifier.q.get_by(code=code)
 	if v.expired:
 		flash(u"Die Anfrage ist schon zu alt. Bitte schicke sie nochmal ab!")
 		return v.retry()
