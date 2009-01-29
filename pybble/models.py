@@ -1111,7 +1111,7 @@ class Verifier(Object):
 
 	def __unicode__(self):
 		p,s,o,d = self.pso
-		if self._rec_str or not p: return super(Member,self).__unicode__()
+		if self._rec_str or not p: return super(Verifier,self).__unicode__()
 		try:
 			self._rec_str = True
 			return u'‹%s%s %s: %s for %s›' % (d,self.__class__.__name__, self.id, self.base.name, unicode(p))
@@ -1119,14 +1119,14 @@ class Verifier(Object):
 			self._rec_str = False
 	def __str__(self):
 		p,s,o,d = self.pso
-		if self._rec_str or not p: return super(Member,self).__str__()
+		if self._rec_str or not p: return super(Verifier,self).__str__()
 		try:
 			self._rec_str = True
 			return '<%s%s %s: %s for %s>' % (d,self.__class__.__name__, self.id, self.base.name, str(p))
 		finally:
 			self._rec_str = False
 	def __repr__(self):
-		if not self.parent: return super(Member,self).__repr__()
+		if not self.parent: return super(Verifier,self).__repr__()
 		return self.__str__()
 
 	@property
