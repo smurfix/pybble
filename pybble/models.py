@@ -124,12 +124,12 @@ class Object(db.Base):
 	id = Column(Integer(20), primary_key=True)
 
 	# This is intentionally not a reference to the Discriminator table
-	discriminator = Column(TinyInteger, ForeignKey('discriminator.id',name="obj_discr"))
+	discriminator = Column(TinyInteger, ForeignKey(Discriminator.id,name="obj_discr"))
 	__mapper_args__ = {'polymorphic_on': discriminator}
 
-	owner_id = Column(Integer(20),ForeignKey('obj.id',name="obj_owner"))        # creating object/user
-	parent_id = Column(Integer(20),ForeignKey('obj.id',name="obj_parent"))      # direct ancestor (replied-to comment)
-	superparent_id = Column(Integer(20),ForeignKey('obj.id',name="obj_super"))  # indirect ancestor (replied-to wiki page)
+	owner_id = Column(Integer(20),ForeignKey(id,name="obj_owner"))        # creating object/user
+	parent_id = Column(Integer(20),ForeignKey(id,name="obj_parent"))      # direct ancestor (replied-to comment)
+	superparent_id = Column(Integer(20),ForeignKey(id,name="obj_super"))  # indirect ancestor (replied-to wiki page)
 
 	_rec_str = False
 
@@ -493,7 +493,7 @@ class User(Object):
 	__table_args__ = {'useexisting': True}
 	__mapper_args__ = {'polymorphic_identity': 2}
 	q = db.session.query_property(UserQuery)
-	id = Column(Integer, ForeignKey('obj.id',name="user_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="user_id"), primary_key=True,autoincrement=False)
 	        
 	username = Column(Unicode(30), nullable=False)
 	first_name = Column(Unicode(30))
@@ -778,7 +778,7 @@ class Group(Object):
 	__table_args__ = {'useexisting': True}
 	__mapper_args__ = {'polymorphic_identity': 4}
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="group_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="group_id"), primary_key=True,autoincrement=False)
 	        
 	name = Column(Unicode(30))
 
@@ -802,7 +802,7 @@ class Member(Object):
 	__mapper_args__ = {'polymorphic_identity': 13}
 	_no_crumbs = True
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="member_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="member_id"), primary_key=True,autoincrement=False)
 
 	excluded = Column(Boolean, nullable=False)
 
@@ -862,12 +862,12 @@ class Permission(Object):
 	__mapper_args__ = {'polymorphic_identity': 10}
 	_no_crumbs = True
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="permission_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="permission_id"), primary_key=True,autoincrement=False)
 
 	right = Column(Integer(1), nullable=False)
 	inherit = Column(Boolean, nullable=True)
-	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="permission_discr"), nullable=False)
-	new_discr = Column(TinyInteger, ForeignKey('discriminator.id',name="permission_new_discr"), nullable=True)
+	discr = Column(TinyInteger, ForeignKey(Discriminator.id,name="permission_discr"), nullable=False)
+	new_discr = Column(TinyInteger, ForeignKey(Discriminator.id,name="permission_new_discr"), nullable=True)
 
 	def __init__(self, user, obj, discr, right, inherit=None, new_discr=None):
 		self.owner = user
@@ -923,7 +923,7 @@ class Site(Object):
 	__table_args__ = {'useexisting': True}
 	__mapper_args__ = {'polymorphic_identity': 5}
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="site_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="site_id"), primary_key=True,autoincrement=False)
 
 	domain = Column(Unicode(100), nullable=False, unique=True)
 	name = Column(Unicode(50), nullable=False, unique=True)
@@ -978,7 +978,7 @@ class Template(Object):
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 6}
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="template_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="template_id"), primary_key=True,autoincrement=False)
 	name = Column(String(50), nullable=False)
 	data = Column(Text)
 	modified = Column(TimeStamp,default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -1003,12 +1003,12 @@ class TemplateMatch(Object):
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 12}
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="template_match_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="template_match_id"), primary_key=True,autoincrement=False)
 
 	data = Column(Text)
 	modified = Column(TimeStamp,default=datetime.utcnow, onupdate=datetime.utcnow)
 
-	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="templatematch_discr"), nullable=False)
+	discr = Column(TinyInteger, ForeignKey(Discriminator.id,name="templatematch_discr"), nullable=False)
 	detail = Column(TinyInteger(1), nullable=False)
 	inherit = Column(Boolean, nullable=True)
 
@@ -1091,9 +1091,9 @@ class Verifier(Object):
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 8}
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="verifier_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="verifier_id"), primary_key=True,autoincrement=False)
 
-	base_id = Column(TinyInteger, ForeignKey('verifierbase.id',name="verifier_base"))
+	base_id = Column(TinyInteger, ForeignKey(VerifierBase.id,name="verifier_base"))
 	code = Column(String(50), nullable=False, unique=True)
 
 	added = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -1164,7 +1164,7 @@ class WikiPage(Object):
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 9}
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="wikipage_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="wikipage_id"), primary_key=True,autoincrement=False)
 
 	name = Column(String(50))
 	data = Column(Text)
@@ -1194,9 +1194,9 @@ class Breadcrumb(Object):
 	_no_crumbs = True
 
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="breadcrumb_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="breadcrumb_id"), primary_key=True,autoincrement=False)
 
-	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="breadcrumb_discr"), nullable=False)
+	discr = Column(TinyInteger, ForeignKey(Discriminator.id,name="breadcrumb_discr"), nullable=False)
 	#seq = Column(Integer)
 	visited = Column(TimeStamp,default=datetime.utcnow)
 
@@ -1239,7 +1239,7 @@ class Change(Object):
 	_no_crumbs = True
 
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="change_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="change_id"), primary_key=True,autoincrement=False)
 
 	timestamp = Column(TimeStamp,default=datetime.utcnow)
 	data = Column(Text)
@@ -1292,15 +1292,15 @@ class Delete(Object):
 	_no_crumbs = True
 
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="delete_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="delete_id"), primary_key=True,autoincrement=False)
 
 	__mapper_args__ = {'polymorphic_identity': 16, 'inherit_condition':id==Object.id}
 
 	comment = Column(Unicode(200), nullable=True)
 
 	## The old parent is in self.superparent
-	old_superparent_id = Column(Integer(20), ForeignKey('obj.id',name="delobj_super"))
-	old_owner_id = Column(Integer(20), ForeignKey('obj.id',name="delobj_owner"))
+	old_superparent_id = Column(Integer(20), ForeignKey(Object.id,name="delobj_super"))
+	old_owner_id = Column(Integer(20), ForeignKey(Object.id,name="delobj_owner"))
 
 	timestamp = Column(TimeStamp,default=datetime.utcnow)
 
@@ -1353,7 +1353,7 @@ class Tracker(Object):
 	_no_crumbs = True
 
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="tracker_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="tracker_id"), primary_key=True,autoincrement=False)
 
 	timestamp = Column(TimeStamp,default=datetime.utcnow)
 
@@ -1418,7 +1418,7 @@ class UserTracker(Object):
 	_no_crumbs = True
 
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="usertracker_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="usertracker_id"), primary_key=True,autoincrement=False)
 
 	def __init__(self, user, tracker, want):
 		self.owner = user
@@ -1462,9 +1462,9 @@ class WantTracking(Object):
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 19}
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="wanttracking_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="wanttracking_id"), primary_key=True,autoincrement=False)
 
-	discr = Column(TinyInteger, ForeignKey('discriminator.id',name="wanttracking_discr"), nullable=True)
+	discr = Column(TinyInteger, ForeignKey(Discriminator.id,name="wanttracking_discr"), nullable=True)
 	email = Column(Boolean, nullable=False) # send mail, not just RSS/on-site?
 	track_new = Column(Boolean, nullable=False) # alert for new data?
 	track_mod = Column(Boolean, nullable=False) # alert for modifications?
@@ -1601,7 +1601,7 @@ class Storage(Object):
 	_no_crumbs = True
 
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="storage_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="storage_id"), primary_key=True,autoincrement=False)
 
 	name = Column(Unicode(250), nullable=False, unique=True)
 	path = Column(String(250), nullable=False, unique=True)
@@ -1639,7 +1639,7 @@ class BinData(Object):
 	__mapper_args__ = {'polymorphic_identity': 22}
 	_no_crumbs = True
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="bindata_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="bindata_id"), primary_key=True,autoincrement=False)
 	mime_id = Column(Integer, ForeignKey(MIMEtype.id,name="bindata_mimeid"))
 	name = Column(Unicode(50), nullable=False)
 	hash = Column(String(30), nullable=False, unique=True)
@@ -1770,7 +1770,7 @@ class StaticFile(Object):
 	_no_crumbs = True
 
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="staticfile_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="staticfile_id"), primary_key=True,autoincrement=False)
 
 	__mapper_args__ = {'polymorphic_identity': 20, 'inherit_condition':id==Object.id}
 
@@ -1809,12 +1809,12 @@ class Comment(renderObject):
 	__table_args__ = ({'useexisting': True})
 	__mapper_args__ = {'polymorphic_identity': 23}
 	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="comment_id"), primary_key=True,autoincrement=False)
+	id = Column(Integer, ForeignKey(Object.id,name="comment_id"), primary_key=True,autoincrement=False)
 
 	name = Column(Unicode(250))
 	data = Column(Text)
 	added = Column(TimeStamp,default=datetime.utcnow)
-	renderer_id = Column(TinyInteger, ForeignKey('renderer.id',name="cmt_renderer"), nullable=True)
+	renderer_id = Column(TinyInteger, ForeignKey(Renderer.id,name="cmt_renderer"), nullable=True)
 
 	def __init__(self, obj, name, data, renderer = None):
 		self.name = name
