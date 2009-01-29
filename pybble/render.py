@@ -239,7 +239,10 @@ def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE, discr=None):
 
 @contextfunction
 def render_subline(ctx,obj):
-	return render_subpage(ctx,obj, detail=TM_DETAIL_STRING)
+	try:
+		return render_subpage(ctx,obj, detail=TM_DETAIL_STRING)
+	except AuthError:
+		return unicode(obj)
 
 jinja_env.globals['subpage'] = render_subpage
 jinja_env.globals['subline'] = render_subline
