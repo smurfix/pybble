@@ -1,5 +1,5 @@
 From: {{ site.owner.name }} <{{ site.owner.email }}>
-To: {{ user.name }} <{{ user.email }}>
+To: {{ m.vorname }} {{ m.name }} <{{ m.email }}>
 Message-ID: <{{ id1 }}>
 Subject: Email.Verifikation für {{site.name}} ({{site.domain}})
 Mime-Version: 1.0
@@ -7,11 +7,13 @@ Content-Type: text/plain; charset="utf-8"
 
 Hallo, {{ m.vorname }} {{ m.name }},
 
-Bei {{site.name}} ({{site.domain}}) hat sich jemand angemeldet
-und behauptet, (a) mit dir identisch und (b) Mitglied des Vereins
+Bei {{site.name}} ({{site.domain}}) hat sich
+	{{ user.name }} <{{ user.email }}>
+angemeldet und behauptet, (a) mit dir identisch und (b) Mitglied des Vereins
 „{{ parent.name }}“ zu sein.
 
-Wenn das stimmt, dann klicke auf diesen Link:
+Wenn das stimmt, d.h. du tatsächlich selbst unter diesem Namen
+registriert bist, dann klicke auf diesen Link:
 	{{ link }}
 
 Falls das nicht funktioniert, gehe auf diese Seite:
@@ -26,6 +28,7 @@ wenden.
 Viel Spaß.
 
 
-NB: Falls dem nicht so ist, dann hat das ein böser Bube mit deiner Mailadresse getan.
-Du brauchst nichts weiter tun: der Eintrag ist ohne Eingabe des Codes nicht aktiv
-zugänglich und wird automatisch wieder gelöscht.
+NB: Falls dem nicht so ist, dann hat ein böser Bube mit deiner Mailadresse
+    Unfug getrieben.
+    Du brauchst nichts weiter tun: der Eintrag ist ohne Eingabe des Codes
+    nicht zugänglich und wird automatisch wieder gelöscht.
