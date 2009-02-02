@@ -401,7 +401,8 @@ class Object(db.Base):
 	def uptree(self):
 		while self:
 			yield self
-			if isinstance(self,Site) and not current_request.user.can_admin(self):
+			ru = getattr(current_request,"user",None)
+			if isinstance(self,Site) and not (ru and ru.can_admin(self)):
 				return
 			self = self.parent
 
@@ -626,8 +627,9 @@ class User(Object):
 	def can_do(user,obj, discr=None, new_discr=None, want=None):
 		"""Recursively get the permission of this user for that (type of) object."""
 
+		ru = getattr(current_request,"user",None)
 		if obj is not current_request.site and \
-		   current_request.user.can_admin(current_request.site, discr=current_request.site.classdiscr):
+		   ru and ru.can_admin(current_request.site, discr=current_request.site.classdiscr):
 			if DEBUG_ACCESS:
 				print >>sys.stderr,"ADMIN"
 			return want if want and want < 0 else PERM_ADMIN

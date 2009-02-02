@@ -481,7 +481,9 @@ class Pybble(object):
 						imod = None
 						idel = None
 						for w in wantq:
-							processed.add(w.owner.owner_id)
+							processed.add(w.owner_id)
+							if not w.owner.can_read(t.change_obj):
+								continue
 							if isinstance(t.parent,Delete):
 								if not w.track_del: continue
 								idel=t.parent
