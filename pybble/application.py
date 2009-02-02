@@ -192,7 +192,7 @@ class Pybble(object):
 			add_files(os.path.join(u"pybble",u"static"),u"")
 		
 			try:
-				a=User.q.get_one(and_(User.sites.contains(s), User.username==u""))
+				a=User.q.get_by(superparent=s, username=u"")
 			except NoResult:
 				a=User(u"", password="")
 				a.owner = u
@@ -218,16 +218,17 @@ class Pybble(object):
 			ds = Discriminator.q.get_by(name="Site")
 			dp = Discriminator.q.get_by(name="Permission")
 			dk = Discriminator.q.get_by(name="Comment")
+			dt = Discriminator.q.get_by(name="WantTracking")
 
-			for d in (dw,ds):
+			for d in (dw,ds,dt):
 				if Permission.q.filter(and_(Permission.discr==d.id,Permission.right>=0,Permission.owner==a)).count():
 					continue
 				p=Permission(a, s, d, PERM_READ)
 				p.superparent=s
 				db.session.add(p)
 
-			for d,e in ((ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk)):
-				if Permission.q.filter(Permission.new_discr==e.id).count():
+			for d,e in ((ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk),(ds,dt)):
+				if Permission.q.filter(and_(Permission.new_discr==e.id,Permission.discr==d.id)).count():
 					continue
 				p=Permission(u, s, d, PERM_ADD)
 				p.new_discr=e.id

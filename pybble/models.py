@@ -988,7 +988,7 @@ class Template(Object):
 		self.data = data
 		self.owner = current_request.user
 		self.parent = parent or current_request.site
-		self.superparent = parent.site or current_request.site
+		self.superparent = getattr(parent,"site",None) or current_request.site
 
 	def __repr__(self):
 		return "'<%s:%d>'" % (self.__class__.__name__,self.id)
