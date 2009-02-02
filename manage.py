@@ -35,6 +35,7 @@ action_initsite_replace = make_app().init_site_replace()
 action_showdb = make_app().show_database()
 action_trigger = make_app().trigger()
 action_dbscript = make_app().dbscript()
+action_show = make_app().show()
 
 for addon in all_addons():
 	for a,b in addon.__dict__.iteritems():

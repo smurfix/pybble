@@ -9,4 +9,4 @@ Hallo {{ user.name }},
 
 Es gibt Neues: {{ url_for('pybble.views.view_oid',_external=True,oid=obj.oid()) }}
 
-{{ tracker }}
+{{ subrss(usertracker,tm_email)|safe }}

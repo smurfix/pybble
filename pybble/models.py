@@ -30,7 +30,7 @@ except ImportError:
 
 # Template detail levels
 TM_DETAIL = {1:"Page", 2:"Subpage", 3:"String", 4:"Detail", 5:"Snippet",
-	6:"Hierarchy", 7:"RSS"}
+	6:"Hierarchy", 7:"RSS", 8:"email"}
 for _x,_y in TM_DETAIL.items():
 	globals()["TM_DETAIL_"+_y.upper()] = _x
 

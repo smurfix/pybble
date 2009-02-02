@@ -1,0 +1,14 @@
+keine Details verfügbar
+=======================
+Sorry, aber ich weiß nicht, wie ich den neuen Beitrag (oder was auch immer …)
+in {{ url_for("pybble.views.view_oid", _external=True, oid=obj.oid()) }}
+von {{ subline(user) }} ({{ url_for("pybble.views.detail_oid", _external=True, oid=user.oid()) }})
+hier darstellen soll.
+
+Vielleicht klickst du einfach drauf …
+
+(Eigentlich ist die Tatsache, dass du diesen Text siehst, ein Bug.
+Das wurde aber bereits geloggt, und wird hoffentlich demnächst behoben.)
+
+PS: Der Tracker, der diesen Eintrag deines Feeds generiert hat, ist hier:
+{{ url_for("pybble.views.view_oid", _external=True, oid=tracker.oid()) }}

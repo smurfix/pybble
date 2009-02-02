@@ -245,9 +245,10 @@ def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE, discr=None):
 	ctx["obj_superparent"] = s
 	ctx["obj_owner"] = o
 	ctx["obj_deleted"] = d
+	ctx["detail"] = detail
 	if discr is not None:
 		ctx["sub"] = obj_class(discr).q.filter_by(parent=obj).count()
-	return render_my_template(current_request, mimetype=None, detail=detail, **ctx)
+	return render_my_template(current_request, mimetype=None, **ctx)
 
 @contextfunction
 def render_subline(ctx,obj):
@@ -263,10 +264,14 @@ def render_subrss(ctx,obj, detail=TM_DETAIL_RSS, discr=None):
 	ctx["tracker"] = obj.superparent
 	ctx["user"] = obj.parent.owner
 	ctx["usertracker"] = obj
+	ctx["detail"] = detail
 	try:
-		return render_my_template(current_request, mimetype=None, detail=detail, **ctx)
+		return render_my_template(current_request, mimetype=None, **ctx)
 	except AuthError:
-		return Markup("<p>'%s' kann nicht dargestellt werden (Zugriffsfehler).</p>" % (obj.oid(),))
+		if detail == TM_DETAIL_EMAIL:
+			raise
+		else:
+			return Markup("<p>'%s' kann nicht dargestellt werden (Zugriffsfehler).</p>" % (obj.oid(),))
 
 jinja_env.globals['subpage'] = render_subpage
 jinja_env.globals['subline'] = render_subline

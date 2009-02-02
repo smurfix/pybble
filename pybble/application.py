@@ -78,7 +78,7 @@ class Pybble(object):
 
 			from pybble.models import Site,User,Object,Discriminator,Template,TemplateMatch,VerifierBase,WikiPage,Storage,BinData,StaticFile
 			from pybble.models import Group,Permission, add_mime,mime_ext, Renderer
-			from pybble.models import TM_DETAIL_SUBPAGE, PERM_READ,PERM_ADMIN,PERM_ADD, TM_DETAIL_DETAIL, TM_DETAIL, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY, TM_DETAIL_RSS
+			from pybble.models import TM_DETAIL_SUBPAGE, PERM_READ,PERM_ADMIN,PERM_ADD, TM_DETAIL_DETAIL, TM_DETAIL, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY, TM_DETAIL_RSS, TM_DETAIL_EMAIL
 			from pybble import utils
 			from werkzeug import Request
 
@@ -351,6 +351,7 @@ class Pybble(object):
 					(TM_DETAIL_DETAIL,"details"),
 					(TM_DETAIL_HIERARCHY,"hierarchy"),
 					(TM_DETAIL_RSS,"rss"),
+					(TM_DETAIL_EMAIL,"email"),
 					(TM_DETAIL_SNIPPET,"snippet")):
 					try:
 						data = open("pybble/templates/%s/%s.html" % (name,d.name.lower(),)).read().decode("utf-8")
@@ -499,8 +500,13 @@ class Pybble(object):
 							ut=UserTracker(user=w.owner,tracker=t,want=w)
 							db.session.add(ut)
 							if w.email:
-								send_mail(ut.owner.email, 'tracker_email.txt',
-									tracker=ut.parent, user=ut.owner, site=s, watcher=w, obj=t.change_obj)
+								try:
+									send_mail(ut.owner.email, 'tracker_email.txt',
+										usertracker=ut, tracker=ut.parent,
+										user=ut.owner, site=s, watcher=w,
+										obj=t.change_obj)
+								except AuthError:
+									pass
 
 						if o.deleted and isinstance(t.parent,Delete):
 							o=t.parent.superparent
@@ -510,6 +516,37 @@ class Pybble(object):
 					if not u:
 						s.tracked=t.timestamp
 				db.session.commit()
+
+		return action
+
+	def show(self):
+		from pybble.models import TM_DETAIL_EMAIL, TM_DETAIL_RSS
+		from pybble.render import jinja_env
+		
+		def action(obj=("o",""),user=("u",""), site=("s",""), detail=("d",TM_DETAIL_EMAIL), verbose=("v",False)):
+			"""Show an object."""
+			from pybble.models import Object,obj_get
+			from pybble import utils
+
+			utils.local.request = Request({})
+
+			obj = obj_get(obj)
+			if site:
+				s = Site.q.get_by(name=site)
+			else:
+				s = obj.site
+			setup_code_env(s)
+
+			if user:
+				u = obj_get(user)
+			else:
+				u = s.owner
+			utils.current_request.user = u
+
+			if detail >= TM_DETAIL_RSS:
+				print jinja_env.from_string("{{subrss(obj,detail)}}").render(detail=detail,obj=obj)
+			else:
+				print jinja_env.from_string("{{subpage(obj,detail)}}").render(detail=detail,obj=obj)
 
 		return action
 
