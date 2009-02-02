@@ -20,7 +20,7 @@
       <pubDate>{{ item.parent.timestamp }}</pubDate>
       <guid>http://{{SITE.domain}}/rss/id/{{item.oid()}}</guid>
       <description>{{ subline(item)|cdata }}</description>
-      <content:encoded>{{ subpage(item)|cdata }}</content:encoded>
+      <content:encoded>{{ subrss(item)|cdata }}</content:encoded>
     </item>
 {% endfor %} 
   </channel>

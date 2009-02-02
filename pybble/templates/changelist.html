@@ -7,6 +7,7 @@
   {%- for o in changes %}
   		{# o: usertracker -#}
   		{# t: tracker -#}
+  		{# tp: change/delete/new_object -#}
 		{% set t = o.parent -%}
 		{% if t -%}
 		{% set tp = t.parent -%}
@@ -25,11 +26,7 @@
 			<td><a href="{{url_for("pybble.views.view_oid", oid=t.owner.oid())}}">{{ t.owner }}</a></td>
 			<td>{{ o.parent.timestamp|date }}</td>
 		</tr>
-		{% else %}
-		<tr><td>foo 1</td></tr>
 		{%- endif %}
-		{% else %}
-		<tr><td>foo 2</td></tr>
 		{%- endif %}
   {% endfor -%}
     </tbody></table>

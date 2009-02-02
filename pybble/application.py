@@ -78,7 +78,7 @@ class Pybble(object):
 
 			from pybble.models import Site,User,Object,Discriminator,Template,TemplateMatch,VerifierBase,WikiPage,Storage,BinData,StaticFile
 			from pybble.models import Group,Permission, add_mime,mime_ext, Renderer
-			from pybble.models import TM_DETAIL_SUBPAGE, PERM_READ,PERM_ADMIN,PERM_ADD, TM_DETAIL_DETAIL, TM_DETAIL, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY
+			from pybble.models import TM_DETAIL_SUBPAGE, PERM_READ,PERM_ADMIN,PERM_ADD, TM_DETAIL_DETAIL, TM_DETAIL, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY, TM_DETAIL_RSS
 			from pybble import utils
 			from werkzeug import Request
 
@@ -350,6 +350,7 @@ class Pybble(object):
 				for detail,name in ((TM_DETAIL_SUBPAGE,"view"),
 					(TM_DETAIL_DETAIL,"details"),
 					(TM_DETAIL_HIERARCHY,"hierarchy"),
+					(TM_DETAIL_RSS,"rss"),
 					(TM_DETAIL_SNIPPET,"snippet")):
 					try:
 						data = open("pybble/templates/%s/%s.html" % (name,d.name.lower(),)).read().decode("utf-8")

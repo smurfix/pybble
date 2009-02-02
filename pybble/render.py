@@ -7,7 +7,7 @@ from werkzeug.routing import Map, Rule
 from werkzeug.utils import http_date
 from pybble.utils import current_request, local, random_string, AuthError
 from pybble.models import PERM, PERM_NONE, PERM_ADD, Permission, obj_get, TemplateMatch, Template, WikiPage, \
-	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, StaticFile, obj_get, TM_DETAIL
+	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, StaticFile, obj_get, TM_DETAIL, TM_DETAIL_RSS
 from pybble.database import NoResult
 from pybble.diff import textDiff
 from wtforms.validators import ValidationError
@@ -103,8 +103,11 @@ try:
 	)
 
 	@contextfilter
-	def convert(ctx,s):
-		b = "/wiki/"
+	def convert(ctx,s,extern=False):
+		b = ""
+		if extern:
+			b = "http://"+current_request.site.domain
+		b += "/wiki/"
 		obj = ctx.get("obj",None)
 		if obj:
 			if isinstance(obj.parent,WikiPage):
@@ -114,9 +117,10 @@ try:
 		marker.inlinePatterns["wikilink"].config["base_url"][0] = b
 		return Markup(marker.convert(s))
 	jinja_env.filters['markdown'] = convert
+
 except TypeError: # old markdown
 	from markdown import markdown
-	jinja_env.filters['markdown'] = lambda a: Markup(markdown(a))
+	jinja_env.filters['markdown'] = lambda a,b=None: Markup(markdown(a))
 
 def render(obj, *a,**kw):
 	if hasattr(obj,"render"):
@@ -252,8 +256,18 @@ def render_subline(ctx,obj):
 	except AuthError:
 		return unicode(obj)
 
+@contextfunction
+def render_subrss(ctx,obj, detail=TM_DETAIL_RSS, discr=None):
+	ctx = ctx.get_all()
+	ctx["obj"] = obj.parent.parent
+	ctx["tracker"] = obj.superparent
+	ctx["user"] = obj.parent.owner
+	ctx["usertracker"] = obj
+	return render_my_template(current_request, mimetype=None, detail=detail, **ctx)
+
 jinja_env.globals['subpage'] = render_subpage
 jinja_env.globals['subline'] = render_subline
+jinja_env.globals['subrss'] = render_subrss
 
 
 pybble_dtd = None
