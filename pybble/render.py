@@ -125,6 +125,14 @@ def render(obj, *a,**kw):
 		return Markup.escape(unicode(obj))
 jinja_env.filters['render'] = render
 
+def cdata(data): ## [[[[
+	return Markup("<![CDATA[")+data.replace("]]>","]] >")+Markup("]]>")
+jinja_env.filters['cdata'] = cdata
+
+def datetimeformat(value, format='%Y-%m-%d %H:%M'):
+	return value.strftime(format)
+jinja_env.filters['date'] = datetimeformat
+
 def render_markdown(obj):
 	return Markup(marker.convert(obj.data))
 
