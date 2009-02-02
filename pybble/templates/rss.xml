@@ -13,15 +13,17 @@
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>12</sy:updateFrequency>
  
-{% for item in USER.tracks %}
+{%- for item in USER.tracks %}
+   {% if can_read(item) and can_read(item.parent) and can_read(item.parent.parent) -%}
     <item>
-      <title>{{ subline(item) }}</title>
+      <title>{{ subline(item.parent.parent) }}</title>
       <link>{{ url_for('pybble.views.view_oid',oid=item.oid(),_external=True) }}</link>
-      <pubDate>{{ item.parent.timestamp }}</pubDate>
+      <pubDate>{{ item.parent.timestamp|date("%a, %d %b %Y %H:%M:%S %z") }}</pubDate>
       <guid>http://{{SITE.domain}}/rss/id/{{item.oid()}}</guid>
-      <description>{{ subline(item)|cdata }}</description>
+      <description>{{ subline(item.parent.parent)|cdata }}</description>
       <content:encoded>{{ subrss(item)|cdata }}</content:encoded>
     </item>
+	{%- endif %}
 {% endfor %} 
   </channel>
 </rss>
