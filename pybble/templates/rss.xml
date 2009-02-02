@@ -14,7 +14,6 @@
     <sy:updateFrequency>12</sy:updateFrequency>
  
 {%- for item in USER.tracks %}
-   {% if can_read(item) and can_read(item.parent) and can_read(item.parent.parent) -%}
     <item>
       <title>{{ subline(item.parent.parent) }}</title>
       <link>{{ url_for('pybble.views.view_oid',oid=item.oid(),_external=True) }}</link>
@@ -23,7 +22,6 @@
       <description>{{ subline(item.parent.parent)|cdata }}</description>
       <content:encoded>{{ subrss(item)|cdata }}</content:encoded>
     </item>
-	{%- endif %}
 {% endfor %} 
   </channel>
 </rss>
