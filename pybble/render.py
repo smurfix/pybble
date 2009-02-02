@@ -263,7 +263,10 @@ def render_subrss(ctx,obj, detail=TM_DETAIL_RSS, discr=None):
 	ctx["tracker"] = obj.superparent
 	ctx["user"] = obj.parent.owner
 	ctx["usertracker"] = obj
-	return render_my_template(current_request, mimetype=None, detail=detail, **ctx)
+	try:
+		return render_my_template(current_request, mimetype=None, detail=detail, **ctx)
+	except AuthError:
+		return Markup("<p>'%s' kann nicht dargestellt werden (Zugriffsfehler).</p>" % (obj.oid(),))
 
 jinja_env.globals['subpage'] = render_subpage
 jinja_env.globals['subline'] = render_subline
