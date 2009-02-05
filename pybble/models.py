@@ -621,7 +621,7 @@ class User(Object):
 						ul.append(g)
 					ulq.append(g)
 					uld.add(g)
-			current_request.user._memberships = ul
+			self._memberships = ul
 		return ul
 
 	def can_do(user,obj, discr=None, new_discr=None, want=None):
