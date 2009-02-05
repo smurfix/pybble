@@ -500,6 +500,7 @@ class Pybble(object):
 							ut=UserTracker(user=w.owner,tracker=t,want=w)
 							db.session.add(ut)
 							if w.email:
+								utils.local.request.user = ut.owner
 								try:
 									send_mail(ut.owner.email, 'tracker_email.txt',
 										usertracker=ut, tracker=ut.parent,
