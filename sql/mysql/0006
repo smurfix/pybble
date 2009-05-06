@@ -1,0 +1,2 @@
+Do("""ALTER TABLE users
+    ADD COLUMN `cur_login` datetime NULL DEFAULT NULL""")

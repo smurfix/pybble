@@ -16,8 +16,8 @@ CREATE TABLE template_match (
 	detail TINYINT(1) NOT NULL, 
 	inherit BOOL, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT template_match_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT templatematch_discr FOREIGN KEY(discr) REFERENCES discriminator (id)
+	 CONSTRAINT templatematch_discr FOREIGN KEY(discr) REFERENCES discriminator (id), 
+	 CONSTRAINT template_match_id FOREIGN KEY(id) REFERENCES obj (id)
 );
 CREATE TABLE demo (
 	id INTEGER NOT NULL, 
@@ -95,10 +95,10 @@ CREATE TABLE storage (
 	path VARCHAR(250) NOT NULL, 
 	url VARCHAR(250) NOT NULL, 
 	PRIMARY KEY (id), 
-	 UNIQUE (url), 
 	 CONSTRAINT storage_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (name), 
-	 UNIQUE (path)
+	 UNIQUE (url), 
+	 UNIQUE (path), 
+	 UNIQUE (name)
 );
 CREATE TABLE sites (
 	id INTEGER NOT NULL, 
@@ -118,8 +118,8 @@ CREATE TABLE bindata (
 	timestamp TIMESTAMP, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT bindata_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT bindata_mimeid FOREIGN KEY(mime_id) REFERENCES mimetype (id), 
-	 UNIQUE (hash)
+	 UNIQUE (hash), 
+	 CONSTRAINT bindata_mimeid FOREIGN KEY(mime_id) REFERENCES mimetype (id)
 );
 CREATE TABLE bookwant (
 	id INTEGER NOT NULL, 
@@ -144,6 +144,7 @@ CREATE TABLE users (
 	password VARCHAR(30) NOT NULL, 
 	first_login DATETIME NOT NULL, 
 	last_login DATETIME, 
+	cur_login DATETIME, 
 	feed_age TINYINT NOT NULL, 
 	feed_pass VARCHAR(30), 
 	feed_read DATETIME, 
@@ -238,9 +239,9 @@ CREATE TABLE obj (
 	parent_id INTEGER, 
 	superparent_id INTEGER, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id), 
-	 CONSTRAINT obj_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
 	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id), 
+	 CONSTRAINT obj_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
+	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id), 
 	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id)
 );
 CREATE TABLE site_users (
@@ -270,7 +271,7 @@ CREATE TABLE renderer (
 	name VARCHAR(30) NOT NULL, 
 	cls VARCHAR(50) NOT NULL, 
 	PRIMARY KEY (id), 
-	 UNIQUE (name), 
-	 UNIQUE (cls)
+	 UNIQUE (cls), 
+	 UNIQUE (name)
 );
 

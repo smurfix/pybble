@@ -503,6 +503,7 @@ class User(Object):
 	password = Column(String(30), nullable=False)
 	first_login = Column(DateTime, nullable=False)
 	last_login = Column(DateTime)
+	cur_login = Column(DateTime)
 
 	feed_age = Column(TinyInteger, nullable=False, default=10)
 	feed_pass = Column(String(30), nullable=True)

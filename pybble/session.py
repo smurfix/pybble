@@ -93,8 +93,9 @@ def add_user(request):
 #		user = User.objects.get_anonymous_user()
 
 	now = datetime.utcnow()
-	if user.last_login is None or user.last_login < now-timedelta(0,500):
-		user.last_login = now
+	if user.cur_login is None or user.cur_login < now-timedelta(0,600):
+		user.last_login = user.cur_login or now
+	user.cur_login = now
 	request.user = user
 
 def save_session(request, response):

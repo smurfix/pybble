@@ -46,8 +46,9 @@ def do_login(request):
 			logged_in(request,u)
 
 			now = datetime.utcnow()
-			if u.last_login is None or u.last_login < now-timedelta(0,500):
-				u.last_login = now
+			if u.cur_login is None or u.cur_login < now-timedelta(0,600):
+				u.last_login = u.cur_login or now
+			u.cur_login = now
 
 			if form.remember.data:
 				make_permanent(request)
