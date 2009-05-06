@@ -12,6 +12,8 @@ Unordered list of things to do …
 
 * add a blog
 
+* add account viewing (Hibiscus)
+
 ### Files, Images
 
 * File attachment (comment-like)
