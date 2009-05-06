@@ -12,7 +12,9 @@ Unordered list of things to do …
 
 * add a blog
 
-### Images
+### Files, Images
+
+* File attachment (comment-like)
 
 * image object (sizes!)
 
