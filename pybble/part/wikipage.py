@@ -100,14 +100,17 @@ def editor(request, obj=None):
 @expose("/wiki/<name>")
 @expose("/wiki/<parent>/<name>")
 def viewer(request, name, parent=None, obj=None):
-	if obj:
+	if obj and request.site == obj.superparent:
 		if isinstance(obj.parent,WikiPage):
 			return redirect(url_for("pybble.part.wikipage.viewer", name=name, parent=obj.parent.name))
 		else:
 			return redirect(url_for("pybble.part.wikipage.viewer", name=obj.name))
 
 	try:
-		if parent:
+		if obj:
+			if isinstance(obj.parent,WikiPage):
+				parent = obj.parent
+		elif parent:
 			if parent == name:
 				return redirect(url_for("pybble.part.wikipage.viewer", name=name))
 			parent = WikiPage.q.get_by(name=parent, superparent=request.site)
