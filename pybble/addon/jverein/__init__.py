@@ -228,8 +228,10 @@ accountnr: %s
 	
 	def buchungen(self):
 		r = db.session.execute("select id,datum,betrag,concat(zweck,' ',zweck2,' ',zweck3) from %s where konto_id=%d order by id desc" % (self.accountdb,self.accountnr))
-		print >>sys.stderr,repr(r)
-		yield ["1","heute",123,"Testbuchung"]
+		rr = r.fetchone()
+		while rr:
+			yield rr[0],rr[1],rr[2],rr[3]
+			rr = r.fetchone()
 
 
 ## Mitglied: membership
