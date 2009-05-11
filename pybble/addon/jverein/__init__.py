@@ -237,7 +237,7 @@ accountnr: %s
 		r = db.session.execute("select id,datum,betrag,concat(zweck,' ',ifnull(zweck2,''),' ',ifnull(zweck3,'')) from %s where konto_id=%d order by id desc" % (self.accountdb,self.accountnr))
 		rr = r.fetchone()
 		while rr:
-			yield buchung(rr[0],rr[1],rr[2],strip(rr[3]))
+			yield buchung(rr[0],rr[1],rr[2],rr[3].strip())
 			rr = r.fetchone()
 
 
