@@ -227,13 +227,16 @@ accountnr: %s
 		return render_template('jverein/newacct.html', parent=parent, form=form, name=parent.name, title_trace=["neu","Verein","Konto"])
 	
 	def buchungen(self):
+		class buchung(object):
+			def __init__(self,id,datum,betrag,zweck):
+				self.id = id
+				self.datum = datum
+				self.betrag = betrag
+				self.zweck = zweck
 		r = db.session.execute("select id,datum,betrag,concat(zweck,' ',zweck2,' ',zweck3) from %s where konto_id=%d order by id desc" % (self.accountdb,self.accountnr))
 		rr = r.fetchone()
 		while rr:
-			print >>sys.stderr,"RES",rr
-			yield rr[0],rr[1],rr[2],rr[3]
-			rr = r.fetchone()
-		print >>sys.stderr,"RES.END"
+			yield buchung(rr[0],rr[1],rr[2],rr[3])
 
 
 ## Mitglied: membership
