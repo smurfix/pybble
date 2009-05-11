@@ -228,16 +228,17 @@ accountnr: %s
 	
 	def buchungen(self):
 		class buchung(object):
-			def __init__(self,id,datum,betrag,zweck):
+			def __init__(self,id,datum,betrag,zweck,empfaenger):
 				self.id = id
 				self.datum = datum
 				self.betrag = betrag
+				self.empfaenger = empfaenger
 				self.zweck = zweck
 
-		r = db.session.execute("select id,datum,betrag,concat(zweck,' ',ifnull(zweck2,''),' ',ifnull(zweck3,'')) from %s where konto_id=%d order by id desc" % (self.accountdb,self.accountnr))
+		r = db.session.execute("select id,datum,betrag,concat(zweck,' ',ifnull(zweck2,''),' ',ifnull(zweck3,'')), empfaenger_name from %s where konto_id=%d order by id desc" % (self.accountdb,self.accountnr))
 		rr = r.fetchone()
 		while rr:
-			yield buchung(rr[0],rr[1],rr[2],rr[3].strip())
+			yield buchung(rr[0],rr[1],rr[2],rr[3].strip(),rr[4])
 			rr = r.fetchone()
 
 

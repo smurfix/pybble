@@ -1,11 +1,11 @@
   <h2>Vereinskonto „{{ obj.parent.name }}“</h2>
     <table>
 	  <thead>
-	    <td align="right">Nr.</td><td>Datum</td><td align="right">Betrag</td><td>Buchungstext</td>
+	    <td align="right">Nr.</td><td>Datum</td><td>von</td><td align="right">Betrag</td><td>Buchungstext</td>
 	  </thead>
 	  <tbody>
 		{% for b in obj.buchungen() -%}
-		  <tr><td align="right">{{ b.id }}</td><td>{{ b.datum }}</td><td align="right">{{ b.betrag }}</td><td><pre>{{ b.zweck }}</pre></td></tr>
+		  <tr><td align="right">{{ b.id }}</td><td>{{ b.datum }}</td><td>{{ b.von }}</td><td align="right">{{ b.betrag }}</td><td><pre>{{ b.zweck }}</pre></td></tr>
 		{%- endfor %}
 	  </tbody>
     </table>
