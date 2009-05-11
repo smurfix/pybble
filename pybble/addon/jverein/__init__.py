@@ -212,7 +212,7 @@ accountnr: %s
 			form.accountdb.data = self.accountdb
 			form.accountnr.data = self.accountnr
 
-		return render_template('jverein/edit_acct.html', obj=self, form=form, name=form.name.data, title_trace=[self.name,"Verein","Konto"])
+		return render_template('jverein/edit_acct.html', obj=self, form=form, name=obj.parent.name, title_trace=[self.name,"Verein","Konto"])
 
 	@classmethod
 	def html_new(cls,parent,name=None):
@@ -225,7 +225,7 @@ accountnr: %s
 			obj.record_creation()
 			return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
 
-		return render_template('jverein/new_acct.html', parent=parent, form=form, name=form.name.data, title_trace=["neu","Verein","Konto"])
+		return render_template('jverein/new_acct.html', parent=parent, form=form, name=obj.parent.name, title_trace=["neu","Verein","Konto"])
 
 
 ## Mitglied: membership
