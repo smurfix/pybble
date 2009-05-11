@@ -1,5 +1,5 @@
 Do("""CREATE TABLE vereinacct (
-    `id` integer NOT NULL DEFAULT '',
+    `id` integer NOT NULL,
     `accountdb` varchar(30) COLLATE utf8_general_ci DEFAULT NULL,
     `accountnr` integer DEFAULT NULL,
      PRIMARY KEY(`id`),
