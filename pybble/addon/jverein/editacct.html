@@ -1,0 +1,14 @@
+{% extends 'layout.html' %}
+{% from 'form.html' import show %}
+
+{% block body %}
+  <h2>Edit Vereinskonto {{ parent.name }}</h2>
+    <form method="post" action="{{ action }}">
+    <table>
+	  {{ show(form.accountdb) }}
+	  {{ show(form.accountnr) }}
+    </table>
+    <input type="submit" value="Update" />
+    </form>
+
+{% endblock %}

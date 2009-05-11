@@ -4,7 +4,7 @@ from werkzeug import redirect
 from pybble.database import db, NoResult
 from pybble.models import Object,User,obj_get, VerifierBase, Verifier
 from sqlalchemy import Column, Unicode, Integer, ForeignKey, String, Boolean
-from wtforms import Form,TextField,validators
+from wtforms import Form,TextField,IntegerField,validators
 from wtforms.validators import ValidationError
 from pybble.utils import current_request
 from pybble.render import url_for, render_template, valid_obj, valid_admin, send_mail
@@ -16,33 +16,35 @@ import re,sys
 
 __ALL__ = ("action_verein", "Verein", "Mitglied")
 
-TEMPLATES = ("edit.html","new.html","newuser.html","verify_email.txt")
+TEMPLATES = ("edit.html","new.html","newuser.html","verify_email.txt","editacct.html","newacct.html")
 
 ## preload code
 def action_verein():
 	"""Verein extension loaded."""
-	print "Test"
 
 ## System init code
 def initsite(replace_templates):
 	VerifierBase.register("jverein","pybble.addon.jverein.verifier")
 	
+db_re = re.compile(r"^[a-zA-Z][_a-zA-Z0-9]+$")
 if settings.DATABASE_TYPE == "sqlite":
-	dbname_re = re.compile(r"^[a-zA-Z][_a-zA-Z0-9]+$")
+	dbname_re = db_re
 else:
 	dbname_re = re.compile(r"^[a-zA-Z][_a-zA-Z0-9]+\.[a-zA-Z][_a-zA-Z0-9]+$")
+
 def sel_ok(form, field):
 	if not dbname_re.match(field.data):
 		raise ValidationError("Dies ist kein Datenbankname")
 	try:
 		r = db.session.execute("select count(id) from %s where email is not null and austritt is null and kuendigung is null" % (field.data,))
-	except NoResult:
-		raise ValidationError("Diese Tabelle ist leer")
 	except Exception,e:
 		print >>sys.stderr,repr(e)
 		raise ValidationError("Problem beim Validieren des Datenbankzugriffs")
 	else:
+		if not r:
+			raise ValidationError("Diese Tabelle ist leer")
 		pass
+
 
 ## Verein: the base
 class VereinForm(Form):
@@ -61,7 +63,7 @@ class Verein(Object):
 	id = Column(Integer, ForeignKey('obj.id',name="verein_id"), primary_key=True,autoincrement=False)
 
 	name = Column(Unicode(250))
-	database = Column(String(30))
+	database = Column(String(30)) # actually a table
 
 	def __init__(self,parent, name,database):
 		self.owner = current_request.user
@@ -89,6 +91,7 @@ database: %s
 		
 		elif current_request.method == 'GET':
 			form.name.data = self.name
+			form.database.data = self.database
 
 		return render_template('jverein/edit.html', obj=self, form=form, name=form.name.data, title_trace=[self.name,"Verein"])
 
@@ -101,7 +104,6 @@ database: %s
 				v = v.rstrip("L")
 			else:
 				v = repr(v)
-			print "R",k,v
 			sel="id,email,vorname,name"
 			r = db.session.execute("select %s from %s where `%s` = %s" % (sel,parent.database, k,v)).fetchone()
 			if r is None:
@@ -130,11 +132,101 @@ database: %s
 
 			obj.record_creation()
 			return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
-		
-		elif current_request.method == 'GET':
-			form.name.data = name
 
 		return render_template('jverein/new.html', parent=parent, form=form, name=form.name.data, title_trace=["neu","Verein"])
+
+
+def asel_ok(form, field):
+	if not db_re.match(field.data):
+		raise ValidationError("Dies ist kein Datenbankname")
+	if not form.accountnr.data:
+		return
+	try:
+		r = db.session.execute("select count(id) from %s.konto where konto_id = %d" % (field.data,form.accountnr.data))
+	except Exception,e:
+		print >>sys.stderr,repr(e)
+		raise ValidationError("Problem beim Validieren des Datenbankzugriffs")
+	else:
+		if not r:
+			raise ValidationError("Keine Daten für dieses Konto")
+		pass
+
+def isel_ok(form,field):
+	if not field.data:
+		if form.accountdb.data:
+			raise ValidationError("Hier brauche ich eine Konten-ID.")
+		return
+
+	if field.data > 0:
+		if not form.accountdb.data:
+			raise ValidationError("Das macht nur mit Hibiscus-Accounting-Datenbank Sinn")
+		return
+	raise ValidationError("Die ID muss positiv sein.")
+
+
+## VereinAcct: access to accounting
+class VereinAcctForm(Form):
+	accountdb = TextField('Accounting DB', [validators.optional(), validators.length(min=3, max=30), asel_ok])
+	accountnr = IntegerField('Account #', [isel_ok])
+
+class VereinAcct(Object):
+	"""\
+		parent: site
+		Owner: Whoever created the thing.
+		"""
+	__tablename__ = "vereinacct"
+	__table_args__ = ({'useexisting': True})
+	__mapper_args__ = {'polymorphic_identity': 104}
+	q = db.session.query_property(db.Query)
+	id = Column(Integer, ForeignKey('obj.id',name="vereinacct_id"), primary_key=True,autoincrement=False)
+
+	accountdb = Column(String(30)) # Hibiscus DB
+	accountnr = Column(Integer) # Hibiscus account#
+
+	def __init__(self,parent, db,nr):
+		self.owner = current_request.user
+		self.parent = parent
+		self.superparent = current_request.site
+		self.accountdb = db
+		self.accountnr = nr
+		
+	@property
+	def data(self):
+		return """\
+accountdb: %s
+accountnr: %s
+""" % (self.accountdb,self.accountnr)
+
+	def html_edit(self):
+		form = VereinAcctForm(current_request.form)
+		form.id = self.id
+		if current_request.method == 'POST' and form.validate():
+			if self.accountdb != form.accountdb.data or self.accountnr != form.accountnr.data:
+				self.record_change()
+				self.accountdb = form.accountdb.data
+				self.accountnr = form.accountnr.data
+
+			return redirect(url_for("pybble.views.view_oid", oid=self.oid()))
+		
+		elif current_request.method == 'GET':
+			form.accountdb.data = self.accountdb
+			form.accountnr.data = self.accountnr
+
+		return render_template('jverein/edit_acct.html', obj=self, form=form, name=form.name.data, title_trace=[self.name,"Verein","Konto"])
+
+	@classmethod
+	def html_new(cls,parent,name=None):
+		current_request.user.will_add(parent,new_discr=cls)
+
+		form = VereinAcctForm(current_request.form)
+		if current_request.method == 'POST' and form.validate():
+			obj = cls(parent, form.accountdb.data, form.accountnr.data)
+
+			obj.record_creation()
+			return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
+
+		return render_template('jverein/new_acct.html', parent=parent, form=form, name=form.name.data, title_trace=["neu","Verein","Konto"])
+
 
 ## Mitglied: membership
 

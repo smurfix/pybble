@@ -1,0 +1,8 @@
+  <h2>Vereinskonto „{{ obj.parent.name }}“</h2>
+    <table>
+	  <tbody>
+		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid()) }}">{{ obj.oid() }}</a></td></tr>
+		<tr><th>Accounting DB:</th><td>{{ obj.accountdb }}</td></tr>
+		<tr><th>Accounting Nr:</th><td>{{ obj.accountnr }}</td></tr>
+	  </tbody>
+    </table>

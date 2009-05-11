@@ -9,6 +9,7 @@ from pybble.render import expose_map, url_map, send_mail, expose
 from pybble.database import metadata, db, NoResult, dsn
 from sqlalchemy.sql import and_, or_, not_
 from sqlalchemy.orm import create_session
+import sqlalchemy.exc
 
 import pybble.models
 import pybble.admin

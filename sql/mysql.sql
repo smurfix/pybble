@@ -16,8 +16,8 @@ CREATE TABLE template_match (
 	detail TINYINT(1) NOT NULL, 
 	inherit BOOL, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT templatematch_discr FOREIGN KEY(discr) REFERENCES discriminator (id), 
-	 CONSTRAINT template_match_id FOREIGN KEY(id) REFERENCES obj (id)
+	 CONSTRAINT template_match_id FOREIGN KEY(id) REFERENCES obj (id), 
+	 CONSTRAINT templatematch_discr FOREIGN KEY(discr) REFERENCES discriminator (id)
 );
 CREATE TABLE demo (
 	id INTEGER NOT NULL, 
@@ -51,6 +51,13 @@ CREATE TABLE wanttracking (
 	PRIMARY KEY (id), 
 	 CONSTRAINT wanttracking_id FOREIGN KEY(id) REFERENCES obj (id), 
 	 CONSTRAINT wanttracking_discr FOREIGN KEY(discr) REFERENCES discriminator (id)
+);
+CREATE TABLE vereinacct (
+	id INTEGER NOT NULL, 
+	accountdb VARCHAR(30), 
+	accountnr INTEGER, 
+	PRIMARY KEY (id), 
+	 CONSTRAINT vereinacct_id FOREIGN KEY(id) REFERENCES obj (id)
 );
 CREATE TABLE discriminator (
 	id TINYINT(1) NOT NULL AUTO_INCREMENT, 
@@ -96,9 +103,9 @@ CREATE TABLE storage (
 	url VARCHAR(250) NOT NULL, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT storage_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (url), 
 	 UNIQUE (path), 
-	 UNIQUE (name)
+	 UNIQUE (name), 
+	 UNIQUE (url)
 );
 CREATE TABLE sites (
 	id INTEGER NOT NULL, 
@@ -117,9 +124,9 @@ CREATE TABLE bindata (
 	hash VARCHAR(30) NOT NULL, 
 	timestamp TIMESTAMP, 
 	PRIMARY KEY (id), 
+	 CONSTRAINT bindata_mimeid FOREIGN KEY(mime_id) REFERENCES mimetype (id), 
 	 CONSTRAINT bindata_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (hash), 
-	 CONSTRAINT bindata_mimeid FOREIGN KEY(mime_id) REFERENCES mimetype (id)
+	 UNIQUE (hash)
 );
 CREATE TABLE bookwant (
 	id INTEGER NOT NULL, 
@@ -163,9 +170,9 @@ CREATE TABLE deleted (
 	old_owner_id INTEGER, 
 	timestamp TIMESTAMP, 
 	PRIMARY KEY (id), 
+	 CONSTRAINT delobj_owner FOREIGN KEY(old_owner_id) REFERENCES obj (id), 
 	 CONSTRAINT delete_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT delobj_super FOREIGN KEY(old_superparent_id) REFERENCES obj (id), 
-	 CONSTRAINT delobj_owner FOREIGN KEY(old_owner_id) REFERENCES obj (id)
+	 CONSTRAINT delobj_super FOREIGN KEY(old_superparent_id) REFERENCES obj (id)
 );
 CREATE TABLE groupmembers (
 	id INTEGER NOT NULL, 
@@ -188,8 +195,8 @@ CREATE TABLE verifiers (
 	repeated DATETIME, 
 	timeout DATETIME NOT NULL, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT verifier_base FOREIGN KEY(base_id) REFERENCES verifierbase (id), 
 	 CONSTRAINT verifier_id FOREIGN KEY(id) REFERENCES obj (id), 
+	 CONSTRAINT verifier_base FOREIGN KEY(base_id) REFERENCES verifierbase (id), 
 	 UNIQUE (code)
 );
 CREATE TABLE groups (
@@ -213,9 +220,9 @@ CREATE TABLE permissions (
 	discr TINYINT NOT NULL, 
 	new_discr TINYINT, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT permission_discr FOREIGN KEY(discr) REFERENCES discriminator (id), 
+	 CONSTRAINT permission_new_discr FOREIGN KEY(new_discr) REFERENCES discriminator (id), 
 	 CONSTRAINT permission_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT permission_new_discr FOREIGN KEY(new_discr) REFERENCES discriminator (id)
+	 CONSTRAINT permission_discr FOREIGN KEY(discr) REFERENCES discriminator (id)
 );
 CREATE TABLE mimetype (
 	id INTEGER NOT NULL AUTO_INCREMENT, 
@@ -239,16 +246,16 @@ CREATE TABLE obj (
 	parent_id INTEGER, 
 	superparent_id INTEGER, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id), 
+	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id), 
 	 CONSTRAINT obj_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
-	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id), 
-	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id)
+	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id), 
+	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id)
 );
 CREATE TABLE site_users (
 	site_id INTEGER NOT NULL, 
 	user_id INTEGER NOT NULL, 
-	 CONSTRAINT site_users_site FOREIGN KEY(site_id) REFERENCES obj (id), 
 	 UNIQUE (site_id, user_id), 
+	 CONSTRAINT site_users_site FOREIGN KEY(site_id) REFERENCES obj (id), 
 	 CONSTRAINT site_users_user FOREIGN KEY(user_id) REFERENCES obj (id)
 );
 CREATE TABLE bookstore (
@@ -271,7 +278,7 @@ CREATE TABLE renderer (
 	name VARCHAR(30) NOT NULL, 
 	cls VARCHAR(50) NOT NULL, 
 	PRIMARY KEY (id), 
-	 UNIQUE (cls), 
-	 UNIQUE (name)
+	 UNIQUE (name), 
+	 UNIQUE (cls)
 );
 

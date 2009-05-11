@@ -1,0 +1,6 @@
+Do("""CREATE TABLE vereinacct (
+    `id` integer NOT NULL DEFAULT '',
+    `accountdb` varchar(30) COLLATE utf8_general_ci DEFAULT NULL,
+    `accountnr` integer DEFAULT NULL,
+     PRIMARY KEY(`id`),
+     CONSTRAINT `vereinacct_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) CHARACTER SET=utf8 COLLATE=utf8_general_ci""")
