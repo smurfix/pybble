@@ -26,9 +26,8 @@ def action_verein():
 def initsite(replace_templates):
 	VerifierBase.register("jverein","pybble.addon.jverein.verifier")
 	
-db_re = re.compile(r"^[a-zA-Z][_a-zA-Z0-9]+$")
 if settings.DATABASE_TYPE == "sqlite":
-	dbname_re = db_re
+	dbname_re = re.compile(r"^[a-zA-Z][_a-zA-Z0-9]+$")
 else:
 	dbname_re = re.compile(r"^[a-zA-Z][_a-zA-Z0-9]+\.[a-zA-Z][_a-zA-Z0-9]+$")
 
@@ -137,7 +136,7 @@ database: %s
 
 
 def asel_ok(form, field):
-	if not db_re.match(field.data):
+	if not dbname_re.match(field.data):
 		raise ValidationError("Dies ist kein Datenbankname")
 	if not form.accountnr.data:
 		return
