@@ -1,8 +1,11 @@
   <h2>Vereinskonto „{{ obj.parent.name }}“</h2>
     <table>
+	  <thead>
+	    <td align="right">Nr.</td><td>Datum</td><td align="right">Betrag</td><td>Buchungstext</td>
+	  </thead>
 	  <tbody>
-		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid()) }}">{{ obj.oid() }}</a></td></tr>
-		<tr><th>Accounting DB:</th><td>{{ obj.accountdb }}</td></tr>
-		<tr><th>Accounting Nr:</th><td>{{ obj.accountnr }}</td></tr>
+		{% for b in obj.buchungen -%}
+		  <tr><td align="right">{{ b.id }}</td><td>{{ b.datum }}</td><td align="right">{{ b.betrag }}</td><td>{{ b.text }}</td></tr>
+		{%- endfor %}
 	  </tbody>
     </table>

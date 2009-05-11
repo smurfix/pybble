@@ -225,6 +225,11 @@ accountnr: %s
 			return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
 
 		return render_template('jverein/newacct.html', parent=parent, form=form, name=parent.name, title_trace=["neu","Verein","Konto"])
+	
+	def buchungen(self):
+		r = db.session.execute("select id,datum,betrag,concat(zweck,' ',zweck2,' ',zweck3) from %s where konto_id=%d order by id desc" % (self.accountdb,self.accountnr))
+		print >>sys.stderr,repr(r)
+		yield ["1","heute",123,"Testbuchung"]
 
 
 ## Mitglied: membership
