@@ -14,7 +14,7 @@ from pybble import _settings as settings
 
 import re,sys
 
-__ALL__ = ("action_verein", "Verein", "Mitglied")
+__ALL__ = ("action_verein", "Verein", "Mitglied", "VereinAcct")
 
 TEMPLATES = ("edit.html","new.html","newuser.html","verify_email.txt","editacct.html","newacct.html")
 
