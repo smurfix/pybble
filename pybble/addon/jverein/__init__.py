@@ -141,7 +141,7 @@ def asel_ok(form, field):
 	if not form.accountnr.data:
 		return
 	try:
-		r = db.session.execute("select count(id) from %s.konto where konto_id = %d" % (field.data,form.accountnr.data))
+		r = db.session.execute("select count(id) from %s where konto_id = %d" % (field.data, form.accountnr.data))
 	except Exception,e:
 		print >>sys.stderr,repr(e)
 		raise ValidationError("Problem beim Validieren des Datenbankzugriffs")
