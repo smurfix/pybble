@@ -4,5 +4,8 @@ geschrieben:</p>
 <hr />
 <pre>{{ obj.data|render }}</pre>
 <hr />
+<a href="{{ url_for("pybble.views.view_oid_exp", _external=True, oid=obj.superparent.oid(),details=obj.id) }}#{{ obj.id}}">
+Hier</a> ist der Kommentar im Kontext zu sehen.
+<hr />
 <p>PS: Der Tracker, der diesen Eintrag deines Feeds generiert hat, ist 
 <a href="{{ url_for("pybble.views.view_oid", _external=True, oid=tracker.oid()) }}">dieser hier</a>.</p>
