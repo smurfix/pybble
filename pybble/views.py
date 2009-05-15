@@ -189,7 +189,7 @@ def view_oid(request, oid, **args):
 	else:
 		try:
 			if not args and (not isinstance(obj,Site) or obj == request.site):
-				return redirect(url_for('pybble.part.%s.viewer' % (obj.classname.lower(),)**args))
+				return redirect(url_for('pybble.part.%s.viewer' % (obj.classname.lower(),),**args))
 		except BuildError:
 			pass
 		fn = inspect.getargspec(v)[0]
