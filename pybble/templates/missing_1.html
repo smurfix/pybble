@@ -31,17 +31,26 @@
   {% if nc > 0 or can_add(d_comment) %}
   <div class="comments">
     <ul class="SubTree">
-	  <li class="t_Comments {% if nc>0 %}collapsed{% else %}terminal{% endif %}" rel="{{ obj.oid() }}">
+      {% if not details %}{% set details=() %}{% endif %}
+      {% if not aux %}{% set aux=() %}{% endif %}
+	  <li class="t_Comment {% if aux %}expanded{% elif nc>0 %}collapsed{% else %}terminal{% endif %}" rel="{{ obj.oid() }}">
 		<span class="image"></span>
 		<span href="#nogo" class="contents">
-			{%- if nc <= 0 -%}
-				keine Kommentare
-			{%- elif nc == 1 -%}
-				ein Kommentar
-			{%- else -%}
-				{{ nc }} Kommentare
-			{%- endif -%}
+		  {%- if nc <= 0 -%}
+			keine Kommentare
+		  {%- elif nc == 1 -%}
+			ein Kommentar
+		  {%- else -%}
+			{{ nc }} Kommentare
+		  {%- endif -%}
 		</span>
+		{% if aux %}
+		  <ul>
+			{% for o in obj.all_children(d_comment) %}
+			  {{ subpage(o,tm_snippet) }}
+			{% endfor %}
+		  </ul>
+		{% endif %}
 	  </li>
 	</ul>
   </div>

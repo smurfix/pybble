@@ -99,8 +99,8 @@ def editor(request, obj=None):
 
 @expose("/wiki/<name>")
 @expose("/wiki/<parent>/<name>")
-def viewer(request, name, parent=None, obj=None):
-	if obj and request.site == obj.superparent:
+def viewer(request, name, parent=None, obj=None, **args):
+	if not args and (obj and request.site == obj.superparent):
 		if isinstance(obj.parent,WikiPage):
 			return redirect(url_for("pybble.part.wikipage.viewer", name=name, parent=obj.parent.name))
 		else:
@@ -111,7 +111,7 @@ def viewer(request, name, parent=None, obj=None):
 			if isinstance(obj.parent,WikiPage):
 				parent = obj.parent
 		elif parent:
-			if parent == name:
+			if not args and parent == name:
 				return redirect(url_for("pybble.part.wikipage.viewer", name=name))
 			parent = WikiPage.q.get_by(name=parent, superparent=request.site)
 			obj = WikiPage.q.get_by(name=name, parent=parent)
@@ -130,5 +130,5 @@ def viewer(request, name, parent=None, obj=None):
 			return redirect(url_for("pybble.views.view_oid", oid=parent.oid()))
 	else:
 		return render_my_template(request, obj=obj, detail=TM_DETAIL_PAGE, \
-			title_trace=([obj.name, parent.name] if parent else [obj.name]))
+			title_trace=([obj.name, parent.name] if parent else [obj.name]), **args)
 

@@ -5,11 +5,11 @@ from werkzeug.routing import BuildError
 from werkzeug.exceptions import NotFound
 from pybble.render import render_template, render_my_template, \
 	expose, url_for
-from pybble.models import TemplateMatch, TM_DETAIL_PAGE, obj_get, obj_class, MAX_BUILTIN, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY, Site
+from pybble.models import TemplateMatch, TM_DETAIL_PAGE, obj_get, obj_class, MAX_BUILTIN, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY, Site, Object
 from pybble.database import db,NoResult
 from wtforms import Form, HiddenField, TextField, validators
 from pybble.flashing import flash
-import inspect
+import inspect,sys
 
 class NoRedir(BaseException):
 	"""Dummy exception to signal that no add-on module is responsible"""
@@ -19,9 +19,13 @@ def tryAddOn(obj,req, **kw):
 	try: hv = getattr(obj,"url_"+req)
 	except AttributeError: pass
 	else:
-		hv = hv()
-		if hv is not None:
-			return redirect(hv)
+		try:
+			hv = hv(**kw)
+		except TypeError:
+			pass
+		else:
+			if hv is not None:
+				return redirect(hv)
 
 	try: hv = getattr(obj,req)
 	except AttributeError: pass
@@ -130,31 +134,70 @@ def delete_oid(request, oid):
 
 	return render_template('delete.html', form=form, title_trace=[u"Löschen"], obj=obj)
 
+def split_details(request,obj, details):
+	for d in details.split("-"):
+		try:
+			o = Object.q.get(int(d))
+			if o != obj.superparent:
+				pass
+			request.user.will_read(o)
+			yield o
+		except Exception,e:
+			print >>sys.stderr,e
+			pass
+
+def split_details_aux(request,obj,details):
+	det = set()
+	aux = set()
+
+	if isinstance(details,basestring):
+		details = split_details(request,obj,details)
+
+	for o in details:
+		if o in det:
+			continue
+		aux.add(o)
+		det.add(o)
+		o = o.parent
+		while o and o != obj and o not in aux:
+			aux.add(o)
+			o = o.parent
+	return det,aux
+
+
+@expose('/view/<oid>/<details>')
+def view_oid_exp(request, oid, details):
+	obj = obj_get(oid)
+	d,a = split_details_aux(request,obj,details)
+	print >>sys.stderr,"D A",obj,details,d,a
+	return view_oid(request, oid, details=d, aux=a)
+
 @expose('/view/<oid>')
-def view_oid(request, oid):
+def view_oid(request, oid, **args):
 	obj = obj_get(oid)
 	request.user.will_read(obj)
 	request.user.visited(obj)
 
-	try: return tryAddOn(obj,"html_view")
+	try: return tryAddOn(obj,"html_view", **args)
 	except NoRedir: pass
 
 	try:
 		name = getattr(obj,"name",None)
 		v = import_string("pybble.part.%s.viewer" % (obj.classname.lower(),))
 	except Exception,e:
-		return render_my_template(request, obj=obj, detail=TM_DETAIL_PAGE)
+		return render_my_template(request, obj=obj, detail=TM_DETAIL_PAGE, **args);
 	else:
 		try:
-			if not isinstance(obj,Site) or obj == request.site:
-				return redirect(url_for('pybble.part.%s.viewer' % (obj.classname.lower(),)))
+			if not args and (not isinstance(obj,Site) or obj == request.site):
+				return redirect(url_for('pybble.part.%s.viewer' % (obj.classname.lower(),)**args))
 		except BuildError:
 			pass
-		args = {}
 		fn = inspect.getargspec(v)[0]
 		if "obj" in fn: args["obj"]=obj
 		if "oid" in fn: args["oid"]=oid
 		if "name" in fn: args["name"]=name
+		if "details" in fn: args["details"]=details
+		if "aux" in fn: args["aux"]=aux
 		return v(request, **args)
 
 @expose('/detail/<oid>')

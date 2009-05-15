@@ -21,7 +21,7 @@ from datetime import datetime
 ### Tracking
 ###
 
-def viewer(request, obj):
+def viewer(request, obj, **args):
 	n = Change.q.filter(and_(Change.timestamp>obj.timestamp,
 	                         Change.parent==obj.parent))\
 	            .order_by(Change.timestamp)\
@@ -30,5 +30,5 @@ def viewer(request, obj):
 	                         Change.parent==obj.parent))\
 	            .order_by(Change.timestamp.desc())\
 	            .first()
-	return render_my_template(request, obj=obj, next=n, prev=p, detail=TM_DETAIL_PAGE)
+	return render_my_template(request, obj=obj, next=n, prev=p, detail=TM_DETAIL_PAGE, **args)
 

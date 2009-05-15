@@ -75,7 +75,7 @@ def newer(request, parent, name=None):
 
 
 @expose("/")
-def viewer(request):
-	return render_my_template(request, obj=request.site, detail=TM_DETAIL_PAGE)
+def viewer(request, **args):
+	return render_my_template(request, obj=request.site, detail=TM_DETAIL_PAGE, **args)
 
 

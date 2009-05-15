@@ -7,7 +7,8 @@ from werkzeug.routing import Map, Rule
 from werkzeug.utils import http_date
 from pybble.utils import current_request, local, random_string, AuthError
 from pybble.models import PERM, PERM_NONE, PERM_ADD, Permission, obj_get, TemplateMatch, Template, WikiPage, \
-	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, StaticFile, obj_get, TM_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL
+	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, StaticFile, obj_get, TM_DETAIL, \
+	TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name
 from pybble.database import NoResult
 from pybble.diff import textDiff
 from wtforms.validators import ValidationError

@@ -44,18 +44,18 @@ if(jQuery) (function($){
 			if( o.collapseEasing == undefined ) o.collapseEasing = null;
 			
 			$(this).each( function() {
-				function showTree(c, t) {
+				function showTree(c) {
+					var t = c.attr('rel');
 					if( ! $(c).children('ul').length ) {
 						$(c).addClass('wait');
-						if (o.discr) t = t+"/"+o.discr
+						if (o.discr) t = t+"/"+o.discr;
 						$.post(o.script, { dir: t }, function(data) {
 							var ul = document.createElement("ul")
 							$(c).removeClass('wait');
-							$(ul).css("display","hidden")
-							$(ul).html(data)
-							$(c).append(ul)
+							$(ul).css("display","hidden");
+							$(ul).html(data);
+							$(c).append(ul);
 							$(c).children('UL:hidden').slideDown({ duration: o.expandSpeed, easing: o.expandEasing });
-							// $(c).children('UL:hidden').show();
 							bindTree(c);
 						});
 					}
@@ -66,7 +66,7 @@ if(jQuery) (function($){
 					var div = $(c).children('div.content')
 					if( $(c).hasClass('collapsed') ) {
 						// Expand
-						showTree( $(c), $(c).attr('rel'));
+						showTree( $(c) );
 						$(c).removeClass('collapsed').addClass('expanded');
 						if( ! div.length || div.filter(":hidden").length) clickLoad(c);
 					} else if( $(c).hasClass('expanded') ) {
@@ -75,6 +75,10 @@ if(jQuery) (function($){
 						// $(c).children('UL').hide();
 						$(c).removeClass('expanded').addClass('collapsed');
 						if( div.length && ! div.filter(":hidden").length ) clickLoad(c);
+					} else if( $(c).hasClass('mixed') ) {
+						// expand content
+						$(c).removeClass('mixed').addClass('expanded');
+						if( ! div.length || div.filter(":hidden").length) clickLoad(c);
 					} else {
 						return true;
 					}
