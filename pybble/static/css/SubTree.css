@@ -4,6 +4,11 @@ UL.SubTree, DIV.body UL.SubTree, DIV.body UL.SubTree UL {
 	margin: 0 0;
 }
 
+UL.SubTree UL {
+	padding-left: 1em;
+	padding-right: 0;
+}
+
 UL.SubTree LI {
 	list-style: none;
 	padding: 0px;
