@@ -3,11 +3,12 @@
 	 xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
 	 version="2.0">
   <channel>
-    <title>Changes to {{SITE.name}}</title>
+    <title>{{SITE.name}}</title>
+    <description>Changes to {{SITE.name}}</description>
     <link>http://{{SITE.domain}}</link>
     <language>de-de</language>
 	<pubDate>{{ NOW|date("%a, %d %b %Y %H:%M:%S %z") }}</pubDate>
-    <lastBuildDate>{{ SITE.tracked }}</lastBuildDate>
+    <lastBuildDate>{{ SITE.tracked|date("%a, %d %b %Y %H:%M:%S %z") }}</lastBuildDate>
     <generator>PyBBle</generator>
     <ttl>300</ttl>
     <sy:updatePeriod>hourly</sy:updatePeriod>
@@ -21,6 +22,7 @@
       <guid>http://{{SITE.domain}}/rss/id/{{item.oid()}}</guid>
       <description>{{ subline(item.parent.parent)|cdata }}</description>
       <content:encoded>{{ subrss(item)|cdata }}</content:encoded>
+	  <author>{{ item.owner.first_name }} {{ item.owner.last_name }} &gt;{{ item.owner.email }}&lt;</author>
     </item>
 {% endfor %} 
   </channel>
