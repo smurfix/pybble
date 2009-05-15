@@ -6,7 +6,7 @@
     <title>Changes to {{SITE.name}}</title>
     <link>http://{{SITE.domain}}</link>
     <language>de-de</language>
-    <pubDate>{{ now }}</pubDate>
+	<pubDate>{{ NOW|date("%a, %d %b %Y %H:%M:%S %z") }}</pubDate>
     <lastBuildDate>{{ SITE.tracked }}</lastBuildDate>
     <generator>PyBBle</generator>
     <ttl>300</ttl>

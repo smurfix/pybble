@@ -227,6 +227,7 @@ def render_template(template, mimetype=NotGiven, **context):
 			MESSAGES=get_flashed_messages(),
 			SITE=current_request.site,
 			CRUMBS=(user.groups+list(p.parent for p in user.all_visited()[0:20])) if user else None,
+			NOW=datetime.utcnow(),
 		)
 	r = jinja_env.get_template(template).render(**context)
 	if mimetype:
