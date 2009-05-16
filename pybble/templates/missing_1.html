@@ -37,11 +37,11 @@
 		<span class="image"></span>
 		<span href="#nogo" class="contents">
 		  {%- if nc <= 0 -%}
-			keine Kommentare
+			Dieser Beitrag wurde noch nicht kommentiert.
 		  {%- elif nc == 1 -%}
-			ein Kommentar
+			Dieser Beitrag wurde einmal kommentiert.
 		  {%- else -%}
-			{{ nc }} Kommentare
+			Dieser Beitrag wurde {{ nc }}mal kommentiert.
 		  {%- endif -%}
 		</span>
 		{% if aux %}
