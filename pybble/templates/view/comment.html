@@ -1,2 +1,14 @@
-  <h1>{{ obj.owner.name }}: {{ obj.name }}</h1>
+  <h1><a href="{{ url_for("pybble.views.view_oid", oid=obj_owner.oid()) }}">{{ obj_owner.name }}</a>: {{ obj.name }}</h1>
   {{ obj.data|markdown }}
+  {% if obj_parent or obj_superparent %}
+  <hr />
+  {% if obj_parent %}
+  Dies ist eine Antwort auf: <a href="{{ url_for("pybble.views.view_oid_exp", _external=True, oid=obj_parent.oid(),details=obj.id) }}#{{obj.id}}">{{ obj_parent.name }}</a> von <a href="{{ url_for("pybble.views.view_oid", oid=obj_parent.owner.oid()) }}">{{ obj_parent.owner.name }}</a>
+  {% endif %}
+  {% if obj_parent and obj_superparent and obj_superparent != obj_parent %}
+  <br />
+  {% endif %}
+  {% if obj_superparent and obj_superparent != obj_parent %}
+  Sie steht in Diskussion: <a href="{{ url_for("pybble.views.view_oid_exp", _external=True, oid=obj_superparent.oid(),details=obj.id) }}#{{obj.id}}">{{ obj_superparent.name }}</a> von <a href="{{ url_for("pybble.views.view_oid", oid=obj_superparent.owner.oid()) }}">{{ obj_superparent.owner.name }}</a>
+  {% endif %}
+  {% endif %}
