@@ -111,7 +111,7 @@ try:
 		b += "/wiki/"
 		obj = ctx.get("obj",None)
 		if obj:
-			if isinstance(obj.parent,WikiPage):
+			if not obj.mainpage and isinstance(obj.parent,WikiPage):
 				b += obj.parent.name+"/"
 			elif isinstance(obj,WikiPage):
 				b += obj.name+"/"
