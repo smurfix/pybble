@@ -62,15 +62,10 @@ def newer(request, parent, name=None):
 	form.parent = parent
 	if request.method == 'POST' and form.validate():
 		obj = WikiPage(form.name.data,form.page.data.replace("\r",""))
-		if isinstance(parent,Site):
-			obj.superparent = parent
-		elif isinstance(parent,WikiPage):
-			obj.superparent = None
-		else:
-			obj.superparent = parent.site
 		if isinstance(parent,WikiPage) and not parent.mainpage:
 			parent = parent.parent
 		obj.parent = parent
+		obj.superparent = request.site
 		obj.owner = request.user
 		obj.mainpage = form.mainpage.data
 		obj.record_creation()
