@@ -43,6 +43,8 @@ def newpage(form, field):
 		raise ValidationError(u"Eine Wiki-Seite namens „%s“ gibt es bereits" % (field.data,))
 
 def wikiparent(form,field):
+	if hasattr(form,"obj"):
+		return
 	if not isinstance(getattr(form,"parent",None),WikiPage) and not field.data:
 		raise ValidationError(u"Diese Seite muss als Hauptseite angelegt werden")
 
