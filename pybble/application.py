@@ -310,6 +310,7 @@ class Pybble(object):
 				w.owner=u
 				w.parent=s
 				w.superparent=s
+				w.mainpage=True
 				db.session.add(w)
 			else:
 				if w.data != data:
