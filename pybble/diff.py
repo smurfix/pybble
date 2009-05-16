@@ -38,7 +38,7 @@ def textDiff(a, b):
 				s = "\n".join(ss[:3]+[u"[…]"]+ss[-3:])
 			out.append(esc(s))
 		else: 
-			raise "Um, something's broken. I didn't expect a '" + `e[0]` + "'."
+			raise AssertionError("Um, something's broken. I didn't expect a '" + `e[0]` + "'.")
 	return ''.join(out)
 
 def html2list(x, b=0):
