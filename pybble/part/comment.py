@@ -4,7 +4,7 @@ from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from pybble.utils import current_request, make_permanent
 from pybble.render import url_for, render_template, expose, render_my_template
-from pybble.models import WikiPage, Site, Comment, TM_DETAIL_PAGE
+from pybble.models import Site, Comment, TM_DETAIL_PAGE
 from pybble.views import view_oid
 
 from pybble.database import db,NoResult
@@ -21,20 +21,9 @@ from datetime import datetime
 ### Comment editor
 ###
 
-def newpage(form, field):
-	q = Comment.q
-	if hasattr(form,"obj"):
-		q = q.filter(Comment.id != form.obj.id)
-	try:
-		q.get_by(name=field.data, superparent=current_request.site)
-	except NoResult:
-		pass
-	else:
-		raise ValidationError(u"Eine Wiki-Seite namens „%s“ gibt es bereits" % (field.data,))
-
 class CommentEditForm(Form):
-	name = TextField('Name', [validators.length(min=3, max=30), newpage])
-	page = TextAreaField('Page')
+	name = TextField('Titel', [validators.length(min=3, max=30)])
+	page = TextAreaField('Inhalt')
 
 def newer(request, parent, name=None):
 	if parent is None:
@@ -73,7 +62,7 @@ def editor(request, obj=None):
 
 			flash(u"Kommentar '%s' geändert." % (obj.name), True)
 		else:
-			flash(u"Wiki-Seite '%s' unverändert." % (obj.name))
+			flash(u"Kommentar '%s' unverändert." % (obj.name))
 
 		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
 
