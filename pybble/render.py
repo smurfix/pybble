@@ -110,7 +110,7 @@ try:
 			b = "http://"+current_request.site.domain
 		b += "/wiki/"
 		obj = ctx.get("obj",None)
-		if obj:
+		if obj and isinstance(obj,WikiPage):
 			if not obj.mainpage and isinstance(obj.parent,WikiPage):
 				b += obj.parent.name+"/"
 			elif isinstance(obj,WikiPage):
