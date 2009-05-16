@@ -324,7 +324,11 @@ class Mitglied(Object):
 				return redirect(url_for("pybble.confirm.confirm"))
 		
 		elif current_request.method == 'GET':
-			u = current_request.user.last_visited(User) or current_request.user
+			u = None
+			if current_request.user.can_admin(parent):
+				u = current_request.user.last_visited(User)
+			if not u:
+				u = current_request.user
 			if getattr(form,"user",None): form.user.data = u.oid()
 			form.email.data = u.email
 
