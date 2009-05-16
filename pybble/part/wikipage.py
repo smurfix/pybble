@@ -26,28 +26,40 @@ except ImportError: from md5 import md5
 
 def newpage(form, field):
 	q = WikiPage.q
-	if hasattr(form,"obj"):
-		q = q.filter(WikiPage.id != form.obj.id)
+	obj = getattr(form,"obj", None)
+	if obj:
+		q = q.filter(WikiPage.id != obj.id)
+	if getattr(obj,"mainpage",None) or form.mainpage.data:
+		q = q.filter_by(superparent=current_request.site)
+	else:
+		parent = getattr(form,"parent",None)
+		if isinstance(parent,WikiPage):
+			q = q.filter_by(parent=parent)
 	try:
-		q.get_by(name=field.data, superparent=current_request.site)
+		q.get_by(name=field.data)
 	except NoResult:
 		pass
 	else:
 		raise ValidationError(u"Eine Wiki-Seite namens „%s“ gibt es bereits" % (field.data,))
+
+def wikiparent(form,field):
+	if not isinstance(getattr(form,"parent",None),WikiPage) and not field.data:
+		raise ValidationError(u"Diese Seite muss als Hauptseite angelegt werden")
 
 class WikiEditForm(Form):
 	name = TextField('Name', [validators.length(min=3, max=30), newpage])
 	page = TextAreaField('Page')
 	hash = HiddenField('Hash')
 	comment = TextField('Kommentar', [validators.length(min=3, max=200)])
+	mainpage = BooleanField(u'übergeordnete Seite', [wikiparent])
+	minor = BooleanField(u'nur Kleinigkeiten geändert')
 
 def newer(request, parent, name=None):
 	if parent is None:
 		parent = request.site
-	elif isinstance(parent.parent,WikiPage):
-		parent = parent.parent
 
 	form = WikiEditForm(request.form, prefix="wiki")
+	form.parent = parent
 	if request.method == 'POST' and form.validate():
 		obj = WikiPage(form.name.data,form.page.data.replace("\r",""))
 		if isinstance(parent,Site):
@@ -56,8 +68,11 @@ def newer(request, parent, name=None):
 			obj.superparent = None
 		else:
 			obj.superparent = parent.site
+		if isinstance(parent,WikiPage) and not parent.mainpage:
+			parent = parent.parent
 		obj.parent = parent
 		obj.owner = request.user
+		obj.mainpage = form.mainpage.data
 		obj.record_creation()
 		flash(u"Wiki-Seite '%s' gespeichert." % (obj.name), True)
 		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
@@ -101,7 +116,7 @@ def editor(request, obj=None):
 @expose("/wiki/<parent>/<name>")
 def viewer(request, name, parent=None, obj=None, **args):
 	if not args and (obj and request.site == obj.superparent):
-		if isinstance(obj.parent,WikiPage):
+		if not obj.mainpage and isinstance(obj.parent,WikiPage):
 			return redirect(url_for("pybble.part.wikipage.viewer", name=name, parent=obj.parent.name))
 		else:
 			return redirect(url_for("pybble.part.wikipage.viewer", name=obj.name))
@@ -113,10 +128,10 @@ def viewer(request, name, parent=None, obj=None, **args):
 		elif parent:
 			if not args and parent == name:
 				return redirect(url_for("pybble.part.wikipage.viewer", name=name))
-			parent = WikiPage.q.get_by(name=parent, superparent=request.site)
-			obj = WikiPage.q.get_by(name=name, parent=parent)
+			parent = WikiPage.q.get_by(name=parent, superparent=request.site, mainpage=True)
+			obj = WikiPage.q.get_by(name=name, parent=parent, mainpage=False)
 		else:
-			obj = WikiPage.q.get_by(name=name, superparent=request.site)
+			obj = WikiPage.q.get_by(name=name, superparent=request.site, mainpage=True)
 	except NoResult:
 		if not parent:
 			raise

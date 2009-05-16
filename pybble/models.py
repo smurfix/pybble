@@ -1172,6 +1172,7 @@ class WikiPage(Object):
 	name = Column(String(50))
 	data = Column(Text)
 	modified = Column(TimeStamp,default=datetime.utcnow,onupdate=datetime.utcnow)
+	mainpage = Column(Boolean, nullable=False) # main-linked page?
 
 	def __init__(self, name, data):
 		self.name = name

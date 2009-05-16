@@ -9,6 +9,7 @@
 		<tr><th>Domain:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_superparent.oid()) }}">{{ obj_superparent }}</a></td></tr>
 		{% endif -%}
 		<tr><th>Geändert:</th><td>{{ obj.modified }}</td></tr>
+		<tr><th>Übergeordnet:</th><td>{{ obj.mainpage }}</td></tr>
 		<tr><th class="top">Inhalt:</th><td class="code"><code>{{ obj.data }}</code></td></tr>
 	  </tbody>
     </table>

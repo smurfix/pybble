@@ -1,1 +1,11 @@
 {{ obj.data|markdown }}
+{% if obj.mainpage and obj.has_children(d_wikipage) %}
+<h4>Inhalt:</h4>
+<p>
+{% for o in obj.all_children(d_wikipage) %}
+{% if not o.mainpage %}
+<a href="{{ url_for("pybble.views.view_oid", oid=o.oid()) }}">{{ o.name }}</a>
+{% endif %}
+{% endfor %}
+</p>
+{% endif %}

@@ -1,0 +1,2 @@
+Do("""ALTER TABLE wikipage
+    ADD COLUMN `mainpage` bool NOT NULL DEFAULT 0""")
