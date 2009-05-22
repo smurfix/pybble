@@ -308,6 +308,8 @@ class Mitglied(Object):
 			obj.mitglied_id = form.vid
 			obj.parent = parent
 			obj.owner = obj_get(form.user.data) if getattr(form,"user",None) else current_request.user
+			try: del obj.owner._memberships
+			except AttributeError: pass
 
 			obj.record_creation()
 			if obj.record.email == current_request.user.email:

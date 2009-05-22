@@ -813,6 +813,8 @@ class Member(Object):
 		self.owner = user
 		self.parent = group
 		self.excluded = False
+		try: del self._memberships
+		except AttributeError: pass
 
 	@property
 	def data(self):
