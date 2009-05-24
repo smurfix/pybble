@@ -396,7 +396,7 @@ class Object(db.Base):
 
 	@property
 	def data(self):
-		raise NotImplementedError("You need to override .data")
+		raise NotImplementedError("You need to override .data in «%s»" % (self.__class__.__name__,))
 
 	def uptree(self):
 		while self:
