@@ -901,6 +901,22 @@ class Permission(Object):
 		if not self.owner or not self.parent: return super(Permission,self).__repr__()
 		return self.__str__()
 
+	@property
+	def data(self):
+		p,s,o,d = self.pso
+		return """\
+User: %s
+Object: %s
+Object Type: %s
+New Object Type: %s
+Right: %s
+Inherited: %s
+""" % (o, p, \
+		Discriminator.q.get_by(id=self.discr).name, \
+		Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-", \
+		self.right, \
+		"*" if self.inherit is None else "Y" if self.inherit else "N")
+
 
 for a,b in PERM.iteritems():
 	def can_do_closure(a,b):
