@@ -749,6 +749,18 @@ class User(Object):
 		                    .order_by(UserTracker.id.desc())
 
 	@property
+	def recent_tracks(self):
+		latest = datetime.utcnow() - timedelta(self.feed_age,0)
+#		return UserTracker.q.filter_by(owner=self)\
+#		                    .filter(UserTracker.tracker.timestamp > datetime.utcnow() - timedelta(self.feed_age,0))\
+#		                    .order_by(UserTracker.id.desc())
+		for obj in UserTracker.q.filter_by(owner=self)\
+		                    .order_by(UserTracker.id.desc()):
+			if obj.parent.timestamp < latest:
+				return
+			yield obj
+
+	@property
 	def changes(self):
 		return Tracker.q.filter_by(owner=self).order_by(Tracker.timestamp.desc())
 
@@ -1190,7 +1202,7 @@ class WikiPage(Object):
 	name = Column(String(50))
 	data = Column(Text)
 	modified = Column(TimeStamp,default=datetime.utcnow,onupdate=datetime.utcnow)
-	mainpage = Column(Boolean, nullable=False) # main-linked page?
+	mainpage = Column(Boolean, default=True, nullable=False) # main-linked page?
 
 	def __init__(self, name, data):
 		self.name = name

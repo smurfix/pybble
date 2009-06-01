@@ -14,7 +14,7 @@
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>12</sy:updateFrequency>
  
-{%- for item in USER.tracks %}
+{%- for item in USER.recent_tracks %}
     <item>
       <title>{{ subline(item.parent.parent) }}</title>
       <link>{{ url_for('pybble.views.view_oid',oid=item.oid(),_external=True) }}</link>
