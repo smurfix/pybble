@@ -1727,9 +1727,9 @@ class BinData(Object):
 		self.hash = hash_data(content)
 
 	def __str__(self):
-		return "<%s %s: %s %s>" % (self.__class__.__name__, self.id,self.mimetype,self.path)
+		return "<%s %s: %s %s>" % (self.__class__.__name__, self.id,self.name+"."+self.ext,self.mimetype)
 	def __unicode__(self):
-		return u"‹%s %s: %s %s›" % (self.__class__.__name__, self.id,self.mimetype,self.path)
+		return u"‹%s %s: %s %s›" % (self.__class__.__name__, self.id,self.name+"."+self.ext,self.mimetype)
 	__repr__ = __str__
 
 	def _get_content(self):
@@ -1849,6 +1849,22 @@ class StaticFile(Object):
 		self.superparent = current_request.site
 		self.parent = bin
 		
+	def __unicode__(self):
+		if self._rec_str or not self.superparent or not self.parent: return super(StaticFile,self).__unicode__()
+		try:
+			self._rec_str = True
+			return u'‹%s %s: %s in %s›' % (self.__class__.__name__, self.id, self.path, unicode(self.superparent))
+		finally:
+			self._rec_str = False
+	def __str__(self):
+		if self._rec_str or not self.superparent or not self.parent: return super(StaticFile,self).__str__()
+		try:
+			self._rec_str = True
+			return '<%s %s: %s in %s>' % (self.__class__.__name__, self.id, self.path, str(self.superparent))
+		finally:
+			self._rec_str = False
+	def __repr__(self):
+		return self.__str__()
 	@property
 	def hash(self):
 		return self.bindata.hash
