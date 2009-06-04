@@ -2,10 +2,27 @@
 {% if obj.mainpage and obj.has_children(d_wikipage) %}
 <h4>Inhalt:</h4>
 <p>
-{% for o in obj.all_children(d_wikipage) %}
-{% if not o.mainpage %}
-<a href="{{ url_for("pybble.views.view_oid", oid=o.oid()) }}">{{ o.name }}</a>
-{% endif %}
-{% endfor %}
+{%- set n=0 %}
+{%- for o in obj.all_children(d_wikipage) %}
+{%- if o.mainpage %}
+<a href="{{ url_for("pybble.views.view_oid", oid=o.oid()) }}" class="wikilink_sub">{{ o.name }}</a>
+{%- else %}
+{%- set n=n+1 %}
+{%- endif %}
+{%- endfor %}
+{%- if n>0 %} | {% endif %}
+{%- for o in obj.all_children(d_wikipage) %}
+{%- if not o.mainpage %}
+<a href="{{ url_for("pybble.views.view_oid", oid=o.oid()) }}" class="wikilink_main">{{ o.name }}</a>
+{%- endif %}
+{%- endfor %}
 </p>
-{% endif %}
+{%- endif %}
+{% if obj.mainpage and obj.has_children(d_bindata) %}
+<h4>Dateien:</h4>
+<p>
+{%- for o in obj.all_children(d_bindata) %}
+<a href="{{ url_for("pybble.render.download", oid=obj.oid(),name=obj.name+"."+obj.ext) }}"><code>{{ obj.name }}.{{obj.ext}}</code></a> ({{}} Bytes)<br />
+{%- endfor %}
+</p>
+{%- endif %}

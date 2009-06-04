@@ -18,6 +18,9 @@
   {% if can_add(d_comment) %}
   <div class="new_comment"><a href="{{ url_for("pybble.views.new_oid",oid=obj.oid(),discr=d_comment) }}">{% if obj.discriminator == d_comment %}antworten{% else %}Diese Seite kommentieren{% endif %}</a></div>
   {% endif %}
+  {% if can_add(d_bindata) %}
+  <div class="new_bindata"><a href="{{ url_for("pybble.views.new_oid",oid=obj.oid(),discr=d_bindata) }}">Datei anhängen</a></div>
+  {% endif %}
 
 <div class="subpage">
 {{ subpage(obj) }}

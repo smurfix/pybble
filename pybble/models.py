@@ -7,9 +7,15 @@ from sqlalchemy.orm import relation,backref
 from sqlalchemy.sql import select,func
 from pybble.utils import random_string, current_request, AuthError
 from pybble.database import db, NoResult
-from sqlalchemy.databases.mysql import MSTinyInteger as TinyInteger
-from sqlalchemy.databases.mysql import MSSmallInteger as SmallInteger
-from sqlalchemy.databases.mysql import MSTimeStamp as TimeStamp
+try: ## sqlalchemy 0.5
+	from sqlalchemy.databases.mysql import MSTinyInteger as TinyInteger
+	from sqlalchemy.databases.mysql import MSSmallInteger as SmallInteger
+	from sqlalchemy.databases.mysql import MSTimeStamp as TimeStamp
+except ImportError: ## sqlalchemy 0.6
+	from sqlalchemy.dialects.mysql.base import MSTinyInteger as TinyInteger
+	from sqlalchemy.dialects.mysql.base import MSSmallInteger as SmallInteger
+	from sqlalchemy.dialects.mysql.base import MSTimeStamp as TimeStamp
+
 from sqlalchemy.sql import and_, or_, not_
 from pybble.decorators import add_to
 from werkzeug import import_string
@@ -425,6 +431,16 @@ class Object(db.Base):
 		self.parent = None
 		self.superparent = None
 
+	@property
+	def default_storage(self):
+		"""Some objects may have a 'storage' attribute."""
+		s = getattr(self,"storage",None)
+		if s:
+			return s
+		if self.parent is None:
+			return None
+		return self.parent.default_storage
+
 
 Object.owner = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Object.owner_id==Object.id))
 Object.parent = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Object.parent_id==Object.id))
@@ -492,9 +508,9 @@ class User(Object):
 		"""
 	__tablename__ = "users"
 	__table_args__ = {'useexisting': True}
-	__mapper_args__ = {'polymorphic_identity': 2}
 	q = db.session.query_property(UserQuery)
 	id = Column(Integer, ForeignKey(Object.id,name="user_id"), primary_key=True,autoincrement=False)
+	__mapper_args__ = {'polymorphic_identity': 2, 'inherit_condition': id==Object.id}
 	        
 	username = Column(Unicode(30), nullable=False)
 	first_name = Column(Unicode(30))
@@ -791,9 +807,9 @@ class Group(Object):
 		"""
 	__tablename__ = "groups"
 	__table_args__ = {'useexisting': True}
-	__mapper_args__ = {'polymorphic_identity': 4}
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey(Object.id,name="group_id"), primary_key=True,autoincrement=False)
+	__mapper_args__ = {'polymorphic_identity': 4, 'inherit_condition': id==Object.id}
 	        
 	name = Column(Unicode(30))
 
@@ -804,7 +820,7 @@ class Group(Object):
 	
 def named_group(owner, name):
 	"""Return the site-specific group with that name."""
-	return Group.q.get_by(name==name, owner==site)
+	return Group.q.get_by(name=name, owner=site)
 
 class Member(Object):
 	"""\
@@ -814,10 +830,10 @@ class Member(Object):
 		"""
 	__tablename__ = "groupmembers"
 	__table_args__ = {'useexisting': True}
-	__mapper_args__ = {'polymorphic_identity': 13}
 	_no_crumbs = True
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey(Object.id,name="member_id"), primary_key=True,autoincrement=False)
+	__mapper_args__ = {'polymorphic_identity': 13, 'inherit_condition': id==Object.id}
 
 	excluded = Column(Boolean, nullable=False)
 
@@ -876,10 +892,10 @@ class Permission(Object):
 		"""
 	__tablename__ = "permissions"
 	__table_args__ = {'useexisting': True}
-	__mapper_args__ = {'polymorphic_identity': 10}
 	_no_crumbs = True
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey(Object.id,name="permission_id"), primary_key=True,autoincrement=False)
+	__mapper_args__ = {'polymorphic_identity': 10, 'inherit_condition': id==Object.id}
 
 	right = Column(Integer(1), nullable=False)
 	inherit = Column(Boolean, nullable=True)
@@ -950,18 +966,48 @@ for a,b in PERM.iteritems():
 	setattr(Object,'will_'+b.lower(), d)
 
 
+class Storage(Object):
+	"""A box for binary data files"""
+	__tablename__ = "storage"
+	__table_args__ = {'useexisting': True}
+	_no_crumbs = True
+
+	q = db.session.query_property(db.Query)
+	id = Column(Integer, ForeignKey(Object.id,name="storage_id"), primary_key=True,autoincrement=False)
+	__mapper_args__ = {'polymorphic_identity': 21, 'inherit_condition': id==Object.id}
+
+	name = Column(Unicode(250), nullable=False, unique=True)
+	path = Column(String(250), nullable=False, unique=True)
+	url = Column(String(250), nullable=False, unique=True)
+
+	def __init__(self, name,path,url):
+		self.name = unicode(name)
+		self.path = path
+		self.url = url
+		self.superparent = current_request.site
+		try: os.makedirs(path)
+		except OSError: pass
+
+	def __str__(self):
+		return "<%s %s: %s %s>" % (self.__class__.__name__, self.id,self.name,str(self.path))
+	def __unicode__(self):
+		return u"‹%s %s: %s %s›" % (self.__class__.__name__, self.id,self.name,unicode(self.path))
+	__repr__ = __str__
+
+
 class Site(Object):
 	"""A web domain. 'owner' is set to the domain's superuser."""
 	__tablename__ = "sites"
 	__table_args__ = {'useexisting': True}
-	__mapper_args__ = {'polymorphic_identity': 5}
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey(Object.id,name="site_id"), primary_key=True,autoincrement=False)
+	__mapper_args__ = {'polymorphic_identity': 5, 'inherit_condition': id==Object.id}
 
 	domain = Column(Unicode(100), nullable=False, unique=True)
 	name = Column(Unicode(50), nullable=False, unique=True)
 	tracked = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 	## Datestamp of newest fully-processed Tracker object
+	storage_id = Column(Integer,ForeignKey(Object.id,name="site_storage"))    # storage
 
 	def __init__(self,domain,name=None):
 		if name is None:
@@ -1001,6 +1047,9 @@ Site.users = relation(User, secondary=site_users, backref='sites',
 	primaryjoin=(Site.id==site_users.c.site_id),
 	secondaryjoin=(site_users.c.user_id==User.id))
 
+Site.storage = relation(Storage, uselist=False, remote_side=Storage.id, primaryjoin=(Storage.id==Site.storage_id), foreign_keys=[Site.storage_id])
+
+
 class Template(Object):
 	"""
 		A template for rendering.
@@ -1009,9 +1058,10 @@ class Template(Object):
 		"""
 	__tablename__ = "templates"
 	__table_args__ = ({'useexisting': True})
-	__mapper_args__ = {'polymorphic_identity': 6}
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey(Object.id,name="template_id"), primary_key=True,autoincrement=False)
+	__mapper_args__ = {'polymorphic_identity': 6, 'inherit_condition': id==Object.id}
+
 	name = Column(String(50), nullable=False)
 	data = Column(Text)
 	modified = Column(TimeStamp,default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -1034,9 +1084,9 @@ class TemplateMatch(Object):
 		"""
 	__tablename__ = "template_match"
 	__table_args__ = ({'useexisting': True})
-	__mapper_args__ = {'polymorphic_identity': 12}
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey(Object.id,name="template_match_id"), primary_key=True,autoincrement=False)
+	__mapper_args__ = {'polymorphic_identity': 12, 'inherit_condition': id==Object.id}
 
 	data = Column(Text)
 	modified = Column(TimeStamp,default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -1122,9 +1172,9 @@ class Verifier(Object):
 		"""
 	__tablename__ = "verifiers"
 	__table_args__ = ({'useexisting': True})
-	__mapper_args__ = {'polymorphic_identity': 8}
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey(Object.id,name="verifier_id"), primary_key=True,autoincrement=False)
+	__mapper_args__ = {'polymorphic_identity': 8, 'inherit_condition': id==Object.id}
 
 	base_id = Column(TinyInteger, ForeignKey(VerifierBase.id,name="verifier_base"))
 	code = Column(String(50), nullable=False, unique=True)
@@ -1195,9 +1245,9 @@ class WikiPage(Object):
 		"""
 	__tablename__ = "wikipage"
 	__table_args__ = ({'useexisting': True})
-	__mapper_args__ = {'polymorphic_identity': 9}
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey(Object.id,name="wikipage_id"), primary_key=True,autoincrement=False)
+	__mapper_args__ = {'polymorphic_identity': 9, 'inherit_condition': id==Object.id}
 
 	name = Column(String(50))
 	data = Column(Text)
@@ -1224,11 +1274,11 @@ class Breadcrumb(Object):
 		"""
 	__tablename__ = "breadcrumbs"
 	__table_args__ = ({'useexisting': True})
-	__mapper_args__ = {'polymorphic_identity': 14}
 	_no_crumbs = True
 
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey(Object.id,name="breadcrumb_id"), primary_key=True,autoincrement=False)
+	__mapper_args__ = {'polymorphic_identity': 14, 'inherit_condition': id==Object.id}
 
 	discr = Column(TinyInteger, ForeignKey(Discriminator.id,name="breadcrumb_discr"), nullable=False)
 	#seq = Column(Integer)
@@ -1269,11 +1319,11 @@ class Change(Object):
 		"""
 	__tablename__ = "changes"
 	__table_args__ = ({'useexisting': True})
-	__mapper_args__ = {'polymorphic_identity': 15}
 	_no_crumbs = True
 
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey(Object.id,name="change_id"), primary_key=True,autoincrement=False)
+	__mapper_args__ = {'polymorphic_identity': 15, 'inherit_condition': id==Object.id}
 
 	timestamp = Column(TimeStamp,default=datetime.utcnow)
 	data = Column(Text)
@@ -1327,8 +1377,7 @@ class Delete(Object):
 
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey(Object.id,name="delete_id"), primary_key=True,autoincrement=False)
-
-	__mapper_args__ = {'polymorphic_identity': 16, 'inherit_condition':id==Object.id}
+	__mapper_args__ = {'polymorphic_identity': 16, 'inherit_condition': id==Object.id}
 
 	comment = Column(Unicode(200), nullable=True)
 
@@ -1383,11 +1432,11 @@ class Tracker(Object):
 		"""
 	__tablename__ = "tracking"
 	__table_args__ = ({'useexisting': True})
-	__mapper_args__ = {'polymorphic_identity': 17}
 	_no_crumbs = True
 
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey(Object.id,name="tracker_id"), primary_key=True,autoincrement=False)
+	__mapper_args__ = {'polymorphic_identity': 17, 'inherit_condition': id==Object.id}
 
 	timestamp = Column(TimeStamp,default=datetime.utcnow)
 
@@ -1448,11 +1497,11 @@ class UserTracker(Object):
 		"""
 	__tablename__ = "usertracking"
 	__table_args__ = ({'useexisting': True})
-	__mapper_args__ = {'polymorphic_identity': 18}
 	_no_crumbs = True
 
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey(Object.id,name="usertracker_id"), primary_key=True,autoincrement=False)
+	__mapper_args__ = {'polymorphic_identity': 18, 'inherit_condition': id==Object.id}
 
 	def __init__(self, user, tracker, want):
 		self.owner = user
@@ -1494,9 +1543,9 @@ class WantTracking(Object):
 		"""
 	__tablename__ = "wanttracking"
 	__table_args__ = ({'useexisting': True})
-	__mapper_args__ = {'polymorphic_identity': 19}
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey(Object.id,name="wanttracking_id"), primary_key=True,autoincrement=False)
+	__mapper_args__ = {'polymorphic_identity': 19, 'inherit_condition': id==Object.id}
 
 	discr = Column(TinyInteger, ForeignKey(Discriminator.id,name="wanttracking_discr"), nullable=True)
 	email = Column(Boolean, nullable=False) # send mail, not just RSS/on-site?
@@ -1608,6 +1657,10 @@ class MIMEtype(db.Base,DbRepr):
 		return u"‹%s %s: .%s %s›" % (self.__class__.__name__, self.id,self.ext,self.mimetype)
 	__repr__ = __str__
 
+def find_mimetype(typ,subtyp=None):
+	if subtyp is None:
+		typ,subtyp = typ.split("/")
+	return MIMEtype.q.get_by(typ=typ, subtyp=subtyp)
 
 class MIMEext(db.Base):
 	"""Extensions for MIME types"""
@@ -1627,34 +1680,6 @@ class MIMEext(db.Base):
 #MIMEext.mime = relation(MIMEtype, uselist=False, remote_side=MIMEtype.id, primaryjoin=(MIMEext.mime_id==MIMEtype.id))
 MIMEtype.exts = relation(MIMEext, uselist=True, remote_side=MIMEext.mime_id, primaryjoin=(MIMEext.mime_id==MIMEtype.id))
 
-class Storage(Object):
-	"""A box for binary data files"""
-	__tablename__ = "storage"
-	__table_args__ = {'useexisting': True}
-	__mapper_args__ = {'polymorphic_identity': 21}
-	_no_crumbs = True
-
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="storage_id"), primary_key=True,autoincrement=False)
-
-	name = Column(Unicode(250), nullable=False, unique=True)
-	path = Column(String(250), nullable=False, unique=True)
-	url = Column(String(250), nullable=False, unique=True)
-
-	def __init__(self, name,path,url):
-		self.name = unicode(name)
-		self.path = path
-		self.url = url
-		self.superparent = current_request.site
-		try: os.makedirs(path)
-		except OSError: pass
-
-	def __str__(self):
-		return "<%s %s: %s %s>" % (self.__class__.__name__, self.id,self.name,str(self.path))
-	def __unicode__(self):
-		return u"‹%s %s: %s %s›" % (self.__class__.__name__, self.id,self.name,unicode(self.path))
-	__repr__ = __str__
-
 class _ContentExists: pass
 def hash_data(content):
 	import sha
@@ -1670,10 +1695,11 @@ class BinData(Object):
 		"""
 	__tablename__ = "bindata"
 	__table_args__ = {'useexisting': True}
-	__mapper_args__ = {'polymorphic_identity': 22}
 	_no_crumbs = True
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey(Object.id,name="bindata_id"), primary_key=True,autoincrement=False)
+	__mapper_args__ = {'polymorphic_identity': 22, 'inherit_condition': id==Object.id}
+
 	mime_id = Column(Integer, ForeignKey(MIMEtype.id,name="bindata_mimeid"))
 	name = Column(Unicode(50), nullable=False)
 	hash = Column(String(30), nullable=False, unique=True)
@@ -1683,13 +1709,21 @@ class BinData(Object):
 	def lookup(content):
 		return BinData.q.get_by(hash=hash_data(content))
 			
-	def __init__(self,storage,name,ext,content, parent=None):
-		self.superparent = storage
+	def __init__(self,name, ext=None,mimetype=None, content=None, parent=None, storage=None):
+
 		self.parent = parent or current_request.site
+		self.superparent = storage or self.parent.default_storage
 		self.name = name
 		self._content = content
 		self.owner = current_request.user
-		self.mime = mime_ext(ext)
+		if mimetype:
+			self.mime = mimetype
+			if ext:
+				assert mimetype == mime_ext(ext),"Extension doesn't match MIME type"
+		elif ext:
+			self.mime = mime_ext(ext)
+		else:
+			raise RuntimeError("You need to specify MIME type or extension")
 		self.hash = hash_data(content)
 
 	def __str__(self):
@@ -1805,8 +1839,7 @@ class StaticFile(Object):
 
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey(Object.id,name="staticfile_id"), primary_key=True,autoincrement=False)
-
-	__mapper_args__ = {'polymorphic_identity': 20, 'inherit_condition':id==Object.id}
+	__mapper_args__ = {'polymorphic_identity': 20, 'inherit_condition': id==Object.id}
 
 	path = Column(Unicode(200), nullable=False)
 	modified = Column(TimeStamp, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -1841,9 +1874,9 @@ class Comment(renderObject):
 		"""
 	__tablename__ = "comment"
 	__table_args__ = ({'useexisting': True})
-	__mapper_args__ = {'polymorphic_identity': 23}
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey(Object.id,name="comment_id"), primary_key=True,autoincrement=False)
+	__mapper_args__ = {'polymorphic_identity': 23, 'inherit_condition': id==Object.id}
 
 	name = Column(Unicode(250))
 	data = Column(Text)

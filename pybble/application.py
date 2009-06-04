@@ -9,6 +9,10 @@ from pybble.render import expose_map, url_map, send_mail, expose
 from pybble.database import metadata, db, NoResult, dsn
 from sqlalchemy.sql import and_, or_, not_
 from sqlalchemy.orm import create_session
+try:
+	from sqlalchemy.engine.ddl import SchemaGenerator
+except ImportError:
+	pass
 import sqlalchemy.exc
 
 import pybble.models
@@ -136,6 +140,9 @@ class Pybble(object):
 			else:
 				st.superparent = s
 			db.session.flush()
+			if s.storage is None:
+				s.storage = st
+				db.session.flush()
 
 			try:
 				u=User.q.get_one(and_(User.sites.contains(s), User.username==u"root"))
@@ -151,7 +158,7 @@ class Pybble(object):
 			u.verified=True
 			u.parent = s
 			db.session.flush()
-			s.owner = u
+			#s.owner = u
 			db.session.flush()
 			utils.current_request.user = u
 
@@ -172,7 +179,7 @@ class Pybble(object):
 						try:
 							sb = BinData.lookup(content)
 						except NoResult:
-							sb = BinData(st,f[:dot],f[dot+1:],content)
+							sb = BinData(f[:dot],f[dot+1:],content, storage=st)
 							db.session.add(sb)
 							sb.save()
 
@@ -220,15 +227,16 @@ class Pybble(object):
 			dp = Discriminator.q.get_by(name="Permission")
 			dk = Discriminator.q.get_by(name="Comment")
 			dt = Discriminator.q.get_by(name="WantTracking")
+			dd = Discriminator.q.get_by(name="BinData")
 
-			for d in (dw,ds,dt):
+			for d in (dw,ds,dt,dd):
 				if Permission.q.filter(and_(Permission.discr==d.id,Permission.right>=0,Permission.owner==a)).count():
 					continue
 				p=Permission(a, s, d, PERM_READ)
 				p.superparent=s
 				db.session.add(p)
 
-			for d,e in ((ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk),(ds,dt)):
+			for d,e in ((ds,dd),(dw,dd),(ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk),(ds,dt)):
 				if Permission.q.filter(and_(Permission.new_discr==e.id,Permission.discr==d.id)).count():
 					continue
 				p=Permission(u, s, d, PERM_ADD)
@@ -317,6 +325,8 @@ class Pybble(object):
 					print "Warning: DocPage 'TOC' differs."
 					if replace_templates:
 						w.data = data
+				if not w.superparent:
+					w.superparent=s
 
 			for fn in os.listdir("doc"):
 				if fn.startswith("."):
@@ -340,9 +350,13 @@ class Pybble(object):
 					ww = WikiPage(fn,data)
 					ww.owner=u
 					ww.parent=w
+					ww.superparent=s
+					ww.mainpage=False
 					db.session.add(ww)
 				else:
-					if w.data != data:
+					ww.superparent=s
+					ww.mainpage=False
+					if ww.data != data:
 						print "Warning: DocPage '%s' differs." % (fn,)
 						if replace_templates:
 							ww.data = data
@@ -432,12 +446,17 @@ class Pybble(object):
 		def action():
 			"""Show all database table definitions"""
 			def foo(s, p=None):
+				if not hasattr(s,"strip"):
+					s=str(s)
 				buf.write(s.strip()+";\n")
 
 			buf = StringIO.StringIO()
 			from sqlalchemy import create_engine
 			gen = create_engine(os.getenv("DATABASE_TYPE",settings.DATABASE_TYPE)+"://", strategy="mock", executor=foo)
-			gen = gen.dialect.schemagenerator(gen.dialect, gen)
+			if hasattr(gen.dialect,"schemagenerator"):
+				gen = gen.dialect.schemagenerator(gen.dialect, gen)
+			else:
+				gen = SchemaGenerator(gen.dialect, gen)
 			for table in metadata.tables.values():
 				gen.traverse(table)
 			print buf.getvalue()
