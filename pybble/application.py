@@ -179,7 +179,7 @@ class Pybble(object):
 						try:
 							sb = BinData.lookup(content)
 						except NoResult:
-							sb = BinData(f[:dot],f[dot+1:],content, storage=st)
+							sb = BinData(f[:dot],ext=f[dot+1:],content=content, storage=st)
 							db.session.add(sb)
 							sb.save()
 
