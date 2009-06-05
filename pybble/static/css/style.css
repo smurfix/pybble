@@ -171,6 +171,10 @@ div.body ul {
     list-style: none;
 }
 
+div.body div.subpage ul {
+    list-style: disc;
+}
+
 div.error {
     margin: 1em 0 1em 0;
     border: 2px solid #AC0202;
