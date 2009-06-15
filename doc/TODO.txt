@@ -14,8 +14,6 @@ Unordered list of things to do …
 
 ### Files, Images
 
-* File attachment (comment-like)
-
 * image object (sizes!)
 
 * image gallery
@@ -44,10 +42,6 @@ Unordered list of things to do …
 
 * add user prefs how much to expand comments
 
-* auto-open new comments
-
-* show parents with fold-out when viewing single comments
-
 ### org members
 
 * Vereinsmitglieder-Liste
@@ -67,4 +61,12 @@ Unordered list of things to do …
 * User info editor
 
 * send notification messages
+
+* require confirmation when logging in without one
+
+* allow re-mailing confirmation
+
+* don't store cleartext passwords
+
+* cleanup membership caching code
 
