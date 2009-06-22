@@ -83,6 +83,23 @@ h1#top {
 
 }
 
+div.body h1 {
+    margin: 0.8em 0 0.5em 0;
+}
+div.body h2 {
+    margin: 0.5em 0 0.2em 0;
+    text-align: center;
+}
+div.body h3 {
+    margin: 0.3em 0 0.1em 0;
+}
+div.body h4 {
+    margin: 0.2em 0 0 0;
+}
+div.body h5 {
+    margin: 0 0 0 0;
+}
+
 tbody tr th {
 	text-align: right;
 }
@@ -140,11 +157,6 @@ div.body {
     // width: 460px;
     background-color: #ffc;
     color: black;
-}
-
-div.body h2 {
-    margin: 0.5em 0 0.2em 0;
-    text-align: center;
 }
 
 div.body input {
