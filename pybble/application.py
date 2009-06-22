@@ -133,10 +133,13 @@ class Pybble(object):
 			db.session.flush()
 
 			try:
-				st = Storage.q.get_by(name=u"Test")
+				st = Storage.q.get_by(name=u"Pybble")
 			except NoResult:
-				st = Storage("Test","/var/tmp/testkram","localhost:5000/static")
-				db.session.add(st)
+				try:
+					st = Storage.q.get_by(name=u"Test")
+				except NoResult:
+					st = Storage("Test","/var/tmp/testkram","localhost:5000/static")
+					db.session.add(st)
 			else:
 				st.superparent = s
 			db.session.flush()
