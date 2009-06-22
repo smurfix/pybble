@@ -8,6 +8,10 @@ Unordered list of things to do …
 
 * language in path
 
+## Wiki
+
+* add a preview button
+
 ## main features
 
 * add a blog
