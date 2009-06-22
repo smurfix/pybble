@@ -161,7 +161,7 @@ class Pybble(object):
 			u.verified=True
 			u.parent = s
 			db.session.flush()
-			s.owner_id = u.id ## recursion trap
+			#s.owner_id = u.id ## recursion trap
 			db.session.flush()
 			utils.current_request.user = u
 
