@@ -1,6 +1,6 @@
 {{ obj.data|markdown }}
 {% if obj.mainpage and obj.has_children(d_wikipage) %}
-<h4>Untergeordnete Seiten:</h4>
+<hr /><h4>Untergeordnete Seiten:</h4>
 <p>
 {%- set n=0 %}
 {%- for o in obj.all_children(d_wikipage) %}
