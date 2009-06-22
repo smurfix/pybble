@@ -161,8 +161,9 @@ class Pybble(object):
 			u.verified=True
 			u.parent = s
 			db.session.flush()
-			#s.owner_id = u.id ## recursion trap
-			db.session.flush()
+			if s.owner != u:
+				s.owner = u
+				db.session.flush()
 			utils.current_request.user = u
 
 			def add_files(dir,path):
