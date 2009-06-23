@@ -908,6 +908,10 @@ class Permission(Object):
 		self.discr = Discriminator.get(discr,obj).id
 		self.right = right
 		self.inherit = inherit
+
+		if right == PERM_ADD:
+			try: del user._can_add
+			except AttributeError: pass
 	
 	def __unicode__(self):
 		p,s,o,d = self.pso
