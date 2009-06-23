@@ -16,7 +16,7 @@
 	    {%- if USER.can_admin(obj_parent) %}
 		<tr><th>Auslöser:</th><td>
 		  <form action="{{ url_for("pybble.confirm.do_confirm", oid=obj.oid()) }}" method="post">
-		    <input type="Submit">Code-Eingabe simulieren</input>
+		    <input type="Submit" value="Code-Eingabe simulieren" />
 		  </form>
 		</td></tr>
 		{% endif %}
