@@ -9,7 +9,7 @@ try:
     ADD COLUMN `infotext` varchar(250) COLLATE utf8_general_ci NULL DEFAULT NULL""")
 except Exception:
 	pass
-Try:
+try:
 	Do("""ALTER TABLE sites
     ADD CONSTRAINT `site_storage` FOREIGN KEY (`storage_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict""")
 except Exception:
