@@ -4,5 +4,4 @@ Do("""ALTER TABLE discriminator
     ADD COLUMN `display_name` varchar(50) COLLATE utf8_general_ci NULL DEFAULT NULL,
     ADD COLUMN `infotext` varchar(250) COLLATE utf8_general_ci NULL DEFAULT NULL""")
 Do("""ALTER TABLE sites
-    DROP CONSTRAINT `obj_storage`,
     ADD CONSTRAINT `site_storage` FOREIGN KEY (`storage_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict""")
