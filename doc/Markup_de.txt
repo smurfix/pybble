@@ -1,0 +1,301 @@
+# Markup-Syntax
+
+Diese Seite dokumentiert die Markup-Syntax von pybble.
+Sie ähnelt stark der "Markdown"-Syntax, aber mit kleinen Unterschieden.
+
+## Absätze und Zeilenumbruch
+
+Ein Absatz ist einfach eine oder mehrere Textzeilen, mit einer Leerzeile
+vorher und einer danach. Normale Absätze sollten nicht eingerückt sein.
+
+Zwei Leerzeichen am Zeilenende forcieren einen Zeilenumbruch
+innerhalb des Absatzes.
+
+### Überschriften
+
+Überschriften kennzeichnet man nit einer Reihe von `#`-Zeichen am Zeilenanfang.
+
+    # Hauptüberschrift
+
+    Bla.
+
+    ## Kapitelüberschrift
+
+    Fasel.
+
+    ### Unterüberschrift
+
+    Laber
+
+    ## nächtes Kapitel
+
+etc. Bis zu sechs `#`-Zeichen werden unterstützt.
+
+### Zitate
+
+Absätze werden, genauso wie in Email, mit `>`-Zeichen eingerückt.
+Um das direkte Übernehmen von Mails zu erleichtern, funktioniert eine
+unterschiedliche Anzahl von `>`-Zeichen auch innerhalb eines Absatzes.
+
+    Fred sagt:
+    > Petra schrieb:
+    >> Bla.
+    > Das ist Fasel.
+    Wieso nicht Laber?
+
+Ein `>` am Zeilenanfang muss daher mit `&lt;` umschrieben oder mit Backticks
+zitiert werden. Dazu unten mehr.
+
+Ansonsten können alle Syntaxelemente auch in Zitaten verwendet werden.
+
+### Listen
+
+Die Syntax unterstützt unnumerierte und numerierte Listen.
+
+Numerierte Listen funktionieren mit Sternchen, Plus- und Minuszeichen:
+
+    * rot
+    * grün
+    * blau
+
+liefert:
+
+* rot
+* grün
+* blau
+
+Für numerierte Listen nehme man Zahlen. (Welche, ist egal.)
+
+    3. Erste
+    2. Zweite?
+    1. Dritte!
+
+3. Erste
+2. Zweite?
+1. Dritte!
+
+Die einzelnen Punkte können mehrzeilig sein; Folgezeilen kann man einrücken
+(mit höchstens drei Leerstellen), muss man aber nicht.
+
+Wenn zwischen den Punkten einer Liste Leerzeilen stehen, ist es auch
+möglich, Punkte mit mehreren Absätzen zu schreiben:
+
+    1. Wir haben Ferien.
+
+        Aber nur heute.
+
+    2. Wir haben Schule.
+
+wird zu:
+
+1. Wir haben Ferien.
+
+    Aber nur heute.
+
+2. Wir haben Schule.
+
+Dazu müssen die Folgeabsätze mit vier Leerstellen
+(oder einem Tab) eingerückt sein.
+
+### Formatierung ausschalten
+
+Um unformatierten Text 1:1 darzustellen, muss man ihn nur mit vier Leerstellen
+(oder einem Tab) einrücken.
+
+    Einzelne Wörter betonen wir mit *Sternchen*.
+    Das wird dann zu <emph>Sternchen</emph>.
+
+Wie man sieht, wird HTML und Ähnliches 1:1 ausgegeben.
+
+### Linien
+
+Eine Trennzeile (in HTML: `<hr />`) kann man mit drei oder mehr Sternchen,
+Minus- oder Unterstrichzeichen auslösen, also z.B.:
+
+    * * *
+
+oder
+
+    ---------------------------------------
+
+etc.
+
+### Markup-Syntax vs. HTML
+
+HTML-Elemente können in Markdown frei verwendet werden.
+(Elemente auf Blockebene müssen mit Leerzeilen separiert werden.)
+
+Eine HTML-Tabelle sieht zum Beispiel so aus:
+
+    Dies ist ein normaler Absatz.
+
+    <table>
+        <tr>
+            <td>Foo</td>
+        </tr>
+    </table>
+
+    Dies ist noch ein normaler Absatz.
+
+In solchen Blöcken kann man keine Markdown-Syntax wie `*Betonung` etc.
+verwenden. Diese wird nicht interpretiert.
+
+HTML-Tags auf Zeilenebene -- z.B. `<span>`, `<cite>`, oder `<del>` --
+kann man in jedem Markdown-Absatz verwenden.
+
+* * *
+
+## Elemente innerhalb eines Absatzes
+
+### Links
+
+Link-Ziele kann man direkt im text oder als Referenz angeben.
+
+In beiden Fällen wird der Linktext mit [eckigen Klammern] begrenzt.
+
+Direkt im Text schreibt man direkt danach das Link-Ziel in normale
+Klammern. Dabei kann man optional einen Link-Titel angeben, der
+erscheint, wenn man mit der Maus über den Link fährt:
+
+    Dies ist [ein Beispiel](http://example.com/ "Titel")-Link.
+
+    [Dieser Link](http://example.net/) hat keinen Titel.
+
+Für Links auf den gleichen Server sollte man den Hostnamen weglassen:
+
+    Details auf der ["über mich"](/about/)-Seite.
+
+Bei Links als Referenz schreibt man direkt hinter die eckigen Klammern
+ein weiteres Klammernpaar mit einem Kurznamen:
+
+    Dies ist [ein Beispiel][ref] für einen Referenz-Link.
+
+Irgendwo anders im Dokument, sinnvollerweise weiter unten, kann man
+den Link definieren (in einem eigenen Absatz):
+
+    [ref]: http://example.com/  "Optionaler Titel"
+
+Um die URL kann man spitze Klammern schreiben. Als Markierung für den Titel
+funktionieren auch einfache Anführungszeichen und Klammern:
+
+    [ref]: <http://example.com/>  (Optionaler Titel)
+
+Falls die URL zu lang ist, kann man den Titel auch (eingerückt) auf
+die nächste Zeile schreiben:
+
+    [ref]: http://example.com/dieser/pfad/ist/heute/viel/zu/lang/
+        "Optionaler Titel"
+
+Der Linkname kann auch impliziert werden:
+
+	[Google][]
+
+und dann:
+
+	[Google]: http://google.com/
+
+Linknamen dürfen Leerstellen enthalten.
+
+### Wiki-Links
+
+Im pybble-Wiki kann man Wiki-Links mit doppelten eckigen Klammern
+markieren:
+
+    Genaueres können Sie auf der [[Details]]-Seite lesen.
+
+### Betonung
+
+Sternchen (`*`) und Unterstriche (`_`) werden zur Betonung von einem
+oder mehreren Wörtern verwendet. Zur verstärkten Betonung kann man
+die Zeichen wiederholen:
+
+    *ein Sternchen*
+    __zwei Unterstriche__
+
+In der HTML-Ausgabe sieht das dann so aus:
+
+    <em>ein Sternchen</em>
+    <strong>zwei Unterstriche</strong>
+
+Betonung funktioniert auch in einem Wort, aber nur mit Sternchen:
+
+    un*glaub*lich
+
+### Code
+
+Um Code oder Ähnliches innerhalb eines Absatzes zu kennzeichnen,
+werden Backticks (\`) verwendet.
+
+Wenn innerhalb eines solchen Blocks wiederum Backticks stehen sollen,
+kann man diese duplizieren.
+
+	Dies ist `code`.
+
+	Eine Kennzeichnung als Code sieht `` `so` `` aus.
+	
+### Bilder
+
+Um Bilder einzufügen, wird dieselbe Syntax verwendet wie bei Links.
+Einziger Unterschied: Vor der ersten eckigen Klammer steht ein
+Ausrufezeichen.
+
+Der Alt-Text wird angezeigt, während das Bild geladen wird -- oder
+stattdessen, wenn der Browser Bilder nicht automatisch lädt.
+
+    ![Alt-Text](/path/to/img.jpg)
+
+    ![Alt-Text](/path/to/img.jpg "Optionaler Titel")
+
+oder:
+
+    ![Alt text][id]
+
+    [id]: url/to/image  "Optional title attribute"
+
+Die Syntax unterstützt keine weiteren Tags wie Bildgröße etc.;
+wem das wichtig ist, der kann normale `<img>`-tags verwenden.
+
+* * *
+
+## Verschiedenes
+
+### Automatik-Links
+
+Links und Mailadressen kann man einfach in eckige Klammern setzen.
+
+    <http://example.com/>
+    
+wird zu <http://example.com/> (bzw. `<a href="http://example.com/">http://example.com/</a>`).
+
+Email-Links werden ein wenig randomisiert, damit Spammer sie nicht
+so leicht finden.
+
+    <address@example.com>
+
+wird zu <address@example.com>, sieht im Quelltext in etwa so aus:
+
+    <a href="&#x6D;&#x61;i&#x6C;&#x74;&#x6F;:&#x61;&#x64;&#x64;&#x72;&#x65;
+    &#115;&#115;&#64;&#101;&#120;&#x61;&#109;&#x70;&#x6C;e&#x2E;&#99;&#111;
+    &#109;">&#x61;&#x64;&#x64;&#x72;&#x65;&#115;&#115;&#64;&#101;&#120;&#x61;
+    &#109;&#x70;&#x6C;e&#x2E;&#99;&#111;&#109;</a>
+
+### Escape-Zeichen
+
+Falls ein Zeichen nicht wie sonst behandelt werden soll, kann man es
+einfach mit einem Backslash (`\\`) markieren:
+
+    \*Sternchen\*
+
+## Unterschiede zur Standard-Markdown-Syntax
+
+Wiki-Links werden mit doppelten eckigen Klammern geschrieben: \[\[Wort\]\]
+wird zu [[Wort]].
+
+In der Standard-Markdown-Syntax kann man mit einem einzelnen `>` einen
+ganzen Absatz einrücken, muss dafür aber Absätze mit unterschiedlicher
+Zitatebene mit einer Leerzeile trennen. In Emails wird das aber so gut wie
+nie stringent durchgehalten. Deshalb verlangt diese Version ein `>` vor
+jeder Zeile und wechselt bei unterschiedlicher Einrückungstiefe auch 
+innerhalb eines Absatzes die Zitatebene.
+
+Unterstriche innerhalb von Worten werden nicht als Betonung gewertet.
