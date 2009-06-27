@@ -1,7 +1,16 @@
-Do("""ALTER TABLE sites
+try:
+	Do("""ALTER TABLE sites
     DROP FOREIGN KEY `obj_storage`""")
-Do("""ALTER TABLE discriminator
+except Exception:
+	pass
+try:
+	Do("""ALTER TABLE discriminator
     ADD COLUMN `display_name` varchar(50) COLLATE utf8_general_ci NULL DEFAULT NULL,
     ADD COLUMN `infotext` varchar(250) COLLATE utf8_general_ci NULL DEFAULT NULL""")
-Do("""ALTER TABLE sites
+except Exception:
+	pass
+Try:
+	Do("""ALTER TABLE sites
     ADD CONSTRAINT `site_storage` FOREIGN KEY (`storage_id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict""")
+except Exception:
+	pass
