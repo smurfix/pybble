@@ -3,6 +3,10 @@
 Diese Seite dokumentiert die Markup-Syntax von pybble.
 Sie ähnelt stark der "Markdown"-Syntax, aber mit kleinen Unterschieden.
 
+Beachte: Wie die einzelnen Elemente genau dargestellt werden (z.B bei
+Überschriften: zentriert, unterstrichen, …), steht in der CSS-Datei
+der Webseite.
+
 ## Absätze und Zeilenumbruch
 
 Ein Absatz ist einfach eine oder mehrere Textzeilen, mit einer Leerzeile
@@ -13,7 +17,7 @@ innerhalb des Absatzes.
 
 ### Überschriften
 
-Überschriften kennzeichnet man nit einer Reihe von `#`-Zeichen am Zeilenanfang.
+Überschriften kennzeichnet man mit einer Reihe von `#`-Zeichen am Zeilenanfang.
 
     # Hauptüberschrift
 
@@ -285,6 +289,8 @@ Falls ein Zeichen nicht wie sonst behandelt werden soll, kann man es
 einfach mit einem Backslash (`\\`) markieren:
 
     \*Sternchen\*
+
+* * *
 
 ## Unterschiede zur Standard-Markdown-Syntax
 
