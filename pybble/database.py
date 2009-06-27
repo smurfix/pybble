@@ -11,6 +11,7 @@ from sqlalchemy import MetaData, create_engine, Table, String, Boolean,\
 from sqlalchemy.types import TypeDecorator, MutableType
 from sqlalchemy.orm import scoped_session, create_session, relation, Query, \
     MapperExtension
+from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 from pybble.utils import local_manager
 
@@ -29,7 +30,7 @@ Base = declarative_base()
 Session = scoped_session(lambda: create_session(db.engine,
                          autocommit=False), local_manager.get_ident)
 
-engine = create_engine(dsn, pool_recycle=300, convert_unicode=True, echo=settings.DATABASE_DEBUG)
+engine = create_engine(dsn, poolclass=NullPool, convert_unicode=True, echo=settings.DATABASE_DEBUG)
 metadata = Base.metadata
 
 Model = declarative_base(metadata=metadata,
