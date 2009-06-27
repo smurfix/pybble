@@ -77,6 +77,8 @@ class Discriminator(db.Base,DbRepr):
 	q = db.session.query_property(db.Query)
 	id = Column(TinyInteger(1), primary_key=True)
 	name = Column(String(30), nullable=False, unique=True)
+	display_name = Column(Unicode(50), nullable=True)
+	infotext = Column(Unicode(250), nullable=True)
 
 	def __init__(self, cls):
 		self.id = cls.__mapper__.polymorphic_identity
@@ -1550,6 +1552,7 @@ class WantTracking(Object):
 	q = db.session.query_property(db.Query)
 	id = Column(Integer, ForeignKey(Object.id,name="wanttracking_id"), primary_key=True,autoincrement=False)
 	__mapper_args__ = {'polymorphic_identity': 19, 'inherit_condition': id==Object.id}
+	_display_name = "Beobachtungs-Eintrag"
 
 	discr = Column(TinyInteger, ForeignKey(Discriminator.id,name="wanttracking_discr"), nullable=True)
 	email = Column(Boolean, nullable=False) # send mail, not just RSS/on-site?

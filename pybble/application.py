@@ -113,6 +113,12 @@ class Pybble(object):
 				else:
 					if o.name != v.__name__:
 						raise ValueError("Discriminator '%d' pointed at '%s', now '%s'!" % (k,o.name,v.__name__))
+					try:
+						n = v._display_name
+					except AttributeError:
+						pass
+					else:
+						o.display_name = n
 			db.session.flush()
 
 			domain=domain.decode("utf-8")

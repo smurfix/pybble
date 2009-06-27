@@ -184,7 +184,7 @@ def addables(obj):
 #			if getattr(obj_class(d.id),"_no_crumbs",False):
 #				continue
 			if current_request.user.can_add(obj, discr=obj.discriminator, new_discr=d.id):
-				g.append((d.id,d.name))
+				g.append((d.id,d.display_name or d.name, d.infotext))
 		u[obj.id] = g
 	return g
 jinja_env.globals['addables'] = addables
