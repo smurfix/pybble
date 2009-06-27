@@ -15,9 +15,15 @@
 {% endblock %}
 
   {% block body %}
-  {% if can_add(d_comment) %}
-  <div class="new_comment"><a href="{{ url_for("pybble.views.new_oid",oid=obj.oid(),discr=d_comment) }}">{% if obj.discriminator == d_comment %}antworten{% else %}Diese Seite kommentieren{% endif %}</a></div>
+  <div class="new_comment">
+  {% if obj != SITE and obj.parent%}
+  zu <a href="{{ url_for("pybble.views.view_oid",oid=obj.parent.oid()) }}">{{ subline(obj.parent) }}</a>
   {% endif %}
+  {% if can_add(d_comment) %}
+  {% if obj != SITE and obj.parent %}| {% endif %}
+  <a href="{{ url_for("pybble.views.new_oid",oid=obj.oid(),discr=d_comment) }}">{% if obj.discriminator == d_comment %}antworten{% else %}Diese Seite kommentieren{% endif %}</a>
+  {%- endif -%}
+  </div>
   {% if can_add(d_bindata) %}
   <div class="new_bindata"><a href="{{ url_for("pybble.views.new_oid",oid=obj.oid(),discr=d_bindata) }}">Datei anhängen</a></div>
   {% endif %}
