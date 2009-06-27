@@ -1,27 +1,20 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime,timedelta
-from sqlalchemy import Table, Column, String, Unicode, Boolean, DateTime, Integer, ForeignKey, \
-	UniqueConstraint, Text
-from sqlalchemy.orm import relation,backref
-from sqlalchemy.sql import select,func
+from storm.locals import RawStr,Unicode,Int,Bool, Reference,ReferenceSet,Proxy,AutoReload,Select,Storm,DateTime,Desc
+from storm.expr import Alias
+from storm.properties import PropertyPublisherMeta
+from storm.references import Relation
 from pybble.utils import random_string, current_request, AuthError
 from pybble.database import db, NoResult
-try: ## sqlalchemy 0.5
-	from sqlalchemy.databases.mysql import MSTinyInteger as TinyInteger
-	from sqlalchemy.databases.mysql import MSSmallInteger as SmallInteger
-	from sqlalchemy.databases.mysql import MSTimeStamp as TimeStamp
-except ImportError: ## sqlalchemy 0.6
-	from sqlalchemy.dialects.mysql.base import MSTinyInteger as TinyInteger
-	from sqlalchemy.dialects.mysql.base import MSSmallInteger as SmallInteger
-	from sqlalchemy.dialects.mysql.base import MSTimeStamp as TimeStamp
 
-from sqlalchemy.sql import and_, or_, not_
+from sqlalchemy.sql import or_, not_
 from pybble.decorators import add_to
 from werkzeug import import_string
 from jinja2.utils import Markup
 from pybble import _settings as settings
 import sys,os
+from copy import copy
 
 DEBUG_ACCESS=settings.ACCESS_DEBUG
 
@@ -70,16 +63,16 @@ class DbRepr(object):
 	__repr__ = __str__
 
 
-class Discriminator(db.Base,DbRepr):
+class Discriminator(Storm,DbRepr):
 	"""Discriminator for Object"""
-	__tablename__ = "discriminator"
-	__table_args__ = {'useexisting': True}
-	q = db.session.query_property(db.Query)
-	id = Column(TinyInteger(1), primary_key=True)
-	name = Column(String(30), nullable=False, unique=True)
+	__storm_table__ = "discriminator"
+	__storm_primary__ = "id"
+
+	id = Int(primary=True)
+	name = RawStr(allow_none=False)
 
 	def __init__(self, cls):
-		self.id = cls.__mapper__.polymorphic_identity
+		self.id = cls._discriminator
 		self.name = cls.__name__
 	
 	@staticmethod
@@ -90,26 +83,20 @@ class Discriminator(db.Base,DbRepr):
 		if isinstance(discr, Discriminator):
 			return discr
 		elif isinstance(discr, basestring):
-			return Discriminator.q.get_by(name=discr)
+			return db.get_by(Discriminator, name=discr)
 		elif discr is None and obj is not None:
-			return Discriminator.q.get_by(id=obj.discriminator)
+			return db.get_by(Discriminator, id=obj.discriminator)
 		else:
 			assert isinstance(discr, (int,long)),repr(discr)
-			return Discriminator.q.get_by(id=discr)
+			return db.get_by(Discriminator, id=discr)
 
-class Renderer(db.Base,DbRepr):
+class Renderer(Storm,DbRepr):
 	"""Render method for object content"""
-	__tablename__ = "renderer"
-	__table_args__ = {'useexisting': True}
-	q = db.session.query_property(db.Query)
-	id = Column(TinyInteger(1), primary_key=True)
-	name = Column(String(30), nullable=False, unique=True)
-	cls = Column(String(50), nullable=False, unique=True)
+	__storm_table__ = "renderer"
+	id = Int(primary=True)
+	name = Unicode(allow_none=False)
+	cls = Unicode(allow_none=False)
 	_mod = None
-
-	def __init__(self, name, cls):
-		self.name = name
-		self.cls = cls
 
 	def __init__(self, name, cls):
 		self.name = name
@@ -121,21 +108,88 @@ class Renderer(db.Base,DbRepr):
 			self._mod = import_string(self.cls)
 		return self._mod
 	
-class Object(db.Base):
-	"""The base type of all pointed-to objects"""
-	__tablename__ = "obj"
-	__table_args__ = {'useexisting': True}
-	q = db.session.query_property(db.Query)
+class _BaseObject(Storm):
+	"""This table represents all pointed-to objects"""
+	__storm_table__ = "obj"
+	id = Int(primary=True) # my ID
+	owner_id = Int()       # creating object/user
+	parent_id = Int()      # direct ancestor (replied-to comment)
+	superparent_id = Int() # indirect ancestor (replied-to wiki page)
+	
+	owner = Reference(owner_id,id)
+	parent = Reference(parent_id,id)
+	superparent = Reference(superparent_id,id)
 
-	id = Column(Integer(20), primary_key=True)
+	discriminator = Int()
+	discr = Reference(discriminator,Discriminator.id)
 
-	# This is intentionally not a reference to the Discriminator table
-	discriminator = Column(TinyInteger, ForeignKey(Discriminator.id,name="obj_discr"))
-	__mapper_args__ = {'polymorphic_on': discriminator}
+	def __init__(self, discr):
+		self.discriminator = discr
 
-	owner_id = Column(Integer(20),ForeignKey(id,name="obj_owner"))        # creating object/user
-	parent_id = Column(Integer(20),ForeignKey(id,name="obj_parent"))      # direct ancestor (replied-to comment)
-	superparent_id = Column(Integer(20),ForeignKey(id,name="obj_super"))  # indirect ancestor (replied-to wiki page)
+class BaseObject(_BaseObject):
+	"""As above, but if an object is loaded, it grows """
+	def __storm_loaded__(self):
+		d = obj_class(self.discriminator)
+		return db.get_by(d, id=self.id)
+
+
+_discr2cls = {}
+class RegistryMeta(PropertyPublisherMeta):
+	def __init__(self, name, bases, dict):
+		super(RegistryMeta,self).__init__(name, bases, dict)
+		id = getattr(self, "_discriminator", None)
+		if id:
+			_discr2cls[id] = self
+
+		print "*",name
+		try:
+			o = Object
+		except NameError:
+			pass
+		else:
+			for a,b in Object.__dict__.items():
+				if isinstance(b,Proxy):
+					b = copy(b)
+					b._cls = self
+					setattr(self,a,b)
+					print "Proxy",a
+				elif isinstance(b,Relation):
+					k = copy(b.local_key)
+					k._cls = self
+					print "Rel",a
+
+
+
+class Object(Storm):
+	"""The base type of all pointed-to objects. Don't use this in Reference() calls!"""
+	__metaclass__ = RegistryMeta
+
+	id = Int(primary=True)
+	_obj = Reference(id, _BaseObject.id)
+
+	owner_id = Proxy(_obj, _BaseObject.owner_id)
+	parent_id = Proxy(_obj, _BaseObject.parent_id)
+	superparent_id = Proxy(_obj, _BaseObject.superparent_id)
+
+	owner = Reference(owner_id,BaseObject.id)
+	parent = Reference(parent_id,BaseObject.id)
+	superparent = Reference(superparent_id,BaseObject.id)
+
+	def _obj_init(self):
+		if self.id is not None:
+			return
+		obj = _BaseObject(self._discriminator)
+		db.store.add(obj)
+		obj.id = AutoReload
+		db.store.flush()
+		self._obj = obj
+		assert self.id is not None
+
+	def __init__(self):
+		self._obj_init()
+
+	def __storm_pre_flush__(self):
+		self._obj_init()
 
 	_rec_str = False
 
@@ -162,80 +216,78 @@ class Object(db.Base):
 	#all_children = relation('Object', backref=backref("superparent", remote_side=Object.id)) 
 
 	def has_children(self, discr=None):
-		n=0
-		for o in self.all_children(discr=discr):
-			n += 1
-		return n
+		if discr:
+			return db.store.execute(Select(Count(), BaseObject.parent_id == self.id, BaseObject.discr == discr))[0]
+		else:
+			return db.store.execute(Select(Count(), BaseObject.parent_id == self.id))[0]
 
 	def has_superchildren(self, discr=None):
 		if discr:
-			n = self.superchildren.filter_by(discriminator=discr).count()
+			return db.store.execute(Select(Count(), BaseObject.superparent_id == self.id, BaseObject.discr == discr))[0]
 		else:
-			n = self.superchildren.count()
-		return n
+			return db.store.execute(Select(Count(), BaseObject.superparent_id == self.id))[0]
 
 	def has_slaves(self, discr=None):
 		if discr:
-			n = self.slaves.filter_by(discriminator=discr).count()
+			return db.store.execute(Select(Count(), BaseObject.owner_id == self.id, BaseObject.discr == discr))[0]
 		else:
-			n = self.slaves.count()
-		return n
+			return db.store.execute(Select(Count(), BaseObject.owner_id == self.id))[0]
 
 	def all_children(self, discr=None, want=PERM_LIST):
-		q = self.children
+		q = [ BaseObject.owner_id == self.id ]
 		if discr:
-			q = q.filter_by(discriminator=discr)
-		for o in q:
+			q.append(BaseObject.discriminator == discr)
+		for o in db.store.find(BaseObject, And(*q)):
 			if current_request.user.can_do(o, discr=discr, want=want):
 				yield o
 
 	def all_superchildren(self, discr=None):
 		if discr:
-			return self.superchildren.filter_by(discriminator=discr)
+			return db.store.find(BaseObject, BaseObject.superparent_id == self.id, BaseObject.discr == discr)
 		else:
-			return self.superchildren
+			return db.store.find(BaseObject, BaseObject.superparent_id == self.id)
 
 	def all_slaves(self, discr=None):
 		if discr:
-			return self.slaves.filter_by(discriminator=discr)
+			return db.store.find(BaseObject, BaseObject.owner_id == self.id, BaseObject.discr == discr)
 		else:
-			return self.slaves
+			return db.store.find(BaseObject, BaseObject.owner_id == self.id)
 
 	@property
 	def children(self):
-		return Object.q.filter_by(parent=self)
+		return db.store.find(BaseObject, BaseObject.parent_id == self.id)
 
 	@property
 	def superchildren(self):
-		return Object.q.filter_by(superparent=self)
+		return db.store.find(BaseObject, BaseObject.superparent_id == self.id)
 
 	@property
 	def slaves(self):
-		return Object.q.filter_by(owner=self)
+		return db.store.find(BaseObject, BaseObject.owner_id == self.id)
 
 	@property
 	def discr_children(self):
-		s = select([Object.discriminator, func.count(Object.id)], Object.parent_id==self.id).\
-		    group_by(Object.discriminator).order_by(Object.discriminator)
-		for discr,num in db.engine.execute(s):
+		s = Select((Object.discriminator, Count(Object.id)), Object.parent==self, \
+		    group_by=Object.discriminator, order_by=Object.discriminator)
+		for discr,num in db.store.execute(s):
 			c = obj_class(discr)
-			yield c, c.q.filter_by(parent=self), num
+			yield c, db.filter_by(c,parent=self), num
 
 	@property
 	def discr_superchildren(self):
-		s = select([Object.discriminator, func.count(Object.id)], Object.superparent_id==self.id).\
-		    group_by(Object.discriminator).order_by(Object.discriminator)
-		for discr,num in db.engine.execute(s):
+		s = Select((Object.discriminator, Count(Object.id)), Object.superparent==self, \
+		    group_by=Object.discriminator, order_by=Object.discriminator)
+		for discr,num in db.store.execute(s):
 			c = obj_class(discr)
-			yield c, c.q.filter_by(superparent=self), num
+			yield c, db.filter_by(c,superparent=self), num
 
 	@property
 	def discr_slaves(self):
-		s = select([Object.discriminator, func.count(Object.id)], Object.owner_id==self.id).\
-		    group_by(Object.discriminator).order_by(Object.discriminator)
-		for discr,num in db.engine.execute(s):
+		s = Select((Object.discriminator, Count(Object.id)), Object.owner==self, \
+		    group_by=Object.discriminator, order_by=Object.discriminator)
+		for discr,num in db.store.execute(s):
 			c = obj_class(discr)
-			yield c, c.q.filter_by(owner=self), num
+			yield c, db.filter_by(c,owner=self), num
 
 	@property
 	def site(self):
@@ -250,7 +302,7 @@ class Object(db.Base):
 
 			if self.deleted:
 				try:
-					d = Delete.q.get_by(parent=self)
+					d = db.get_by(Delete, parent=self)
 				except NoResult:
 					return (None,None,None,None)
 				else:
@@ -258,42 +310,44 @@ class Object(db.Base):
 			else:
 				self = self.parent or self.superparent
 
-	@property
-	def has_templates(self, discriminator=None):
-		if discriminator:
-			n = len(self.templates.filter_by(discriminator=discriminator))
-		else:
-			n = len(self.templates)
-		return n
+	templates = ReferenceSet(id, "TemplateMatch.parent_id")
 
 	@property
 	def memberships(self):
 		for t in self._member_rules:
-			q={t.src:self}
-			for m in t.table.filter_by(**q):
+			q = t.args
+			q["src"] = self
+			for m in db.filter_by(t.table, **q):
 				yield m
+
 	@property
 	def members(self):
 		for t in self._member_rules:
-			q={t.dst:self}
-			for m in t.table.filter_by(**q):
+			q = t.args
+			q["dst"] = self
+			for m in db.filter_by(t.table, **q):
 				yield m
+
 	@property
 	def members_count(self):
 		n = 0
 		for t in self._member_rules:
-			q={t.dst:self}
-			n += t.table.filter_by(**q).count()
+			q = t.args
+			q["dst"] = self
+			n += db.store.find(t.table,**q).count()
 		return n
+
 	_member_rules = []
 	class _rules(object):
-		def __init__(self, table,src,dst):
+		def __init__(self, table,src,dst, *args):
 			self.table = table
 			self.src = src
 			self.dst = dst
+			self.args = args
+
 	@classmethod
-	def new_member_rule(cls, table,src,dst):
-		cls._member_rules.append(cls._rules(table,src,dst))
+	def new_member_rule(cls, table,src,dst, **args):
+		cls._member_rules.append(cls._rules(table,src,dst,args))
 
 	@property
 	def has_permissions(self):
@@ -301,11 +355,11 @@ class Object(db.Base):
 
 	@property
 	def permissions(self):
-		return Permission.q.filter_by(parent_id=self.id)
+		return db.filter_by(Permission, parent_id=self.id)
 
 	@property
 	def trackings(self):
-		return WantTracking.q.filter_by(parent=self, user=current_request.user)
+		return db.filter_by(WantTracking,parent=self, user=current_request.user)
 
 	@property
 	def classname(self):
@@ -336,7 +390,7 @@ class Object(db.Base):
 	def pso(self): # parent/super/owner
 		if self.deleted:
 			try:
-				d = Delete.q.get_by(parent=self)
+				d = db.get_by(Delete,parent=self)
 			except NoResult:
 				return (None,None,None,None)
 			else:
@@ -349,7 +403,8 @@ class Object(db.Base):
 			This is done so that simply enumerating object IDs off the web pages wont work.
 			"""
 		if self.id is None:
-			db.session.flush()
+			db.store.flush()
+			self.id = AutoReload
 		return "%d.%d.%s" % (self.discriminator, self.id, 
 		                        md5(self.__class__.__name__ + str(self.id) + settings.SECRET_KEY)\
 		                            .digest().encode('base64').strip('\n =')[:10].replace("+","/-").replace("/","_"))
@@ -373,8 +428,8 @@ class Object(db.Base):
 			p,s,o,d = obj.pso
 			seen.add(obj)
 			try:
-				t = TemplateMatch.q.filter(or_(TemplateMatch.inherit != no_inherit, TemplateMatch.inherit == None)).\
-									get_by(obj=obj, discr=discr, detail=detail)
+				t = db.store.find(TemplateMatch, And(Or(TemplateMatch.inherit != no_inherit, TemplateMatch.inherit == None), \
+									TemplateMatch.obj == obj, TemplateMatch.discr == discr, TemplateMatch.detail == detail))
 			except NoResult:
 				pass
 			else:
@@ -414,7 +469,7 @@ class Object(db.Base):
 
 	def record_creation(self):
 		"""Record the fact that a user created this object"""
-		db.session.add(self)
+		db.store.add(self)
 		Tracker(current_request.user,self)
 
 	def record_change(self,content=None,comment=None):
@@ -441,11 +496,6 @@ class Object(db.Base):
 			return None
 		return self.parent.default_storage
 
-
-Object.owner = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Object.owner_id==Object.id))
-Object.parent = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Object.parent_id==Object.id))
-Object.superparent = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Object.superparent_id==Object.id))
-
 #Object.children = relation(Object, remote_side=Object.parent_id, primaryjoin=(Object.id==Object.parent_id)) 
 #Object.superchildren = relation(Object, remote_side=Object.superparent_id, primaryjoin=(Object.id==Object.superparent_id)) 
 #Object.slaves = relation(Object, remote_side=Object.owner_id, primaryjoin=(Object.id==Object.owner_id)) 
@@ -453,18 +503,18 @@ Object.superparent = relation(Object, uselist=False, remote_side=Object.id, prim
 def obj_class(id):
 	"""Given a discriminator ID, return the referred object's class."""
 	try:
-		return Object.__mapper__.polymorphic_map[int(id)].class_
+		return _discr2cls[int(id)]
 	except ValueError:
-		for f in Object.__mapper__.polymorphic_map.values():
-			if f.class_.__name__ == id:
-				return f.class_
+		for f in _discr2cls.values():
+			if f.__name__ == id:
+				return f
 		raise KeyError(id)
 
 def obj_get(oid):
 	"""Given an object ID, return the object"""
 	cid,id,hash = oid.split(".")
 	cls = obj_class(int(cid))
-	obj = cls.q.get_by(id=int(id))
+	obj = db.get_by(cls, id=id)
 	if oid != obj.oid():
 		raise ValueError("This object does not exist: " % (oid,))
 	return obj
@@ -478,7 +528,7 @@ class renderObject(Object):
 	def __init__(self,renderer = None):
 		if renderer is not None:
 			if not isinstance(renderer,Renderer):
-				renderer = Renderer.q.get_by(name=renderer)
+				renderer = db.get_by(Renderer,name=renderer)
 			self.renderer_id = renderer.id
 	
 	@property
@@ -490,14 +540,11 @@ class renderObject(Object):
 				r(self,*a,**k)
 			return _call
 		try:
-			return _wrap(Renderer.q.get_by(id=self.renderer_id)._module)
+			return _wrap(db.get_by(Renderer,id=self.renderer_id)._module)
 		except NoResult:
 			def _wr(*a,**k):
 				return "<pre>"+Markup.escape(self.data)+"<pre>\n"
 			return _wr
-
-class UserQuery(db.Query):
-	pass # defined below
 
 class User(Object):
 	"""\
@@ -506,32 +553,30 @@ class User(Object):
 		Parent: the site they first logged in on.
 		SuperParent: for anon users, the site they're used with.
 		"""
-	__tablename__ = "users"
-	__table_args__ = {'useexisting': True}
-	q = db.session.query_property(UserQuery)
-	id = Column(Integer, ForeignKey(Object.id,name="user_id"), primary_key=True,autoincrement=False)
-	__mapper_args__ = {'polymorphic_identity': 2, 'inherit_condition': id==Object.id}
+	__storm_table__ = "users"
+	_discriminator = 2
 	        
-	username = Column(Unicode(30), nullable=False)
-	first_name = Column(Unicode(30))
-	last_name = Column(Unicode(30))
-	email = Column(String(100))
-	password = Column(String(30), nullable=False)
-	first_login = Column(DateTime, nullable=False)
-	last_login = Column(DateTime)
-	cur_login = Column(DateTime)
+	username = Unicode(allow_none=False)
+	first_name = Unicode()
+	last_name = Unicode()
+	email = Unicode()
+	password = Unicode(allow_none=False)
+	first_login = DateTime(allow_none=False)
+	last_login = DateTime()
+	cur_login = DateTime()
 
-	feed_age = Column(TinyInteger, nullable=False, default=10)
-	feed_pass = Column(String(30), nullable=True)
-	feed_read = Column(DateTime, nullable=True)
+	feed_age = Int(allow_none=False, default=10)
+	feed_pass = Unicode(allow_none=True)
+	feed_read = DateTime(allow_none=True)
 
 	def __init__(self, username, password=None):
+		super(User,self).__init__()
 		self.username=username
 		if password is None:
 			password = random_string(9)
 		self.password=password
 		self.first_login = datetime.utcnow()
-		db.session.add(self)
+		db.store.add(self)
 
 		if not self.anon:
 			try:
@@ -539,7 +584,7 @@ class User(Object):
 			except (AttributeError,RuntimeError):
 				pass
 			else:
-				db.session.add(m)
+				db.store.add(m)
 	
 	@property
 	def anon(self):
@@ -560,54 +605,55 @@ class User(Object):
 	def visited(self,obj):
 		if getattr(obj,"_no_crumbs",False):
 			return # no recursive or similar nonsense, please
-		q = Breadcrumb.q.filter_by(owner=self,discr=obj.discriminator)
+		q = { "owner":self, "discr":obj.discriminator }
 		try:
-			s = q.get_by(parent=obj)
+			s = q.get_by(Breadcrumb, parent=obj, **q)
 		except NoResult:
-			for b in q.order_by(Breadcrumb.visited)[10:]:
-				db.session.delete(b)
+			for b in db.filter_by(Breadcrumb,**q).order_by(Breadcrumb.visited)[10:]:
+				db.store.remove(b)
 			b = Breadcrumb(self,obj)
-			db.session.add(b)
+			db.store.add(b)
 		else:
 			s.visited = datetime.utcnow()
 	
 	def last_visited(self,cls=None):
-		q = Breadcrumb.q.filter_by(owner=self)
+		q = { "owner":self }
 		if cls:
-			q = q.filter_by(discr=cls.cls_discr())
+			q["discr"] = cls.cls_discr()
 		try:
-			r = q.order_by(Breadcrumb.visited.desc()).first()
+			r = db.filter_by(Breadcrumb, **q).order_by(Desc(Breadcrumb.visited)).first()
 		except NoResult:
 			return None
 		if r:
 			return r.parent
 	
 	def all_visited(self, cls=None):
-		q = Breadcrumb.q.filter_by(owner=self)
+		q = { "owner":self }
 		if cls:
-			q = q.filter_by(discr=cls.cls_discr())
-		return q.order_by(Breadcrumb.visited.desc())
+			q["discr"] = cls.cls_discr()
+		return db.filter_by(Breadcrumb, **q).order_by(Desc(Breadcrumb.visited))
 
 	def is_verified(self, site=None):
 		if site is None:
 			site = current_request.site
 		try:
-			m = Member.q.get_by(user=self,group=site)
+			m = db.get_by(Member,user=self,group=site)
 		except NoResult:
 			return False
 		else:
 			return not m.excluded
+
 	def add_verified(self,v,site=None):
 		if site is None:
 			site = current_request.site
 		try:
-			m = Member.q.get_by(user=self,group=site)
+			m = db.get_by(Member,user=self,group=site)
 		except NoResult:
 			if v:
-				db.session.add(Member(user=self,group=site))
+				db.store.add(Member(user=self,group=site))
 		else:
 			if not v:
-				db.session.delete(m)
+				db.store.remove(m)
 	verified = property(is_verified,add_verified)
 				
 	def __unicode__(self):
@@ -657,14 +703,14 @@ class User(Object):
 		if DEBUG_ACCESS:
 			print >>sys.stderr,"PERM",discr,new_discr,want,obj,"AT",current_request.site,u"⇒",
 
-		pq = Permission.q
+		pq = []
 		if want is not None:
 			if want >= PERM_NONE:
-				pq = pq.filter(Permission.right >= want)
+				pq.append(Permission.right >= want)
 			else:
-				pq = pq.filter(Permission.right == want)
+				pq.append(Permission.right == want)
 		else:
-			pq = pq.filter(Permission.right >= 0)
+			pq.append(Permission.right >= 0)
 		if discr is None and obj and want < 0:
 			discr = obj.discriminator
 
@@ -677,7 +723,7 @@ class User(Object):
 				discr = discr.classdiscr
 			else:
 				discr = Discriminator.get(discr).id
-			pq = pq.filter_by(discr=discr)
+			pq.append(Permission.discr == discr)
 
 		if new_discr is not None:
 			if isinstance(new_discr,Discriminator):
@@ -688,7 +734,7 @@ class User(Object):
 				discr = new_discr.classdiscr
 			else:
 				new_discr = Discriminator.get(new_discr).id
-			pq = pq.filter_by(new_discr=new_discr)
+			pq.append(Permission.new_discr == new_discr)
 
 		no_inh = True
 
@@ -699,11 +745,12 @@ class User(Object):
 			done.add(obj)
 
 			try:
-				p = pq.filter(or_(Permission.inherit != no_inh, Permission.inherit == None)).filter(or_(*(Permission.owner == u for u in user.groups))).filter_by(parent=obj).order_by(Permission.right.desc()).value(Permission.right)
+				p = db.store.find(Permission, And(Or(Permission.inherit != no_inh, Permission.inherit == None), Or(*(Permission.owner == u for u in user.groups)), Permission.parent == obj, *pq), order_by=Desc(Permission.right))
 			except NoResult:
 				pass
 			else:
 				if p is not None:
+					p = p.right
 					if DEBUG_ACCESS:
 						print >>sys.stderr,p
 					return p
@@ -721,7 +768,7 @@ class User(Object):
 
 	def permit(user,obj, right, discr=None, inherit=None):
 		discr = Discriminator.get(discr,obj).id
-		p = Permission.q.filter_by(owner=u,parent=obj,discr=discr).all()
+		p = db.store.find(Permission, And(Permission.owner==u, Permission.parent==obj, Permission.discr==discr))[:]
 		
 		if len(p) > 0:
 			if inherit is None:
@@ -742,16 +789,16 @@ class User(Object):
 			p.right = right
 		else:
 			p = Permission(user,obj,discr,right,inherit)
-			db.session.add(p)
+			db.store.add(p)
 
 	def forbid(user,obj, discr=None, inherit=None):
 		discr = Discriminator.get(discr,obj).id
-		p = Permission.q.filter_by(owner=u,parent=obj,discr=discr).all()
+		p = db.store_find(Permission, And(Permission.owner==u,Permission.parent==obj,Permission.discr==discr))[:]
 		
-		if len(p) > 0:
+		if p:
 			if inherit is None:
 				while p:
-					db.session.delete(p.pop())
+					db.store.remove(p.pop())
 				return
 			elif len(p) > 1 and p[1].inherit == inherit:
 				p = p[1]
@@ -761,43 +808,33 @@ class User(Object):
 
 	@property
 	def tracks(self):
-		return UserTracker.q.filter_by(owner=self)\
-		                    .order_by(UserTracker.id.desc())
+		return db.store.find(UserTracker, UserTracker.owner == self, order_by=Desc(UserTracker.id))
 
 	@property
 	def recent_tracks(self):
 		latest = datetime.utcnow() - timedelta(self.feed_age,0)
-#		return UserTracker.q.filter_by(owner=self)\
+#		return db.filter_by(UserTracker,owner=self)\
 #		                    .filter(UserTracker.tracker.timestamp > datetime.utcnow() - timedelta(self.feed_age,0))\
 #		                    .order_by(UserTracker.id.desc())
-		for obj in UserTracker.q.filter_by(owner=self)\
-		                    .order_by(UserTracker.id.desc()):
+		for obj in db.store.find(UserTracker, UserTracker.owner == self, order_by=Desc(UserTracker.id)):
 			if obj.parent.timestamp < latest:
 				return
 			yield obj
 
 	@property
-	def changes(self):
-		return Tracker.q.filter_by(owner=self).order_by(Tracker.timestamp.desc())
-
-	@property
-	def trackers(self):
-		return WantTracking.q.filter_by(owner=self)
-
-	@property
 	def has_trackers(self):
-		return WantTracking.q.filter_by(owner=self).count()
+		return db.store.find(WantTracking, WantTracking.owner == self).count()
 
 
-@add_to(UserQuery)
-def get_anonymous_user(self, site):
-	try:
-		return self.get_one(and_(User.username=="", User.password=="",User.superparent==site))
-	except NoResult:
-		if site.parent:
-			return self.get_anonymous_user(site.parent)
-		else:
-			raise
+def get_anonymous_user(site):
+	while True:
+		try:
+			return db.get_by(User, username=="", password=="", superparent==site)
+		except NoResult:
+			if site.parent:
+				site = site.parent
+			else:
+				raise
 
 class Group(Object):
 	"""
@@ -805,22 +842,20 @@ class Group(Object):
 		superparent: the site this group belongs to.
 		owner: the managing user; the site, for system groups.
 		"""
-	__tablename__ = "groups"
-	__table_args__ = {'useexisting': True}
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="group_id"), primary_key=True,autoincrement=False)
-	__mapper_args__ = {'polymorphic_identity': 4, 'inherit_condition': id==Object.id}
+	__storm_table__ = "groups"
+	_discriminator = 4
 	        
-	name = Column(Unicode(30))
+	name = Unicode()
 
 	def __init__(self,name,owner,site=None):
+		super(Group,self).__init__()
 		self.superparent = site or owner
 		self.owner = owner
 		self.name = name
 	
 def named_group(owner, name):
 	"""Return the site-specific group with that name."""
-	return Group.q.get_by(name=name, owner=site)
+	return db.get_by(Group,name=name, owner=site)
 
 class Member(Object):
 	"""\
@@ -828,16 +863,14 @@ class Member(Object):
 		owner: the individual who's the member.
 		parent: the group
 		"""
-	__tablename__ = "groupmembers"
-	__table_args__ = {'useexisting': True}
+	__storm_table__ = "groupmembers"
+	_discriminator = 13
 	_no_crumbs = True
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="member_id"), primary_key=True,autoincrement=False)
-	__mapper_args__ = {'polymorphic_identity': 13, 'inherit_condition': id==Object.id}
 
-	excluded = Column(Boolean, nullable=False)
+	excluded = Bool(allow_none=False)
 
 	def __init__(self,user,group):
+		super(Member,self).__init__()
 		self.owner = user
 		self.parent = group
 		self.excluded = False
@@ -872,9 +905,10 @@ Member: %s
 		if not self.owner or not self.parent: return super(Member,self).__repr__()
 		return self.__str__()
 
-Member.user = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.owner_id==Object.id))
-Member.group = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.parent_id==Object.id))
-Object.new_member_rule(Member.q, "owner","parent")
+	user = Alias("owner")
+	group = Alias("parent")
+
+Object.new_member_rule(Member, "owner","parent")
 
 class Permission(Object):
 	"""
@@ -890,19 +924,17 @@ class Permission(Object):
 		discr: The object type to be modified
 		new_discr: The type of object that may be added
 		"""
-	__tablename__ = "permissions"
-	__table_args__ = {'useexisting': True}
+	__storm_table__ = "permissions"
+	_discriminator = 10
 	_no_crumbs = True
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="permission_id"), primary_key=True,autoincrement=False)
-	__mapper_args__ = {'polymorphic_identity': 10, 'inherit_condition': id==Object.id}
 
-	right = Column(Integer(1), nullable=False)
-	inherit = Column(Boolean, nullable=True)
-	discr = Column(TinyInteger, ForeignKey(Discriminator.id,name="permission_discr"), nullable=False)
-	new_discr = Column(TinyInteger, ForeignKey(Discriminator.id,name="permission_new_discr"), nullable=True)
+	right = Int(allow_none=False)
+	inherit = Bool(allow_none=True)
+	discr = Int(allow_none=False)
+	new_discr = Int(allow_none=True)
 
 	def __init__(self, user, obj, discr, right, inherit=None, new_discr=None):
+		super(Permission,self).__init__()
 		self.owner = user
 		self.parent = obj
 		self.discr = Discriminator.get(discr,obj).id
@@ -918,7 +950,7 @@ class Permission(Object):
 		if self._rec_str or not o or not p: return super(Permission,self).__unicode__()
 		try:
 			self._rec_str = False
-			return u'‹%s%s %s: %s can %s %s %s %s %s›' % (d,self.__class__.__name__, self.id, unicode(o),PERM[self.right],Discriminator.q.get_by(id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N", Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-")
+			return u'‹%s%s %s: %s can %s %s %s %s %s›' % (d,self.__class__.__name__, self.id, unicode(o),PERM[self.right],db.get_by(Discriminator,id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N", db.get_by(Discriminator,id=self.new_discr).name if self.new_discr is not None else "-")
 		finally:
 			self._rec_str = False
 	def __str__(self):
@@ -926,7 +958,7 @@ class Permission(Object):
 		if self._rec_str or not o or not p: return super(Permission,self).__str__()
 		try:
 			self._rec_str = True
-			return '<%s%s %s: %s can %s %s %s %s %s>' % (d,self.__class__.__name__, self.id, str(o),PERM[self.right],Discriminator.q.get_by(id=self.discr).name,str(p), "*" if self.inherit is None else "Y" if self.inherit else "N", Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-")
+			return '<%s%s %s: %s can %s %s %s %s %s>' % (d,self.__class__.__name__, self.id, str(o),PERM[self.right],db.get_by(Discriminator,id=self.discr).name,str(p), "*" if self.inherit is None else "Y" if self.inherit else "N", db.get_by(Discriminator,id=self.new_discr).name if self.new_discr is not None else "-")
 		finally:
 			self._rec_str = False
 	def __repr__(self):
@@ -944,8 +976,8 @@ New Object Type: %s
 Right: %s
 Inherited: %s
 """ % (o, p, \
-		Discriminator.q.get_by(id=self.discr).name, \
-		Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-", \
+		db.get_by(Discriminator,id=self.discr).name, \
+		db.get_by(Discriminator,id=self.new_discr).name if self.new_discr is not None else "-", \
 		self.right, \
 		"*" if self.inherit is None else "Y" if self.inherit else "N")
 
@@ -972,22 +1004,19 @@ for a,b in PERM.iteritems():
 
 class Storage(Object):
 	"""A box for binary data files"""
-	__tablename__ = "storage"
-	__table_args__ = {'useexisting': True}
+	__storm_table__ = "storage"
+	_discriminator = 21
 	_no_crumbs = True
 
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="storage_id"), primary_key=True,autoincrement=False)
-	__mapper_args__ = {'polymorphic_identity': 21, 'inherit_condition': id==Object.id}
-
-	name = Column(Unicode(250), nullable=False, unique=True)
-	path = Column(String(250), nullable=False, unique=True)
-	url = Column(String(250), nullable=False, unique=True)
+	name = Unicode(allow_none=False)
+	path = Unicode(allow_none=False)
+	url = Unicode(allow_none=False)
 
 	def __init__(self, name,path,url):
+		super(Storage,self).__init__()
 		self.name = unicode(name)
-		self.path = path
-		self.url = url
+		self.path = unicode(path)
+		self.url = unicode(url)
 		self.superparent = current_request.site
 		try: os.makedirs(path)
 		except OSError: pass
@@ -1001,19 +1030,23 @@ class Storage(Object):
 
 class Site(Object):
 	"""A web domain. 'owner' is set to the domain's superuser."""
-	__tablename__ = "sites"
-	__table_args__ = {'useexisting': True}
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="site_id"), primary_key=True,autoincrement=False)
-	__mapper_args__ = {'polymorphic_identity': 5, 'inherit_condition': id==Object.id}
+	__storm_table__ = "sites"
+	_discriminator = 5
 
-	domain = Column(Unicode(100), nullable=False, unique=True)
-	name = Column(Unicode(50), nullable=False, unique=True)
-	tracked = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+	domain = Unicode(allow_none=False)
+	name = Unicode(allow_none=False)
+	tracked = DateTime(allow_none=False, default_factory=datetime.utcnow)
 	## Datestamp of newest fully-processed Tracker object
-	storage_id = Column(Integer,ForeignKey(Object.id,name="site_storage"))    # storage
+
+	storage_id = Int(allow_none=True)
+	storage = Reference(storage_id,Storage.id)
+
+	def __storm_pre_flush__(self):
+		self.tracked = datetime.utcnow()
+		super(Site,self).__storm_pre_flush__()
 
 	def __init__(self,domain,name=None):
+		super(Site,self).__init__()
 		if name is None:
 			name="Here be "+domain
 		self.domain=domain
@@ -1022,14 +1055,14 @@ class Site(Object):
 			self.owner = current_request.user
 		except (AttributeError,RuntimeError):
 			self.owner = None
-		db.session.add(self)
+		db.store.add(self)
 		u = User("","")
 		u.superparent = self
-		db.session.add(u)
+		db.store.add(u)
 
 	@property
 	def anon_user(self):
-		return User.q.get_by(superparent=self,password="")
+		return db.get_by(User,superparent=self,password="")
 		
 	def __unicode__(self):
 		return u"‹Site ‚%s‘ @ %s›" % (self.name, self.domain)
@@ -1041,18 +1074,14 @@ name: %s
 domain: %s
 """ % (self.name,self.domain)
 
+class SiteUsers(Storm):
+	__storm_table__ = "site_users"
+	__storm_primary__ = "site_id","user_id"
+	site_id = Int()
+	user_id = Int()
 
-site_users = Table('site_users', db.Metadata,
-	Column('site_id', Integer, ForeignKey(Site.id,name="site_users_site"), nullable=False),
-	Column('user_id', Integer, ForeignKey(User.id,name="site_users_user"), nullable=False),
-	UniqueConstraint('site_id', 'user_id'))
-
-Site.users = relation(User, secondary=site_users, backref='sites',
-	primaryjoin=(Site.id==site_users.c.site_id),
-	secondaryjoin=(site_users.c.user_id==User.id))
-
-Site.storage = relation(Storage, uselist=False, remote_side=Storage.id, primaryjoin=(Storage.id==Site.storage_id), foreign_keys=[Site.storage_id])
-
+Site.users = ReferenceSet(Site.id, SiteUsers.site_id,SiteUsers.user_id,User.id)
+Site.storage = Reference(Site.storage_id, Storage.id)
 
 class Template(Object):
 	"""
@@ -1060,17 +1089,19 @@ class Template(Object):
 		parent: Site the template applies to.
 		owner: user who created the template.
 		"""
-	__tablename__ = "templates"
-	__table_args__ = ({'useexisting': True})
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="template_id"), primary_key=True,autoincrement=False)
-	__mapper_args__ = {'polymorphic_identity': 6, 'inherit_condition': id==Object.id}
+	__storm_table__ = "templates"
+	_discriminator = 6
 
-	name = Column(String(50), nullable=False)
-	data = Column(Text)
-	modified = Column(TimeStamp,default=datetime.utcnow, onupdate=datetime.utcnow)
+	name = Unicode(allow_none=False)
+	data = Unicode()
+	modified = DateTime(default_factory=datetime.utcnow)
+
+	def __storm_pre_flush__(self):
+		self.modified = datetime.utcnow()
+		super(Template,self).__storm_pre_flush__()
 
 	def __init__(self, name, data, parent=None):
+		super(Template,self).__init__()
 		self.name = name
 		self.data = data
 		self.owner = current_request.user
@@ -1086,24 +1117,28 @@ class TemplateMatch(Object):
 		Associate a template to an object.
 		Parent: The object which the template is for.
 		"""
-	__tablename__ = "template_match"
-	__table_args__ = ({'useexisting': True})
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="template_match_id"), primary_key=True,autoincrement=False)
-	__mapper_args__ = {'polymorphic_identity': 12, 'inherit_condition': id==Object.id}
+	__storm_table__ = "template_match"
+	_discriminator = 12
 
-	data = Column(Text)
-	modified = Column(TimeStamp,default=datetime.utcnow, onupdate=datetime.utcnow)
+	data = Unicode()
+	modified = DateTime(default_factory=datetime.utcnow)
 
-	discr = Column(TinyInteger, ForeignKey(Discriminator.id,name="templatematch_discr"), nullable=False)
-	detail = Column(TinyInteger(1), nullable=False)
-	inherit = Column(Boolean, nullable=True)
+	def __storm_pre_flush__(self):
+		self.modified = datetime.utcnow()
+		super(Template,self).__storm_pre_flush__()
+
+	discr = Int(allow_none=False)
+	detail = Int(allow_none=False)
+	inherit = Bool(allow_none=True)
+
+	obj = Alias("parent")
 
 	def __init__(self, obj,discr,detail, data):
+		super(TemplateMatch,self).__init__()
 		self.discr = Discriminator.get(discr,obj).id
 		self.detail = detail
 		self.data = data
-		db.session.add(self)
+		db.store.add(self)
 		db.session.flush()
 		self.parent = obj
 		db.session.flush()
@@ -1114,42 +1149,38 @@ class TemplateMatch(Object):
 		try:
 			self._rec_str = True
 		finally:
-			return u'‹%s%s %s: %s %s %s %s›' % (d,self.__class__.__name__, self.id, TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
+			return u'‹%s%s %s: %s %s %s %s›' % (d,self.__class__.__name__, self.id, TM_DETAIL[self.detail],db.get_by(Discriminator, id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
 			self._rec_str = False
 	def __str__(self):
 		p,s,o,d = self.pso
 		if self._rec_str or not p: return super(TemplateMatch,self).__str__()
 		try:
 			self._rec_str = True
-			return '<%s%s %s: %s %s %s %s>' % (d,self.__class__.__name__, self.id, TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,str(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
+			return '<%s%s %s: %s %s %s %s>' % (d,self.__class__.__name__, self.id, TM_DETAIL[self.detail],db.get_by(Discriminator,id=self.discr).name,str(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
 		finally:
 			self._rec_str = False
 	def __repr__(self):
 		if not self.parent: return "'"+super(TemplateMatch,self).__repr__()+"'"
 		return "'"+self.__str__()+"'"
 
-TemplateMatch.obj = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.parent_id==Object.id))
 
-Object.templates = relation(TemplateMatch, remote_side=TemplateMatch.parent_id, uselist=True, primaryjoin=(TemplateMatch.parent_id==Object.id)) 
-Template.matches = relation(Object, remote_side=TemplateMatch.owner_id, uselist=True, primaryjoin=(Object.owner_id==Template.id), foreign_keys=[Object.owner_id]) 
-
+Object.templates = ReferenceSet(Object.id, TemplateMatch.parent_id)
+Template.matches = ReferenceSet(TemplateMatch.parent_id, Object.id)
 
 VerifierBases = {}
-class VerifierBase(db.Base,DbRepr):
+class VerifierBase(Storm,DbRepr):
 	"""
 		Class for verification subsystems.
 		"""
 
-	__tablename__ = "verifierbase"
-	__table_args__ = {'useexisting': True}
-	q = db.session.query_property(db.Query)
-	id = Column(TinyInteger(1), primary_key=True)
-	name = Column(String(30), nullable=False, unique=True)
-	cls = Column(String(50), nullable=False, unique=True)
+	__storm_table__ = "verifierbase"
+	id = Int(primary=True)
+	name = Unicode(allow_none=False)
+	cls = RawStr(allow_none=False)
 	_mod = None
 
 	def __init__(self, name, cls):
-		self.name = name
+		self.name = unicode(name)
 		self.cls = cls
 
 	@property
@@ -1161,10 +1192,10 @@ class VerifierBase(db.Base,DbRepr):
 	@staticmethod
 	def register(name, cls):
 		try:
-			v = VerifierBase.q.get_by(name=name)
+			v = db.get_by(VerifierBase,name=name)
 		except NoResult:
 			v=VerifierBase(name=name, cls=cls)
-			db.session.add(v)
+			db.store.add(v)
 		else:
 			assert v.cls == cls
 
@@ -1174,22 +1205,21 @@ class Verifier(Object):
 		Parent: the thing to be verified.
 		Owner: the user who's asked.
 		"""
-	__tablename__ = "verifiers"
-	__table_args__ = ({'useexisting': True})
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="verifier_id"), primary_key=True,autoincrement=False)
-	__mapper_args__ = {'polymorphic_identity': 8, 'inherit_condition': id==Object.id}
+	__storm_table__ = "verifiers"
+	_discriminator = 8
 
-	base_id = Column(TinyInteger, ForeignKey(VerifierBase.id,name="verifier_base"))
-	code = Column(String(50), nullable=False, unique=True)
+	base_id = Int()
+	base = Reference(base_id, VerifierBase.id)
+	code = RawStr(allow_none=False)
 
-	added = Column(DateTime, default=datetime.utcnow, nullable=False)
-	repeated = Column(DateTime, nullable=True)
-	timeout = Column(DateTime, nullable=False)
+	added = DateTime(default_factory=datetime.utcnow, allow_none=False)
+	repeated = DateTime(allow_none=True)
+	timeout = DateTime(allow_none=False)
 
 	def __init__(self,base, obj, user=None, code=None, days=None):
+		super(Verifier,self).__init__()
 		if isinstance(base, basestring):
-			base = VerifierBase.q.get_by(name=base)
+			base = db.get_by(VerifierBase,name=base)
 		self.base = base
 		self.parent = obj
 		self.owner = user or obj
@@ -1236,7 +1266,6 @@ class Verifier(Object):
 		"""The user entered the code too late, or whaveter. Redirect to request page."""
 		return self.base._module.retry(self,*a,**k)
 
-Verifier.base = relation(VerifierBase, remote_side=VerifierBase.id, primaryjoin=(Verifier.base_id==VerifierBase.id))
 
 class WikiPage(Object):
 	"""\
@@ -1247,18 +1276,20 @@ class WikiPage(Object):
 
 		Wiki pages are not (yet?) nested.
 		"""
-	__tablename__ = "wikipage"
-	__table_args__ = ({'useexisting': True})
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="wikipage_id"), primary_key=True,autoincrement=False)
-	__mapper_args__ = {'polymorphic_identity': 9, 'inherit_condition': id==Object.id}
+	__storm_table__ = "wikipage"
+	_discriminator = 9
 
-	name = Column(String(50))
-	data = Column(Text)
-	modified = Column(TimeStamp,default=datetime.utcnow,onupdate=datetime.utcnow)
-	mainpage = Column(Boolean, default=True, nullable=False) # main-linked page?
+	name = Unicode(allow_none=False)
+	data = Unicode()
+	mainpage = Bool(default=True, allow_none=False) # main-linked page?
+	modified = DateTime(default_factory=datetime.utcnow)
+
+	def __storm_pre_flush__(self):
+		self.modified = datetime.utcnow()
+		super(Template,self).__storm_pre_flush__()
 
 	def __init__(self, name, data):
+		super(WikiPage,self).__init__()
 		self.name = name
 		self.data = data
 	
@@ -1276,23 +1307,20 @@ class Breadcrumb(Object):
 		Parent: The page thus visited.
 		discr: mirrors parent.discr for easier seekage
 		"""
-	__tablename__ = "breadcrumbs"
-	__table_args__ = ({'useexisting': True})
+	__storm_table__ = "breadcrumbs"
+	_discriminator = 14
 	_no_crumbs = True
 
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="breadcrumb_id"), primary_key=True,autoincrement=False)
-	__mapper_args__ = {'polymorphic_identity': 14, 'inherit_condition': id==Object.id}
-
-	discr = Column(TinyInteger, ForeignKey(Discriminator.id,name="breadcrumb_discr"), nullable=False)
-	#seq = Column(Integer)
-	visited = Column(TimeStamp,default=datetime.utcnow)
+	discr = Int(allow_none=False)
+	#seq = Int()
+	visited = DateTime(default_factory=datetime.utcnow)
 
 	def __init__(self, user, obj):
+		super(Breadcrumb,self).__init__()
 		self.owner = user
 		self.parent = obj
 		self.discr = obj.discriminator
-		#self.seq = 1+(db.engine.execute(select([func.max(Breadcrumb.seq)], and_(Breadcrumb.owner==user,Breadcrumb.discr==self.discr))).scalar() or 0)
+		#self.seq = 1+(db.store.execute(select(Max(Breadcrumb.seq), And((Breadcrumb.owner==user,Breadcrumb.discr==self.discr))).scalar() or 0)
 
 	def __unicode__(self):
 		p,s,o,d = self.pso
@@ -1321,26 +1349,23 @@ class Change(Object):
 		Owner: the user who did it.
 		Parent: The page thus changed.
 		"""
-	__tablename__ = "changes"
-	__table_args__ = ({'useexisting': True})
+	__storm_table__ = "changes"
+	_discriminator = 15
 	_no_crumbs = True
 
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="change_id"), primary_key=True,autoincrement=False)
-	__mapper_args__ = {'polymorphic_identity': 15, 'inherit_condition': id==Object.id}
-
-	timestamp = Column(TimeStamp,default=datetime.utcnow)
-	data = Column(Text)
-	comment = Column(Unicode(200), nullable=True)
+	timestamp = DateTime(default_factory=datetime.utcnow)
+	data = Unicode()
+	comment = Unicode(allow_none=True)
 
 	def __init__(self, user, obj, data, comment = None):
+		super(Change,self).__init__()
 		self.owner = user
 		self.parent = obj
 		self.data = data
 		self.comment = comment
 
-		db.session.add(self)
-		db.session.add(Tracker(user,self))
+		db.store.add(self)
+		db.store.add(Tracker(user,self))
 
 	def __unicode__(self):
 		p,s,o,d = self.pso
@@ -1365,7 +1390,7 @@ class Change(Object):
 	def change_obj(self):
 		return self.parent
 
-Object.changes = relation(Change, remote_side=Change.parent_id, uselist=True, primaryjoin=(Change.parent_id==Object.id)) 
+Object.changes = ReferenceSet(Change.parent_id,BaseObject.id)
 
 
 class Delete(Object):
@@ -1375,31 +1400,32 @@ class Delete(Object):
 		Parent: The page thus changed.
 		Superparent: the old parent.
 		"""
-	__tablename__ = "deleted"
-	__table_args__ = ({'useexisting': True})
+	__storm_table__ = "deleted"
+	_discriminator = 16
 	_no_crumbs = True
 
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="delete_id"), primary_key=True,autoincrement=False)
-	__mapper_args__ = {'polymorphic_identity': 16, 'inherit_condition': id==Object.id}
-
-	comment = Column(Unicode(200), nullable=True)
+	comment = Unicode(allow_none=True)
 
 	## The old parent is in self.superparent
-	old_superparent_id = Column(Integer(20), ForeignKey(Object.id,name="delobj_super"))
-	old_owner_id = Column(Integer(20), ForeignKey(Object.id,name="delobj_owner"))
+	old_superparent_id = Int(allow_none=True)
+	old_owner_id = Int(allow_none=True)
 
-	timestamp = Column(TimeStamp,default=datetime.utcnow)
+	old_owner = Reference(old_owner_id, BaseObject.id)
+	old_parent = Alias("Delete.superparent")
+	old_superparent = Reference(old_superparent_id, BaseObject.id)
+
+	timestamp = DateTime(default_factory=datetime.utcnow)
 
 	def __init__(self, user, obj, comment):
+		super(Delete,self).__init__()
 		self.owner = user
 		self.parent = obj
 		self.old_owner = obj.owner
 		self.superparent = obj.parent
 		self.old_superparent = obj.superparent
 
-		db.session.add(self)
-		db.session.add(Tracker(user,self))
+		db.store.add(self)
+		db.store.add(Tracker(user,self))
 
 	def __unicode__(self):
 		if self._rec_str or not self.owner or not self.parent: return super(Delete,self).__unicode__()
@@ -1422,9 +1448,6 @@ class Delete(Object):
 	def change_obj(self):
 		return self.parent
 
-Delete.old_owner = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Delete.old_owner_id==Object.id))
-Delete.old_parent = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Delete.superparent_id==Object.id))
-Delete.old_superparent = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Delete.old_superparent_id==Object.id))
 
 
 class Tracker(Object):
@@ -1434,21 +1457,19 @@ class Tracker(Object):
 		Parent: The Change/Delete object, or the new object.
 		Superparent: The site.
 		"""
-	__tablename__ = "tracking"
-	__table_args__ = ({'useexisting': True})
+	__storm_table__ = "tracking"
+	_discriminator = 17
 	_no_crumbs = True
 
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="tracker_id"), primary_key=True,autoincrement=False)
-	__mapper_args__ = {'polymorphic_identity': 17, 'inherit_condition': id==Object.id}
-
-	timestamp = Column(TimeStamp,default=datetime.utcnow)
+	timestamp = DateTime(default_factory=datetime.utcnow)
+	site = Alias("Tracker.superparent")
 
 	def __init__(self, user, obj, site = None):
+		super(Tracker,self).__init__()
 		self.owner = user
 		self.parent = obj
 		self.superparent = site or current_request.site
-		db.session.add(self)
+		db.store.add(self)
 
 	def __unicode__(self):
 		if self._rec_str or not self.owner or not self.superparent: return super(Tracker,self).__unicode__()
@@ -1489,7 +1510,6 @@ class Tracker(Object):
 	def is_del(self):
 		return isinstance(self.parent, Delete)
 
-Tracker.site = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(Tracker.superparent_id==Object.id))
 
 	
 class UserTracker(Object):
@@ -1499,15 +1519,15 @@ class UserTracker(Object):
 		Parent: The tracker object this is reporting on.
 		Superparent: the WantTracker that's responsible.
 		"""
-	__tablename__ = "usertracking"
-	__table_args__ = ({'useexisting': True})
+	__storm_table__ = "usertracking"
+	_discriminator = 18
 	_no_crumbs = True
 
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="usertracker_id"), primary_key=True,autoincrement=False)
-	__mapper_args__ = {'polymorphic_identity': 18, 'inherit_condition': id==Object.id}
+	user = Alias("UserTracker.owner")
+	tracker = Alias("UserTracker.parent")
 
 	def __init__(self, user, tracker, want):
+		super(UserTracker,self).__init__()
 		self.owner = user
 		self.superparent = want
 		self.parent = tracker
@@ -1533,9 +1553,6 @@ class UserTracker(Object):
 	def change_obj(self):
 		return self.parent.change_obj
 
-UserTracker.user = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.owner_id==Object.id))
-UserTracker.tracker = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.parent_id==Object.id))
-	
 
 class WantTracking(Object):
 	"""
@@ -1545,19 +1562,20 @@ class WantTracking(Object):
 		email: send email when this happens.
 		track_new/_mod/_del: track new / modified / deleted content
 		"""
-	__tablename__ = "wanttracking"
-	__table_args__ = ({'useexisting': True})
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="wanttracking_id"), primary_key=True,autoincrement=False)
-	__mapper_args__ = {'polymorphic_identity': 19, 'inherit_condition': id==Object.id}
+	__storm_table__ = "wanttracking"
+	_discriminator = 19
 
-	discr = Column(TinyInteger, ForeignKey(Discriminator.id,name="wanttracking_discr"), nullable=True)
-	email = Column(Boolean, nullable=False) # send mail, not just RSS/on-site?
-	track_new = Column(Boolean, nullable=False) # alert for new data?
-	track_mod = Column(Boolean, nullable=False) # alert for modifications?
-	track_del = Column(Boolean, nullable=False) # alert for deletions?
+	discr = Int(allow_none=True)
+	email = Bool(allow_none=False) # send mail, not just RSS/on-site?
+	track_new = Bool(allow_none=False) # alert for new data?
+	track_mod = Bool(allow_none=False) # alert for modifications?
+	track_del = Bool(allow_none=False) # alert for deletions?
+
+	obj = Alias("WantTracking.parent")
+	user = Alias("WantTracking.owner")
 
 	def __init__(self, user,obj, discr=None):
+		super(WantTracking,self).__init__()
 		self.parent = obj
 		self.owner = user
 		self.discr = Discriminator.get(discr,obj).id if discr else None
@@ -1571,7 +1589,7 @@ class WantTracking(Object):
 		if self._rec_str or not o or not p: return super(WantTracking,self).__unicode__()
 		try:
 			self._rec_str = True
-			return u'‹%s%s %s: %s in %s for %s %s›' % (d,self.__class__.__name__, self.id, "-" if self.discr is None else Discriminator.q.get_by(id=self.discr).name, unicode(p),unicode(o), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
+			return u'‹%s%s %s: %s in %s for %s %s›' % (d,self.__class__.__name__, self.id, "-" if self.discr is None else db.get_by(Discriminator,id=self.discr).name, unicode(p),unicode(o), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
 		finally:
 			self._rec_str = False
 	def __str__(self):
@@ -1579,7 +1597,7 @@ class WantTracking(Object):
 		if self._rec_str or not o or not p: return super(WantTracking,self).__str__()
 		try:
 			self._rec_str = True
-			return '<%s%s %s: %s in %s for %s %s>' % (d,self.__class__.__name__, self.id, "-" if self.discr is None else Discriminator.q.get_by(id=self.discr).name, str(p),str(o), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
+			return '<%s%s %s: %s in %s for %s %s>' % (d,self.__class__.__name__, self.id, "-" if self.discr is None else db.get_by(Discriminator,id=self.discr).name, str(p),str(o), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
 		finally:
 			self._rec_str = False
 	def __repr__(self):
@@ -1600,56 +1618,55 @@ Email: %s
 
 """ % (unicode(self.parent),self.parent.oid(), \
        unicode(self.owner),self.owner.oid(), \
-	   Discriminator.q.get_by(id=self.discr).name if self.discr is not None else "None",
+	   db.get_by(Discriminator,id=self.discr).name if self.discr is not None else "None",
 	   " ".join(wh) if wh else "-", \
 	   "yes" if self.email else "no")
 
-WantTracking.obj = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.parent_id==Object.id))
-WantTracking.user = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.owner_id==Object.id))
+User.changes = ReferenceSet(User.id, Tracker.owner_id, order_by=Desc(Tracker.timestamp))
+User.trackers = ReferenceSet(User.id, WantTracking.owner_id)
 
 
 def add_mime(name,typ,subtyp,ext):
 	try:
-		t = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
+		t = db.get_by(MIMEtype,typ=typ,subtyp=subtyp)
 	except NoResult:
 		t=MIMEtype()
 		t.name = unicode(name)
 		t.typ = typ
 		t.subtyp = subtyp
 		t.ext = ext
-		db.session.add(t)
+		db.store.add(t)
 		db.session.flush()
 		return t
 	else:
 		assert name == t.name
 		if ext != t.ext:
 			try:
-				tt = MIMEext.q.get_by(ext=ext)
+				tt = db.get_by(MIMEext,ext=ext)
 			except NoResult:
 				tt = MIMEext()
 				tt.mime = t
 				tt.ext = ext
-				db.session.add(tt)
+				db.store.add(tt)
 				db.session.flush()
 		return t
 
 def mime_ext(ext):
 	try:
-		return MIMEtype.q.get_by(ext=ext)
+		return db.get_by(MIMEtype,ext=ext)
 	except NoResult:
-		return MIMEext.q.get_by(ext=ext).mime
+		return db.get_by(MIMEext,ext=ext).mime
 
 
-class MIMEtype(db.Base,DbRepr):
+class MIMEtype(Storm,DbRepr):
 	"""Known MIME Types"""
-	__tablename__ = "mimetype"
-	__table_args__ = {'useexisting': True}
-	q = db.session.query_property(db.Query)
-	id = Column(Integer(2), primary_key=True)
-	name = Column(Unicode(30), nullable=False, unique=True)
-	typ = Column(String(15), nullable=False)
-	subtyp = Column(String(15), nullable=False)
-	ext = Column(String(15), nullable=False) # primary extension
+	__storm_table__ = "mimetype"
+	id = Int(primary=True)
+	name = Unicode(allow_none=False)
+	typ = Unicode(allow_none=False)
+	subtyp = Unicode(allow_none=False)
+	ext = Unicode(allow_none=False) # primary extension
+	exts = ReferenceSet(id,"MIMEext.mime_id")
 	
 	@property
 	def mimetype(self):
@@ -1664,16 +1681,15 @@ class MIMEtype(db.Base,DbRepr):
 def find_mimetype(typ,subtyp=None):
 	if subtyp is None:
 		typ,subtyp = typ.split("/")
-	return MIMEtype.q.get_by(typ=typ, subtyp=subtyp)
+	return db.get_by(MIMEtype,typ=typ, subtyp=subtyp)
 
-class MIMEext(db.Base):
+class MIMEext(Storm):
 	"""Extensions for MIME types"""
-	__tablename__ = "mimeext"
-	__table_args__ = {'useexisting': True}
-	q = db.session.query_property(db.Query)
-	id = Column(Integer(2), primary_key=True)
-	mime_id = Column(Integer, ForeignKey(MIMEtype.id,name="mimetype_id"))
-	ext = Column(String(10), nullable=False, unique=True)
+	__storm_table__ = "mimeext"
+	id = Int(primary=True)
+	mime_id = Int()
+	mime = Reference(mime_id,MIMEtype.id)
+	ext = Unicode(allow_none=False)
 
 	def __str__(self):
 		return "<%s %s: %s %s>" % (self.__class__.__name__, self.id,self.ext,str(self.mime))
@@ -1681,8 +1697,6 @@ class MIMEext(db.Base):
 		return u"‹%s %s: %s %s›" % (self.__class__.__name__, self.id,self.ext,unicode(self.mime))
 	__repr__ = __str__
 
-#MIMEext.mime = relation(MIMEtype, uselist=False, remote_side=MIMEtype.id, primaryjoin=(MIMEext.mime_id==MIMEtype.id))
-MIMEtype.exts = relation(MIMEext, uselist=True, remote_side=MIMEext.mime_id, primaryjoin=(MIMEext.mime_id==MIMEtype.id))
 
 class _ContentExists: pass
 def hash_data(content):
@@ -1697,24 +1711,26 @@ class BinData(Object):
 		parent: some object this is attached to
 		superparent: the storage
 		"""
-	__tablename__ = "bindata"
-	__table_args__ = {'useexisting': True}
+	__storm_table__ = "bindata"
+	_discriminator = 22
 	_no_crumbs = True
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="bindata_id"), primary_key=True,autoincrement=False)
-	__mapper_args__ = {'polymorphic_identity': 22, 'inherit_condition': id==Object.id}
 
-	mime_id = Column(Integer, ForeignKey(MIMEtype.id,name="bindata_mimeid"))
-	name = Column(Unicode(50), nullable=False)
-	hash = Column(String(30), nullable=False, unique=True)
-	timestamp = Column(TimeStamp,default=datetime.utcnow)
+	mime_id = Int(allow_none=False)
+	mime = Reference(mime_id,MIMEtype.id)
+	name = Unicode(allow_none=False)
+	hash = RawStr(allow_none=False)
+	timestamp = DateTime(default_factory=datetime.utcnow)
+
+	storage = Alias("BinData.superparent")
+	static_files = ReferenceSet(id, BaseObject.parent_id)
+
 
 	@staticmethod
 	def lookup(content):
-		return BinData.q.get_by(hash=hash_data(content))
+		return db.get_by(BinData,hash=hash_data(content))
 			
 	def __init__(self,name, ext=None,mimetype=None, content=None, parent=None, storage=None):
-
+		super(BinData,self).__init__()
 		self.parent = parent or current_request.site
 		self.superparent = storage or self.parent.default_storage
 		self.name = name
@@ -1826,9 +1842,6 @@ class BinData(Object):
 				os.remove(p)
 			raise
 
-BinData.storage = relation(Object, remote_side=Object.id, uselist=False, primaryjoin=(Object.superparent_id==Object.id))
-BinData.mime = relation(MIMEtype, uselist=False, remote_side=MIMEtype.id, primaryjoin=(BinData.mime_id==MIMEtype.id))
-
 
 
 class StaticFile(Object):
@@ -1837,18 +1850,21 @@ class StaticFile(Object):
 		Superparent: The site.
 		Parent: The storage.
 		"""
-	__tablename__ = "staticfile"
-	__table_args__ = ({'useexisting': True})
+	__storm_table__ = "staticfile"
+	_discriminator = 20
 	_no_crumbs = True
 
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="staticfile_id"), primary_key=True,autoincrement=False)
-	__mapper_args__ = {'polymorphic_identity': 20, 'inherit_condition': id==Object.id}
+	path = Unicode(allow_none=False)
+	modified = DateTime(default_factory=datetime.utcnow)
 
-	path = Column(Unicode(200), nullable=False)
-	modified = Column(TimeStamp, default=datetime.utcnow, onupdate=datetime.utcnow)
+	bindata = Alias("StaticFile.parent")
+
+	def __storm_pre_flush__(self):
+		self.modified = datetime.utcnow()
+		super(Template,self).__storm_pre_flush__()
 
 	def __init__(self, path, bin):
+		super(StaticFile,self).__init__()
 		self.path = path
 		self.superparent = current_request.site
 		self.parent = bin
@@ -1879,10 +1895,6 @@ class StaticFile(Object):
 	def mimetype(self):
 		return self.bindata.mimetype
 
-StaticFile.bindata = relation(Object, uselist=False, remote_side=Object.id, primaryjoin=(StaticFile.parent_id==Object.id))
-
-BinData.static_files = relation(Object, uselist=True, remote_side=Object.parent_id, primaryjoin=(Object.parent_id==BinData.id))
-
 
 
 class Comment(renderObject):
@@ -1892,18 +1904,17 @@ class Comment(renderObject):
 		Superparent: The main page thus commented.
 		Owner: Whoever created the comment
 		"""
-	__tablename__ = "comment"
-	__table_args__ = ({'useexisting': True})
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="comment_id"), primary_key=True,autoincrement=False)
-	__mapper_args__ = {'polymorphic_identity': 23, 'inherit_condition': id==Object.id}
-
-	name = Column(Unicode(250))
-	data = Column(Text)
-	added = Column(TimeStamp,default=datetime.utcnow)
-	renderer_id = Column(TinyInteger, ForeignKey(Renderer.id,name="cmt_renderer"), nullable=True)
+	__storm_table__ = "comment"
+	_discriminator = 23
+	
+	name = Unicode()
+	data = Unicode()
+	added = DateTime(default_factory=datetime.utcnow)
+	renderer_id = Int(allow_none=True)
+	renderer = Reference(renderer_id,Renderer)
 
 	def __init__(self, obj, name, data, renderer = None):
+		super(Comment,self).__init__()
 		self.name = name
 		self.data = data
 		self.owner = current_request.user

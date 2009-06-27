@@ -6,14 +6,8 @@ from werkzeug.exceptions import HTTPException, NotFound, Unauthorized
 from pybble.utils import STATIC_PATH, local, local_manager, \
 	 TEMPLATE_PATH, AuthError, all_addons
 from pybble.render import expose_map, url_map, send_mail, expose
-from pybble.database import metadata, db, NoResult, dsn
-from sqlalchemy.sql import and_, or_, not_
-from sqlalchemy.orm import create_session
-try:
-	from sqlalchemy.engine.ddl import SchemaGenerator
-except ImportError:
-	pass
-import sqlalchemy.exc
+from pybble.database import db, NoResult, dsn, database
+from storm.locals import Store
 
 import pybble.models
 import pybble.admin
@@ -69,7 +63,7 @@ class Pybble(object):
 	def init_database(self):
 		def action():
 			"""Initialize or update the database"""
-			metadata.create_all(db.engine)
+			raise NotImplementedError("Do this manually")
 		return action
 		
 	def init_site_replace(self):
@@ -87,83 +81,85 @@ class Pybble(object):
 			from pybble import utils
 			from werkzeug import Request
 
-			for rn in ("markdown",):
+			utils.local.request = Request({})
+			utils.local.store = Store(database)
+
+			for rn in (u"markdown",):
 				rc = "pybble.render.render_"+rn
 				try:
-					r = Renderer.q.get_by(name=rn)
+					r = db.get_by(Renderer, name=rn)
 				except NoResult:
 					r = Renderer(rn,rc)
-					db.session.add(r)
+					db.store.add(r)
 				else:
 					if r.cls != rc:
 						print "Warning: Renderer '%s' differs (%s | %s)." % (rn,r.cls,rc)
 						if replace_templates:
 							r.cls = rc
 
-			db.session.flush()
+			db.store.flush()
 
-			for k,v in Object.__mapper__.polymorphic_map.iteritems():
-				v=v.class_
-
+			from pybble import models as m
+			for k,v in m._discr2cls.iteritems():
 				try:
-					o=Discriminator.q.get_by(id=k)
+					o=db.get_by(Discriminator, id=k)
 				except NoResult:
 					o=Discriminator(v)
-					db.session.add(o)
+					db.store.add(o)
 				else:
 					if o.name != v.__name__:
 						raise ValueError("Discriminator '%d' pointed at '%s', now '%s'!" % (k,o.name,v.__name__))
-			db.session.flush()
+			del m
+			db.store.flush()
 
 			domain=domain.decode("utf-8")
 			try:
-				s=Site.q.get_by(domain=domain)
+				s=db.get_by(Site, domain=domain)
 			except NoResult:
 				s=Site(domain,name=name)
-				db.session.add(s)
+				db.store.add(s)
 			else:
 				print u"%s found." % s
 
-			utils.local.request = Request({})
 			utils.current_request.site = s
 
 			for ext,typ,name in extensions:
 				typ,subtyp = typ.split("/",1)
 				add_mime(name,typ,subtyp,ext)
-			db.session.flush()
+			db.store.flush()
 
 			try:
-				st = Storage.q.get_by(name=u"Pybble")
+				st = db.get_by(Storage, name=u"Pybble")
 			except NoResult:
 				try:
-					st = Storage.q.get_by(name=u"Test")
+					st = db.get_by(Storage, name=u"Test")
 				except NoResult:
 					st = Storage("Test","/var/tmp/testkram","localhost:5000/static")
-					db.session.add(st)
+					db.store.add(st)
 			else:
 				st.superparent = s
-			db.session.flush()
+			db.store.flush()
 			if s.storage is None:
 				s.storage = st
-				db.session.flush()
+				db.store.flush()
 
 			try:
-				u=User.q.get_one(and_(User.sites.contains(s), User.username==u"root"))
+				u=db.get_one(User,And(User.sites.contains(s), User.username==u"root"))
 			except NoResult:
 				u=User(u"root")
 				u.email=settings.ADMIN
 				u.sites.append(s)
-				db.session.add(u)
+				db.store.add(u)
 			else:
 				print u"%s found." % u
 
-			db.session.flush()
+			db.store.flush()
 			u.verified=True
 			u.parent = s
-			db.session.flush()
+			db.store.flush()
 			if s.owner != u:
 				s.owner = u
-				db.session.flush()
+				db.store.flush()
 			utils.current_request.user = u
 
 			def add_files(dir,path):
@@ -184,69 +180,69 @@ class Pybble(object):
 							sb = BinData.lookup(content)
 						except NoResult:
 							sb = BinData(f[:dot],ext=f[dot+1:],content=content, storage=st)
-							db.session.add(sb)
+							db.store.add(sb)
 							sb.save()
 
 						try:
-							sf = StaticFile.q.get_by(path=dp,superparent=s)
+							sf = db.get_by(StaticFile, path=dp,superparent=s)
 						except NoResult:
 							sf = StaticFile(dp,sb)
-							db.session.add(sf)
+							db.store.add(sf)
 						else:
 							if content != sf.content:
 								print "Warning: StaticFile '%s' differs." % (dp,)
 								if replace_templates:
-									db.session.delete(sf)
+									db.store.delete(sf)
 									sf = StaticFile(dp,sb)
-									db.session.add(sf)
+									db.store.add(sf)
 
 
 			add_files(os.path.join(u"pybble",u"static"),u"")
 		
 			try:
-				a=User.q.get_by(superparent=s, username=u"")
+				a=db.get_by(User, superparent=s, username=u"")
 			except NoResult:
 				a=User(u"", password="")
 				a.owner = u
 				a.superparent = s
 				a.sites.append(s)
-				db.session.add(a)
+				db.store.add(a)
 			else:
 				print u"%s found." % a
 
-			db.session.flush()
+			db.store.flush()
 			a.verified=False
 
-			db.session.flush()
+			db.store.flush()
 
-			for d in Discriminator.q.all():
-				if Permission.q.filter(and_(Permission.discr==d.id,Permission.right>=0)).count():
+			for d in db.store.all(Discriminator, ):
+				if db.store.find(Permission,And(Permission.discr==d.id,Permission.right>=0)).count():
 					continue
 				p=Permission(u, s, d, PERM_ADMIN)
 				p.superparent=s
-				db.session.add(p)
+				db.store.add(p)
 
-			dw = Discriminator.q.get_by(name="WikiPage")
-			ds = Discriminator.q.get_by(name="Site")
-			dp = Discriminator.q.get_by(name="Permission")
-			dk = Discriminator.q.get_by(name="Comment")
-			dt = Discriminator.q.get_by(name="WantTracking")
-			dd = Discriminator.q.get_by(name="BinData")
+			dw = db.get_by(Discriminator, name="WikiPage")
+			ds = db.get_by(Discriminator, name="Site")
+			dp = db.get_by(Discriminator, name="Permission")
+			dk = db.get_by(Discriminator, name="Comment")
+			dt = db.get_by(Discriminator, name="WantTracking")
+			dd = db.get_by(Discriminator, name="BinData")
 
 			for d in (dw,ds,dt,dd):
-				if Permission.q.filter(and_(Permission.discr==d.id,Permission.right>=0,Permission.owner==a)).count():
+				if db.store.find(Permission, And(Permission.discr==d.id,Permission.right>=0,Permission.owner==a)).count():
 					continue
 				p=Permission(a, s, d, PERM_READ)
 				p.superparent=s
-				db.session.add(p)
+				db.store.add(p)
 
 			for d,e in ((ds,dd),(dw,dd),(ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk),(ds,dt)):
-				if Permission.q.filter(and_(Permission.new_discr==e.id,Permission.discr==d.id)).count():
+				if db.store.find(Permission,And(Permission.new_discr==e.id,Permission.discr==d.id)).count():
 					continue
 				p=Permission(u, s, d, PERM_ADD)
 				p.new_discr=e.id
 				p.superparent=s
-				db.session.add(p)
+				db.store.add(p)
 
 			# View templates
 			for addon in self.addons:
@@ -255,19 +251,19 @@ class Pybble(object):
 						continue
 					if cls.__name__ not in addon.__ALL__:
 						continue
-					if Permission.q.filter_by(discr=cls.cls_discr()).count():
+					if db.store.filter_by(Permission, discr=cls.cls_discr()).count():
 						continue
 					p=Permission(u, s, ds, PERM_ADMIN)
 					p.new_discr=cls.cls_discr()
 					p.superparent=s
-					db.session.add(p)
+					db.store.add(p)
 
 					p=Permission(u, s, ds, PERM_ADD)
 					p.new_discr=cls.cls_discr()
 					p.superparent=s
-					db.session.add(p)
+					db.store.add(p)
 
-			db.session.flush()
+			db.store.flush()
 
 			def get_template(fn):
 				with file(os.path.join(TEMPLATE_PATH,fn)) as f:
@@ -278,11 +274,11 @@ class Pybble(object):
 						raise
 
 				try:
-					t = Template.q.get_by(name=fn,parent=s)
+					t = db.get_by(Template, name=fn,parent=s)
 				except NoResult:
 					t = Template(name=fn,data=data,parent=s)
 					t.owner = u
-					db.session.add(t)
+					db.store.add(t)
 				else:
 					if t.data != data:
 						print "Warning: Template '%s' differs." % (fn,)
@@ -302,10 +298,10 @@ class Pybble(object):
 					continue
 				get_template(os.path.join("edit",fn))
 
-			db.session.flush()
+			db.store.flush()
 
 			VerifierBase.register("register","pybble.login.verifier")
-			db.session.flush()
+			db.store.flush()
 
 
 			with file(os.path.join("doc","TOC.txt")) as f:
@@ -316,14 +312,14 @@ class Pybble(object):
 					raise
 			
 			try:
-				w = WikiPage.q.get_by(name="Documentation",superparent=s)
+				w = db.get_by(WikiPage, name="Documentation",superparent=s)
 			except NoResult:
 				w = WikiPage("Documentation",data)
 				w.owner=u
 				w.parent=s
 				w.superparent=s
 				w.mainpage=True
-				db.session.add(w)
+				db.store.add(w)
 			else:
 				if w.data != data:
 					print "Warning: DocPage 'TOC' differs."
@@ -349,14 +345,14 @@ class Pybble(object):
 				fn = fn[:-4]
 				
 				try:
-					ww = WikiPage.q.get_by(name=fn,parent=w)
+					ww = db.get_by(WikiPage, name=fn,parent=w)
 				except NoResult:
 					ww = WikiPage(fn,data)
 					ww.owner=u
 					ww.parent=w
 					ww.superparent=s
 					ww.mainpage=False
-					db.session.add(ww)
+					db.store.add(ww)
 				else:
 					ww.superparent=s
 					ww.mainpage=False
@@ -365,8 +361,8 @@ class Pybble(object):
 						if replace_templates:
 							ww.data = data
 
-			db.session.flush()
-			for d in Discriminator.q.all():
+			db.store.flush()
+			for d in db.store.all(Discriminator, ):
 				for detail,name in ((TM_DETAIL_SUBPAGE,"view"),
 					(TM_DETAIL_DETAIL,"details"),
 					(TM_DETAIL_HIERARCHY,"hierarchy"),
@@ -379,16 +375,16 @@ class Pybble(object):
 						pass
 					else:
 						try:
-							t = TemplateMatch.q.get_by(obj=s, discr=d.id, detail=detail)
+							t = db.get_by(TemplateMatch, obj=s, discr=d.id, detail=detail)
 						except NoResult:
 							t = TemplateMatch(obj=s, discr=d.id, detail=detail, data=data)
-							db.session.add(t)
+							db.store.add(t)
 						else:
 							if t.data != data:
 								print "Warning: AssocTemplate '%s/%s.html' differs." % (name,d.name.lower())
 								if replace_templates:
 									t.data = data
-					db.session.flush()
+					db.store.flush()
 
 			for addon in self.addons:
 				try: ai = addon.initsite
@@ -403,12 +399,12 @@ class Pybble(object):
 						data = open(os.path.join(addon.__path__[0],t)).read().decode("utf-8")
 						fn = "%s/%s" % (os.path.split(addon.__path__[0])[1],t)
 						try:
-							t = Template.q.get_by(name=fn,superparent=s)
+							t = db.get_by(Template, name=fn,superparent=s)
 						except NoResult:
 							t = Template(name=fn,data=data)
 							t.superparent = s
 							t.owner = u
-							db.session.add(t)
+							db.store.add(t)
 						else:
 							if t.data != data:
 								print "Warning: Template '%s' differs." % (fn,)
@@ -417,7 +413,7 @@ class Pybble(object):
 							if replace_templates:
 								t.superparent = s
 								t.owner = u
-					db.session.flush()
+					db.store.flush()
 
 				# View templates
 				for cls in addon.__dict__.values():
@@ -432,40 +428,19 @@ class Pybble(object):
 							continue
 						else:
 							try:
-								t = TemplateMatch.q.get_by(obj=s, discr=cls.cls_discr(), detail=t)
+								t = db.get_by(TemplateMatch, obj=s, discr=cls.cls_discr(), detail=t)
 							except NoResult:
 								t = TemplateMatch(obj=s, discr=cls.cls_discr(), detail=t, data=data)
-								db.session.add(t)
+								db.store.add(t)
 							else:
 								if t.data != data:
 									print "Warning: AddOn-Template %s: '%s.%s.html' differs." % (addon.__name__, cls.__name__, n.lower())
 									if replace_templates:
 										t.data = data
 
-			db.session.commit()
+			db.store.commit()
 			print "Your root user is named '%s' and has the password '%s'." % (u.username, u.password)
 		return action
-
-	def show_database(self):
-		def action():
-			"""Show all database table definitions"""
-			def foo(s, p=None):
-				if not hasattr(s,"strip"):
-					s=str(s)
-				buf.write(s.strip()+";\n")
-
-			buf = StringIO.StringIO()
-			from sqlalchemy import create_engine
-			gen = create_engine(os.getenv("DATABASE_TYPE",settings.DATABASE_TYPE)+"://", strategy="mock", executor=foo)
-			if hasattr(gen.dialect,"schemagenerator"):
-				gen = gen.dialect.schemagenerator(gen.dialect, gen)
-			else:
-				gen = SchemaGenerator(gen.dialect, gen)
-			for table in metadata.tables.values():
-				gen.traverse(table)
-			print buf.getvalue()
-		return action
-
 
 	def trigger(self):
 		def action(user=("u",""), site=("s",""), verbose=("v",False)):
@@ -474,6 +449,7 @@ class Pybble(object):
 			from pybble import utils
 
 			utils.local.request = Request({})
+			utils.local.store = Store(database)
 
 			siteq = Site.q
 			if site:
@@ -482,10 +458,10 @@ class Pybble(object):
 			for s in siteq:
 				setup_code_env(s)
 				if user:
-					u = User.q.filter_by(site=s,name=user).value()
+					u = db.store.filter_by(User, site=s,name=user).value()
 				else:
 					u = None
-				tq = Tracker.q.filter_by(site=s)
+				tq = db.store.filter_by(Tracker, site=s)
 				if s.tracked:
 					tq = tq.filter(Tracker.timestamp>s.tracked)
 				if u:
@@ -496,17 +472,17 @@ class Pybble(object):
 					if o is None:
 						print "ChangeObj??",t
 						continue
-					wq=WantTracking.q.filter(or_(WantTracking.discr==None,WantTracking.discr==o.discriminator))
+					wq=Or(WantTracking.discr==None,WantTracking.discr==o.discriminator)
 					processed = set()
 					while o:
-						wantq=wq.filter_by(parent=o)
+						wantq=And(wq, WantTracking.parent==o)
 						if processed:
-							wantq=wantq.filter(not_(or_(*( WantTracking.owner_id == i for i in processed))))
+							wantq=And(wantq, Not(Or(*( WantTracking.owner_id == i for i in processed))))
 
 						inew = None
 						imod = None
 						idel = None
-						for w in wantq:
+						for w in db.store.find(WantTracking, wantq):
 							processed.add(w.owner_id)
 							if not w.owner.can_read(t.change_obj):
 								continue
@@ -520,10 +496,10 @@ class Pybble(object):
 								if not w.track_new: continue
 								inew=t.parent
 
-							if UserTracker.q.filter_by(owner=w.owner, parent=t).count():
+							if db.store.filter_by(UserTracker, owner=w.owner, parent=t).count():
 								continue
 							ut=UserTracker(user=w.owner,tracker=t,want=w)
-							db.session.add(ut)
+							db.store.add(ut)
 							if w.email:
 								utils.local.request.user = ut.owner
 								try:
@@ -541,7 +517,7 @@ class Pybble(object):
 
 					if not u:
 						s.tracked=t.timestamp
-				db.session.commit()
+				db.store.commit()
 
 		return action
 
@@ -555,10 +531,11 @@ class Pybble(object):
 			from pybble import utils
 
 			utils.local.request = Request({})
+			utils.local.store = Store(database)
 
 			obj = obj_get(obj)
 			if site:
-				s = Site.q.get_by(name=site)
+				s = db.get_by(Site, name=site)
 			else:
 				s = obj.site
 			setup_code_env(s)
@@ -580,7 +557,7 @@ class Pybble(object):
 		def action(script=("s")):
 			"""Run a script on the database."""
 			def Do(stmt):
-				db.session.execute(stmt)
+				db.store.execute(stmt)
 
 			execfile(script, globals(),locals())
 
@@ -588,10 +565,11 @@ class Pybble(object):
 
 	def dispatch(self, environ, start_response):
 		local.application = self
-		local.session = db.session()
+		local.session = db.store()
 		local.session.rollback() # basic protection
 		request = Request(environ)
 		local.request = request
+		local.store = Store(database)
 		local.url_adapter = adapter = url_map.bind_to_environ(environ)
 		try:
 			add_site(request)
@@ -602,7 +580,7 @@ class Pybble(object):
 			handler = expose_map[endpoint]
 			response = handler(request, **values)
 			save_session(request,response)
-			db.session.commit()
+			db.store.commit()
 		except (NotFound,NoResult), e:
 			from traceback import print_exc
 			print_exc(file=sys.stderr)

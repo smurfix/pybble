@@ -22,7 +22,7 @@ from datetime import datetime
 
 def known_name(form, field):
 	site = obj_get(form.site.data)
-	m = Template.q.filter_by(parent=site, name=field.data)
+	m = db.filter_by(Template, parent=site, name=field.data)
 
 	id = getattr(form,"id",None)
 	if id:

@@ -26,5 +26,5 @@ def view_all(request):
 		user.feed_read = datetime.utcnow()
 
 	return render_template("changelist.html",
-	                       changes=UserTracker.q.filter(f).order_by(UserTracker.id.desc()))
+	                       changes=db.filter(UserTracker, f, order_by=Desc(UserTracker.id)))
 	

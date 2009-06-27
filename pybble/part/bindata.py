@@ -35,13 +35,13 @@ def check_type(form,field):
 		else:
 			if str(mt.id) != field.data:
 				raise ValidationError("Wrong MIME type: %s vs. %s" % \
-					(MIMEtype.q.get_by(int(field.data)).mimetype, mt.mimetype))
+					(db.get_by(MIMEtype, int(field.data)).mimetype, mt.mimetype))
 			form.mimetype = mt
 				
 	
 class FileForm(Form):
 	name = TextField('Name', [validators.length(min=3, max=30)])
-	mime = SelectField('MIME Type', [check_type], choices=[(str(x.id),x.name) for x in MIMEtype.q.all()])
+	mime = SelectField('MIME Type', [check_type], choices=[(str(x.id),x.name) for x in db.all(MIMEtype, )])
 
 def newer(request, parent, name=None):
 	if parent is None:

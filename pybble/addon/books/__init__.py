@@ -3,7 +3,7 @@
 from werkzeug import redirect
 from pybble.database import db, NoResult
 from pybble.models import Object
-from sqlalchemy import Column, String, Text, Unicode, Integer, DateTime, ForeignKey
+from storm.locals import Unicode,Int,DateTime,RawStr
 from wtforms import Form,TextField,TextAreaField,validators
 from pybble.utils import current_request
 from pybble.render import url_for, render_template
@@ -29,14 +29,11 @@ class Bookstore(Object):
 		This represents a place where books are kept.
 		Owner: Whoever created the thing.
 		"""
-	__tablename__ = "bookstore"
-	__table_args__ = ({'useexisting': True})
-	__mapper_args__ = {'polymorphic_identity': 105}
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="bookstore_id"), primary_key=True,autoincrement=False)
+	__storm_table__ = "bookstore"
+	_discriminator = 105
 
-	name = Column(Unicode(250))
-	info = Column(Unicode(250))
+	name = Unicode()
+	info = Unicode()
 
 	def __init__(self,parent):
 		self.owner = current_request.user
@@ -101,16 +98,13 @@ class Book(Object):
 		Parent: The bookstore.
 		Superparent: Whoever currently has the book physically.
 		"""
-	__tablename__ = "books"
-	__table_args__ = ({'useexisting': True})
-	__mapper_args__ = {'polymorphic_identity': 106}
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="book_id"), primary_key=True,autoincrement=False)
+	__storm_table__ = "books"
+	_discriminator = 106
 
-	title = Column(Unicode(250))
-	author = Column(Unicode(250))
-	upc = Column(String(15))
-	info = Column(Text)
+	title = Unicode()
+	author = Unicode()
+	upc = RawStr()
+	info = Unicode()
 
 	def __init__(self,parent):
 		self.owner = current_request.user
@@ -122,7 +116,7 @@ class Book(Object):
 		b = self.superparent
 		while True:
 			try:
-				b = BookWant.q.get_by(parent=self,superparent=b)
+				b = db.store.get_by(BookWant, parent=self,superparent=b)
 			except NoResult:
 				return
 			else:
@@ -190,13 +184,10 @@ class BookWant(Object):
 		Parent: The book.
 		Superparent: The previous owner, who should send the book onwards.
 		"""
-	__tablename__ = "bookwant"
-	__table_args__ = ({'useexisting': True})
-	__mapper_args__ = {'polymorphic_identity': 107}
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="bookwant_id"), primary_key=True,autoincrement=False)
+	__storm_table__ = "bookwant"
+	_discriminator = 107
 
-	requested = Column(DateTime,default=datetime.utcnow)
+	requested = DateTime(default_factory=datetime.utcnow)
 
 	def __init__(self, book):
 		self.owner = current_request.user
@@ -204,7 +195,7 @@ class BookWant(Object):
 		self.superparent = book.superparent
 		while True:
 			try:
-				b = BookWant.q.get_by(parent=book,superparent=self.superparent)
+				b = db.store.get_by(BookWant, parent=book,superparent=self.superparent)
 			except NoResult:
 				break
 			else:
@@ -214,7 +205,7 @@ class BookWant(Object):
 		book=self.parent
 		if current_request.method == 'POST':
 			try:
-				b = BookWant.q.get_by(parent=book,superparent=self.superparent)
+				b = db.store.get_by(BookWant, parent=book,superparent=self.superparent)
 			except NoResult:
 				pass
 			else:
@@ -232,7 +223,7 @@ class BookWant(Object):
 			flash("Du hast das Buch doch gerade!",False)
 			return redirect(url_for("pybble.views.view_oid", oid=parent.oid()))
 		try:
-			b = BookWant.q.get_by(parent=parent, superparent=current_request.user)
+			b = db.store.get_by(BookWant, parent=parent, superparent=current_request.user)
 		except NoResult:
 			pass
 		else:
@@ -252,7 +243,7 @@ class BookWant(Object):
 		n = 0
 		while True:
 			try:
-				b = BookWant.q.get_by(parent=parent, superparent=b.superparent)
+				b = db.store.get_by(BookWant, parent=parent, superparent=b.superparent)
 			except NoResult:
 				break
 			else:

@@ -3,7 +3,7 @@
 from werkzeug import redirect
 from pybble.database import db
 from pybble.models import Object
-from sqlalchemy import Column, Unicode, Integer, ForeignKey
+from storm.locals import Unicode,Int,DateTime
 from wtforms import Form,TextField,validators
 from pybble.utils import current_request
 from pybble.render import url_for, render_template
@@ -32,13 +32,10 @@ class Demo(Object):
 		Demonstration extension object, not to be doing anything much.
 		Owner: Whoever created the thing.
 		"""
-	__tablename__ = "demo"
-	__table_args__ = ({'useexisting': True})
-	__mapper_args__ = {'polymorphic_identity': 101}
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="demo_id"), primary_key=True,autoincrement=False)
+	__storm_table__ = "demo"
+	_discriminator = 101
 
-	name = Column(Unicode(250))
+	name = Unicode()
 
 	def __init__(self,parent):
 		self.owner = current_request.user

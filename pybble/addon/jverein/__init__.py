@@ -3,7 +3,7 @@
 from werkzeug import redirect
 from pybble.database import db, NoResult
 from pybble.models import Object,User,obj_get, VerifierBase, Verifier
-from sqlalchemy import Column, Unicode, Integer, ForeignKey, String, Boolean
+from storm.locals import Unicode,Int,DateTime,Bool
 from wtforms import Form,TextField,IntegerField,validators
 from wtforms.validators import ValidationError
 from pybble.utils import current_request
@@ -55,14 +55,11 @@ class Verein(Object):
 		parent: site
 		Owner: Whoever created the thing.
 		"""
-	__tablename__ = "verein"
-	__table_args__ = ({'useexisting': True})
-	__mapper_args__ = {'polymorphic_identity': 102}
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="verein_id"), primary_key=True,autoincrement=False)
+	__storm_table__ = "verein"
+	_discriminator = 102
 
-	name = Column(Unicode(250))
-	database = Column(String(30)) # actually a table
+	name = Unicode()
+	database = Unicode() # actually a table
 
 	def __init__(self,parent, name,database):
 		self.owner = current_request.user
@@ -119,7 +116,7 @@ database: %s
 
 	@property
 	def num_reg_mitglieder(self):
-		return Mitglied.q.filter_by(parent=self, aktiv=True).count()
+		return db.store.filter_by(Mitglied, parent=self, aktiv=True).count()
 
 	@classmethod
 	def html_new(cls,parent,name=None):
@@ -173,14 +170,11 @@ class VereinAcct(Object):
 		parent: site
 		Owner: Whoever created the thing.
 		"""
-	__tablename__ = "vereinacct"
-	__table_args__ = ({'useexisting': True})
-	__mapper_args__ = {'polymorphic_identity': 104}
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey('obj.id',name="vereinacct_id"), primary_key=True,autoincrement=False)
+	__storm_table__ = "vereinacct"
+	_discriminator = 104
 
-	accountdb = Column(String(30)) # Hibiscus DB
-	accountnr = Column(Integer) # Hibiscus account#
+	accountdb = Unicode() # Hibiscus DB
+	accountnr = Int() # Hibiscus account#
 
 	def __init__(self,parent, db,nr):
 		self.owner = current_request.user
@@ -258,7 +252,7 @@ def verein_unassoc(form, field):
 
 def check_unassoc(form, user):
 	try:
-		m = Mitglied.q.get_by(parent=form.parent, owner=user)
+		m = db.store.get_by(Mitglied, parent=form.parent, owner=user)
 	except NoResult:
 		pass
 	else:
@@ -276,14 +270,11 @@ class Mitglied(Object):
 		parent: Verein
 		Owner: associated user
 		"""
-	__tablename__ = "verein_member"
-	__table_args__ = ({'useexisting': True})
-	__mapper_args__ = {'polymorphic_identity': 103}
-	q = db.session.query_property(db.Query)
-	id = Column(Integer, ForeignKey(Object.id,name="vereinmember_id"), primary_key=True,autoincrement=False)
+	__storm_table__ = "verein_member"
+	_discriminator = 103
 
-	mitglied_id = Column(Integer)
-	aktiv = Column(Boolean, default=False)
+	mitglied_id = Int()
+	aktiv = Bool(default=False)
 
 	@property
 	def group(self):
@@ -336,7 +327,7 @@ class Mitglied(Object):
 
 		return render_template('jverein/newuser.html', parent=parent, form=form, title_trace=["Neumitglied","Verein"])
 
-Object.new_member_rule(Mitglied.q.filter_by(aktiv=True), "owner","parent")
+Object.new_member_rule(Mitglied, "owner","parent", aktiv=True)
 
 ###
 ### Confirm email 

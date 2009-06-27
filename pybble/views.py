@@ -137,7 +137,7 @@ def delete_oid(request, oid):
 def split_details(request,obj, details):
 	for d in details.split("-"):
 		try:
-			o = Object.q.get(int(d))
+			o = db.get(BaseObject, int(d))
 			if o != obj.superparent:
 				pass
 			request.user.will_read(o)
@@ -237,7 +237,7 @@ def view_snippet(request, t):
 				res.append(render_my_template(request, o, detail=TM_DETAIL_SNIPPET, discr=t, sub=sub, mimetype=None))
 			return Response("\n".join(res), mimetype="text/html")
 		else:
-			sub = c.q.filter_by(parent=obj).all()
+			sub = db.filter_by(c, parent=obj).all()
 			return render_my_template(request, obj, detail=TM_DETAIL_SNIPPET, discr=t, sub=sub)
 
 @expose('/snippet/<t>/<oid>')
@@ -262,13 +262,13 @@ def view_snippet2(request, t, oid, discr):
 	c = obj_class(discr)
 	obj = obj_get(oid)
 	if t == "parent":
-		sub = c.q.filter_by(parent=obj)
+		sub = db.filter_by(c, parent=obj)
 		what = "has_children"
 	elif t == "superparent":
-		sub = c.q.filter_by(superparent=obj)
+		sub = db.filter_by(c, superparent=obj)
 		what = "has_superchildren"
 	elif t == "owner":
-		sub = c.q.filter_by(owner=obj)
+		sub = db.filter_by(c, owner=obj)
 		what = "has_slaves"
 	else:
 		raise NotFound()

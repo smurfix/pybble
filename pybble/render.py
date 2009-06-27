@@ -19,7 +19,7 @@ from pybble import _settings as settings
 url_map = Map([Rule('/static/<file>', endpoint='static', build_only=True)])
 
 try:
-	discr_list = list(Discriminator.q.all())
+	discr_list = list(db.all(Discriminator, ))
 except Exception:
 	discr_list = [] # if not set up yet
 discr_list.sort(cmp=lambda a,b: cmp(a.name,b.name))
@@ -65,7 +65,7 @@ class DatabaseLoader(BaseLoader):
 			site = current_request.site
 			t = None
 			while site:
-				try: t = Template.q.get_by(name=template,superparent=site)
+				try: t = db.get_by(Template, name=template,superparent=site)
 				except NoResult: pass
 				else: break
 				site = site.parent
@@ -150,7 +150,7 @@ jinja_env.globals['url'] = lambda: current_request.url
 def name_discr(id):
 	if id is None or id == "None":
 		return "*"
-	return Discriminator.q.get_by(id=int(id)).name
+	return db.get_by(Discriminator, id=int(id)).name
 jinja_env.globals['name_discr'] = name_discr
 
 def name_detail(id):
@@ -180,7 +180,7 @@ def addables(obj):
 	g = u.get(obj.id,None)
 	if g is None:
 		g = []
-		for d in Discriminator.q.all():
+		for d in db.all(Discriminator, ):
 #			if getattr(obj_class(d.id),"_no_crumbs",False):
 #				continue
 			if current_request.user.can_add(obj, discr=obj.discriminator, new_discr=d.id):
@@ -249,7 +249,7 @@ def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE, discr=None):
 	ctx["obj_deleted"] = d
 	ctx["detail"] = detail
 	if discr is not None:
-		ctx["sub"] = obj_class(discr).q.filter_by(parent=obj).count()
+		ctx["sub"] = db.filter_by(obj_class(discr), parent=obj).count()
 	return render_my_template(current_request, mimetype=None, **ctx)
 
 @contextfunction
@@ -315,7 +315,7 @@ def send_mail(to='', template='', **context):
 	
 	mailServer = smtplib.SMTP(settings.MAILHOST)
 	mailServer.sendmail(context["site"].owner.email, to, jinja_env.get_template(template).render(**context))
-	mailServer.quit()
+	db.it(mailServer, )
 
 
 
@@ -417,7 +417,7 @@ def serve_path(request,path):
 	site = request.site
 	while site:
 		try:
-			sf = StaticFile.q.get_by(superparent=site, path=path)
+			sf = db.get_by(StaticFile, superparent=site, path=path)
 		except NoResult:
 			site = site.parent
 			if not site:

@@ -66,9 +66,9 @@ def editor(request, obj=None, parent=None):
 		flash(u"Gespeichert.",True)
 
 		if obj.inherit is None:
-			m = Permission.q.filter(TemplateMatch.inherit != None)
+			m = db.filter(Permission, TemplateMatch.inherit != None)
 		else:
-			m = Permission.q.filter(TemplateMatch.inherit == None)
+			m = db.filter(Permission, TemplateMatch.inherit == None)
 		m = m.filter_by(discr=discr, parent=obj, owner=user)
 		if obj.inherit is None:
 			if m.count():

@@ -40,7 +40,7 @@ def add_site(request):
 		request.environ['HTTP_X_FORWARDED_HOST'] = host[4:]
 		return HttpResponsePermanentRedirect(request.url)
 	try:
-		site = Site.q.get_by(domain=host.decode("idna"))
+		site = db.get_by(Site, domain=host.decode("idna"))
 	except NoResult:
 		print >>sys.stderr,"host '%s' ... not found!" % (host,)
 		site = Site(domain=host,name=u'Unknown domain «%s»' % (host,))
@@ -78,10 +78,10 @@ def add_user(request):
 	user_id = request.session.get('uid')
 	user = None
 	if user_id is not None:
-		try: user = User.q.get_by(id=user_id)
+		try: user = db.get_by(User, id=user_id)
 		except NoResult: pass
 	if user is None:
-		user = User.q.get_anonymous_user(request.site)
+		user = get_anonymous_user(request.site)
 
 #	# check for bann
 #	if user.is_banned:
@@ -90,7 +90,7 @@ def add_user(request):
 #				session=request.session)
 #
 #		request.session.pop('uid', None)
-#		user = User.objects.get_anonymous_user()
+#		user = get_anonymous_user()
 
 	now = datetime.utcnow()
 	if user.cur_login is None or user.cur_login < now-timedelta(0,600):

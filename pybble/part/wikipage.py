@@ -125,10 +125,10 @@ def viewer(request, name, parent=None, obj=None, **args):
 		elif parent:
 			if not args and parent == name:
 				return redirect(url_for("pybble.part.wikipage.viewer", name=name))
-			parent = WikiPage.q.get_by(name=parent, superparent=request.site, mainpage=True)
-			obj = WikiPage.q.get_by(name=name, parent=parent, mainpage=False)
+			parent = db.get_by(WikiPage, name=parent, superparent=request.site, mainpage=True)
+			obj = db.get_by(WikiPage, name=name, parent=parent, mainpage=False)
 		else:
-			obj = WikiPage.q.get_by(name=name, superparent=request.site, mainpage=True)
+			obj = db.get_by(WikiPage, name=name, superparent=request.site, mainpage=True)
 	except NoResult:
 		if not parent:
 			raise

@@ -6,13 +6,8 @@ from pybble import _settings as settings
 
 from types import ModuleType, FunctionType
 from werkzeug import cached_property
-from sqlalchemy import MetaData, create_engine, Table, String, Boolean,\
-    Integer, Column, Text, Float, ForeignKey, DateTime
-from sqlalchemy.types import TypeDecorator, MutableType
-from sqlalchemy.orm import scoped_session, create_session, relation, Query, \
-    MapperExtension
-from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 from pybble.utils import local_manager
+from storm.locals import create_database, And
 
 if settings.DATABASE_TYPE == "sqlite":
 	dsn = 'sqlite:///'+settings.DATABASE_FILE
@@ -23,54 +18,56 @@ elif settings.DATABASE_TYPE == "mysql":
 else:
 	raise ValueError("unsupported ddatabase type: use 'sqlite' or 'mysql'")
 
-from sqlalchemy.ext.declarative import declarative_base
-Base = declarative_base()
+database = create_database(dsn)
 
-Session = scoped_session(lambda: create_session(db.engine,
-                         autocommit=False), local_manager.get_ident)
+from storm.exceptions import NotOneError as NonUniqueResult
+from storm.exceptions import StormError
 
-engine = create_engine(dsn, pool_recycle=300, convert_unicode=True, echo=settings.DATABASE_DEBUG)
-metadata = Base.metadata
+class NoResult(StormError):
+	pass
 
-Model = declarative_base(metadata=metadata,
-                         mapper=Session.mapper)
-#Model.query = db.session.query_property()
+def _Get(cls, id):
+	res = db.store.get(cls, id)
+	if res is None:
+		raise NoResult
+	return res
 
-from sqlalchemy.orm import exc as orm_exc
+def _GetBy(cls, **kw):
+	args = [ (getattr(cls,k) == v) for k,v in kw.iteritems() ]
+	res = None
+	for r in db.store.find(cls, And(*args)):
+		if res is None:
+			res = r
+		else:
+			raise NonUniqueResult()
+	if res is None:
+		raise NoResult
+	return res
 
-NonUniqueResult = orm_exc.MultipleResultsFound
-NoResult = orm_exc.NoResultFound
+def _Filter(cls, *args, **kw):
+	return db.store.find(cls, And(*args), **kw)
 
-class GQuery(Query):
-	def get_by(self,*a,**k):
-		"""Make sure that there's exactly one result."""
-		return self.filter_by(*a,**k).one()
-		
-	def get_one(self,*a,**k):
-		"""Make sure that there's exactly one result."""
-		return self.filter(*a,**k).one()
+def _FilterBy(cls, **kw):
+	args = [ (getattr(cls,k) == v) for k,v in kw.iteritems() ]
+	return db.store.find(cls, And(*args))
 
-	def each(self, proc):
-		"""Run a command on each query value"""
-		for p in self: proc(p)
+#	res = 0
+#	for r in db.store.find(cls, *args):
+#		yield r
+#		res += 1
+#	if not res:
+#		raise NoResult
+
+from pybble.utils import store
 
 def _make_module():
-    import sqlalchemy
-    from sqlalchemy import orm
-
     db = ModuleType('db')
-    for mod in sqlalchemy, orm:
-        for key in mod.__all__:
-            setattr(db, key, getattr(mod, key))
-    #db.File = File
-    db.engine = engine
-    db.session = Session
-    db.Model = Model
-    db.Query = GQuery
-    db.Base = Base
-    db.Metadata = metadata
+    db.store = store
+    db.get = _Get
+    db.filter = _Filter
+    db.get_by = _GetBy
+    db.filter_by = _FilterBy
     return db
 
 db = _make_module()
-del _make_module
 

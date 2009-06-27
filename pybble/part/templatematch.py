@@ -33,7 +33,7 @@ def known_match(form, field):
 
 	dest = obj_get(form.oid.data)
 
-	m = TemplateMatch.q.filter(TemplateMatch.inherit == inherit)
+	m = db.filter(TemplateMatch, TemplateMatch.inherit == inherit)
 	id = getattr(form,"id",None)
 	if id:
 		m = m.filter(TemplateMatch.id != id)
@@ -81,9 +81,9 @@ def editor(request, obj=None, parent=None):
 
 		# Now filter other templates to look for overlaps
 		if obj.inherit is None:
-			m = TemplateMatch.q.filter(TemplateMatch.inherit != None)
+			m = db.filter(TemplateMatch, TemplateMatch.inherit != None)
 		else:
-			m = TemplateMatch.q.filter(TemplateMatch.inherit == None)
+			m = db.filter(TemplateMatch, TemplateMatch.inherit == None)
 		m = m.filter_by(discr=obj.discr, detail=obj.detail, obj=obj)
 		if obj.inherit is None:
 			if m.count():
