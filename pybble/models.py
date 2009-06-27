@@ -650,10 +650,12 @@ class User(Object):
 		if obj is not current_request.site and \
 		   ru and ru.can_admin(current_request.site, discr=current_request.site.classdiscr):
 			if DEBUG_ACCESS:
-				print >>sys.stderr,"ADMIN"
+				print >>sys.stderr,"ADMIN",obj
 			return want if want and want < 0 else PERM_ADMIN
 
 		if want>0 and want<=PERM_READ and obj.owner==user:
+			if DEBUG_ACCESS:
+				print >>sys.stderr,"OWN",obj
 			return want
 
 		if DEBUG_ACCESS:
