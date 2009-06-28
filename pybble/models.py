@@ -136,7 +136,6 @@ class BaseObject(_BaseObject):
 _discr2cls = {}
 class RegistryMeta(PropertyPublisherMeta):
 	def __init__(self, name, bases, dict):
-		super(RegistryMeta,self).__init__(name, bases, dict)
 		id = getattr(self, "_discriminator", None)
 		if id:
 			_discr2cls[id] = self
@@ -147,16 +146,24 @@ class RegistryMeta(PropertyPublisherMeta):
 		except NameError:
 			pass
 		else:
+			relmap = {}
 			for a,b in Object.__dict__.items():
 				if isinstance(b,Proxy):
 					b = copy(b)
-					b._cls = self
+					#b._cls = self
 					setattr(self,a,b)
 					print "Proxy",a
-				elif isinstance(b,Relation):
-					k = copy(b.local_key)
-					k._cls = self
-					print "Rel",a
+				elif isinstance(b,Reference):
+					b = copy(b)
+					#b._cls = self
+					setattr(self,a,b)
+					print "Ref",a
+				elif b is Object.id:
+					b = copy(b)
+					setattr(self,a,b)
+					print "Ref",a
+					
+		super(RegistryMeta,self).__init__(name, bases, dict)
 
 
 
