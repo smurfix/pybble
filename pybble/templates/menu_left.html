@@ -15,8 +15,8 @@
 			<ul>
 				<li><span>New …</span>
 					<ul>
-					{% for id,name in addables(obj) %}
-						<li><a href="{{ url_for("pybble.views.new_oid", discr=id, oid=obj.oid()) }}">{{ name }} …</a></li>
+					{% for id,name,help in addables(obj) %}
+						<li><a {% if help %}title="{{ help }}"{% endif %}href="{{ url_for("pybble.views.new_oid", discr=id, oid=obj.oid()) }}">{{ name }} …</a></li>
 					{% else %}
 						<li><span>… nothing. Bug‽</span></li>
 					{% endfor %}

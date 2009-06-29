@@ -49,8 +49,8 @@ CREATE TABLE wanttracking (
 	track_mod BOOL NOT NULL, 
 	track_del BOOL NOT NULL, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT wanttracking_discr FOREIGN KEY(discr) REFERENCES discriminator (id), 
-	 CONSTRAINT wanttracking_id FOREIGN KEY(id) REFERENCES obj (id)
+	 CONSTRAINT wanttracking_id FOREIGN KEY(id) REFERENCES obj (id), 
+	 CONSTRAINT wanttracking_discr FOREIGN KEY(discr) REFERENCES discriminator (id)
 );
 CREATE TABLE vereinacct (
 	id INTEGER NOT NULL, 
@@ -62,6 +62,8 @@ CREATE TABLE vereinacct (
 CREATE TABLE discriminator (
 	id TINYINT(1) NOT NULL AUTO_INCREMENT, 
 	name VARCHAR(30) NOT NULL, 
+	display_name VARCHAR(50), 
+	infotext VARCHAR(250), 
 	PRIMARY KEY (id), 
 	 UNIQUE (name)
 );
@@ -104,9 +106,9 @@ CREATE TABLE storage (
 	url VARCHAR(250) NOT NULL, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT storage_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (path), 
 	 UNIQUE (url), 
-	 UNIQUE (name)
+	 UNIQUE (name), 
+	 UNIQUE (path)
 );
 CREATE TABLE sites (
 	id INTEGER NOT NULL, 
@@ -118,7 +120,7 @@ CREATE TABLE sites (
 	 CONSTRAINT site_id FOREIGN KEY(id) REFERENCES obj (id), 
 	 UNIQUE (domain), 
 	 UNIQUE (name), 
-	 CONSTRAINT obj_storage FOREIGN KEY(storage_id) REFERENCES sites (id)
+	 CONSTRAINT site_storage FOREIGN KEY(storage_id) REFERENCES obj (id)
 );
 CREATE TABLE bindata (
 	id INTEGER NOT NULL, 
@@ -128,8 +130,8 @@ CREATE TABLE bindata (
 	timestamp TIMESTAMP, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT bindata_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT bindata_mimeid FOREIGN KEY(mime_id) REFERENCES mimetype (id), 
-	 UNIQUE (hash)
+	 UNIQUE (hash), 
+	 CONSTRAINT bindata_mimeid FOREIGN KEY(mime_id) REFERENCES mimetype (id)
 );
 CREATE TABLE bookwant (
 	id INTEGER NOT NULL, 
@@ -199,8 +201,8 @@ CREATE TABLE verifiers (
 	timeout DATETIME NOT NULL, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT verifier_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT verifier_base FOREIGN KEY(base_id) REFERENCES verifierbase (id), 
-	 UNIQUE (code)
+	 UNIQUE (code), 
+	 CONSTRAINT verifier_base FOREIGN KEY(base_id) REFERENCES verifierbase (id)
 );
 CREATE TABLE groups (
 	id INTEGER NOT NULL, 
@@ -213,8 +215,8 @@ CREATE TABLE verifierbase (
 	name VARCHAR(30) NOT NULL, 
 	cls VARCHAR(50) NOT NULL, 
 	PRIMARY KEY (id), 
-	 UNIQUE (cls), 
-	 UNIQUE (name)
+	 UNIQUE (name), 
+	 UNIQUE (cls)
 );
 CREATE TABLE permissions (
 	id INTEGER NOT NULL, 
@@ -249,10 +251,10 @@ CREATE TABLE obj (
 	parent_id INTEGER, 
 	superparent_id INTEGER, 
 	PRIMARY KEY (id), 
-	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id), 
 	 CONSTRAINT obj_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
-	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id), 
-	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id)
+	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id), 
+	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id), 
+	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id)
 );
 CREATE TABLE site_users (
 	site_id INTEGER NOT NULL, 

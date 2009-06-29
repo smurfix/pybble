@@ -62,6 +62,8 @@ CREATE TABLE vereinacct (
 CREATE TABLE discriminator (
 	id TINYINT(1) primary key,
 	name VARCHAR(30) NOT NULL, 
+	display_name VARCHAR(50), 
+	infotext VARCHAR(250), 
 	 UNIQUE (name)
 );
 CREATE TABLE staticfile (
@@ -81,7 +83,7 @@ CREATE TABLE wikipage (
 	 CONSTRAINT wikipage_id FOREIGN KEY(id) REFERENCES obj (id)
 );
 CREATE TABLE mimeext (
-	id INTEGER primary key,
+	id INTEGER PRIMARY KEY,
 	mime_id INTEGER, 
 	ext VARCHAR(10) NOT NULL, 
 	 CONSTRAINT mimetype_id FOREIGN KEY(mime_id) REFERENCES mimetype (id), 
@@ -207,7 +209,7 @@ CREATE TABLE groups (
 	 CONSTRAINT group_id FOREIGN KEY(id) REFERENCES obj (id)
 );
 CREATE TABLE verifierbase (
-	id TINYINT(1) primary key,
+	id TINYINT(1) PRIMARY KEY,
 	name VARCHAR(30) NOT NULL, 
 	cls VARCHAR(50) NOT NULL, 
 	 UNIQUE (cls), 
@@ -225,7 +227,7 @@ CREATE TABLE permissions (
 	 CONSTRAINT permission_new_discr FOREIGN KEY(new_discr) REFERENCES discriminator (id)
 );
 CREATE TABLE mimetype (
-	id INTEGER primary key,
+	id INTEGER PRIMARY KEY,
 	name VARCHAR(30) NOT NULL, 
 	typ VARCHAR(15) NOT NULL, 
 	subtyp VARCHAR(15) NOT NULL, 
@@ -239,7 +241,7 @@ CREATE TABLE tracking (
 	 CONSTRAINT tracker_id FOREIGN KEY(id) REFERENCES obj (id)
 );
 CREATE TABLE obj (
-	id INTEGER primary key,
+	id INTEGER PRIMARY KEY,
 	discriminator TINYINT, 
 	owner_id INTEGER, 
 	parent_id INTEGER, 
@@ -272,7 +274,7 @@ CREATE TABLE changes (
 	 CONSTRAINT change_id FOREIGN KEY(id) REFERENCES obj (id)
 );
 CREATE TABLE renderer (
-	id TINYINT(1) primary key,
+	id TINYINT(1) PRIMARY KEY,
 	name VARCHAR(30) NOT NULL, 
 	cls VARCHAR(50) NOT NULL, 
 	 UNIQUE (name), 

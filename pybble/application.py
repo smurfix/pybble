@@ -77,7 +77,7 @@ class Pybble(object):
 
 			from pybble.models import Site,User,Object,Discriminator,Template,TemplateMatch,VerifierBase,WikiPage,Storage,BinData,StaticFile
 			from pybble.models import Group,Permission, add_mime,mime_ext, Renderer
-			from pybble.models import TM_DETAIL_SUBPAGE, PERM_READ,PERM_ADMIN,PERM_ADD, TM_DETAIL_DETAIL, TM_DETAIL, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY, TM_DETAIL_RSS, TM_DETAIL_EMAIL
+			from pybble.models import TM_DETAIL_SUBPAGE, PERM_READ,PERM_ADMIN,PERM_ADD, TM_DETAIL_DETAIL, TM_DETAIL, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_STRING
 			from pybble import utils
 			from werkzeug import Request
 
@@ -109,6 +109,12 @@ class Pybble(object):
 				else:
 					if o.name != v.__name__:
 						raise ValueError("Discriminator '%d' pointed at '%s', now '%s'!" % (k,o.name,v.__name__))
+					try:
+						n = v._display_name
+					except AttributeError:
+						pass
+					else:
+						o.display_name = n
 			del m
 			db.store.flush()
 
@@ -368,6 +374,7 @@ class Pybble(object):
 					(TM_DETAIL_DETAIL,"details"),
 					(TM_DETAIL_HIERARCHY,"hierarchy"),
 					(TM_DETAIL_RSS,"rss"),
+					(TM_DETAIL_STRING,"linktext"),
 					(TM_DETAIL_EMAIL,"email"),
 					(TM_DETAIL_SNIPPET,"snippet")):
 					try:

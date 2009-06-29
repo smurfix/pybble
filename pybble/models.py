@@ -70,6 +70,8 @@ class Discriminator(Storm,DbRepr):
 
 	id = Int(primary=True)
 	name = RawStr(allow_none=False)
+	display_name = Unicode(allow_none=True)
+	infotext = Unicode(allow_none=True)
 
 	def __init__(self, cls):
 		self.id = cls._discriminator
@@ -734,10 +736,12 @@ class User(Object):
 		if obj is not current_request.site and \
 		   ru and ru.can_admin(current_request.site, discr=current_request.site.classdiscr):
 			if DEBUG_ACCESS:
-				print >>sys.stderr,"ADMIN"
+				print >>sys.stderr,"ADMIN",obj
 			return want if want and want < 0 else PERM_ADMIN
 
 		if want>0 and want<=PERM_READ and obj.owner==user:
+			if DEBUG_ACCESS:
+				print >>sys.stderr,"OWN",obj
 			return want
 
 		if DEBUG_ACCESS:
@@ -1609,6 +1613,7 @@ class WantTracking(Object):
 		"""
 	__storm_table__ = "wanttracking"
 	_discriminator = 19
+	_display_name = "Beobachtungs-Eintrag"
 
 	discr = Int(allow_none=True)
 	email = Bool(allow_none=False) # send mail, not just RSS/on-site?
