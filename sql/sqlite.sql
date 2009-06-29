@@ -62,6 +62,8 @@ CREATE TABLE vereinacct (
 CREATE TABLE discriminator (
 	id TINYINT(1) PRIMARY KEY,
 	name VARCHAR(30) NOT NULL, 
+	display_name VARCHAR(50), 
+	infotext VARCHAR(250), 
 	 UNIQUE (name)
 );
 CREATE TABLE staticfile (
