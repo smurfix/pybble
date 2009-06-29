@@ -136,9 +136,25 @@ class BaseObject(_BaseObject):
 _discr2cls = {}
 class RegistryMeta(PropertyPublisherMeta):
 	def __init__(self, name, bases, dict):
+		if "_obj" in dict: return
+		self.id = Int(primary=True)
+		self._obj = Reference(self.id, _BaseObject.id)
+
+		self.owner_id = Proxy(self._obj, _BaseObject.owner_id)
+		self.parent_id = Proxy(self._obj, _BaseObject.parent_id)
+		self.superparent_id = Proxy(self._obj, _BaseObject.superparent_id)
+
+		#self.owner = Reference(self.owner_id, _BaseObject.id)
+		#self.parent = Reference(self.parent_id, _BaseObject.id)
+		#self.superparent = Reference(self.superparent_id, _BaseObject.id)
+
+		super(RegistryMeta,self).__init__(name, bases, dict)
+
 		id = getattr(self, "_discriminator", None)
 		if id:
 			_discr2cls[id] = self
+
+		return
 
 		print "*",name
 		try:
@@ -163,9 +179,22 @@ class RegistryMeta(PropertyPublisherMeta):
 					setattr(self,a,b)
 					print "Ref",a
 					
-		super(RegistryMeta,self).__init__(name, bases, dict)
 
 
+def _get_ref(n):
+	def _get_one(self):
+		self._obj_init()
+		id = getattr(self._obj,n+"_id")
+		if id is None: return id
+		return db.store.get(BaseObject,id)
+	return _get_one
+def _set_ref(n):
+	def _set_one(self,val):
+		self._obj_init()
+		if val is not None:
+			val = val.id
+		setattr(self._obj,n+"_id",val)
+	return _set_one
 
 class Object(Storm):
 	"""The base type of all pointed-to objects. Don't use this in Reference() calls!"""
@@ -178,9 +207,13 @@ class Object(Storm):
 	parent_id = Proxy(_obj, _BaseObject.parent_id)
 	superparent_id = Proxy(_obj, _BaseObject.superparent_id)
 
-	owner = Reference(owner_id,BaseObject.id)
-	parent = Reference(parent_id,BaseObject.id)
-	superparent = Reference(superparent_id,BaseObject.id)
+	#owner = Reference(owner_id,BaseObject.id)
+	#parent = Reference(parent_id,BaseObject.id)
+	#superparent = Reference(superparent_id,BaseObject.id)
+	
+	owner = property(_get_ref("owner"),_set_ref("owner"))
+	parent = property(_get_ref("parent"),_set_ref("parent"))
+	superparent = property(_get_ref("superparent"),_set_ref("superparent"))
 
 	def _obj_init(self):
 		if self.id is not None:
@@ -383,7 +416,7 @@ class Object(Storm):
 
 	@classmethod
 	def cls_discr(cls):
-		return cls.__mapper__.polymorphic_identity
+		return cls._discriminator
 
 	@property
 	def change_obj(self):
@@ -566,7 +599,7 @@ class User(Object):
 	username = Unicode(allow_none=False)
 	first_name = Unicode()
 	last_name = Unicode()
-	email = Unicode()
+	email = RawStr()
 	password = Unicode(allow_none=False)
 	first_login = DateTime(allow_none=False)
 	last_login = DateTime()
@@ -580,7 +613,7 @@ class User(Object):
 		super(User,self).__init__()
 		self.username=username
 		if password is None:
-			password = random_string(9)
+			password = unicode(random_string(9))
 		self.password=password
 		self.first_login = datetime.utcnow()
 		db.store.add(self)
@@ -654,7 +687,7 @@ class User(Object):
 		if site is None:
 			site = current_request.site
 		try:
-			m = db.get_by(Member,user=self,group=site)
+			m = db.get_by(Member, user_id=self.id,group_id=site.id)
 		except NoResult:
 			if v:
 				db.store.add(Member(user=self,group=site))
@@ -912,7 +945,9 @@ Member: %s
 		if not self.owner or not self.parent: return super(Member,self).__repr__()
 		return self.__str__()
 
+	user_id = Alias("owner_id")
 	user = Alias("owner")
+	group_id = Alias("parent_id")
 	group = Alias("parent")
 
 Object.new_member_rule(Member, "owner","parent")
@@ -1063,13 +1098,13 @@ class Site(Object):
 		except (AttributeError,RuntimeError):
 			self.owner = None
 		db.store.add(self)
-		u = User("","")
+		u = User(u"",u"")
 		u.superparent = self
 		db.store.add(u)
 
 	@property
 	def anon_user(self):
-		return db.get_by(User,superparent=self,password="")
+		return db.get_by(User, superparent_id=self.id, password=u"")
 		
 	def __unicode__(self):
 		return u"‹Site ‚%s‘ @ %s›" % (self.name, self.domain)
@@ -1088,6 +1123,7 @@ class SiteUsers(Storm):
 	user_id = Int()
 
 Site.users = ReferenceSet(Site.id, SiteUsers.site_id,SiteUsers.user_id,User.id)
+User.sites = ReferenceSet(User.id, SiteUsers.user_id,SiteUsers.site_id,Site.id)
 Site.storage = Reference(Site.storage_id, Storage.id)
 
 class Template(Object):
@@ -1132,23 +1168,24 @@ class TemplateMatch(Object):
 
 	def __storm_pre_flush__(self):
 		self.modified = datetime.utcnow()
-		super(Template,self).__storm_pre_flush__()
+		super(TemplateMatch,self).__storm_pre_flush__()
 
 	discr = Int(allow_none=False)
 	detail = Int(allow_none=False)
 	inherit = Bool(allow_none=True)
 
 	obj = Alias("parent")
+	obj_id = Alias("parent_id")
 
 	def __init__(self, obj,discr,detail, data):
+		discr = Discriminator.get(discr,obj).id
 		super(TemplateMatch,self).__init__()
-		self.discr = Discriminator.get(discr,obj).id
+		self.discr = discr
 		self.detail = detail
 		self.data = data
 		db.store.add(self)
-		db.session.flush()
 		self.parent = obj
-		db.session.flush()
+		db.store.flush()
 	
 	def __unicode__(self):
 		p,s,o,d = self.pso
@@ -1198,6 +1235,7 @@ class VerifierBase(Storm,DbRepr):
 
 	@staticmethod
 	def register(name, cls):
+		name = unicode(name)
 		try:
 			v = db.get_by(VerifierBase,name=name)
 		except NoResult:
@@ -1293,7 +1331,7 @@ class WikiPage(Object):
 
 	def __storm_pre_flush__(self):
 		self.modified = datetime.utcnow()
-		super(Template,self).__storm_pre_flush__()
+		super(WikiPage,self).__storm_pre_flush__()
 
 	def __init__(self, name, data):
 		super(WikiPage,self).__init__()
@@ -1634,6 +1672,8 @@ User.trackers = ReferenceSet(User.id, WantTracking.owner_id)
 
 
 def add_mime(name,typ,subtyp,ext):
+	ext = unicode(ext)
+
 	try:
 		t = db.get_by(MIMEtype,typ=typ,subtyp=subtyp)
 	except NoResult:
@@ -1643,7 +1683,7 @@ def add_mime(name,typ,subtyp,ext):
 		t.subtyp = subtyp
 		t.ext = ext
 		db.store.add(t)
-		db.session.flush()
+		db.store.flush()
 		return t
 	else:
 		assert name == t.name
@@ -1655,7 +1695,7 @@ def add_mime(name,typ,subtyp,ext):
 				tt.mime = t
 				tt.ext = ext
 				db.store.add(tt)
-				db.session.flush()
+				db.store.flush()
 		return t
 
 def mime_ext(ext):
@@ -1670,8 +1710,8 @@ class MIMEtype(Storm,DbRepr):
 	__storm_table__ = "mimetype"
 	id = Int(primary=True)
 	name = Unicode(allow_none=False)
-	typ = Unicode(allow_none=False)
-	subtyp = Unicode(allow_none=False)
+	typ = RawStr(allow_none=False)
+	subtyp = RawStr(allow_none=False)
 	ext = Unicode(allow_none=False) # primary extension
 	exts = ReferenceSet(id,"MIMEext.mime_id")
 	
@@ -1707,9 +1747,12 @@ class MIMEext(Storm):
 
 class _ContentExists: pass
 def hash_data(content):
-	import sha
 	from base64 import b64encode
-	return b64encode(sha.sha(content).digest(),altchars="-_").rstrip("=")
+	try:
+		from hashlib import sha1
+	except ImportError:
+		from sha import sha as sha1
+	return b64encode(sha1(content).digest(),altchars="-_").rstrip("=")
 
 class BinData(Object):
 	"""
@@ -1743,6 +1786,7 @@ class BinData(Object):
 		self.name = name
 		self._content = content
 		self.owner = current_request.user
+		self.hash = hash_data(content)
 		if mimetype:
 			self.mime = mimetype
 			if ext:
@@ -1751,7 +1795,6 @@ class BinData(Object):
 			self.mime = mime_ext(ext)
 		else:
 			raise RuntimeError("You need to specify MIME type or extension")
-		self.hash = hash_data(content)
 
 	def __str__(self):
 		return "<%s %s: %s %s>" % (self.__class__.__name__, self.id,self.name+"."+self.ext,self.mimetype)
@@ -1785,7 +1828,7 @@ class BinData(Object):
 
 	def _get_chars(self):
 		if self.id is None:
-			db.session.flush()
+			db.store.flush()
 			if self.id is None:
 				return "???"
 		id = self.id-1
@@ -1868,7 +1911,7 @@ class StaticFile(Object):
 
 	def __storm_pre_flush__(self):
 		self.modified = datetime.utcnow()
-		super(Template,self).__storm_pre_flush__()
+		super(StaticFile,self).__storm_pre_flush__()
 
 	def __init__(self, path, bin):
 		super(StaticFile,self).__init__()

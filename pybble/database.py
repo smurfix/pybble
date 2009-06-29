@@ -63,7 +63,7 @@ from pybble.utils import store
 def _make_module():
     db = ModuleType('db')
     db.store = store
-    db.get = _Get
+    db.get_one = _Get
     db.filter = _Filter
     db.get_by = _GetBy
     db.filter_by = _FilterBy

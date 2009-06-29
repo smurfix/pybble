@@ -7,7 +7,7 @@ from pybble.utils import STATIC_PATH, local, local_manager, \
 	 TEMPLATE_PATH, AuthError, all_addons
 from pybble.render import expose_map, url_map, send_mail, expose
 from pybble.database import db, NoResult, dsn, database
-from storm.locals import Store
+from storm.locals import Store,And,Or
 
 import pybble.models
 import pybble.admin
@@ -143,12 +143,11 @@ class Pybble(object):
 				s.storage = st
 				db.store.flush()
 
-			try:
-				u=db.get_one(User,And(User.sites.contains(s), User.username==u"root"))
-			except NoResult:
+			u=s.users.find(User.username==u"root").one()
+			if u is None:
 				u=User(u"root")
 				u.email=settings.ADMIN
-				u.sites.append(s)
+				u.sites.add(s)
 				db.store.add(u)
 			else:
 				print u"%s found." % u
@@ -202,10 +201,10 @@ class Pybble(object):
 			try:
 				a=db.get_by(User, superparent=s, username=u"")
 			except NoResult:
-				a=User(u"", password="")
+				a=User(u"", password=u"")
 				a.owner = u
 				a.superparent = s
-				a.sites.append(s)
+				a.sites.add(s)
 				db.store.add(a)
 			else:
 				print u"%s found." % a
@@ -215,12 +214,13 @@ class Pybble(object):
 
 			db.store.flush()
 
-			for d in db.store.all(Discriminator, ):
+			for d in db.store.find(Discriminator):
 				if db.store.find(Permission,And(Permission.discr==d.id,Permission.right>=0)).count():
 					continue
 				p=Permission(u, s, d, PERM_ADMIN)
 				p.superparent=s
 				db.store.add(p)
+			db.store.flush()
 
 			dw = db.get_by(Discriminator, name="WikiPage")
 			ds = db.get_by(Discriminator, name="Site")
@@ -251,7 +251,7 @@ class Pybble(object):
 						continue
 					if cls.__name__ not in addon.__ALL__:
 						continue
-					if db.store.filter_by(Permission, discr=cls.cls_discr()).count():
+					if db.filter_by(Permission, discr=cls.cls_discr()).count():
 						continue
 					p=Permission(u, s, ds, PERM_ADMIN)
 					p.new_discr=cls.cls_discr()
@@ -273,6 +273,7 @@ class Pybble(object):
 						print >>sys.stderr,"While reading",fn
 						raise
 
+				fn = unicode(fn)
 				try:
 					t = db.get_by(Template, name=fn,parent=s)
 				except NoResult:
@@ -312,9 +313,9 @@ class Pybble(object):
 					raise
 			
 			try:
-				w = db.get_by(WikiPage, name="Documentation",superparent=s)
+				w = db.get_by(WikiPage, name=u"Documentation",superparent=s)
 			except NoResult:
-				w = WikiPage("Documentation",data)
+				w = WikiPage(u"Documentation",data)
 				w.owner=u
 				w.parent=s
 				w.superparent=s
@@ -342,7 +343,7 @@ class Pybble(object):
 					except Exception:
 						print >>sys.stderr,"While reading",fn
 						raise
-				fn = fn[:-4]
+				fn = unicode(fn[:-4])
 				
 				try:
 					ww = db.get_by(WikiPage, name=fn,parent=w)
@@ -362,7 +363,7 @@ class Pybble(object):
 							ww.data = data
 
 			db.store.flush()
-			for d in db.store.all(Discriminator, ):
+			for d in db.store.find(Discriminator):
 				for detail,name in ((TM_DETAIL_SUBPAGE,"view"),
 					(TM_DETAIL_DETAIL,"details"),
 					(TM_DETAIL_HIERARCHY,"hierarchy"),
@@ -375,7 +376,7 @@ class Pybble(object):
 						pass
 					else:
 						try:
-							t = db.get_by(TemplateMatch, obj=s, discr=d.id, detail=detail)
+							t = db.get_by(TemplateMatch, obj_id=s.id, discr=d.id, detail=detail)
 						except NoResult:
 							t = TemplateMatch(obj=s, discr=d.id, detail=detail, data=data)
 							db.store.add(t)
@@ -397,7 +398,7 @@ class Pybble(object):
 				else:
 					for t in at:
 						data = open(os.path.join(addon.__path__[0],t)).read().decode("utf-8")
-						fn = "%s/%s" % (os.path.split(addon.__path__[0])[1],t)
+						fn = u"%s/%s" % (os.path.split(addon.__path__[0])[1],t)
 						try:
 							t = db.get_by(Template, name=fn,superparent=s)
 						except NoResult:
@@ -428,7 +429,7 @@ class Pybble(object):
 							continue
 						else:
 							try:
-								t = db.get_by(TemplateMatch, obj=s, discr=cls.cls_discr(), detail=t)
+								t = db.get_by(TemplateMatch, obj_id=s.id, discr=cls.cls_discr(), detail=t)
 							except NoResult:
 								t = TemplateMatch(obj=s, discr=cls.cls_discr(), detail=t, data=data)
 								db.store.add(t)
