@@ -60,7 +60,7 @@ CREATE TABLE vereinacct (
 	 CONSTRAINT vereinacct_id FOREIGN KEY(id) REFERENCES obj (id)
 );
 CREATE TABLE discriminator (
-	id TINYINT(1) primary key,
+	id TINYINT(1) PRIMARY KEY,
 	name VARCHAR(30) NOT NULL, 
 	display_name VARCHAR(50), 
 	infotext VARCHAR(250), 
