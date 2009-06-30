@@ -3,7 +3,7 @@ CREATE TABLE comment (
 	name VARCHAR(250), 
 	data TEXT, 
 	added TIMESTAMP, 
-	renderer_id TINYINT, 
+	renderer_id INTEGER, 
 	PRIMARY KEY (id), 
 	 CONSTRAINT comment_id FOREIGN KEY(id) REFERENCES obj (id), 
 	 CONSTRAINT cmt_renderer FOREIGN KEY(renderer_id) REFERENCES renderer (id)
@@ -60,7 +60,7 @@ CREATE TABLE vereinacct (
 	 CONSTRAINT vereinacct_id FOREIGN KEY(id) REFERENCES obj (id)
 );
 CREATE TABLE discriminator (
-	id TINYINT(1) PRIMARY KEY,
+	id INTEGER PRIMARY KEY,
 	name VARCHAR(30) NOT NULL, 
 	display_name VARCHAR(50), 
 	infotext VARCHAR(250), 
@@ -192,7 +192,7 @@ CREATE TABLE verein (
 );
 CREATE TABLE verifiers (
 	id INTEGER NOT NULL, 
-	base_id TINYINT, 
+	base_id INTEGER, 
 	code VARCHAR(50) NOT NULL, 
 	added DATETIME NOT NULL, 
 	repeated DATETIME, 
@@ -209,7 +209,7 @@ CREATE TABLE groups (
 	 CONSTRAINT group_id FOREIGN KEY(id) REFERENCES obj (id)
 );
 CREATE TABLE verifierbase (
-	id TINYINT(1) PRIMARY KEY,
+	id INTEGER PRIMARY KEY,
 	name VARCHAR(30) NOT NULL, 
 	cls VARCHAR(50) NOT NULL, 
 	 UNIQUE (cls), 
@@ -274,7 +274,7 @@ CREATE TABLE changes (
 	 CONSTRAINT change_id FOREIGN KEY(id) REFERENCES obj (id)
 );
 CREATE TABLE renderer (
-	id TINYINT(1) PRIMARY KEY,
+	id INTEGER PRIMARY KEY,
 	name VARCHAR(30) NOT NULL, 
 	cls VARCHAR(50) NOT NULL, 
 	 UNIQUE (name), 

@@ -13,6 +13,7 @@ from datetime import datetime,timedelta
 from pybble.models import User,Site
 from pybble.database import NoResult
 from pybble.decorators import ResultNotFound
+from pybble.database import db
 import sys
 
 class Session(SecureCookie):
@@ -81,7 +82,7 @@ def add_user(request):
 		try: user = db.get_by(User, id=user_id)
 		except NoResult: pass
 	if user is None:
-		user = get_anonymous_user(request.site)
+		user = request.site.anon_user
 
 #	# check for bann
 #	if user.is_banned:

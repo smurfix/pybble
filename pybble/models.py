@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime,timedelta
-from storm.locals import RawStr,Unicode,Int,Bool, Reference,ReferenceSet,Proxy,AutoReload,Select,Storm,DateTime,Desc
-from storm.expr import Alias
+from storm.locals import RawStr,Unicode,Int,Bool, Reference,ReferenceSet,Proxy,AutoReload,Select,Storm,DateTime,Desc, And,Or, Count
 from storm.properties import PropertyPublisherMeta
 from storm.references import Relation
 from pybble.utils import random_string, current_request, AuthError
@@ -88,9 +87,10 @@ class Discriminator(Storm,DbRepr):
 			return db.get_by(Discriminator, name=discr)
 		elif discr is None and obj is not None:
 			return db.get_by(Discriminator, id=obj.discriminator)
-		else:
-			assert isinstance(discr, (int,long)),repr(discr)
+		elif isinstance(discr, (int,long)):
 			return db.get_by(Discriminator, id=discr)
+		else:
+			return db.get_by(Discriminator, id=discr._discriminator)
 
 class Renderer(Storm,DbRepr):
 	"""Render method for object content"""
@@ -101,6 +101,7 @@ class Renderer(Storm,DbRepr):
 	_mod = None
 
 	def __init__(self, name, cls):
+		super(Renderer,self).__init__()
 		self.name = name
 		self.cls = cls
 
@@ -132,7 +133,15 @@ class BaseObject(_BaseObject):
 	"""As above, but if an object is loaded, it grows """
 	def __storm_loaded__(self):
 		d = obj_class(self.discriminator)
-		return db.get_by(d, id=self.id)
+		d = db.get_by(d, id=self.id)
+		return d
+	def __unicode__(self):
+		d = obj_class(self.discriminator)
+		return u'‹%s %s %s›' % (self.__class__.__name__, self.id,d.__name__)
+	def __str__(self):
+		d = obj_class(self.discriminator)
+		return '<%s %s %s>' % (self.__class__.__name__, self.id,d.__name__)
+	__repr__ = __str__
 
 
 _discr2cls = {}
@@ -145,6 +154,10 @@ class RegistryMeta(PropertyPublisherMeta):
 		self.owner_id = Proxy(self._obj, _BaseObject.owner_id)
 		self.parent_id = Proxy(self._obj, _BaseObject.parent_id)
 		self.superparent_id = Proxy(self._obj, _BaseObject.superparent_id)
+
+		for k,v in dict.get("_proxy",{}).iteritems():
+			setattr(self,k+"_id", Proxy(self._obj, getattr(_BaseObject,v+"_id")))
+			setattr(self,k,property(_get_ref(v),_set_ref(v)))
 
 		#self.owner = Reference(self.owner_id, _BaseObject.id)
 		#self.parent = Reference(self.parent_id, _BaseObject.id)
@@ -217,6 +230,11 @@ class Object(Storm):
 	parent = property(_get_ref("parent"),_set_ref("parent"))
 	superparent = property(_get_ref("superparent"),_set_ref("superparent"))
 
+	@property
+	def discriminator(self): return self._discriminator
+	@property
+	def discr(self): return Discriminator.get(self._discriminator)
+
 	def _obj_init(self):
 		if self.id is not None:
 			return
@@ -259,24 +277,24 @@ class Object(Storm):
 
 	def has_children(self, discr=None):
 		if discr:
-			return db.store.execute(Select(Count(), BaseObject.parent_id == self.id, BaseObject.discr == discr))[0]
+			return db.store.execute(Select(Count(), where=And(BaseObject.parent_id == self.id, BaseObject.discr == discr))).get_one()[0]
 		else:
-			return db.store.execute(Select(Count(), BaseObject.parent_id == self.id))[0]
+			return db.store.execute(Select(Count(), where=BaseObject.parent_id == self.id)).get_one()[0]
 
 	def has_superchildren(self, discr=None):
 		if discr:
-			return db.store.execute(Select(Count(), BaseObject.superparent_id == self.id, BaseObject.discr == discr))[0]
+			return db.store.execute(Select(Count(), where=And(BaseObject.superparent_id == self.id, BaseObject.discr == discr))).get_one()[0]
 		else:
-			return db.store.execute(Select(Count(), BaseObject.superparent_id == self.id))[0]
+			return db.store.execute(Select(Count(), where=BaseObject.superparent_id == self.id)).get_one()[0]
 
 	def has_slaves(self, discr=None):
 		if discr:
-			return db.store.execute(Select(Count(), BaseObject.owner_id == self.id, BaseObject.discr == discr))[0]
+			return db.store.execute(Select(Count(), where=And(BaseObject.owner_id == self.id, BaseObject.discr == discr))).get_one()[0]
 		else:
-			return db.store.execute(Select(Count(), BaseObject.owner_id == self.id))[0]
+			return db.store.execute(Select(Count(), where=BaseObject.owner_id == self.id)).get_one()[0]
 
 	def all_children(self, discr=None, want=PERM_LIST):
-		q = [ BaseObject.owner_id == self.id ]
+		q = [ BaseObject.parent_id == self.id ]
 		if discr:
 			q.append(BaseObject.discriminator == discr)
 		for o in db.store.find(BaseObject, And(*q)):
@@ -309,24 +327,24 @@ class Object(Storm):
 
 	@property
 	def discr_children(self):
-		s = Select((Object.discriminator, Count(Object.id)), Object.parent==self, \
-		    group_by=Object.discriminator, order_by=Object.discriminator)
+		s = Select((BaseObject.discriminator, Count()), where=BaseObject.parent_id==self.id, \
+		    group_by=BaseObject.discriminator, order_by=BaseObject.discriminator)
 		for discr,num in db.store.execute(s):
 			c = obj_class(discr)
 			yield c, db.filter_by(c,parent=self), num
 
 	@property
 	def discr_superchildren(self):
-		s = Select((Object.discriminator, Count(Object.id)), Object.superparent==self, \
-		    group_by=Object.discriminator, order_by=Object.discriminator)
+		s = Select((BaseObject.discriminator, Count()), where=BaseObject.superparent_id==self.id, \
+		    group_by=BaseObject.discriminator, order_by=BaseObject.discriminator)
 		for discr,num in db.store.execute(s):
 			c = obj_class(discr)
 			yield c, db.filter_by(c,superparent=self), num
 
 	@property
 	def discr_slaves(self):
-		s = Select((Object.discriminator, Count(Object.id)), Object.owner==self, \
-		    group_by=Object.discriminator, order_by=Object.discriminator)
+		s = Select((BaseObject.discriminator, Count()), where=BaseObject.owner_id==self.id, \
+		    group_by=BaseObject.discriminator, order_by=BaseObject.discriminator)
 		for discr,num in db.store.execute(s):
 			c = obj_class(discr)
 			yield c, db.filter_by(c,owner=self), num
@@ -357,16 +375,16 @@ class Object(Storm):
 	@property
 	def memberships(self):
 		for t in self._member_rules:
-			q = t.args
-			q["src"] = self
+			q = dict(t.args)
+			q[t.src] = self
 			for m in db.filter_by(t.table, **q):
 				yield m
 
 	@property
 	def members(self):
 		for t in self._member_rules:
-			q = t.args
-			q["dst"] = self
+			q = dict(t.args)
+			q[t.dst] = self
 			for m in db.filter_by(t.table, **q):
 				yield m
 
@@ -374,14 +392,14 @@ class Object(Storm):
 	def members_count(self):
 		n = 0
 		for t in self._member_rules:
-			q = t.args
-			q["dst"] = self
+			q = dict(t.args)
+			q[t.dst] = self
 			n += db.store.find(t.table,**q).count()
 		return n
 
 	_member_rules = []
 	class _rules(object):
-		def __init__(self, table,src,dst, *args):
+		def __init__(self, table,src,dst, args):
 			self.table = table
 			self.src = src
 			self.dst = dst
@@ -409,7 +427,7 @@ class Object(Storm):
 
 	@property
 	def classdiscr(self):
-		return self.__class__.__mapper__.polymorphic_identity
+		return self._discriminator
 
 	@classmethod
 	def cls_name(cls):
@@ -469,12 +487,9 @@ class Object(Storm):
 		while obj:
 			p,s,o,d = obj.pso
 			seen.add(obj)
-			try:
-				t = db.store.find(TemplateMatch, And(Or(TemplateMatch.inherit != no_inherit, TemplateMatch.inherit == None), \
-									TemplateMatch.obj == obj, TemplateMatch.discr == discr, TemplateMatch.detail == detail))
-			except NoResult:
-				pass
-			else:
+			t = db.store.find(TemplateMatch, And(Or(TemplateMatch.inherit != no_inherit, TemplateMatch.inherit == None), \
+									TemplateMatch.obj_id == obj.id, TemplateMatch.discr == discr, TemplateMatch.detail == detail)).one()
+			if t is not None:
 				return t
 
 			if isinstance(obj,Site):
@@ -556,7 +571,7 @@ def obj_get(oid):
 	"""Given an object ID, return the object"""
 	cid,id,hash = oid.split(".")
 	cls = obj_class(int(cid))
-	obj = db.get_by(cls, id=id)
+	obj = db.get_by(cls, id=int(id))
 	if oid != obj.oid():
 		raise ValueError("This object does not exist: " % (oid,))
 	return obj
@@ -745,7 +760,7 @@ class User(Object):
 			return want
 
 		if DEBUG_ACCESS:
-			print >>sys.stderr,"PERM",discr,new_discr,want,obj,"AT",current_request.site,u"⇒",
+			print >>sys.stderr,"PERM", Discriminator.get(discr).name if discr else "-", Discriminator.get(new_discr) if new_discr else "-", (PERM_name(want) if want else "-")+":",obj,"FOR",user,"AT",current_request.site, u"⇒"
 
 		pq = []
 		if want is not None:
@@ -788,16 +803,15 @@ class User(Object):
 				raise ValueError("Parent recursion on "+repr(obj))
 			done.add(obj)
 
-			try:
-				p = db.store.find(Permission, And(Or(Permission.inherit != no_inh, Permission.inherit == None), Or(*(Permission.owner == u for u in user.groups)), Permission.parent == obj, *pq), order_by=Desc(Permission.right))
-			except NoResult:
-				pass
-			else:
-				if p is not None:
-					p = p.right
-					if DEBUG_ACCESS:
-						print >>sys.stderr,p
-					return p
+			p = db.store.find(Permission, And(Or(Permission.inherit != no_inh, Permission.inherit == None), Or(*(Permission.owner_id == u.id for u in user.groups)), Permission.parent_id == obj.id, *pq)).order_by(Desc(Permission.right))
+			if DEBUG_ACCESS:
+				print p._get_select()
+			p = p.first()
+			if p is not None:
+				p = p.right
+				if DEBUG_ACCESS:
+					print >>sys.stderr,p
+				return p
 
 			no_inh = False
 			obj = obj.parent
@@ -812,7 +826,7 @@ class User(Object):
 
 	def permit(user,obj, right, discr=None, inherit=None):
 		discr = Discriminator.get(discr,obj).id
-		p = db.store.find(Permission, And(Permission.owner==u, Permission.parent==obj, Permission.discr==discr))[:]
+		p = list(db.store.find(Permission, And(Permission.owner==u, Permission.parent==obj, Permission.discr==discr)))
 		
 		if len(p) > 0:
 			if inherit is None:
@@ -837,7 +851,7 @@ class User(Object):
 
 	def forbid(user,obj, discr=None, inherit=None):
 		discr = Discriminator.get(discr,obj).id
-		p = db.store_find(Permission, And(Permission.owner==u,Permission.parent==obj,Permission.discr==discr))[:]
+		p = list(db.store_find(Permission, And(Permission.owner==u,Permission.parent==obj,Permission.discr==discr)))
 		
 		if p:
 			if inherit is None:
@@ -852,7 +866,7 @@ class User(Object):
 
 	@property
 	def tracks(self):
-		return db.store.find(UserTracker, UserTracker.owner == self, order_by=Desc(UserTracker.id))
+		return list(db.store.find(UserTracker, UserTracker.owner == self, order_by=Desc(UserTracker.id)))
 
 	@property
 	def recent_tracks(self):
@@ -869,16 +883,6 @@ class User(Object):
 	def has_trackers(self):
 		return db.store.find(WantTracking, WantTracking.owner == self).count()
 
-
-def get_anonymous_user(site):
-	while True:
-		try:
-			return db.get_by(User, username=="", password=="", superparent==site)
-		except NoResult:
-			if site.parent:
-				site = site.parent
-			else:
-				raise
 
 class Group(Object):
 	"""
@@ -910,6 +914,7 @@ class Member(Object):
 	__storm_table__ = "groupmembers"
 	_discriminator = 13
 	_no_crumbs = True
+	_proxy = { "user":"owner", "group":"parent" };
 
 	excluded = Bool(allow_none=False)
 
@@ -948,11 +953,6 @@ Member: %s
 	def __repr__(self):
 		if not self.owner or not self.parent: return super(Member,self).__repr__()
 		return self.__str__()
-
-	user_id = Alias("owner_id")
-	user = Alias("owner")
-	group_id = Alias("parent_id")
-	group = Alias("parent")
 
 Object.new_member_rule(Member, "owner","parent")
 
@@ -1108,7 +1108,15 @@ class Site(Object):
 
 	@property
 	def anon_user(self):
-		return db.get_by(User, superparent_id=self.id, password=u"")
+		while True:
+			try:
+				return db.get_by(User, superparent_id=self.id, username=u"", password=u"")
+			except NoResult:
+				if site.parent:
+					site = site.parent
+				else:
+					raise
+
 		
 	def __unicode__(self):
 		return u"‹Site ‚%s‘ @ %s›" % (self.name, self.domain)
@@ -1166,6 +1174,7 @@ class TemplateMatch(Object):
 		"""
 	__storm_table__ = "template_match"
 	_discriminator = 12
+	_proxy = { "obj":"parent" }
 
 	data = Unicode()
 	modified = DateTime(default_factory=datetime.utcnow)
@@ -1177,9 +1186,6 @@ class TemplateMatch(Object):
 	discr = Int(allow_none=False)
 	detail = Int(allow_none=False)
 	inherit = Bool(allow_none=True)
-
-	obj = Alias("parent")
-	obj_id = Alias("parent_id")
 
 	def __init__(self, obj,discr,detail, data):
 		discr = Discriminator.get(discr,obj).id
@@ -1228,6 +1234,7 @@ class VerifierBase(Storm,DbRepr):
 	_mod = None
 
 	def __init__(self, name, cls):
+		super(VerifierBase,self).__init__()
 		self.name = unicode(name)
 		self.cls = cls
 
@@ -1458,9 +1465,11 @@ class Delete(Object):
 	## The old parent is in self.superparent
 	old_superparent_id = Int(allow_none=True)
 	old_owner_id = Int(allow_none=True)
+	@property
+	def old_parent_id(self): return self.superparent_id
 
 	old_owner = Reference(old_owner_id, BaseObject.id)
-	old_parent = Alias("Delete.superparent")
+	old_parent = property(_get_ref("superparent"),_set_ref("superparent"))
 	old_superparent = Reference(old_superparent_id, BaseObject.id)
 
 	timestamp = DateTime(default_factory=datetime.utcnow)
@@ -1509,9 +1518,9 @@ class Tracker(Object):
 	__storm_table__ = "tracking"
 	_discriminator = 17
 	_no_crumbs = True
+	_proxy = { "site":"superparent" }
 
 	timestamp = DateTime(default_factory=datetime.utcnow)
-	site = Alias("Tracker.superparent")
 
 	def __init__(self, user, obj, site = None):
 		super(Tracker,self).__init__()
@@ -1571,9 +1580,7 @@ class UserTracker(Object):
 	__storm_table__ = "usertracking"
 	_discriminator = 18
 	_no_crumbs = True
-
-	user = Alias("UserTracker.owner")
-	tracker = Alias("UserTracker.parent")
+	_proxy = { "user":"owner", "tracker":"parent" }
 
 	def __init__(self, user, tracker, want):
 		super(UserTracker,self).__init__()
@@ -1614,15 +1621,13 @@ class WantTracking(Object):
 	__storm_table__ = "wanttracking"
 	_discriminator = 19
 	_display_name = "Beobachtungs-Eintrag"
+	_proxy = { "obj":"parent", "user":"owner" }
 
 	discr = Int(allow_none=True)
 	email = Bool(allow_none=False) # send mail, not just RSS/on-site?
 	track_new = Bool(allow_none=False) # alert for new data?
 	track_mod = Bool(allow_none=False) # alert for modifications?
 	track_del = Bool(allow_none=False) # alert for deletions?
-
-	obj = Alias("WantTracking.parent")
-	user = Alias("WantTracking.owner")
 
 	def __init__(self, user,obj, discr=None):
 		super(WantTracking,self).__init__()
@@ -1769,6 +1774,7 @@ class BinData(Object):
 	__storm_table__ = "bindata"
 	_discriminator = 22
 	_no_crumbs = True
+	_proxy = { "storage":"superparent" }
 
 	mime_id = Int(allow_none=False)
 	mime = Reference(mime_id,MIMEtype.id)
@@ -1776,22 +1782,15 @@ class BinData(Object):
 	hash = RawStr(allow_none=False)
 	timestamp = DateTime(default_factory=datetime.utcnow)
 
-	storage = Alias("BinData.superparent")
 	static_files = ReferenceSet(id, BaseObject.parent_id)
-
 
 	@staticmethod
 	def lookup(content):
 		return db.get_by(BinData,hash=hash_data(content))
 			
 	def __init__(self,name, ext=None,mimetype=None, content=None, parent=None, storage=None):
-		super(BinData,self).__init__()
-		self.parent = parent or current_request.site
-		self.superparent = storage or self.parent.default_storage
-		self.name = name
-		self._content = content
-		self.owner = current_request.user
-		self.hash = hash_data(content)
+		if not parent: parent = current_request.site
+		if not storage: storage = parent.default_storage
 		if mimetype:
 			self.mime = mimetype
 			if ext:
@@ -1800,6 +1799,13 @@ class BinData(Object):
 			self.mime = mime_ext(ext)
 		else:
 			raise RuntimeError("You need to specify MIME type or extension")
+		self.name = name
+		self._content = content
+		self.hash = hash_data(content)
+		super(BinData,self).__init__()
+		self.owner = current_request.user
+		self.parent = parent
+		self.superparent = storage
 
 	def __str__(self):
 		return "<%s %s: %s %s>" % (self.__class__.__name__, self.id,self.name+"."+self.ext,self.mimetype)
@@ -1807,16 +1813,11 @@ class BinData(Object):
 		return u"‹%s %s: %s %s›" % (self.__class__.__name__, self.id,self.name+"."+self.ext,self.mimetype)
 	__repr__ = __str__
 
-	def _get_content(self):
+	@property
+	def content(self):
 		if hasattr(self,"_content"):
 			return self._content
 		return open(self.path).read()
-	def _set_content(self, data):
-		if self._content is None:
-			self._content = data
-		else:
-			raise RuntimeError("Content already set")
-	content = property(_get_content,_set_content)
 
 	@property
 	def mimetype(self):
@@ -1878,13 +1879,11 @@ class BinData(Object):
 			os.remove(p)
 		super(BinData,self).delete()
 
-	def save(self):
+	def __storm_pre_flush__(self):
+		super(BinData,self).__storm_pre_flush__()
 		if self._content is None:
 			raise RuntimeError("Need to set content before saving")
-		try:
-			self._save_content()
-		except BaseException:
-			raise
+		self._save_content()
 
 	def _save_content(self):
 		if self._content is _ContentExists:
@@ -1908,11 +1907,10 @@ class StaticFile(Object):
 	__storm_table__ = "staticfile"
 	_discriminator = 20
 	_no_crumbs = True
+	_proxy = { "bindata":"parent" }
 
 	path = Unicode(allow_none=False)
 	modified = DateTime(default_factory=datetime.utcnow)
-
-	bindata = Alias("StaticFile.parent")
 
 	def __storm_pre_flush__(self):
 		self.modified = datetime.utcnow()

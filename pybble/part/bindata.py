@@ -57,7 +57,6 @@ def newer(request, parent, name=None):
 		data = f.read()
 		obj = BinData(parent=parent, name=form.name.data, content=data, mimetype=form.mimetype)
 		obj.record_creation()
-		obj.save()
 		flash(u"Daten '%s' gespeichert." % (obj.name), True)
 		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
 

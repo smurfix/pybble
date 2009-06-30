@@ -114,7 +114,7 @@ class Pybble(object):
 					except AttributeError:
 						pass
 					else:
-						o.display_name = n
+						o.display_name = unicode(n)
 			del m
 			db.store.flush()
 
@@ -186,7 +186,6 @@ class Pybble(object):
 						except NoResult:
 							sb = BinData(f[:dot],ext=f[dot+1:],content=content, storage=st)
 							db.store.add(sb)
-							sb.save()
 
 						try:
 							sf = db.get_by(StaticFile, path=dp,superparent=s)
@@ -194,9 +193,11 @@ class Pybble(object):
 							sf = StaticFile(dp,sb)
 							db.store.add(sf)
 						else:
+							c = sf.content
 							if content != sf.content:
 								print "Warning: StaticFile '%s' differs." % (dp,)
 								if replace_templates:
+									db.store.delete(sf.bindata)
 									db.store.delete(sf)
 									sf = StaticFile(dp,sb)
 									db.store.add(sf)
@@ -573,8 +574,6 @@ class Pybble(object):
 
 	def dispatch(self, environ, start_response):
 		local.application = self
-		local.session = db.store()
-		local.session.rollback() # basic protection
 		request = Request(environ)
 		local.request = request
 		local.store = Store(database)
@@ -590,17 +589,25 @@ class Pybble(object):
 			save_session(request,response)
 			db.store.commit()
 		except (NotFound,NoResult), e:
+			db.store.rollback()
 			from traceback import print_exc
 			print_exc(file=sys.stderr)
 			response = views.not_found(request, request.url)
 			response.status_code = 404
 		except AuthError, e:
+			db.store.rollback()
 			from traceback import print_exc
 			print_exc(file=sys.stderr)
 			response = views.not_allowed(request, e.obj,e.perm)
 			response.status_code = 403
 		except HTTPException, e:
+			db.store.rollback()
 			response = e
+		except Exception:
+			a,b,c = sys.exc_info()
+			try: db.store.rollback()
+			except Exception: pass
+			raise a,b,c
 		try:
 			add_response_headers(request,response)
 		except Exception, e:

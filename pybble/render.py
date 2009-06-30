@@ -9,8 +9,9 @@ from pybble.utils import current_request, local, random_string, AuthError
 from pybble.models import PERM, PERM_NONE, PERM_ADD, Permission, obj_get, TemplateMatch, Template, WikiPage, \
 	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, StaticFile, obj_get, TM_DETAIL, \
 	TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name
-from pybble.database import NoResult
+from pybble.database import db,NoResult,database
 from pybble.diff import textDiff
+from storm.locals import Store
 from wtforms.validators import ValidationError
 from time import time
 from datetime import datetime,timedelta
@@ -18,11 +19,16 @@ from pybble import _settings as settings
 
 url_map = Map([Rule('/static/<file>', endpoint='static', build_only=True)])
 
+store = None
 try:
-	discr_list = list(db.all(Discriminator, ))
+	store = Store(database)
+	discr_list = list(store.find(Discriminator))
+	discr_list.sort(cmp=lambda a,b: cmp(a.name,b.name))
 except Exception:
+	raise
 	discr_list = [] # if not set up yet
-discr_list.sort(cmp=lambda a,b: cmp(a.name,b.name))
+finally:
+	del store
 
 def valid_obj(form, field):
 	"""Field verifier which checks that an object ID is valid"""
@@ -62,6 +68,7 @@ class DatabaseLoader(BaseLoader):
 		if isinstance(template,(Template,TemplateMatch)):
 			t = template
 		else:
+			if isinstance(template,str): template = unicode(template)
 			site = current_request.site
 			t = None
 			while site:
@@ -180,7 +187,7 @@ def addables(obj):
 	g = u.get(obj.id,None)
 	if g is None:
 		g = []
-		for d in db.all(Discriminator, ):
+		for d in db.store.find(Discriminator, ):
 #			if getattr(obj_class(d.id),"_no_crumbs",False):
 #				continue
 			if current_request.user.can_add(obj, discr=obj.discriminator, new_discr=d.id):
@@ -217,6 +224,7 @@ def render_my_template(request, obj, detail=None, mimetype=NotGiven, **context):
 	return render_template(t, mimetype=mimetype, **context)
 
 def render_template(template, mimetype=NotGiven, **context):
+	if isinstance(template,str): template = unicode(template)
 	if current_request:
 		from pybble.flashing import get_flashed_messages
 		user = getattr(current_request,"user",None)
@@ -388,28 +396,27 @@ for a,b in PERM.iteritems():
 	globals()['valid_' + b.lower() + '_self'] = f
 
 
-class Pagination(object):
-
-	def __init__(self, query, per_page, page, endpoint):
-		self.query = query
-		self.per_page = per_page
-		self.page = page
-		self.endpoint = endpoint
-
-	@cached_property
-	def count(self):
-		return self.query.count()
-
-	@cached_property
-	def entries(self):
-		return self.query.offset((self.page - 1) * self.per_page) \
-						.limit(self.per_page).all()
-
-	has_previous = property(lambda x: x.page > 1)
-	has_next = property(lambda x: x.page < x.pages)
-	previous = property(lambda x: url_for(x.endpoint, page=x.page - 1))
-	next = property(lambda x: url_for(x.endpoint, page=x.page + 1))
-	pages = property(lambda x: max(0, x.count - 1) // x.per_page + 1)
+#class Pagination(object):
+#	def __init__(self, query, per_page, page, endpoint):
+#		self.query = query
+#		self.per_page = per_page
+#		self.page = page
+#		self.endpoint = endpoint
+#
+#	@cached_property
+#	def count(self):
+#		return self.query.count()
+#
+#	@cached_property
+#	def entries(self):
+#		return self.query.offset((self.page - 1) * self.per_page) \
+#						.limit(self.per_page).all()
+#
+#	has_previous = property(lambda x: x.page > 1)
+#	has_next = property(lambda x: x.page < x.pages)
+#	previous = property(lambda x: url_for(x.endpoint, page=x.page - 1))
+#	next = property(lambda x: url_for(x.endpoint, page=x.page + 1))
+#	pages = property(lambda x: max(0, x.count - 1) // x.per_page + 1)
 
 
 @expose("/static/<path:path>")

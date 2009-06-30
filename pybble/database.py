@@ -32,8 +32,20 @@ def _Get(cls, id):
 		raise NoResult
 	return res
 
+def _ArgsList(cls,kw):
+	args = []
+	for k,v in kw.iteritems():
+		try:
+			w = (getattr(cls,k) == v)
+		except TypeError:
+			raise TypeError("Comp: %r.%s = %r" % (cls,k,v))
+		if isinstance(w,bool):
+			w = (getattr(cls,k+"_id") == (v.id if v else None))
+		args.append(w)
+	return args
+
 def _GetBy(cls, **kw):
-	args = [ (getattr(cls,k) == v) for k,v in kw.iteritems() ]
+	args = _ArgsList(cls,kw)
 	res = None
 	for r in db.store.find(cls, And(*args)):
 		if res is None:
@@ -48,7 +60,7 @@ def _Filter(cls, *args, **kw):
 	return db.store.find(cls, And(*args), **kw)
 
 def _FilterBy(cls, **kw):
-	args = [ (getattr(cls,k) == v) for k,v in kw.iteritems() ]
+	args = _ArgsList(cls,kw)
 	return db.store.find(cls, And(*args))
 
 #	res = 0
