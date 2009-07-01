@@ -197,8 +197,8 @@ class Pybble(object):
 							if content != sf.content:
 								print "Warning: StaticFile '%s' differs." % (dp,)
 								if replace_templates:
-									db.store.delete(sf.bindata)
-									db.store.delete(sf)
+									sf.bindata.record_deletion("replaced by update")
+									sf.record_deletion("replaced by update")
 									sf = StaticFile(dp,sb)
 									db.store.add(sf)
 
@@ -237,7 +237,7 @@ class Pybble(object):
 			dd = db.get_by(Discriminator, name="BinData")
 
 			for d in (dw,ds,dt,dd):
-				if db.store.find(Permission, And(Permission.discr==d.id,Permission.right>=0,Permission.owner==a)).count():
+				if db.store.find(Permission, And(Permission.discr==d.id,Permission.right>=0,Permission.owner_id==a.id)).count():
 					continue
 				p=Permission(a, s, d, PERM_READ)
 				p.superparent=s

@@ -224,7 +224,7 @@ def view_snippet(request, t):
 		t = int(t)
 	except ValueError:
 		if discr:
-			return view_snippet2(request, t, oid,discr)
+			return view_snippet2(request, t, oid, int(discr))
 		else:
 			return view_snippet1(request, t, oid)
 	else:
@@ -232,6 +232,7 @@ def view_snippet(request, t):
 		obj = obj_get(oid)
 		if discr:
 			res = []
+			discr = int(discr)
 			for o in obj.all_children(discr):
 				sub = o.has_children(discr)
 				res.append(render_my_template(request, o, detail=TM_DETAIL_SNIPPET, discr=t, sub=sub, mimetype=None))

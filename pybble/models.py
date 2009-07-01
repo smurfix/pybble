@@ -111,7 +111,7 @@ class Renderer(Storm,DbRepr):
 			self._mod = import_string(self.cls)
 		return self._mod
 	
-class _BaseObject(Storm):
+class BaseObject(Storm):
 	"""This table represents all pointed-to objects"""
 	__storm_table__ = "obj"
 	id = Int(primary=True) # my ID
@@ -129,8 +129,6 @@ class _BaseObject(Storm):
 	def __init__(self, discr):
 		self.discriminator = discr
 
-class BaseObject(_BaseObject):
-	"""As above, but if an object is loaded, it grows """
 	def __storm_loaded__(self):
 		d = obj_class(self.discriminator)
 		object.__setattr__(self,"_ref", db.get_by(d, id=self.id))
@@ -152,7 +150,7 @@ class BaseObject(_BaseObject):
 				return object.__setattribute__(ref,k,v)
 			raise
 		else:
-			object.__setattribute__(self,k,v)
+			object.__setattr__(self,k,v)
 
 	def __unicode__(self):
 		if self._ref:
@@ -172,19 +170,19 @@ class RegistryMeta(PropertyPublisherMeta):
 	def __init__(self, name, bases, dict):
 		if "_obj" in dict: return
 		self.id = Int(primary=True)
-		self._obj = Reference(self.id, _BaseObject.id)
+		self._obj = Reference(self.id, BaseObject.id)
 
-		self.owner_id = Proxy(self._obj, _BaseObject.owner_id)
-		self.parent_id = Proxy(self._obj, _BaseObject.parent_id)
-		self.superparent_id = Proxy(self._obj, _BaseObject.superparent_id)
+		self.owner_id = Proxy(self._obj, BaseObject.owner_id)
+		self.parent_id = Proxy(self._obj, BaseObject.parent_id)
+		self.superparent_id = Proxy(self._obj, BaseObject.superparent_id)
 
 		for k,v in dict.get("_proxy",{}).iteritems():
-			setattr(self,k+"_id", Proxy(self._obj, getattr(_BaseObject,v+"_id")))
+			setattr(self,k+"_id", Proxy(self._obj, getattr(BaseObject,v+"_id")))
 			setattr(self,k,property(_get_ref(v),_set_ref(v)))
 
-		#self.owner = Reference(self.owner_id, _BaseObject.id)
-		#self.parent = Reference(self.parent_id, _BaseObject.id)
-		#self.superparent = Reference(self.superparent_id, _BaseObject.id)
+		#self.owner = Reference(self.owner_id, BaseObject.id)
+		#self.parent = Reference(self.parent_id, BaseObject.id)
+		#self.superparent = Reference(self.superparent_id, BaseObject.id)
 
 		super(RegistryMeta,self).__init__(name, bases, dict)
 
@@ -239,11 +237,11 @@ class Object(Storm):
 	__metaclass__ = RegistryMeta
 
 	id = Int(primary=True)
-	_obj = Reference(id, _BaseObject.id)
+	_obj = Reference(id, BaseObject.id)
 
-	owner_id = Proxy(_obj, _BaseObject.owner_id)
-	parent_id = Proxy(_obj, _BaseObject.parent_id)
-	superparent_id = Proxy(_obj, _BaseObject.superparent_id)
+	owner_id = Proxy(_obj, BaseObject.owner_id)
+	parent_id = Proxy(_obj, BaseObject.parent_id)
+	superparent_id = Proxy(_obj, BaseObject.superparent_id)
 
 	#owner = Reference(owner_id,BaseObject.id)
 	#parent = Reference(parent_id,BaseObject.id)
@@ -261,7 +259,7 @@ class Object(Storm):
 	def _obj_init(self):
 		if self.id is not None:
 			return
-		obj = _BaseObject(self._discriminator)
+		obj = BaseObject(self._discriminator)
 		db.store.add(obj)
 		obj.id = AutoReload
 		db.store.flush()
@@ -1004,11 +1002,11 @@ class Permission(Object):
 
 	def __init__(self, user, obj, discr, right, inherit=None, new_discr=None):
 		super(Permission,self).__init__()
-		self.owner = user
-		self.parent = obj
 		self.discr = Discriminator.get(discr,obj).id
 		self.right = right
 		self.inherit = inherit
+		self.owner = user
+		self.parent = obj
 
 		if right == PERM_ADD:
 			try: del user._can_add
@@ -1396,9 +1394,9 @@ class Breadcrumb(Object):
 
 	def __init__(self, user, obj):
 		super(Breadcrumb,self).__init__()
+		self.discr = obj.discriminator
 		self.owner = user
 		self.parent = obj
-		self.discr = obj.discriminator
 		#self.seq = 1+(db.store.execute(select(Max(Breadcrumb.seq), And((Breadcrumb.owner==user,Breadcrumb.discr==self.discr))).scalar() or 0)
 
 	def __unicode__(self):
@@ -1832,6 +1830,7 @@ class BinData(Object):
 		self.owner = current_request.user
 		self.parent = parent
 		self.superparent = storage
+		self._save_content()
 
 	def __str__(self):
 		return "<%s %s: %s %s>" % (self.__class__.__name__, self.id,self.name+"."+self.ext,self.mimetype)
@@ -1902,11 +1901,11 @@ class BinData(Object):
 			os.remove(p)
 		super(BinData,self).delete()
 
-	def __storm_pre_flush__(self):
-		super(BinData,self).__storm_pre_flush__()
-		if self._content is None:
-			raise RuntimeError("Need to set content before saving")
-		self._save_content()
+#	def __storm_pre_flush__(self):
+#		super(BinData,self).__storm_pre_flush__()
+#		if self._content is None:
+#			raise RuntimeError("Need to set content before saving")
+#		self._save_content()
 
 	def _save_content(self):
 		if self._content is _ContentExists:
