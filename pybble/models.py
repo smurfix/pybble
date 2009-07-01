@@ -35,6 +35,8 @@ for _x,_y in TM_DETAIL.items():
 def TM_DETAIL_name(id):
 	return TM_DETAIL[int(id)]
 
+class MissingDummy(Exception):
+	pass
 
 # Permission levels
 ## Negative values need to match exactly.
@@ -257,6 +259,9 @@ class DummyObject(object):
 	@property
 	def anon_user(self):
 		return DummyUser()
+	def has_children(self, discr=None):
+		return False
+	pso = (None,None,None,None)
 
 class DummyUser(DummyObject):
 	cur_login = datetime.utcnow()
@@ -264,6 +269,9 @@ class DummyUser(DummyObject):
 	first_login = datetime.utcnow()
 	groups = []
 	def all_visited(self, cls=None): return ()
+	def can_do(user,obj, discr=None, new_discr=None, want=None):
+		return False
+	def oid(self): return "DummyUser"
 
 class Object(Storm):
 	"""The base type of all pointed-to objects. Don't use this in Reference() calls!"""
@@ -1098,15 +1106,22 @@ for a,b in PERM.iteritems():
 		def will_do(self, obj, discr=None, new_discr=None):
 			if not can_do(self, obj, discr=discr, new_discr=new_discr):
 				raise AuthError(obj,a)
+		def can_err(self, obj, discr=None, new_discr=None):
+			if isinstance(obj,(DummyUser,DummySite)) and discr in (User._discriminator,Site._discriminator,None) and new_discr is None and a>0 and a<=PERM_READ:
+				return True
+			return False
 		def will_err(self, obj, discr=None, new_discr=None):
-			raise AuthError(obj,a)
+			if not can_err(self, obj, discr=discr, new_discr=new_discr):
+				raise AuthError(obj,a)
 
-		return can_do,will_do,will_err
+
+		return can_do,will_do,can_err,will_err
 	
-	c,d,e = can_do_closure(a,b)
+	c,d,e,f = can_do_closure(a,b)
 	setattr(Object,'can_'+b.lower(), c)
 	setattr(Object,'will_'+b.lower(), d)
-	setattr(DummyUser,'will_'+b.lower(), e)
+	setattr(DummyUser,'can_'+b.lower(), e)
+	setattr(DummyUser,'will_'+b.lower(), f)
 
 
 class Storage(Object):
@@ -1142,6 +1157,19 @@ class DummySite(DummyObject):
 			name=u"Here be "+domain
 		self.domain=unicode(domain)
 		self.name=name
+		try:
+			self.parent = db.get_by(Site,name=u"")
+		except NoResult:
+			pass
+		else:
+			self.parent_id = self.parent.id
+	def oid(self): return "DummySite"
+	def get_template(self, detail=TM_DETAIL_PAGE):
+		if isinstance(self,DummySite) and detail == TM_DETAIL_SUBPAGE:
+			raise MissingDummy
+		if not self.parent:
+			raise NoResult
+		return self.parent.get_template(detail)
 
 class Site(Object):
 	"""A web domain. 'owner' is set to the domain's superuser."""
@@ -1166,6 +1194,17 @@ class Site(Object):
 			name=u"Here be "+domain
 		self.domain=unicode(domain)
 		self.name=name
+
+		try:
+			s = db.get_by(Site,name=u"",domain=u"")
+		except NoResult:
+			if name == "" and domain == "":
+				s = None
+			else:
+				s = Site(u"",u"")
+				db.store.add(s)
+		self.parent = s
+
 		try:
 			self.owner = current_request.user
 		except (AttributeError,RuntimeError):

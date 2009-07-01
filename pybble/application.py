@@ -70,7 +70,7 @@ class Pybble(object):
 		return self.init_site(replace_templates=True)
 
 	def init_site(self, replace_templates=False):
-		def action(domain=("d","localhost:5000"),name=("n",u"local debug site")):
+		def action(domain=("d","localhost:5000"),name=("n",u"")):
 
 			"""Initialize a new site"""
 			# ... or in fact the first one
@@ -118,7 +118,8 @@ class Pybble(object):
 			del m
 			db.store.flush()
 
-			domain=domain.decode("utf-8")
+			if not isinstance(domain,unicode):
+				domain=domain.decode("utf-8")
 			try:
 				s=db.get_by(Site, domain=domain)
 			except NoResult:
@@ -152,7 +153,7 @@ class Pybble(object):
 			u=s.users.find(User.username==u"root").one()
 			if u is None:
 				u=User(u"root")
-				u.email=settings.ADMIN
+				u.email=unicode(settings.ADMIN)
 				u.sites.add(s)
 				db.store.add(u)
 			else:

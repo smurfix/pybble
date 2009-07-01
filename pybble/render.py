@@ -8,7 +8,7 @@ from werkzeug.utils import http_date
 from pybble.utils import current_request, local, random_string, AuthError
 from pybble.models import PERM, PERM_NONE, PERM_ADD, Permission, obj_get, TemplateMatch, Template, WikiPage, \
 	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, StaticFile, obj_get, TM_DETAIL, \
-	TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name
+	TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name, MissingDummy
 from pybble.database import db,NoResult,database
 from pybble.diff import textDiff
 from storm.locals import Store
@@ -213,14 +213,12 @@ def render_my_template(request, obj, detail=None, mimetype=NotGiven, **context):
 
 	context["obj"] = obj
 
-	t = None
-	discr = obj.discriminator
-	no_inherit = True
-
 	try:
 		t = obj.get_template(detail=detail)
 	except NoResult:
 		t = "missing_%d.html" % (detail,)
+	except MissingDummy:
+		t = "missing_0.html"
 
 	return render_template(t, mimetype=mimetype, **context)
 
