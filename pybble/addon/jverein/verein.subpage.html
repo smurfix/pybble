@@ -5,9 +5,14 @@
   <p>Er hat {{ obj.num_mitglieder }} Mitglieder; davon sind {{ obj.num_reg_mitglieder }} hier registriert.</p>
   {% if obj in USER.groups %}
   <p>Du bist Vereinsmitglied.</p>
+  <p>Die Liste der Mitglieder kommt demnächst.</p>
+  {% for v in obj.all_children(d_vereinacct) %}{% if USER.can_read(v) %}
+  <p>Die aktuellen Kontodaten sind <a href="{{ url_for("pybble.views.view_oid", oid=v.oid()) }}">hier</a> zu sehen.
+  </p>
+  {% endif %}{% endfor %}
+
   {% else %}
   <p>Du bist nicht als Mitglied des Vereins registriert.<br />
   <a href="{{ url_for("pybble.views.new_oid", oid=obj.oid(), discr=d_mitglied) }}">Hier</a> kannst du dich registrieren.
   </p>
-  <p>Die Liste der Mitglieder folgt in Kürze.</p>
   {% endif %}
