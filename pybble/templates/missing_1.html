@@ -15,18 +15,21 @@
 {% endblock %}
 
   {% block body %}
-  <div class="new_comment">
+  <div class="shortcuts_right">
   {% if obj != SITE and obj.parent%}
-  zu <a href="{{ url_for("pybble.views.view_oid",oid=obj.parent.oid()) }}">{{ subline(obj.parent) }}</a>
+  <div>
+  zurück zu <a href="{{ url_for("pybble.views.view_oid",oid=obj.parent.oid()) }}">{{ subline(obj.parent) }}</a>
+  </div>
   {% endif %}
   {% if can_add(d_comment) %}
-  {% if obj != SITE and obj.parent %}| {% endif %}
-  <a href="{{ url_for("pybble.views.new_oid",oid=obj.oid(),discr=d_comment) }}">{% if obj.discriminator == d_comment %}antworten{% else %}Diese Seite kommentieren{% endif %}</a>
-  {%- endif -%}
+  <div>
+  <a href="{{ url_for("pybble.views.new_oid",oid=obj.oid(),discr=d_comment) }}">{% if obj.discriminator == d_comment %}antworten{% else %}Seite kommentieren{% endif %}</a>
   </div>
+  {%- endif -%}
   {% if can_add(d_bindata) %}
-  <div class="new_bindata"><a href="{{ url_for("pybble.views.new_oid",oid=obj.oid(),discr=d_bindata) }}">Datei anhängen</a></div>
+  <div><a href="{{ url_for("pybble.views.new_oid",oid=obj.oid(),discr=d_bindata) }}">Datei anhängen</a></div>
   {% endif %}
+  </div>
 
 <div class="subpage">
 {{ subpage(obj) }}

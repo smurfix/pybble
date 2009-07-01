@@ -40,7 +40,7 @@ code del {
 	color: red;
 }
 
-div.comments div.new, div.new_comment {
+div.shortcuts_right {
 	float: right;
 	font-size: 0.9em;
 	background-color:#ccc;
@@ -48,6 +48,12 @@ div.comments div.new, div.new_comment {
 	border-width:1px;
 	border-color:black;
 	padding: 0.5em;
+}
+
+div.comments div.new {
+	float: right;
+	font-size: 0.8em;
+	margin-top: -1.2em;
 }
 
 div.comments div.content {
