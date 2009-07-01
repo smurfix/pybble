@@ -133,12 +133,35 @@ class BaseObject(_BaseObject):
 	"""As above, but if an object is loaded, it grows """
 	def __storm_loaded__(self):
 		d = obj_class(self.discriminator)
-		d = db.get_by(d, id=self.id)
-		return d
+		object.__setattr__(self,"_ref", db.get_by(d, id=self.id))
+
+	def __getattribute__(self,k):
+		try:
+			return object.__getattribute__(self,k)
+		except AttributeError:
+			ref = object.__getattribute__(self,"_ref");
+			if ref:
+				return object.__getattribute__(ref,k)
+			raise
+	def __setattr__(self,k,v):
+		try:
+			object.__getattribute__(self,k)
+		except AttributeError:
+			ref = object.__getattribute__(self,"_ref");
+			if ref:
+				return object.__setattribute__(ref,k,v)
+			raise
+		else:
+			object.__setattribute__(self,k,v)
+
 	def __unicode__(self):
+		if self._ref:
+			return unicode(self._ref)
 		d = obj_class(self.discriminator)
 		return u'‹%s %s %s›' % (self.__class__.__name__, self.id,d.__name__)
 	def __str__(self):
+		if self._ref:
+			return str(self._ref)
 		d = obj_class(self.discriminator)
 		return '<%s %s %s>' % (self.__class__.__name__, self.id,d.__name__)
 	__repr__ = __str__
