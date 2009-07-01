@@ -65,19 +65,20 @@ def editor(request, obj=None, parent=None):
 
 		flash(u"Gespeichert.",True)
 
+		m = [ Permission.discr == discr, Permission.parent_id == obj.id, Permission.owner_id == user.id ]
 		if obj.inherit is None:
-			m = db.filter(Permission, TemplateMatch.inherit != None)
+			m.append(Permission.inherit != None)
 		else:
-			m = db.filter(Permission, TemplateMatch.inherit == None)
-		m = m.filter_by(discr=discr, parent=obj, owner=user)
+			m.append(Permission.inherit == None)
+		m = db.store.find(Permission,And(*m))
 		if obj.inherit is None:
 			if m.count():
 				flash(u"Vorherige Berechtigung(en) entfernt.")
 				for mm in m:
-					db.session.delete(mm)
+					db.store.remove(mm)
 		else:
 			if m.count():
-				flash(u"Vorherige Berechtigung(en) entfernt.")
+				flash(u"Bestehende Berechtigung eingeschränkt.")
 				for mm in m:
 					mm.inherit = not obj.inherit
 

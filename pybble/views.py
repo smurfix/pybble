@@ -238,7 +238,7 @@ def view_snippet(request, t):
 				res.append(render_my_template(request, o, detail=TM_DETAIL_SNIPPET, discr=t, sub=sub, mimetype=None))
 			return Response("\n".join(res), mimetype="text/html")
 		else:
-			sub = db.filter_by(c, parent=obj).all()
+			sub = db.filter_by(c, parent=obj)
 			return render_my_template(request, obj, detail=TM_DETAIL_SNIPPET, discr=t, sub=sub)
 
 @expose('/snippet/<t>/<oid>')

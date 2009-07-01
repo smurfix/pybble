@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import with_statement
-from werkzeug import Request, ClosingIterator
+from werkzeug import Request, ClosingIterator, Response
 from werkzeug.exceptions import HTTPException, NotFound, Unauthorized
 from pybble.utils import STATIC_PATH, local, local_manager, \
 	 TEMPLATE_PATH, AuthError, all_addons
-from pybble.render import expose_map, url_map, send_mail, expose
+from pybble.render import expose_map, url_map, send_mail, expose, TemplateNotFound
 from pybble.database import db, NoResult, dsn, database
 from storm.locals import Store,And,Or
 
@@ -580,27 +580,37 @@ class Pybble(object):
 			local.store = Store(database)
 		local.url_adapter = adapter = url_map.bind_to_environ(environ)
 		try:
-			add_site(request)
-			add_session(request)
-			add_user(request)
-
-			endpoint, values = adapter.match()
-			handler = expose_map[endpoint]
-			response = handler(request, **values)
-			save_session(request,response)
-			db.store.commit()
-		except (NotFound,NoResult), e:
+			try:
+				add_site(request)
+				add_session(request)
+				add_user(request)
+	
+				endpoint, values = adapter.match()
+				handler = expose_map[endpoint]
+				response = handler(request, **values)
+				save_session(request,response)
+				db.store.commit()
+			except (NotFound,NoResult), e:
+				db.store.rollback()
+				from traceback import print_exc
+				print_exc(file=sys.stderr)
+				response = views.not_found(request, request.url)
+				response.status_code = 404
+			except AuthError, e:
+				db.store.rollback()
+				from traceback import print_exc
+				print_exc(file=sys.stderr)
+				response = views.not_allowed(request, e.obj,e.perm)
+				response.status_code = 403
+		except TemplateNotFound:
 			db.store.rollback()
-			from traceback import print_exc
-			print_exc(file=sys.stderr)
-			response = views.not_found(request, request.url)
+			response = """\
+<html><head><title>Template error</title></head><body>
+<p>A template is missing.<br />The template-is-missing-template is also missing.<br />Oops!</p>
+</body></html>
+"""
+			response = Response(response, mimetype="text/html")
 			response.status_code = 404
-		except AuthError, e:
-			db.store.rollback()
-			from traceback import print_exc
-			print_exc(file=sys.stderr)
-			response = views.not_allowed(request, e.obj,e.perm)
-			response.status_code = 403
 		except HTTPException, e:
 			db.store.rollback()
 			response = e

@@ -35,13 +35,13 @@ def sel_ok(form, field):
 	if not dbname_re.match(field.data):
 		raise ValidationError("Dies ist kein Datenbankname")
 	try:
-		r = db.session.execute("select count(id) from %s where email is not null and austritt is null and kuendigung is null" % (field.data,))
+		r = db.store.execute(SQL("select count(id) from %s where eintritt is not null and austritt is null and kuendigung is null" % (field.data,))).get_one()[0]
 	except Exception,e:
 		print >>sys.stderr,repr(e)
 		raise ValidationError("Problem beim Validieren des Datenbankzugriffs")
 	else:
 		if not r:
-			raise ValidationError("Diese Tabelle ist leer")
+			raise ValidationError("keine aktiven Mitglieder gefunden")
 		pass
 
 
@@ -101,7 +101,7 @@ database: %s
 			else:
 				v = repr(v)
 			sel="id,email,vorname,name"
-			r = db.session.execute("select %s from %s where `%s` = %s" % (sel,parent.database, k,v)).fetchone()
+			r = db.store.execute(SQL("select %s from %s where `%s` = %s" % (sel,parent.database, k,v))).get_one()
 			if r is None:
 				raise NoResult
 			for s,t in zip(sel.split(","),r):
@@ -112,7 +112,7 @@ database: %s
 	
 	@property
 	def num_mitglieder(self):
-		return db.session.execute("select count(id) from %s where email is not null and austritt is null and kuendigung is null" % (self.database,)).fetchone()[0]
+		return db.store.execute(SQL("select count(id) from %s where email is not null and austritt is null and kuendigung is null" % (self.database,))).get_one()[0]
 
 	@property
 	def num_reg_mitglieder(self):
@@ -138,7 +138,7 @@ def asel_ok(form, field):
 	if not form.accountnr.data:
 		return
 	try:
-		r = db.session.execute("select count(id) from %s where konto_id = %d" % (field.data, form.accountnr.data))
+		r = db.store.execute(SQL("select count(id) from %s where konto_id = %d" % (field.data, form.accountnr.data))).get_one()[0]
 	except Exception,e:
 		print >>sys.stderr,repr(e)
 		raise ValidationError("Problem beim Validieren des Datenbankzugriffs")
@@ -229,11 +229,11 @@ accountnr: %s
 				self.empfaenger = empfaenger
 				self.zweck = zweck
 
-		r = db.session.execute("select id,datum,betrag,concat(zweck,' ',ifnull(zweck2,''),' ',ifnull(zweck3,'')), empfaenger_name from %s where konto_id=%d order by id desc" % (self.accountdb,self.accountnr))
-		rr = r.fetchone()
+		r = db.store.execute(SQL("select id,datum,betrag,concat(zweck,' ',ifnull(zweck2,''),' ',ifnull(zweck3,'')), empfaenger_name from %s where konto_id=%d order by id desc" % (self.accountdb,self.accountnr)))
+		rr = r.get_one()
 		while rr:
 			yield buchung(rr[0],rr[1],rr[2],rr[3].strip(),rr[4])
-			rr = r.fetchone()
+			rr = r.get_one()
 
 
 ## Mitglied: membership
@@ -312,7 +312,7 @@ class Mitglied(Object):
 					u"Klicke auf den darin enhaltenen Link oder tippe den Bestätigungscode hier ein."))
 
 				v = verifier.new(obj)
-				db.session.add(v)
+				db.store.add(v)
 				v.send()
 				return redirect(url_for("pybble.confirm.confirm"))
 		

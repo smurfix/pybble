@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime,timedelta
-from storm.locals import RawStr,Unicode,Int,Bool, Reference,ReferenceSet,Proxy,AutoReload,Select,Storm,DateTime,Desc, And,Or, Count
+from storm.locals import RawStr,Unicode,Int,Bool, Reference,ReferenceSet,Proxy,Select,Storm,DateTime,Desc, And,Or, Count
 from storm.properties import PropertyPublisherMeta
 from storm.references import Relation
 from pybble.utils import random_string, current_request, AuthError
@@ -124,20 +124,26 @@ class BaseObject(Storm):
 	superparent = Reference(superparent_id,id)
 
 	discriminator = Int()
-	discr = Reference(discriminator,Discriminator.id)
 
 	def __init__(self, discr):
 		self.discriminator = discr
 
-	def __storm_loaded__(self):
-		d = obj_class(self.discriminator)
-		object.__setattr__(self,"_ref", db.get_by(d, id=self.id))
+#	def __storm_loaded__(self):
+#		d = obj_class(self.discriminator)
+#		object.__setattr__(self,"_ref", db.get_by(d, id=self.id))
 
 	def __getattribute__(self,k):
 		try:
 			return object.__getattribute__(self,k)
 		except AttributeError:
-			ref = object.__getattribute__(self,"_ref");
+			if k.startswith("__"):
+				raise
+			try:
+				ref = object.__getattribute__(self,"_ref");
+			except AttributeError:
+				d = obj_class(object.__getattribute__(self,"discriminator"))
+				ref = db.get_by(d, id=object.__getattribute__(self,"id"))
+				object.__setattr__(self,"_ref",ref)
 			if ref:
 				return object.__getattribute__(ref,k)
 			raise
@@ -145,10 +151,18 @@ class BaseObject(Storm):
 		try:
 			object.__getattribute__(self,k)
 		except AttributeError:
-			ref = object.__getattribute__(self,"_ref");
+			if k.startswith("__"):
+				raise
+			try:
+				ref = object.__getattribute__(self,"_ref");
+			except AttributeError:
+				d = obj_class(object.__getattribute__(self,"discriminator"))
+				ref = db.get_by(d, id=object.__getattribute__(self,"id"))
+				object.__setattr__(self,"_ref",ref)
 			if ref:
-				return object.__setattribute__(ref,k,v)
-			raise
+				object.__setattr__(ref,k,v)
+			else:
+				raise
 		else:
 			object.__setattr__(self,k,v)
 
@@ -232,6 +246,25 @@ def _set_ref(n):
 		setattr(self._obj,n+"_id",val)
 	return _set_one
 
+class DummyObject(object):
+	id=0
+	owner=None
+	owner_id=None
+	parent=None
+	parent_id=None
+	superparent=None
+	superparent_id=None
+	@property
+	def anon_user(self):
+		return DummyUser()
+
+class DummyUser(DummyObject):
+	cur_login = datetime.utcnow()
+	last_login = datetime.utcnow()
+	first_login = datetime.utcnow()
+	groups = []
+	def all_visited(self, cls=None): return ()
+
 class Object(Storm):
 	"""The base type of all pointed-to objects. Don't use this in Reference() calls!"""
 	__metaclass__ = RegistryMeta
@@ -261,7 +294,6 @@ class Object(Storm):
 			return
 		obj = BaseObject(self._discriminator)
 		db.store.add(obj)
-		obj.id = AutoReload
 		db.store.flush()
 		self._obj = obj
 		assert self.id is not None
@@ -298,19 +330,19 @@ class Object(Storm):
 
 	def has_children(self, discr=None):
 		if discr:
-			return db.store.execute(Select(Count(), where=And(BaseObject.parent_id == self.id, BaseObject.discr == discr))).get_one()[0]
+			return db.store.execute(Select(Count(), where=And(BaseObject.parent_id == self.id, BaseObject.discriminator == discr))).get_one()[0]
 		else:
 			return db.store.execute(Select(Count(), where=BaseObject.parent_id == self.id)).get_one()[0]
 
 	def has_superchildren(self, discr=None):
 		if discr:
-			return db.store.execute(Select(Count(), where=And(BaseObject.superparent_id == self.id, BaseObject.discr == discr))).get_one()[0]
+			return db.store.execute(Select(Count(), where=And(BaseObject.superparent_id == self.id, BaseObject.discriminator == discr))).get_one()[0]
 		else:
 			return db.store.execute(Select(Count(), where=BaseObject.superparent_id == self.id)).get_one()[0]
 
 	def has_slaves(self, discr=None):
 		if discr:
-			return db.store.execute(Select(Count(), where=And(BaseObject.owner_id == self.id, BaseObject.discr == discr))).get_one()[0]
+			return db.store.execute(Select(Count(), where=And(BaseObject.owner_id == self.id, BaseObject.discriminator == discr))).get_one()[0]
 		else:
 			return db.store.execute(Select(Count(), where=BaseObject.owner_id == self.id)).get_one()[0]
 
@@ -391,7 +423,12 @@ class Object(Storm):
 			else:
 				self = self.parent or self.superparent
 
-	templates = ReferenceSet(id, "TemplateMatch.parent_id")
+	@property
+	def templates(self):
+		q = [ BaseObject.parent_id == self.id ]
+		q.append(BaseObject.discriminator == TemplateMatch._discriminator)
+		q.append(BaseObject.id == TemplateMatch.id)
+		return db.store.find(TemplateMatch, And(*q), order_by=(TemplateMatch.discr,TemplateMatch.detail,TemplateMatch.inherit))
 
 	@property
 	def memberships(self):
@@ -485,7 +522,6 @@ class Object(Storm):
 			"""
 		if self.id is None:
 			db.store.flush()
-			self.id = AutoReload
 		return "%d.%d.%s" % (self.discriminator, self.id, 
 		                        md5(self.__class__.__name__ + str(self.id) + settings.SECRET_KEY)\
 		                            .digest().encode('base64').strip('\n =')[:10].replace("+","/-").replace("/","_"))
@@ -637,7 +673,7 @@ class User(Object):
 	username = Unicode(allow_none=False)
 	first_name = Unicode()
 	last_name = Unicode()
-	email = RawStr()
+	email = Unicode()
 	password = Unicode(allow_none=False)
 	first_login = DateTime(allow_none=False)
 	last_login = DateTime()
@@ -1062,11 +1098,15 @@ for a,b in PERM.iteritems():
 		def will_do(self, obj, discr=None, new_discr=None):
 			if not can_do(self, obj, discr=discr, new_discr=new_discr):
 				raise AuthError(obj,a)
+		def will_err(self, obj, discr=None, new_discr=None):
+			raise AuthError(obj,a)
 
-		return can_do,will_do
-	c,d = can_do_closure(a,b)
+		return can_do,will_do,will_err
+	
+	c,d,e = can_do_closure(a,b)
 	setattr(Object,'can_'+b.lower(), c)
 	setattr(Object,'will_'+b.lower(), d)
+	setattr(DummyUser,'will_'+b.lower(), e)
 
 
 class Storage(Object):
@@ -1095,6 +1135,14 @@ class Storage(Object):
 	__repr__ = __str__
 
 
+class DummySite(DummyObject):
+	"""A site without content."""
+	def __init__(self,domain,name=None):
+		if name is None:
+			name=u"Here be "+domain
+		self.domain=unicode(domain)
+		self.name=name
+
 class Site(Object):
 	"""A web domain. 'owner' is set to the domain's superuser."""
 	__storm_table__ = "sites"
@@ -1115,8 +1163,8 @@ class Site(Object):
 	def __init__(self,domain,name=None):
 		super(Site,self).__init__()
 		if name is None:
-			name="Here be "+domain
-		self.domain=domain
+			name=u"Here be "+domain
+		self.domain=unicode(domain)
 		self.name=name
 		try:
 			self.owner = current_request.user
@@ -1239,9 +1287,6 @@ class TemplateMatch(Object):
 		return "'"+self.__str__()+"'"
 
 
-Object.templates = ReferenceSet(Object.id, TemplateMatch.parent_id)
-Template.matches = ReferenceSet(TemplateMatch.parent_id, Object.id)
-
 VerifierBases = {}
 class VerifierBase(Storm,DbRepr):
 	"""
@@ -1296,7 +1341,7 @@ class Verifier(Object):
 	def __init__(self,base, obj, user=None, code=None, days=None):
 		super(Verifier,self).__init__()
 		if isinstance(base, basestring):
-			base = db.get_by(VerifierBase,name=base)
+			base = db.get_by(VerifierBase,name=unicode(base))
 		self.base = base
 		self.parent = obj
 		self.owner = user or obj

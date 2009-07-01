@@ -10,7 +10,7 @@ from werkzeug import cookie_date, get_host
 from werkzeug.contrib.securecookie import SecureCookie
 from pybble import _settings as settings
 from datetime import datetime,timedelta
-from pybble.models import User,Site
+from pybble.models import User,Site,DummySite
 from pybble.database import NoResult
 from pybble.decorators import ResultNotFound
 from pybble.database import db
@@ -33,6 +33,11 @@ class Session(SecureCookie):
 			del cls.new
 		return super(Session,cls).serialize(*a,**k)
 	
+try:
+	from settings import ONESITE
+except ImportError:
+	ONESITE=False
+
 @ResultNotFound
 def add_site(request):
 	host = get_host(request.environ)
@@ -40,11 +45,17 @@ def add_site(request):
 	if host.startswith("www."):
 		request.environ['HTTP_X_FORWARDED_HOST'] = host[4:]
 		return HttpResponsePermanentRedirect(request.url)
+	
 	try:
-		site = db.get_by(Site, domain=host.decode("idna"))
+		if ONESITE:
+			site = db.store.find(Site).one()
+			if site is None:
+				raise NoResult
+		else:
+			site = db.get_by(Site, domain=(host.decode("idna")))
 	except NoResult:
 		print >>sys.stderr,"host '%s' ... not found!" % (host,)
-		site = Site(domain=host,name=u'Unknown domain «%s»' % (host,))
+		site = DummySite(domain=host,name=u'Unknown domain «%s»' % (host,))
 	finally:
 		request.site = site
 

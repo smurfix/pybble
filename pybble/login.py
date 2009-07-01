@@ -109,7 +109,7 @@ def register(request):
 		u.record_creation()
 
 		v = verifier.new(u)
-		db.session.add(v)
+		db.store.add(v)
 		v.send()
 
 		flash(Markup(u"Wir haben soeben eine Email an dich geschickt. <br />" + \

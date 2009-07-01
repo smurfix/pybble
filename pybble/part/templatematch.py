@@ -16,6 +16,7 @@ from wtforms import Form, BooleanField, TextField, TextAreaField, \
 from wtforms.validators import ValidationError
 from sqlalchemy.sql import and_, or_, not_
 from datetime import datetime
+from storm.locals import And
 
 ###
 ### Template editor
@@ -33,13 +34,12 @@ def known_match(form, field):
 
 	dest = obj_get(form.oid.data)
 
-	m = db.filter(TemplateMatch, TemplateMatch.inherit == inherit)
+	m = [ TemplateMatch.inherit == inherit, TemplateMatch.discr == int(form.discr.data), TemplateMatch.detail == int(form.detail.data), TemplateMatch.parent_id == dest.id ]
 	id = getattr(form,"id",None)
 	if id:
-		m = m.filter(TemplateMatch.id != id)
-	m = m.filter_by(discr=int(form.discr.data), detail=int(form.detail.data), obj=dest)
+		m.append(TemplateMatch.id != id)
 
-	if m.count():
+	if db.store.find(TemplateMatch, And(*m)).count():
 		raise ValidationError("Diese Vorlage existiert dort bereits.")
 
 class TemplateMatchForm(Form):
@@ -67,7 +67,6 @@ def editor(request, obj=None, parent=None):
 		if parent:
 			obj = TemplateMatch(parent,int(form.discr.data),int(form.detail.data),form.page.data.replace("\r",""))
 			obj.record_creation()
-			db.session.flush()
 		else:
 			obj.record_change()
 			obj.data = form.page.data.replace("\r","")
@@ -75,21 +74,22 @@ def editor(request, obj=None, parent=None):
 		obj.discr = int(form.discr.data)
 		obj.detail = int(form.detail.data)
 		obj.inherit = inherit
-		db.session.flush()
+		db.store.flush()
 
 		flash(u"Gespeichert.",True)
 
 		# Now filter other templates to look for overlaps
+		m = [ TemplateMatch.discr == obj.discr, TemplateMatch.detail == obj.detail, TemplateMatch.obj_id == obj.id ]
 		if obj.inherit is None:
-			m = db.filter(TemplateMatch, TemplateMatch.inherit != None)
+			m.append(TemplateMatch.inherit != None)
 		else:
-			m = db.filter(TemplateMatch, TemplateMatch.inherit == None)
-		m = m.filter_by(discr=obj.discr, detail=obj.detail, obj=obj)
+			m.append(TemplateMatch.inherit == None)
+		m = db.store.find(TemplateMatch,And(*m))
 		if obj.inherit is None:
 			if m.count():
 				flash(u"Vorherige Assoziation(en) entfernt.")
 				for mm in m:
-					db.session.delete(mm)
+					db.store.remove(mm)
 		else:
 			if m.count():
 				flash(u"Bestehende Assoziation eingeschränkt.")
