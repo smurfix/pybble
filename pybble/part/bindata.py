@@ -41,7 +41,7 @@ def check_type(form,field):
 	
 class FileForm(Form):
 	name = TextField('Name', [validators.length(min=3, max=30)])
-	mime = SelectField('MIME Type', [check_type], choices=[(str(x.id),x.name) for x in db.all(MIMEtype, )])
+	mime = SelectField('MIME Type', [check_type], choices=[(str(x.id),x.name) for x in db.store.find(MIMEtype)])
 
 def newer(request, parent, name=None):
 	if parent is None:
