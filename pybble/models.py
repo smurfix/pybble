@@ -664,7 +664,7 @@ class User(Object):
 			return # no recursive or similar nonsense, please
 		q = { "owner":self, "discr":obj.discriminator }
 		try:
-			s = q.get_by(Breadcrumb, parent=obj, **q)
+			s = db.get_by(Breadcrumb, parent=obj, **q)
 		except NoResult:
 			for b in db.filter_by(Breadcrumb,**q).order_by(Breadcrumb.visited)[10:]:
 				db.store.remove(b)

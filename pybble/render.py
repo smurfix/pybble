@@ -28,6 +28,7 @@ except Exception:
 	raise
 	discr_list = [] # if not set up yet
 finally:
+	store.close()
 	del store
 
 def valid_obj(form, field):

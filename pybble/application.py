@@ -460,11 +460,11 @@ class Pybble(object):
 			utils.local.request = Request({})
 			utils.local.store = Store(database)
 
-			siteq = Site.q
+			filter = {}
 			if site:
-				siteq = siteq.filter_by(name=site)
+				filter["name"]=site
 			
-			for s in siteq:
+			for s in db.filter_by(Site,**filter):
 				setup_code_env(s)
 				if user:
 					u = db.store.filter_by(User, site=s,name=user).value()
@@ -576,7 +576,8 @@ class Pybble(object):
 		local.application = self
 		request = Request(environ)
 		local.request = request
-		local.store = Store(database)
+		if not hasattr(local,"store"):
+			local.store = Store(database)
 		local.url_adapter = adapter = url_map.bind_to_environ(environ)
 		try:
 			add_site(request)
@@ -614,7 +615,7 @@ class Pybble(object):
 			print >>sys.stderr,repr(e)
 			raise
 		return ClosingIterator(response(environ, start_response),
-							   [local_manager.cleanup])
+							   [local.store.close, local_manager.cleanup])
 
 	def __call__(self, environ, start_response):
 		return self.dispatch(environ, start_response)
