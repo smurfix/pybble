@@ -18,6 +18,8 @@ Unordered list of things to do …
 
 ### Files, Images
 
+* restore deleted files ?!
+
 * image object (sizes!)
 
 * image gallery

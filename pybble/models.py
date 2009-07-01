@@ -1809,7 +1809,10 @@ class BinData(Object):
 
 	@staticmethod
 	def lookup(content):
-		return db.get_by(BinData,hash=hash_data(content))
+		res = db.store.find(BinData, And(BinData.hash == hash_data(content)), BinData.superparent_id != None).one()
+		if not res:
+			raise NoResult
+		return res
 			
 	def __init__(self,name, ext=None,mimetype=None, content=None, parent=None, storage=None):
 		if not parent: parent = current_request.site
@@ -1880,10 +1883,7 @@ class BinData(Object):
 
 	@property
 	def path(self):
-		try:
-			fn = self.superparent.path
-		except Exception:
-			return "???"
+		fn = self.superparent.path
 		fc = self._get_chars()
 		dir = os.path.join(fn,*fc[:-1])
 		if not os.path.isdir(dir):
