@@ -48,6 +48,10 @@ Unordered list of things to do …
 
 * add user prefs how much to expand comments
 
+### database
+
+* add ignore-foreign-key statements around the mysql setup file
+
 ### org members
 
 * Vereinsmitglieder-Liste
