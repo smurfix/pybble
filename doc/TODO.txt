@@ -18,6 +18,8 @@ Unordered list of things to do …
 
 ### Files, Images
 
+* restore deleted files ?!
+
 * image object (sizes!)
 
 * image gallery
@@ -45,6 +47,10 @@ Unordered list of things to do …
 * Comments via email
 
 * add user prefs how much to expand comments
+
+### database
+
+* add ignore-foreign-key statements around the mysql setup file
 
 ### org members
 

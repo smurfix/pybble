@@ -22,24 +22,24 @@ from datetime import datetime
 ###
 
 def free_name(form, field):
-	q = Site.q
+	filter = [ Site.name == field.data ]
 	try: id = form.id
 	except AttributeError: pass
-	else: q = q.filter(Site.id != id)
+	else: filter.append(Site.id != id)
 
-	try: obj = q.get_by(name=field.data)
-	except NoResult: pass
-	else: raise ValidationError(u"Seiten namens '%s' gibt es bereits!" % (field.data,))
+	obj = db.store.find(Site,*filter).one()
+	if obj:
+		raise ValidationError(u"Seiten namens '%s' gibt es hier bereits!" % (field.data,))
 
 def free_domain(form, field):
-	q = Site.q
+	filter = [ Site.domain == field.data ]
 	try: id = form.id
 	except AttributeError: pass
-	else: q = q.filter(Site.id != id)
+	else: filter.append(Site.id != id)
 
-	try: obj = q.get_by(domain=field.data)
-	except NoResult: pass
-	else: raise ValidationError(u"Seiten in der Domain '%s' gibt es bereits!" % (field.data,))
+	obj = db.store.find(Site,*filter).one()
+	if obj:
+		raise ValidationError(u"Seiten in der Domain '%s' gibt es hier bereits!" % (field.data,))
 
 
 class SiteEditForm(Form):

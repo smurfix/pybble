@@ -8,9 +8,10 @@ from werkzeug.utils import http_date
 from pybble.utils import current_request, local, random_string, AuthError
 from pybble.models import PERM, PERM_NONE, PERM_ADD, Permission, obj_get, TemplateMatch, Template, WikiPage, \
 	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, StaticFile, obj_get, TM_DETAIL, \
-	TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name
-from pybble.database import NoResult
+	TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name, MissingDummy
+from pybble.database import db,NoResult,database
 from pybble.diff import textDiff
+from storm.locals import Store
 from wtforms.validators import ValidationError
 from time import time
 from datetime import datetime,timedelta
@@ -18,11 +19,17 @@ from pybble import _settings as settings
 
 url_map = Map([Rule('/static/<file>', endpoint='static', build_only=True)])
 
+store = None
 try:
-	discr_list = list(Discriminator.q.all())
+	store = Store(database)
+	discr_list = list(store.find(Discriminator))
+	discr_list.sort(cmp=lambda a,b: cmp(a.name,b.name))
 except Exception:
+	raise
 	discr_list = [] # if not set up yet
-discr_list.sort(cmp=lambda a,b: cmp(a.name,b.name))
+finally:
+	store.close()
+	del store
 
 def valid_obj(form, field):
 	"""Field verifier which checks that an object ID is valid"""
@@ -62,10 +69,11 @@ class DatabaseLoader(BaseLoader):
 		if isinstance(template,(Template,TemplateMatch)):
 			t = template
 		else:
+			if isinstance(template,str): template = unicode(template)
 			site = current_request.site
 			t = None
 			while site:
-				try: t = Template.q.get_by(name=template,superparent=site)
+				try: t = db.get_by(Template, name=template,superparent=site)
 				except NoResult: pass
 				else: break
 				site = site.parent
@@ -150,7 +158,7 @@ jinja_env.globals['url'] = lambda: current_request.url
 def name_discr(id):
 	if id is None or id == "None":
 		return "*"
-	return Discriminator.q.get_by(id=int(id)).name
+	return db.get_by(Discriminator, id=int(id)).name
 jinja_env.globals['name_discr'] = name_discr
 
 def name_detail(id):
@@ -180,7 +188,7 @@ def addables(obj):
 	g = u.get(obj.id,None)
 	if g is None:
 		g = []
-		for d in Discriminator.q.all():
+		for d in db.store.find(Discriminator, ):
 #			if getattr(obj_class(d.id),"_no_crumbs",False):
 #				continue
 			if current_request.user.can_add(obj, discr=obj.discriminator, new_discr=d.id):
@@ -205,18 +213,17 @@ def render_my_template(request, obj, detail=None, mimetype=NotGiven, **context):
 
 	context["obj"] = obj
 
-	t = None
-	discr = obj.discriminator
-	no_inherit = True
-
 	try:
 		t = obj.get_template(detail=detail)
 	except NoResult:
 		t = "missing_%d.html" % (detail,)
+	except MissingDummy:
+		t = "missing_0.html"
 
 	return render_template(t, mimetype=mimetype, **context)
 
 def render_template(template, mimetype=NotGiven, **context):
+	if isinstance(template,str): template = unicode(template)
 	if current_request:
 		from pybble.flashing import get_flashed_messages
 		user = getattr(current_request,"user",None)
@@ -249,7 +256,7 @@ def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE, discr=None):
 	ctx["obj_deleted"] = d
 	ctx["detail"] = detail
 	if discr is not None:
-		ctx["sub"] = obj_class(discr).q.filter_by(parent=obj).count()
+		ctx["sub"] = db.filter_by(obj_class(discr), parent=obj).count()
 	return render_my_template(current_request, mimetype=None, **ctx)
 
 @contextfunction
@@ -315,7 +322,7 @@ def send_mail(to='', template='', **context):
 	
 	mailServer = smtplib.SMTP(settings.MAILHOST)
 	mailServer.sendmail(context["site"].owner.email, to, jinja_env.get_template(template).render(**context))
-	mailServer.quit()
+	db.it(mailServer, )
 
 
 
@@ -388,28 +395,27 @@ for a,b in PERM.iteritems():
 	globals()['valid_' + b.lower() + '_self'] = f
 
 
-class Pagination(object):
-
-	def __init__(self, query, per_page, page, endpoint):
-		self.query = query
-		self.per_page = per_page
-		self.page = page
-		self.endpoint = endpoint
-
-	@cached_property
-	def count(self):
-		return self.query.count()
-
-	@cached_property
-	def entries(self):
-		return self.query.offset((self.page - 1) * self.per_page) \
-						.limit(self.per_page).all()
-
-	has_previous = property(lambda x: x.page > 1)
-	has_next = property(lambda x: x.page < x.pages)
-	previous = property(lambda x: url_for(x.endpoint, page=x.page - 1))
-	next = property(lambda x: url_for(x.endpoint, page=x.page + 1))
-	pages = property(lambda x: max(0, x.count - 1) // x.per_page + 1)
+#class Pagination(object):
+#	def __init__(self, query, per_page, page, endpoint):
+#		self.query = query
+#		self.per_page = per_page
+#		self.page = page
+#		self.endpoint = endpoint
+#
+#	@cached_property
+#	def count(self):
+#		return self.query.count()
+#
+#	@cached_property
+#	def entries(self):
+#		return self.query.offset((self.page - 1) * self.per_page) \
+#						.limit(self.per_page).all()
+#
+#	has_previous = property(lambda x: x.page > 1)
+#	has_next = property(lambda x: x.page < x.pages)
+#	previous = property(lambda x: url_for(x.endpoint, page=x.page - 1))
+#	next = property(lambda x: url_for(x.endpoint, page=x.page + 1))
+#	pages = property(lambda x: max(0, x.count - 1) // x.per_page + 1)
 
 
 @expose("/static/<path:path>")
@@ -417,7 +423,7 @@ def serve_path(request,path):
 	site = request.site
 	while site:
 		try:
-			sf = StaticFile.q.get_by(superparent=site, path=path)
+			sf = db.get_by(StaticFile, superparent=site, path=path)
 		except NoResult:
 			site = site.parent
 			if not site:

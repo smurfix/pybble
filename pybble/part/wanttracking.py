@@ -20,7 +20,7 @@ from datetime import datetime
 @expose("/admin/wanttracking")
 def list_wanttracking(request):
 	"""Complete list"""
-	return render_template('wanttrackinglist.html', data=WantTracking.q.filter_by(user=request.user), title_trace=["Beobachtungsliste"])
+	return render_template('wanttrackinglist.html', data=db.filter_by(WantTracking, user=request.user), title_trace=["Beobachtungsliste"])
 
 @expose("/admin/wanttracking/<oid>")
 def edit_wanttracking(request, oid=None):

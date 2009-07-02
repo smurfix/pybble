@@ -35,7 +35,7 @@ class RSSForm(Form):
 @expose("/rss/<feed_pass>")
 def do_rss(request, feed_pass):
 	assert len(feed_pass)>10
-	user = User.q.get_by(feed_pass=feed_pass)
+	user = db.get_by(User, feed_pass=feed_pass)
 	request.user = user
 	return render_template('rss.xml', mimetype="application/rss+xml")
 

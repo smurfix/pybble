@@ -25,22 +25,19 @@ except ImportError: from md5 import md5
 ###
 
 def newpage(form, field):
-	q = WikiPage.q
+	filter = [ WikiPage.name == field.data ]
 	obj = getattr(form,"obj", None)
 	if obj:
-		q = q.filter(WikiPage.id != obj.id)
+		filter.append(WikiPage.id != obj.id)
 	if getattr(obj,"mainpage",None) or form.mainpage.data:
-		q = q.filter_by(superparent=current_request.site)
+		filter.append(WikiPage.superparent_id == current_request.site.id)
 	else:
 		parent = getattr(form,"parent",None)
 		if isinstance(parent,WikiPage):
-			q = q.filter_by(parent=parent)
-	try:
-		q.get_by(name=field.data)
-	except NoResult:
-		pass
-	else:
-		raise ValidationError(u"Eine Wiki-Seite namens „%s“ gibt es bereits" % (field.data,))
+			filter.append(WikiPage.parent_id == parent.id)
+	obj = db.store.find(WikiPage,*filter).one()
+	if obj:
+		raise ValidationError(u"Eine Wiki-Seite namens „%s“ gibt es hier bereits" % (field.data,))
 
 def wikiparent(form,field):
 	if hasattr(form,"obj"):
@@ -77,6 +74,8 @@ def newer(request, parent, name=None):
 	elif request.method == 'GET':
 		form.name.data = name
 		form.page.data = ""
+		if not isinstance(parent,WikiPage):
+			form.mainpage.data = True
 
 	return render_template('edit/wikipage.html', parent=parent, form=form, name=form.name.data, title_trace=[form.name.data])
 
@@ -125,10 +124,10 @@ def viewer(request, name, parent=None, obj=None, **args):
 		elif parent:
 			if not args and parent == name:
 				return redirect(url_for("pybble.part.wikipage.viewer", name=name))
-			parent = WikiPage.q.get_by(name=parent, superparent=request.site, mainpage=True)
-			obj = WikiPage.q.get_by(name=name, parent=parent, mainpage=False)
+			parent = db.get_by(WikiPage, name=parent, superparent=request.site, mainpage=True)
+			obj = db.get_by(WikiPage, name=name, parent=parent, mainpage=False)
 		else:
-			obj = WikiPage.q.get_by(name=name, superparent=request.site, mainpage=True)
+			obj = db.get_by(WikiPage, name=name, superparent=request.site, mainpage=True)
 	except NoResult:
 		if not parent:
 			raise

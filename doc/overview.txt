@@ -1,0 +1,33 @@
+# Pybble overview
+
+Pybble is a light-weight, flexible content manager for small Web sites.
+
+## Object model
+
+All of Pybble's objects have up to three "parents".
+
+* parent: the immediate ancestor.
+
+* superparent: the next-level ancestor.
+
+* owner: typically the user who created the record.
+
+All of these are either missing, or are themselves objects.
+
+For instance, consider a Wiki page A, which has a comment B, which has a
+comment C. The parent (and superparent) of B is A. The parent of C is B.
+The superparent of C is also A. The owner records point to the users
+who created these pages.
+
+Typically, a web page contains links to all of its children.
+
+If you follow parent pointers, you reach a site record, which contains
+the name and domain of the web space it's controlling. Site records may
+have other sites as their parent, up to the initial system root which is
+created when the system is set up initially.
+
+You should start by setting up the database. There are mysql and sqlite3
+SQL files. Right now you need
+
+	python manage.py initsite
+

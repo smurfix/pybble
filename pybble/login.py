@@ -36,7 +36,7 @@ def do_login(request):
 	if request.method == 'POST' and form.validate():
 		# create new user and show the confirmation page
 		try:
-			u = User.q.get_by(username=form.username.data)
+			u = db.get_by(User, username=form.username.data)
 		except NoResult:
 			u = None
 		else:
@@ -75,7 +75,7 @@ def do_login(request):
 
 def no_such_user(form, field):
 	try:
-		u = User.q.get_by(username=field.data)
+		u = db.get_by(User, username=field.data)
 	except NoResult:
 		return
 	else:
@@ -83,7 +83,7 @@ def no_such_user(form, field):
 
 def no_such_email(form, field):
 	try:
-		u = User.q.get_by(email=field.data)
+		u = db.get_by(User, email=field.data)
 	except NoResult:
 		return
 	else:
@@ -109,7 +109,7 @@ def register(request):
 		u.record_creation()
 
 		v = verifier.new(u)
-		db.session.add(v)
+		db.store.add(v)
 		v.send()
 
 		flash(Markup(u"Wir haben soeben eine Email an dich geschickt. <br />" + \
@@ -178,7 +178,7 @@ def do_logout(request):
 		return redirect(request.args.get("next",None) or url_for("pybble.views.mainpage"))
 	else:
 		request.session.pop('uid', None)
-		request.user = User.q.get_anonymous_user(request.site)
+		request.user = get_anonymous_user(request.site)
 		flash(u'Du hast dich erfolgreich abgemeldet.', True)
 		return redirect(url_for("pybble.views.mainpage"))
 

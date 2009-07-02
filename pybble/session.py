@@ -10,9 +10,10 @@ from werkzeug import cookie_date, get_host
 from werkzeug.contrib.securecookie import SecureCookie
 from pybble import _settings as settings
 from datetime import datetime,timedelta
-from pybble.models import User,Site
+from pybble.models import User,Site,DummySite
 from pybble.database import NoResult
 from pybble.decorators import ResultNotFound
+from pybble.database import db
 import sys
 
 class Session(SecureCookie):
@@ -32,6 +33,11 @@ class Session(SecureCookie):
 			del cls.new
 		return super(Session,cls).serialize(*a,**k)
 	
+try:
+	from settings import ONESITE
+except ImportError:
+	ONESITE=False
+
 @ResultNotFound
 def add_site(request):
 	host = get_host(request.environ)
@@ -39,11 +45,17 @@ def add_site(request):
 	if host.startswith("www."):
 		request.environ['HTTP_X_FORWARDED_HOST'] = host[4:]
 		return HttpResponsePermanentRedirect(request.url)
+	
 	try:
-		site = Site.q.get_by(domain=host.decode("idna"))
+		if ONESITE:
+			site = db.store.find(Site).one()
+			if site is None:
+				raise NoResult
+		else:
+			site = db.get_by(Site, domain=(host.decode("idna")))
 	except NoResult:
 		print >>sys.stderr,"host '%s' ... not found!" % (host,)
-		site = Site(domain=host,name=u'Unknown domain «%s»' % (host,))
+		site = DummySite(domain=host,name=u'Unknown domain «%s»' % (host,))
 	finally:
 		request.site = site
 
@@ -78,10 +90,10 @@ def add_user(request):
 	user_id = request.session.get('uid')
 	user = None
 	if user_id is not None:
-		try: user = User.q.get_by(id=user_id)
+		try: user = db.get_by(User, id=user_id)
 		except NoResult: pass
 	if user is None:
-		user = User.q.get_anonymous_user(request.site)
+		user = request.site.anon_user
 
 #	# check for bann
 #	if user.is_banned:
@@ -90,7 +102,7 @@ def add_user(request):
 #				session=request.session)
 #
 #		request.session.pop('uid', None)
-#		user = User.objects.get_anonymous_user()
+#		user = get_anonymous_user()
 
 	now = datetime.utcnow()
 	if user.cur_login is None or user.cur_login < now-timedelta(0,600):

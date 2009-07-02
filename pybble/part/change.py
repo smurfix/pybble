@@ -22,11 +22,11 @@ from datetime import datetime
 ###
 
 def viewer(request, obj, **args):
-	n = Change.q.filter(and_(Change.timestamp>obj.timestamp,
+	n = db.filter(Change, and_(Change.timestamp>obj.timestamp,
 	                         Change.parent==obj.parent))\
 	            .order_by(Change.timestamp)\
 	            .first()
-	p = Change.q.filter(and_(Change.timestamp<obj.timestamp,
+	p = db.filter(Change, and_(Change.timestamp<obj.timestamp,
 	                         Change.parent==obj.parent))\
 	            .order_by(Change.timestamp.desc())\
 	            .first()
