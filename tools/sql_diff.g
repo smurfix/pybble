@@ -1015,7 +1015,7 @@ parser SQL:
 	ignore: '#.*?\n'
 	ignore: '--\\s.*?\n'
 	ignore: '--\n'
-	ignore: '/\\*.*?\\*/'
+	ignore: '\/\\*.*?\\*\/'
 	# TODO: multi-line /*...*/ comments
 
 	token END: "$"
@@ -1068,7 +1068,7 @@ parser SQL:
 
 	rule goal<<db>>:
 		{{ self.db = db }}
-		( statement ";" ? )* END
+		( statement ";" ? | ";" )* END
 	
 	rule statement:
 		s_create | s_alter | s_drop | s_set
@@ -1189,7 +1189,9 @@ parser SQL:
 	rule s_create_decl<<t>>:
 		TYPE "=" NAME
 		
-	rule s_set: SET ( SESSION | GLOBAL )? qname "=" val
+	rule s_set: SET ( SESSION | GLOBAL )? sname "=" ( sname | sval )
+
+	rule sname: "@?@?" NAME
 
 	rule qname: "`" XNAME "`" {{ return XNAME.lower() }}
 			| NAME {{ return NAME.lower() }}

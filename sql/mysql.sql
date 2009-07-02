@@ -1,289 +1,629 @@
-CREATE TABLE comment (
-	id INTEGER NOT NULL, 
-	name VARCHAR(250), 
-	data TEXT, 
-	added TIMESTAMP, 
-	renderer_id TINYINT, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT comment_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT cmt_renderer FOREIGN KEY(renderer_id) REFERENCES renderer (id)
-);
-CREATE TABLE template_match (
-	id INTEGER NOT NULL, 
-	data TEXT, 
-	modified TIMESTAMP, 
-	discr TINYINT NOT NULL, 
-	detail TINYINT(1) NOT NULL, 
-	inherit BOOL, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT template_match_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT templatematch_discr FOREIGN KEY(discr) REFERENCES discriminator (id)
-);
-CREATE TABLE demo (
-	id INTEGER NOT NULL, 
-	name VARCHAR(250), 
-	PRIMARY KEY (id), 
-	 CONSTRAINT demo_id FOREIGN KEY(id) REFERENCES obj (id)
-);
-CREATE TABLE verein_member (
-	id INTEGER NOT NULL, 
-	mitglied_id INTEGER, 
-	aktiv BOOL, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT vereinmember_id FOREIGN KEY(id) REFERENCES obj (id)
-);
-CREATE TABLE books (
-	id INTEGER NOT NULL, 
-	title VARCHAR(250), 
-	author VARCHAR(250), 
-	upc VARCHAR(15), 
-	info TEXT, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT book_id FOREIGN KEY(id) REFERENCES obj (id)
-);
-CREATE TABLE wanttracking (
-	id INTEGER NOT NULL, 
-	discr TINYINT, 
-	email BOOL NOT NULL, 
-	track_new BOOL NOT NULL, 
-	track_mod BOOL NOT NULL, 
-	track_del BOOL NOT NULL, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT wanttracking_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT wanttracking_discr FOREIGN KEY(discr) REFERENCES discriminator (id)
-);
-CREATE TABLE vereinacct (
-	id INTEGER NOT NULL, 
-	accountdb VARCHAR(30), 
-	accountnr INTEGER, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT vereinacct_id FOREIGN KEY(id) REFERENCES obj (id)
-);
-CREATE TABLE discriminator (
-	id TINYINT(1) NOT NULL AUTO_INCREMENT, 
-	name VARCHAR(30) NOT NULL, 
-	display_name VARCHAR(50), 
-	infotext VARCHAR(250), 
-	PRIMARY KEY (id), 
-	 UNIQUE (name)
-);
-CREATE TABLE staticfile (
-	id INTEGER NOT NULL, 
-	path VARCHAR(200) NOT NULL, 
-	modified TIMESTAMP, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT staticfile_id FOREIGN KEY(id) REFERENCES obj (id)
-);
-CREATE TABLE wikipage (
-	id INTEGER NOT NULL, 
-	name VARCHAR(50), 
-	data TEXT, 
-	modified TIMESTAMP, 
-	mainpage BOOL NOT NULL, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT wikipage_id FOREIGN KEY(id) REFERENCES obj (id)
-);
-CREATE TABLE mimeext (
-	id INTEGER NOT NULL AUTO_INCREMENT, 
-	mime_id INTEGER, 
-	ext VARCHAR(10) NOT NULL, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT mimetype_id FOREIGN KEY(mime_id) REFERENCES mimetype (id), 
-	 UNIQUE (ext)
-);
-CREATE TABLE breadcrumbs (
-	id INTEGER NOT NULL, 
-	discr TINYINT NOT NULL, 
-	visited TIMESTAMP, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT breadcrumb_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT breadcrumb_discr FOREIGN KEY(discr) REFERENCES discriminator (id)
-);
-CREATE TABLE storage (
-	id INTEGER NOT NULL, 
-	name VARCHAR(250) NOT NULL, 
-	path VARCHAR(250) NOT NULL, 
-	url VARCHAR(250) NOT NULL, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT storage_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (url), 
-	 UNIQUE (name), 
-	 UNIQUE (path)
-);
-CREATE TABLE sites (
-	id INTEGER NOT NULL, 
-	domain VARCHAR(100) NOT NULL, 
-	name VARCHAR(50) NOT NULL, 
-	tracked DATETIME NOT NULL, 
-	storage_id INTEGER, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT site_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (domain), 
-	 UNIQUE (name), 
-	 CONSTRAINT site_storage FOREIGN KEY(storage_id) REFERENCES obj (id)
-);
-CREATE TABLE bindata (
-	id INTEGER NOT NULL, 
-	mime_id INTEGER, 
-	name VARCHAR(50) NOT NULL, 
-	hash VARCHAR(30) NOT NULL, 
-	timestamp TIMESTAMP, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT bindata_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (hash), 
-	 CONSTRAINT bindata_mimeid FOREIGN KEY(mime_id) REFERENCES mimetype (id)
-);
-CREATE TABLE bookwant (
-	id INTEGER NOT NULL, 
-	requested DATETIME, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT bookwant_id FOREIGN KEY(id) REFERENCES obj (id)
-);
-CREATE TABLE templates (
-	id INTEGER NOT NULL, 
-	name VARCHAR(50) NOT NULL, 
-	data TEXT, 
-	modified TIMESTAMP, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT template_id FOREIGN KEY(id) REFERENCES obj (id)
-);
-CREATE TABLE users (
-	id INTEGER NOT NULL, 
-	username VARCHAR(30) NOT NULL, 
-	first_name VARCHAR(30), 
-	last_name VARCHAR(30), 
-	email VARCHAR(100), 
-	password VARCHAR(30) NOT NULL, 
-	first_login DATETIME NOT NULL, 
-	last_login DATETIME, 
-	cur_login DATETIME, 
-	feed_age TINYINT NOT NULL, 
-	feed_pass VARCHAR(30), 
-	feed_read DATETIME, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT user_id FOREIGN KEY(id) REFERENCES obj (id)
-);
-CREATE TABLE usertracking (
-	id INTEGER NOT NULL, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT usertracker_id FOREIGN KEY(id) REFERENCES obj (id)
-);
-CREATE TABLE deleted (
-	id INTEGER NOT NULL, 
-	comment VARCHAR(200), 
-	old_superparent_id INTEGER, 
-	old_owner_id INTEGER, 
-	timestamp TIMESTAMP, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT delobj_owner FOREIGN KEY(old_owner_id) REFERENCES obj (id), 
-	 CONSTRAINT delete_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT delobj_super FOREIGN KEY(old_superparent_id) REFERENCES obj (id)
-);
-CREATE TABLE groupmembers (
-	id INTEGER NOT NULL, 
-	excluded BOOL NOT NULL, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT member_id FOREIGN KEY(id) REFERENCES obj (id)
-);
-CREATE TABLE verein (
-	id INTEGER NOT NULL, 
-	name VARCHAR(250), 
-	`database` VARCHAR(30), 
-	PRIMARY KEY (id), 
-	 CONSTRAINT verein_id FOREIGN KEY(id) REFERENCES obj (id)
-);
-CREATE TABLE verifiers (
-	id INTEGER NOT NULL, 
-	base_id TINYINT, 
-	code VARCHAR(50) NOT NULL, 
-	added DATETIME NOT NULL, 
-	repeated DATETIME, 
-	timeout DATETIME NOT NULL, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT verifier_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 UNIQUE (code), 
-	 CONSTRAINT verifier_base FOREIGN KEY(base_id) REFERENCES verifierbase (id)
-);
-CREATE TABLE groups (
-	id INTEGER NOT NULL, 
-	name VARCHAR(30), 
-	PRIMARY KEY (id), 
-	 CONSTRAINT group_id FOREIGN KEY(id) REFERENCES obj (id)
-);
-CREATE TABLE verifierbase (
-	id TINYINT(1) NOT NULL AUTO_INCREMENT, 
-	name VARCHAR(30) NOT NULL, 
-	cls VARCHAR(50) NOT NULL, 
-	PRIMARY KEY (id), 
-	 UNIQUE (name), 
-	 UNIQUE (cls)
-);
-CREATE TABLE permissions (
-	id INTEGER NOT NULL, 
-	`right` INTEGER NOT NULL, 
-	inherit BOOL, 
-	discr TINYINT NOT NULL, 
-	new_discr TINYINT, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT permission_id FOREIGN KEY(id) REFERENCES obj (id), 
-	 CONSTRAINT permission_discr FOREIGN KEY(discr) REFERENCES discriminator (id), 
-	 CONSTRAINT permission_new_discr FOREIGN KEY(new_discr) REFERENCES discriminator (id)
-);
-CREATE TABLE mimetype (
-	id INTEGER NOT NULL AUTO_INCREMENT, 
-	name VARCHAR(30) NOT NULL, 
-	typ VARCHAR(15) NOT NULL, 
-	subtyp VARCHAR(15) NOT NULL, 
-	ext VARCHAR(15) NOT NULL, 
-	PRIMARY KEY (id), 
-	 UNIQUE (name)
-);
-CREATE TABLE tracking (
-	id INTEGER NOT NULL, 
-	timestamp TIMESTAMP, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT tracker_id FOREIGN KEY(id) REFERENCES obj (id)
-);
-CREATE TABLE obj (
-	id INTEGER NOT NULL AUTO_INCREMENT, 
-	discriminator TINYINT, 
-	owner_id INTEGER, 
-	parent_id INTEGER, 
-	superparent_id INTEGER, 
-	PRIMARY KEY (id), 
-	 CONSTRAINT obj_discr FOREIGN KEY(discriminator) REFERENCES discriminator (id), 
-	 CONSTRAINT obj_owner FOREIGN KEY(owner_id) REFERENCES obj (id), 
-	 CONSTRAINT obj_parent FOREIGN KEY(parent_id) REFERENCES obj (id), 
-	 CONSTRAINT obj_super FOREIGN KEY(superparent_id) REFERENCES obj (id)
-);
-CREATE TABLE site_users (
-	site_id INTEGER NOT NULL, 
-	user_id INTEGER NOT NULL, 
-	 CONSTRAINT site_users_site FOREIGN KEY(site_id) REFERENCES obj (id), 
-	 UNIQUE (site_id, user_id), 
-	 CONSTRAINT site_users_user FOREIGN KEY(user_id) REFERENCES obj (id)
-);
-CREATE TABLE bookstore (
-	id INTEGER NOT NULL, 
-	name VARCHAR(250), 
-	info VARCHAR(250), 
-	PRIMARY KEY (id), 
-	 CONSTRAINT bookstore_id FOREIGN KEY(id) REFERENCES obj (id)
-);
-CREATE TABLE changes (
-	id INTEGER NOT NULL, 
-	timestamp TIMESTAMP, 
-	data TEXT, 
-	comment VARCHAR(200), 
-	PRIMARY KEY (id), 
-	 CONSTRAINT change_id FOREIGN KEY(id) REFERENCES obj (id)
-);
-CREATE TABLE renderer (
-	id TINYINT(1) NOT NULL AUTO_INCREMENT, 
-	name VARCHAR(30) NOT NULL, 
-	cls VARCHAR(50) NOT NULL, 
-	PRIMARY KEY (id), 
-	 UNIQUE (name), 
-	 UNIQUE (cls)
-);
+-- MySQL dump 10.11
+--
+-- Host: intern    Database: test_pybble
+-- ------------------------------------------------------
+-- Server version	5.0.51a-3ubuntu5.4-log
 
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `bindata`
+--
+
+DROP TABLE IF EXISTS `bindata`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `bindata` (
+  `id` int(11) NOT NULL,
+  `mime_id` int(11) default NULL,
+  `name` varchar(50) NOT NULL,
+  `hash` tinyblob,
+  `timestamp` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `hash` (`hash`(255)),
+  KEY `bindata_mimeid` (`mime_id`),
+  CONSTRAINT `bindata_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`),
+  CONSTRAINT `bindata_mimeid` FOREIGN KEY (`mime_id`) REFERENCES `mimetype` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `books`
+--
+
+DROP TABLE IF EXISTS `books`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `books` (
+  `id` int(11) NOT NULL,
+  `title` varchar(250) default NULL,
+  `author` varchar(250) default NULL,
+  `upc` varchar(15) default NULL,
+  `info` text,
+  PRIMARY KEY  (`id`),
+  CONSTRAINT `book_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `bookstore`
+--
+
+DROP TABLE IF EXISTS `bookstore`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `bookstore` (
+  `id` int(11) NOT NULL,
+  `name` varchar(250) default NULL,
+  `info` varchar(250) default NULL,
+  PRIMARY KEY  (`id`),
+  CONSTRAINT `bookstore_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `bookwant`
+--
+
+DROP TABLE IF EXISTS `bookwant`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `bookwant` (
+  `id` int(11) NOT NULL,
+  `requested` datetime default NULL,
+  PRIMARY KEY  (`id`),
+  CONSTRAINT `bookwant_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `breadcrumbs`
+--
+
+DROP TABLE IF EXISTS `breadcrumbs`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `breadcrumbs` (
+  `id` int(11) NOT NULL,
+  `discr` tinyint(4) NOT NULL,
+  `visited` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
+  PRIMARY KEY  (`id`),
+  KEY `breadcrumb_discr` (`discr`),
+  CONSTRAINT `breadcrumb_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`),
+  CONSTRAINT `breadcrumb_discr` FOREIGN KEY (`discr`) REFERENCES `discriminator` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `changes`
+--
+
+DROP TABLE IF EXISTS `changes`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `changes` (
+  `id` int(11) NOT NULL,
+  `timestamp` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
+  `data` text,
+  `comment` varchar(200) default NULL,
+  PRIMARY KEY  (`id`),
+  CONSTRAINT `change_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `comment`
+--
+
+DROP TABLE IF EXISTS `comment`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `comment` (
+  `id` int(11) NOT NULL,
+  `name` varchar(250) default NULL,
+  `data` text,
+  `added` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
+  `renderer_id` tinyint(4) default NULL,
+  PRIMARY KEY  (`id`),
+  KEY `cmt_renderer` (`renderer_id`),
+  CONSTRAINT `comment_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`),
+  CONSTRAINT `cmt_renderer` FOREIGN KEY (`renderer_id`) REFERENCES `renderer` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `deleted`
+--
+
+DROP TABLE IF EXISTS `deleted`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `deleted` (
+  `id` int(11) NOT NULL,
+  `comment` varchar(200) default NULL,
+  `old_superparent_id` int(11) default NULL,
+  `old_owner_id` int(11) default NULL,
+  `timestamp` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
+  PRIMARY KEY  (`id`),
+  KEY `delobj_owner` (`old_owner_id`),
+  KEY `delobj_super` (`old_superparent_id`),
+  CONSTRAINT `delobj_owner` FOREIGN KEY (`old_owner_id`) REFERENCES `obj` (`id`),
+  CONSTRAINT `delete_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`),
+  CONSTRAINT `delobj_super` FOREIGN KEY (`old_superparent_id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `demo`
+--
+
+DROP TABLE IF EXISTS `demo`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `demo` (
+  `id` int(11) NOT NULL,
+  `name` varchar(250) default NULL,
+  PRIMARY KEY  (`id`),
+  CONSTRAINT `demo_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `discriminator`
+--
+
+DROP TABLE IF EXISTS `discriminator`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `discriminator` (
+  `id` tinyint(1) NOT NULL auto_increment,
+  `name` tinyblob,
+  `display_name` varchar(50) default NULL,
+  `infotext` varchar(250) default NULL,
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `name` (`name`(255))
+) ENGINE=InnoDB AUTO_INCREMENT=108 DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `groupmembers`
+--
+
+DROP TABLE IF EXISTS `groupmembers`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `groupmembers` (
+  `id` int(11) NOT NULL,
+  `excluded` tinyint(1) NOT NULL,
+  PRIMARY KEY  (`id`),
+  CONSTRAINT `member_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `groups`
+--
+
+DROP TABLE IF EXISTS `groups`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `groups` (
+  `id` int(11) NOT NULL,
+  `name` varchar(30) default NULL,
+  PRIMARY KEY  (`id`),
+  CONSTRAINT `group_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `mimeext`
+--
+
+DROP TABLE IF EXISTS `mimeext`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `mimeext` (
+  `id` int(11) NOT NULL auto_increment,
+  `mime_id` int(11) default NULL,
+  `ext` varchar(10) NOT NULL,
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `ext` (`ext`),
+  KEY `mimetype_id` (`mime_id`),
+  CONSTRAINT `mimetype_id` FOREIGN KEY (`mime_id`) REFERENCES `mimetype` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `mimetype`
+--
+
+DROP TABLE IF EXISTS `mimetype`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `mimetype` (
+  `id` int(11) NOT NULL auto_increment,
+  `name` varchar(30) NOT NULL,
+  `typ` tinyblob,
+  `subtyp` tinyblob,
+  `ext` varchar(15) NOT NULL,
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `obj`
+--
+
+DROP TABLE IF EXISTS `obj`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `obj` (
+  `id` int(11) NOT NULL auto_increment,
+  `discriminator` tinyint(4) default NULL,
+  `owner_id` int(11) default NULL,
+  `parent_id` int(11) default NULL,
+  `superparent_id` int(11) default NULL,
+  PRIMARY KEY  (`id`),
+  KEY `obj_discr` (`discriminator`),
+  KEY `obj_owner` (`owner_id`),
+  KEY `obj_parent` (`parent_id`),
+  KEY `obj_super` (`superparent_id`),
+  CONSTRAINT `obj_discr` FOREIGN KEY (`discriminator`) REFERENCES `discriminator` (`id`),
+  CONSTRAINT `obj_owner` FOREIGN KEY (`owner_id`) REFERENCES `obj` (`id`),
+  CONSTRAINT `obj_parent` FOREIGN KEY (`parent_id`) REFERENCES `obj` (`id`),
+  CONSTRAINT `obj_super` FOREIGN KEY (`superparent_id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=457 DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `permissions`
+--
+
+DROP TABLE IF EXISTS `permissions`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `permissions` (
+  `id` int(11) NOT NULL,
+  `right` int(11) NOT NULL,
+  `inherit` tinyint(1) default NULL,
+  `discr` tinyint(4) NOT NULL,
+  `new_discr` tinyint(4) default NULL,
+  PRIMARY KEY  (`id`),
+  KEY `permission_discr` (`discr`),
+  KEY `permission_new_discr` (`new_discr`),
+  CONSTRAINT `permission_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`),
+  CONSTRAINT `permission_discr` FOREIGN KEY (`discr`) REFERENCES `discriminator` (`id`),
+  CONSTRAINT `permission_new_discr` FOREIGN KEY (`new_discr`) REFERENCES `discriminator` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `renderer`
+--
+
+DROP TABLE IF EXISTS `renderer`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `renderer` (
+  `id` tinyint(1) NOT NULL auto_increment,
+  `name` varchar(30) NOT NULL,
+  `cls` varchar(50) NOT NULL,
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `name` (`name`),
+  UNIQUE KEY `cls` (`cls`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `site_users`
+--
+
+DROP TABLE IF EXISTS `site_users`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `site_users` (
+  `site_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  UNIQUE KEY `site_id` (`site_id`,`user_id`),
+  KEY `site_users_user` (`user_id`),
+  CONSTRAINT `site_users_site` FOREIGN KEY (`site_id`) REFERENCES `obj` (`id`),
+  CONSTRAINT `site_users_user` FOREIGN KEY (`user_id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `sites`
+--
+
+DROP TABLE IF EXISTS `sites`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `sites` (
+  `id` int(11) NOT NULL,
+  `domain` varchar(100) NOT NULL,
+  `name` varchar(50) NOT NULL,
+  `tracked` datetime NOT NULL,
+  `storage_id` int(11) default NULL,
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `domain` (`domain`),
+  UNIQUE KEY `name` (`name`),
+  KEY `site_storage` (`storage_id`),
+  CONSTRAINT `site_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`),
+  CONSTRAINT `site_storage` FOREIGN KEY (`storage_id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `staticfile`
+--
+
+DROP TABLE IF EXISTS `staticfile`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `staticfile` (
+  `id` int(11) NOT NULL,
+  `path` varchar(200) NOT NULL,
+  `modified` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
+  PRIMARY KEY  (`id`),
+  CONSTRAINT `staticfile_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `storage`
+--
+
+DROP TABLE IF EXISTS `storage`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `storage` (
+  `id` int(11) NOT NULL,
+  `name` varchar(250) NOT NULL,
+  `path` varchar(250) NOT NULL,
+  `url` varchar(250) NOT NULL,
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `url` (`url`),
+  UNIQUE KEY `name` (`name`),
+  UNIQUE KEY `path` (`path`),
+  CONSTRAINT `storage_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `template_match`
+--
+
+DROP TABLE IF EXISTS `template_match`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `template_match` (
+  `id` int(11) NOT NULL,
+  `data` text,
+  `modified` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
+  `discr` tinyint(4) NOT NULL,
+  `detail` tinyint(1) NOT NULL,
+  `inherit` tinyint(1) default NULL,
+  PRIMARY KEY  (`id`),
+  KEY `templatematch_discr` (`discr`),
+  CONSTRAINT `template_match_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`),
+  CONSTRAINT `templatematch_discr` FOREIGN KEY (`discr`) REFERENCES `discriminator` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `templates`
+--
+
+DROP TABLE IF EXISTS `templates`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `templates` (
+  `id` int(11) NOT NULL,
+  `name` varchar(50) NOT NULL,
+  `data` text,
+  `modified` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
+  PRIMARY KEY  (`id`),
+  CONSTRAINT `template_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `tracking`
+--
+
+DROP TABLE IF EXISTS `tracking`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `tracking` (
+  `id` int(11) NOT NULL,
+  `timestamp` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
+  PRIMARY KEY  (`id`),
+  CONSTRAINT `tracker_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `users`
+--
+
+DROP TABLE IF EXISTS `users`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL,
+  `username` varchar(30) NOT NULL,
+  `first_name` varchar(30) default NULL,
+  `last_name` varchar(30) default NULL,
+  `email` varchar(200) NOT NULL,
+  `password` varchar(30) NOT NULL,
+  `first_login` datetime NOT NULL,
+  `last_login` datetime default NULL,
+  `cur_login` datetime default NULL,
+  `feed_age` tinyint(4) NOT NULL,
+  `feed_pass` varchar(30) default NULL,
+  `feed_read` datetime default NULL,
+  PRIMARY KEY  (`id`),
+  CONSTRAINT `user_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `usertracking`
+--
+
+DROP TABLE IF EXISTS `usertracking`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `usertracking` (
+  `id` int(11) NOT NULL,
+  PRIMARY KEY  (`id`),
+  CONSTRAINT `usertracker_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `verein`
+--
+
+DROP TABLE IF EXISTS `verein`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `verein` (
+  `id` int(11) NOT NULL,
+  `name` varchar(250) default NULL,
+  `database` varchar(30) default NULL,
+  PRIMARY KEY  (`id`),
+  CONSTRAINT `verein_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `verein_member`
+--
+
+DROP TABLE IF EXISTS `verein_member`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `verein_member` (
+  `id` int(11) NOT NULL,
+  `mitglied_id` int(11) default NULL,
+  `aktiv` tinyint(1) default NULL,
+  PRIMARY KEY  (`id`),
+  CONSTRAINT `vereinmember_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `vereinacct`
+--
+
+DROP TABLE IF EXISTS `vereinacct`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `vereinacct` (
+  `id` int(11) NOT NULL,
+  `accountdb` varchar(30) default NULL,
+  `accountnr` int(11) default NULL,
+  PRIMARY KEY  (`id`),
+  CONSTRAINT `vereinacct_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `verifierbase`
+--
+
+DROP TABLE IF EXISTS `verifierbase`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `verifierbase` (
+  `id` tinyint(1) NOT NULL auto_increment,
+  `name` varchar(30) NOT NULL,
+  `cls` tinyblob,
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `name` (`name`),
+  UNIQUE KEY `cls` (`cls`(255))
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `verifiers`
+--
+
+DROP TABLE IF EXISTS `verifiers`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `verifiers` (
+  `id` int(11) NOT NULL,
+  `base_id` tinyint(4) default NULL,
+  `code` tinyblob,
+  `added` datetime NOT NULL,
+  `repeated` datetime default NULL,
+  `timeout` datetime NOT NULL,
+  PRIMARY KEY  (`id`),
+  UNIQUE KEY `code` (`code`(255)),
+  KEY `verifier_base` (`base_id`),
+  CONSTRAINT `verifier_base` FOREIGN KEY (`base_id`) REFERENCES `verifierbase` (`id`),
+  CONSTRAINT `verifier_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `wanttracking`
+--
+
+DROP TABLE IF EXISTS `wanttracking`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `wanttracking` (
+  `id` int(11) NOT NULL,
+  `discr` tinyint(4) default NULL,
+  `email` tinyint(1) NOT NULL,
+  `track_new` tinyint(1) NOT NULL,
+  `track_mod` tinyint(1) NOT NULL,
+  `track_del` tinyint(1) NOT NULL,
+  PRIMARY KEY  (`id`),
+  KEY `wanttracking_discr` (`discr`),
+  CONSTRAINT `wanttracking_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`),
+  CONSTRAINT `wanttracking_discr` FOREIGN KEY (`discr`) REFERENCES `discriminator` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `wikipage`
+--
+
+DROP TABLE IF EXISTS `wikipage`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `wikipage` (
+  `id` int(11) NOT NULL,
+  `name` varchar(50) default NULL,
+  `data` text,
+  `modified` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
+  `mainpage` tinyint(1) NOT NULL,
+  PRIMARY KEY  (`id`),
+  CONSTRAINT `wikipage_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2009-07-02  8:32:44

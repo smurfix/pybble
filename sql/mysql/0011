@@ -1,0 +1,264 @@
+Do("""ALTER TABLE bindata
+    DROP KEY `x_8`,
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `mime_id` int(11) NULL DEFAULT NULL,
+    MODIFY COLUMN `hash` tinyblob NULL DEFAULT NULL,
+    MODIFY COLUMN `timestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    ADD KEY `bindata_mimeid`(`mime_id`),
+    ADD UNIQUE KEY `hash`(`hash`(255))""")
+# <U x_8 (<bindata.hash>, None)> 
+#id: integer, !len, default ''
+#mime_id: integer, !len
+#hash: varchar, len=30, !null, default ''
+#timestamp: default NULL, !updefault
+
+Do("""ALTER TABLE books
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0'""")
+#id: integer, !len, default ''
+
+Do("""ALTER TABLE bookstore
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0'""")
+#id: integer, !len, default ''
+
+Do("""ALTER TABLE bookwant
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0'""")
+#id: integer, !len, default ''
+
+Do("""ALTER TABLE breadcrumbs
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `visited` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    ADD KEY `breadcrumb_discr`(`discr`)""")
+#id: integer, !len, default ''
+#visited: default NULL, !updefault
+
+Do("""ALTER TABLE changes
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `timestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP""")
+#id: integer, !len, default ''
+#timestamp: default NULL, !updefault
+
+Do("""ALTER TABLE comment
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `added` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    ADD KEY `cmt_renderer`(`renderer_id`)""")
+#id: integer, !len, default ''
+#added: default NULL, !updefault
+
+Do("""ALTER TABLE deleted
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `old_superparent_id` int(11) NULL DEFAULT NULL,
+    MODIFY COLUMN `old_owner_id` int(11) NULL DEFAULT NULL,
+    MODIFY COLUMN `timestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    ADD KEY `delobj_owner`(`old_owner_id`),
+    ADD KEY `delobj_super`(`old_superparent_id`)""")
+#id: integer, !len, default ''
+#old_superparent_id: integer, !len
+#old_owner_id: integer, !len
+#timestamp: default NULL, !updefault
+
+Do("""ALTER TABLE demo
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0'""")
+#id: integer, !len, default ''
+
+Do("""ALTER TABLE discriminator
+    DROP KEY `x_1`,
+    MODIFY COLUMN `name` tinyblob NULL DEFAULT NULL,
+    ADD UNIQUE KEY `name`(`name`(255))""")
+# <U x_1 (<discriminator.name>, None)> 
+#name: varchar, len=30, !null, default ''
+
+Do("""ALTER TABLE groupmembers
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `excluded` tinyint(1) NOT NULL DEFAULT '0'""")
+#id: integer, !len, default ''
+#excluded: bool, !len, default ''
+
+Do("""ALTER TABLE groups
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0'""")
+#id: integer, !len, default ''
+
+Do("""ALTER TABLE mimeext
+    DROP KEY `x_2`,
+    MODIFY COLUMN `id` int(11) NOT NULL AUTO_INCREMENT DEFAULT NULL,
+    MODIFY COLUMN `mime_id` int(11) NULL DEFAULT NULL,
+    ADD KEY `mimetype_id`(`mime_id`),
+    ADD UNIQUE KEY `ext`(`ext`)""")
+# <U x_2 (<mimeext.ext>, None)> 
+#id: integer, !len
+#mime_id: integer, !len
+
+Do("""ALTER TABLE mimetype
+    DROP KEY `x_12`,
+    MODIFY COLUMN `id` int(11) NOT NULL AUTO_INCREMENT DEFAULT NULL,
+    MODIFY COLUMN `typ` tinyblob NULL DEFAULT NULL,
+    MODIFY COLUMN `subtyp` tinyblob NULL DEFAULT NULL,
+    ADD UNIQUE KEY `name`(`name`)""")
+# <U x_12 (<mimetype.name>, None)> 
+#id: integer, !len
+#typ: varchar, len=15, !null, default ''
+#subtyp: varchar, len=15, !null, default ''
+
+Do("""ALTER TABLE obj
+    MODIFY COLUMN `id` int(11) NOT NULL AUTO_INCREMENT DEFAULT NULL,
+    MODIFY COLUMN `owner_id` int(11) NULL DEFAULT NULL,
+    MODIFY COLUMN `parent_id` int(11) NULL DEFAULT NULL,
+    MODIFY COLUMN `superparent_id` int(11) NULL DEFAULT NULL,
+    ADD KEY `obj_parent`(`parent_id`),
+    ADD KEY `obj_owner`(`owner_id`),
+    ADD KEY `obj_super`(`superparent_id`),
+    ADD KEY `obj_discr`(`discriminator`)""")
+#id: integer, !len
+#owner_id: integer, !len
+#parent_id: integer, !len
+#superparent_id: integer, !len
+
+Do("""ALTER TABLE permissions
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `right` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `inherit` tinyint(1) NULL DEFAULT NULL,
+    ADD KEY `permission_new_discr`(`new_discr`),
+    ADD KEY `permission_discr`(`discr`)""")
+#id: integer, !len, default ''
+#right: integer, !len, default ''
+#inherit: bool, !len
+
+Do("""ALTER TABLE renderer
+    DROP KEY `x_14`,
+    DROP KEY `x_15`,
+    ADD UNIQUE KEY `name`(`name`),
+    ADD UNIQUE KEY `cls`(`cls`)""")
+# <U x_14 (<renderer.name>, None)> 
+# <U x_15 (<renderer.cls>, None)> 
+
+Do("""ALTER TABLE site_users
+    DROP KEY `x_13`,
+    MODIFY COLUMN `site_id` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `user_id` int(11) NOT NULL DEFAULT '0',
+    ADD UNIQUE KEY `site_id`(`site_id`,`user_id`),
+    ADD KEY `site_users_user`(`user_id`)""")
+# <U x_13 (<site_users.site_id>, None),(<site_users.user_id>, None)> 
+#site_id: integer, !len, default ''
+#user_id: integer, !len, default ''
+
+Do("""ALTER TABLE sites
+    DROP KEY `x_7`,
+    DROP KEY `x_6`,
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `storage_id` int(11) NULL DEFAULT NULL,
+    ADD UNIQUE KEY `name`(`name`),
+    ADD KEY `site_storage`(`storage_id`),
+    ADD UNIQUE KEY `domain`(`domain`)""")
+# <U x_7 (<sites.name>, None)> 
+# <U x_6 (<sites.domain>, None)> 
+#id: integer, !len, default ''
+#storage_id: integer, !len
+
+Do("""ALTER TABLE staticfile
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `modified` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP""")
+#id: integer, !len, default ''
+#modified: default NULL, !updefault
+
+Do("""ALTER TABLE storage
+    DROP KEY `x_4`,
+    DROP KEY `x_3`,
+    DROP KEY `x_5`,
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0',
+    ADD UNIQUE KEY `name`(`name`),
+    ADD UNIQUE KEY `url`(`url`),
+    ADD UNIQUE KEY `path`(`path`)""")
+# <U x_4 (<storage.name>, None)> 
+# <U x_3 (<storage.url>, None)> 
+# <U x_5 (<storage.path>, None)> 
+#id: integer, !len, default ''
+
+Do("""ALTER TABLE template_match
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `modified` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    MODIFY COLUMN `inherit` tinyint(1) NULL DEFAULT NULL,
+    ADD KEY `templatematch_discr`(`discr`)""")
+#id: integer, !len, default ''
+#modified: default NULL, !updefault
+#inherit: bool, !len
+
+Do("""ALTER TABLE templates
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `modified` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP""")
+#id: integer, !len, default ''
+#modified: default NULL, !updefault
+
+Do("""ALTER TABLE tracking
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `timestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP""")
+#id: integer, !len, default ''
+#timestamp: default NULL, !updefault
+
+Do("""ALTER TABLE users
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `email` varchar(200) NOT NULL DEFAULT ''""")
+#id: integer, !len, default ''
+#email: len=100, collate utf8_general_ci/None, null, default NULL
+
+Do("""ALTER TABLE usertracking
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0'""")
+#id: integer, !len, default ''
+
+Do("""ALTER TABLE verein
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0'""")
+#id: integer, !len, default ''
+
+Do("""ALTER TABLE verein_member
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `mitglied_id` int(11) NULL DEFAULT NULL,
+    MODIFY COLUMN `aktiv` tinyint(1) NULL DEFAULT NULL""")
+#id: integer, !len, default ''
+#mitglied_id: integer, !len
+#aktiv: bool, !len
+
+Do("""ALTER TABLE vereinacct
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `accountnr` int(11) NULL DEFAULT NULL""")
+#id: integer, !len, default ''
+#accountnr: integer, !len
+
+Do("""ALTER TABLE verifierbase
+    DROP KEY `x_10`,
+    DROP KEY `x_11`,
+    MODIFY COLUMN `cls` tinyblob NULL DEFAULT NULL,
+    ADD UNIQUE KEY `name`(`name`),
+    ADD UNIQUE KEY `cls`(`cls`(255))""")
+# <U x_10 (<verifierbase.name>, None)> 
+# <U x_11 (<verifierbase.cls>, None)> 
+#cls: varchar, len=50, !null, default ''
+
+Do("""ALTER TABLE verifiers
+    DROP KEY `x_9`,
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `code` tinyblob NULL DEFAULT NULL,
+    ADD KEY `verifier_base`(`base_id`),
+    ADD UNIQUE KEY `code`(`code`(255))""")
+# <U x_9 (<verifiers.code>, None)> 
+#id: integer, !len, default ''
+#code: varchar, len=50, !null, default ''
+
+Do("""ALTER TABLE wanttracking
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `email` tinyint(1) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `track_new` tinyint(1) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `track_mod` tinyint(1) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `track_del` tinyint(1) NOT NULL DEFAULT '0',
+    ADD KEY `wanttracking_discr`(`discr`)""")
+#id: integer, !len, default ''
+#email: bool, !len, default ''
+#track_new: bool, !len, default ''
+#track_mod: bool, !len, default ''
+#track_del: bool, !len, default ''
+
+Do("""ALTER TABLE wikipage
+    MODIFY COLUMN `id` int(11) NOT NULL DEFAULT '0',
+    MODIFY COLUMN `modified` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    MODIFY COLUMN `mainpage` tinyint(1) NOT NULL DEFAULT '0'""")
+#id: integer, !len, default ''
+#modified: default NULL, !updefault
+#mainpage: bool, !len, default ''
+

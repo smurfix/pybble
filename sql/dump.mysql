@@ -1,0 +1,8 @@
+#!/usr/bin/python
+
+from pybble import _settings as s
+import os
+
+os.execlp("mysqldump", "mysqldump", "--no-data", "-h"+s.DATABASE_HOST, "-u"+s.DATABASE_USER, \
+	"-p"+s.DATABASE_PASSWORD, s.DATABASE_NAME)
+
