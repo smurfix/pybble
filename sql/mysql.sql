@@ -191,7 +191,7 @@ CREATE TABLE `discriminator` (
   `infotext` varchar(250) default NULL,
   PRIMARY KEY  (`id`),
   UNIQUE KEY `name` (`name`(255))
-) ENGINE=InnoDB AUTO_INCREMENT=108 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -239,7 +239,7 @@ CREATE TABLE `mimeext` (
   UNIQUE KEY `ext` (`ext`),
   KEY `mimetype_id` (`mime_id`),
   CONSTRAINT `mimetype_id` FOREIGN KEY (`mime_id`) REFERENCES `mimetype` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -257,7 +257,7 @@ CREATE TABLE `mimetype` (
   `ext` varchar(15) NOT NULL,
   PRIMARY KEY  (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -282,7 +282,7 @@ CREATE TABLE `obj` (
   CONSTRAINT `obj_owner` FOREIGN KEY (`owner_id`) REFERENCES `obj` (`id`),
   CONSTRAINT `obj_parent` FOREIGN KEY (`parent_id`) REFERENCES `obj` (`id`),
   CONSTRAINT `obj_super` FOREIGN KEY (`superparent_id`) REFERENCES `obj` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=457 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -321,7 +321,7 @@ CREATE TABLE `renderer` (
   PRIMARY KEY  (`id`),
   UNIQUE KEY `name` (`name`),
   UNIQUE KEY `cls` (`cls`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -553,7 +553,7 @@ CREATE TABLE `verifierbase` (
   PRIMARY KEY  (`id`),
   UNIQUE KEY `name` (`name`),
   UNIQUE KEY `cls` (`cls`(255))
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
