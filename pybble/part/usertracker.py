@@ -3,8 +3,8 @@
 from pybble.utils import current_request
 from pybble.render import render_template, expose
 from pybble.models import UserTracker
-from sqlalchemy.sql import and_, or_, not_
 
+from storm.locals import And
 from datetime import datetime,timedelta
 from time import time
 
@@ -20,7 +20,7 @@ def view_all(request):
 	if last and time()-last[0] < 2*60:
 		pass
 #		if last[1]:
-#			f = and_(f,UserTracker.tracker.timestamp < last[1])
+#			f = And(f,UserTracker.tracker.timestamp < last[1])
 	else:
 		request.session["chg_"] = (int(time()), user.feed_read)
 		user.feed_read = datetime.utcnow()

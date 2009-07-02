@@ -12,8 +12,8 @@ from pybble.flashing import flash
 from pybble.session import logged_in
 from wtforms import Form, BooleanField, TextField, TextAreaField, \
 	SelectField, PasswordField, HiddenField, validators
+from storm.locals import And
 from wtforms.validators import ValidationError
-from sqlalchemy.sql import and_, or_, not_
 from datetime import datetime
 
 
@@ -22,13 +22,13 @@ from datetime import datetime
 ###
 
 def viewer(request, obj, **args):
-	n = db.filter(Change, and_(Change.timestamp>obj.timestamp,
+	n = db.filter(Change, And(Change.timestamp>obj.timestamp,
 	                         Change.parent==obj.parent))\
 	            .order_by(Change.timestamp)\
 	            .first()
-	p = db.filter(Change, and_(Change.timestamp<obj.timestamp,
+	p = db.filter(Change, And(Change.timestamp<obj.timestamp,
 	                         Change.parent==obj.parent))\
-	            .order_by(Change.timestamp.desc())\
+	            .order_by(Desc(Change.timestamp)\
 	            .first()
 	return render_my_template(request, obj=obj, next=n, prev=p, detail=TM_DETAIL_PAGE, **args)
 

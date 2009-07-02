@@ -14,7 +14,6 @@ from pybble.session import logged_in
 from wtforms import Form, BooleanField, TextField, TextAreaField, \
 	SelectField, PasswordField, HiddenField, validators, IntegerField
 from wtforms.validators import ValidationError
-from sqlalchemy.sql import and_, or_, not_
 from datetime import datetime
 
 ###

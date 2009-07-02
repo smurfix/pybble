@@ -7,7 +7,6 @@ from storm.references import Relation
 from pybble.utils import random_string, current_request, AuthError
 from pybble.database import db, NoResult
 
-from sqlalchemy.sql import or_, not_
 from pybble.decorators import add_to
 from werkzeug import import_string
 from jinja2.utils import Markup
