@@ -133,33 +133,37 @@ class BaseObject(Storm):
 #		d = obj_class(self.discriminator)
 #		object.__setattr__(self,"_ref", db.get_by(d, id=self.id))
 
+	def _get_ref(self):
+		try:
+			ref = object.__getattribute__(self,"_ref");
+		except AttributeError:
+			d = obj_class(object.__getattribute__(self,"discriminator"))
+			try:
+				ref = db.get_by(d, id=object.__getattribute__(self,"id"))
+			except NoResult:
+				ref = None
+			else:
+				object.__setattr__(self,"_ref",ref)
+		return ref
+
 	def __getattribute__(self,k):
 		try:
 			return object.__getattribute__(self,k)
 		except AttributeError:
 			if k.startswith("__"):
 				raise
-			try:
-				ref = object.__getattribute__(self,"_ref");
-			except AttributeError:
-				d = obj_class(object.__getattribute__(self,"discriminator"))
-				ref = db.get_by(d, id=object.__getattribute__(self,"id"))
-				object.__setattr__(self,"_ref",ref)
+			ref = self._get_ref()
 			if ref:
 				return object.__getattribute__(ref,k)
-			raise
+			else:
+				raise
 	def __setattr__(self,k,v):
 		try:
 			object.__getattribute__(self,k)
 		except AttributeError:
 			if k.startswith("__"):
 				raise
-			try:
-				ref = object.__getattribute__(self,"_ref");
-			except AttributeError:
-				d = obj_class(object.__getattribute__(self,"discriminator"))
-				ref = db.get_by(d, id=object.__getattribute__(self,"id"))
-				object.__setattr__(self,"_ref",ref)
+			ref = self._get_ref()
 			if ref:
 				object.__setattr__(ref,k,v)
 			else:
@@ -168,14 +172,14 @@ class BaseObject(Storm):
 			object.__setattr__(self,k,v)
 
 	def __unicode__(self):
-		if self._ref:
-			return unicode(self._ref)
-		d = obj_class(self.discriminator)
+		ref = self._get_ref()
+		if ref:
+			return unicode(ref)
 		return u'‹%s %s %s›' % (self.__class__.__name__, self.id,d.__name__)
 	def __str__(self):
-		if self._ref:
-			return str(self._ref)
-		d = obj_class(self.discriminator)
+		ref = self._get_ref()
+		if ref:
+			return str(ref)
 		return '<%s %s %s>' % (self.__class__.__name__, self.id,d.__name__)
 	__repr__ = __str__
 
@@ -980,7 +984,7 @@ class Member(Object):
 	_no_crumbs = True
 	_proxy = { "user":"owner", "group":"parent" };
 
-	excluded = Bool(allow_none=False)
+	excluded = Bool(allow_none=False,default=False)
 
 	def __init__(self,user,group):
 		super(Member,self).__init__()
@@ -1157,7 +1161,7 @@ class DummySite(DummyObject):
 		self.domain=unicode(domain)
 		self.name=name
 		try:
-			self.parent = db.get_by(Site,name=u"")
+			self.parent = db.get_by(Site,domain=u"")
 		except NoResult:
 			pass
 		else:
@@ -1195,12 +1199,12 @@ class Site(Object):
 		self.name=name
 
 		try:
-			s = db.get_by(Site,name=u"",domain=u"")
+			s = db.get_by(Site,domain=u"")
 		except NoResult:
-			if name == "" and domain == "":
+			if domain == "":
 				s = None
 			else:
-				s = Site(u"",u"")
+				s = Site(name=u"Main default site",domain=u"")
 				db.store.add(s)
 		self.parent = s
 

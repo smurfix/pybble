@@ -70,7 +70,7 @@ class Pybble(object):
 		return self.init_site(replace_templates=True)
 
 	def init_site(self, replace_templates=False):
-		def action(domain=("d","localhost:5000"),name=("n",u"")):
+		def action(domain=("d",""),name=("n",u"Default master site")):
 
 			"""Initialize a new site"""
 			# ... or in fact the first one
@@ -121,13 +121,23 @@ class Pybble(object):
 			if not isinstance(domain,unicode):
 				domain=domain.decode("utf-8")
 			try:
-				s=db.get_by(Site, domain=domain)
+				sd = db.get_by(Site,domain=u"")
 			except NoResult:
-				s=Site(domain,name=name)
-				db.store.add(s)
-			else:
-				print u"%s found." % s
+				if domain:
+					raise RuntimeError("Run initsite with an empty domain name first")
+				sd=Site(domain=domain,name=name)
+				db.store.add(sd)
 
+			if domain:
+				try:
+					s=db.get_by(Site, domain=domain)
+				except NoResult:
+					s=Site(domain=domain,name=name)
+					db.store.add(s)
+					s.parent = sd
+			else:
+				s = sd
+				s.parent = None
 			utils.current_request.site = s
 
 			for ext,typ,name in extensions:
@@ -144,7 +154,7 @@ class Pybble(object):
 					st = Storage("Test","/var/tmp/testkram","localhost:5000/static")
 					db.store.add(st)
 			else:
-				st.superparent = s
+				st.superparent = sd
 			db.store.flush()
 			if s.storage is None:
 				s.storage = st
@@ -152,20 +162,25 @@ class Pybble(object):
 
 			u=s.users.find(User.username==u"root").one()
 			if u is None:
-				u=User(u"root")
-				u.email=unicode(settings.ADMIN)
-				u.sites.add(s)
-				db.store.add(u)
+				if sd.has_children(Site._discriminator) == 1:
+					for si in db.store.find(Site):
+						print "S",si,si.parent
+						for ui in si.users:
+							print "U",ui
+					u=sd.users.find(User.username==u"root").one()
+					if not u: raise NoResult
+					print u"Recycling default user: %s" % u
+				else:
+					u=User(u"root")
+					u.email=unicode(settings.ADMIN)
+				s.users.add(u)
 			else:
 				print u"%s found." % u
 
-			db.store.flush()
 			u.verified=True
 			u.parent = s
+			s.owner = u
 			db.store.flush()
-			if s.owner != u:
-				s.owner = u
-				db.store.flush()
 			utils.current_request.user = u
 
 			def add_files(dir,path):
@@ -204,7 +219,8 @@ class Pybble(object):
 									db.store.add(sf)
 
 
-			add_files(os.path.join(u"pybble",u"static"),u"")
+			if not domain:
+				add_files(os.path.join(u"pybble",u"static"),u"")
 		
 			try:
 				a=db.get_by(User, superparent=s, username=u"")
@@ -217,236 +233,237 @@ class Pybble(object):
 			else:
 				print u"%s found." % a
 
-			db.store.flush()
 			a.verified=False
-
 			db.store.flush()
 
-			for d in db.store.find(Discriminator):
-				if db.store.find(Permission,And(Permission.discr==d.id,Permission.right>=0)).count():
-					continue
-				p=Permission(u, s, d, PERM_ADMIN)
-				p.superparent=s
-				db.store.add(p)
-			db.store.flush()
-
-			dw = db.get_by(Discriminator, name="WikiPage")
-			ds = db.get_by(Discriminator, name="Site")
-			dp = db.get_by(Discriminator, name="Permission")
-			dk = db.get_by(Discriminator, name="Comment")
-			dt = db.get_by(Discriminator, name="WantTracking")
-			dd = db.get_by(Discriminator, name="BinData")
-
-			for d in (dw,ds,dt,dd):
-				if db.store.find(Permission, And(Permission.discr==d.id,Permission.right>=0,Permission.owner_id==a.id)).count():
-					continue
-				p=Permission(a, s, d, PERM_READ)
-				p.superparent=s
-				db.store.add(p)
-
-			for d,e in ((ds,dd),(dw,dd),(ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk),(ds,dt)):
-				if db.store.find(Permission,And(Permission.new_discr==e.id,Permission.discr==d.id)).count():
-					continue
-				p=Permission(u, s, d, PERM_ADD)
-				p.new_discr=e.id
-				p.superparent=s
-				db.store.add(p)
-
-			# View templates
-			for addon in self.addons:
-				for cls in addon.__dict__.values():
-					if not(isinstance(cls,type) and issubclass(cls,Object)):
+			if not domain:
+				for d in db.store.find(Discriminator):
+					if db.store.find(Permission,And(Permission.discr==d.id,Permission.right>=0)).count():
 						continue
-					if cls.__name__ not in addon.__ALL__:
+					p=Permission(u, s, d, PERM_ADMIN)
+					p.superparent=s
+					db.store.add(p)
+				db.store.flush()
+
+				dw = db.get_by(Discriminator, name="WikiPage")
+				ds = db.get_by(Discriminator, name="Site")
+				dp = db.get_by(Discriminator, name="Permission")
+				dk = db.get_by(Discriminator, name="Comment")
+				dt = db.get_by(Discriminator, name="WantTracking")
+				dd = db.get_by(Discriminator, name="BinData")
+
+				for d in (dw,ds,dt,dd):
+					if db.store.find(Permission, And(Permission.discr==d.id,Permission.right>=0,Permission.owner_id==a.id)).count():
 						continue
-					if db.filter_by(Permission, discr=cls.cls_discr()).count():
-						continue
-					p=Permission(u, s, ds, PERM_ADMIN)
-					p.new_discr=cls.cls_discr()
+					p=Permission(a, s, d, PERM_READ)
 					p.superparent=s
 					db.store.add(p)
 
-					p=Permission(u, s, ds, PERM_ADD)
-					p.new_discr=cls.cls_discr()
+				for d,e in ((ds,dd),(dw,dd),(ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk),(ds,dt)):
+					if db.store.find(Permission,And(Permission.new_discr==e.id,Permission.discr==d.id)).count():
+						continue
+					p=Permission(u, s, d, PERM_ADD)
+					p.new_discr=e.id
 					p.superparent=s
 					db.store.add(p)
 
-			db.store.flush()
+				# View templates
+				for addon in self.addons:
+					for cls in addon.__dict__.values():
+						if not(isinstance(cls,type) and issubclass(cls,Object)):
+							continue
+						if cls.__name__ not in addon.__ALL__:
+							continue
+						if db.filter_by(Permission, discr=cls.cls_discr()).count():
+							continue
+						p=Permission(u, s, ds, PERM_ADMIN)
+						p.new_discr=cls.cls_discr()
+						p.superparent=s
+						db.store.add(p)
 
-			def get_template(fn):
-				with file(os.path.join(TEMPLATE_PATH,fn)) as f:
+						p=Permission(u, s, ds, PERM_ADD)
+						p.new_discr=cls.cls_discr()
+						p.superparent=s
+						db.store.add(p)
+
+				db.store.flush()
+
+				def get_template(fn):
+					with file(os.path.join(TEMPLATE_PATH,fn)) as f:
+						try:
+							data = f.read().decode("utf-8")
+						except Exception:
+							print >>sys.stderr,"While reading",fn
+							raise
+
+					fn = unicode(fn)
 					try:
-						data = f.read().decode("utf-8")
-					except Exception:
-						print >>sys.stderr,"While reading",fn
-						raise
-
-				fn = unicode(fn)
-				try:
-					t = db.get_by(Template, name=fn,parent=s)
-				except NoResult:
-					t = Template(name=fn,data=data,parent=s)
-					t.owner = u
-					db.store.add(t)
-				else:
-					if t.data != data:
-						print "Warning: Template '%s' differs." % (fn,)
-						if replace_templates:
-							t.data = data
-					if replace_templates:
-						t.superparent = s
+						t = db.get_by(Template, name=fn,parent=s)
+					except NoResult:
+						t = Template(name=fn,data=data,parent=s)
 						t.owner = u
+						db.store.add(t)
+					else:
+						if t.data != data:
+							print "Warning: Template '%s' differs." % (fn,)
+							if replace_templates:
+								t.data = data
+						if replace_templates:
+							t.superparent = s
+							t.owner = u
 
-			for fn in os.listdir(TEMPLATE_PATH):
-				if fn.startswith(".") or (not fn.endswith(".html") and not fn.endswith(".txt") and not fn.endswith(".xml")):
-					continue
-				get_template(fn)
+				for fn in os.listdir(TEMPLATE_PATH):
+					if fn.startswith(".") or (not fn.endswith(".html") and not fn.endswith(".txt") and not fn.endswith(".xml")):
+						continue
+					get_template(fn)
 
-			for fn in os.listdir(os.path.join(TEMPLATE_PATH,"edit")):
-				if fn.startswith(".") or not fn.endswith(".html"):
-					continue
-				get_template(os.path.join("edit",fn))
+				for fn in os.listdir(os.path.join(TEMPLATE_PATH,"edit")):
+					if fn.startswith(".") or not fn.endswith(".html"):
+						continue
+					get_template(os.path.join("edit",fn))
 
-			db.store.flush()
+				db.store.flush()
 
 			VerifierBase.register("register","pybble.login.verifier")
 			db.store.flush()
 
-
-			with file(os.path.join("doc","TOC.txt")) as f:
-				try:
-					data = f.read().decode("utf-8")
-				except Exception:
-					print >>sys.stderr,"While reading",fn
-					raise
-			
-			try:
-				w = db.get_by(WikiPage, name=u"Documentation",superparent=s)
-			except NoResult:
-				w = WikiPage(u"Documentation",data)
-				w.owner=u
-				w.parent=s
-				w.superparent=s
-				w.mainpage=True
-				db.store.add(w)
-			else:
-				if w.data != data:
-					print "Warning: DocPage 'TOC' differs."
-					if replace_templates:
-						w.data = data
-				if not w.superparent:
-					w.superparent=s
-
-			for fn in os.listdir("doc"):
-				if fn.startswith("."):
-					continue
-				if fn == "TOC.txt":
-					continue
-				if not fn.endswith(".txt"):
-					continue
-				fn = fn.decode("utf-8")
-				with file(os.path.join("doc",fn)) as f:
+			if domain and sd.has_children(Site._discriminator) == 1:
+				with file(os.path.join("doc","TOC.txt")) as f:
 					try:
 						data = f.read().decode("utf-8")
 					except Exception:
 						print >>sys.stderr,"While reading",fn
 						raise
-				fn = unicode(fn[:-4])
-				
+			
 				try:
-					ww = db.get_by(WikiPage, name=fn,parent=w)
+					w = db.get_by(WikiPage, name=u"Documentation",superparent=s)
 				except NoResult:
-					ww = WikiPage(fn,data)
-					ww.owner=u
-					ww.parent=w
-					ww.superparent=s
-					ww.mainpage=False
-					db.store.add(ww)
+					w = WikiPage(u"Documentation",data)
+					w.owner=u
+					w.parent=s
+					w.superparent=s
+					w.mainpage=True
+					db.store.add(w)
 				else:
-					ww.superparent=s
-					ww.mainpage=False
-					if ww.data != data:
-						print "Warning: DocPage '%s' differs." % (fn,)
+					if w.data != data:
+						print "Warning: DocPage 'TOC' differs."
 						if replace_templates:
-							ww.data = data
-
-			db.store.flush()
-			for d in db.store.find(Discriminator):
-				for detail,name in ((TM_DETAIL_SUBPAGE,"view"),
-					(TM_DETAIL_DETAIL,"details"),
-					(TM_DETAIL_HIERARCHY,"hierarchy"),
-					(TM_DETAIL_RSS,"rss"),
-					(TM_DETAIL_STRING,"linktext"),
-					(TM_DETAIL_EMAIL,"email"),
-					(TM_DETAIL_SNIPPET,"snippet")):
+							w.data = data
+					if not w.superparent:
+						w.superparent=s
+	
+				for fn in os.listdir("doc"):
+					if fn.startswith("."):
+						continue
+					if fn == "TOC.txt":
+						continue
+					if not fn.endswith(".txt"):
+						continue
+					fn = fn.decode("utf-8")
+					with file(os.path.join("doc",fn)) as f:
+						try:
+							data = f.read().decode("utf-8")
+						except Exception:
+							print >>sys.stderr,"While reading",fn
+							raise
+					fn = unicode(fn[:-4])
+					
 					try:
-						data = open("pybble/templates/%s/%s.html" % (name,d.name.lower(),)).read().decode("utf-8")
-					except (IOError,OSError):
-						pass
+						ww = db.get_by(WikiPage, name=fn,parent=w)
+					except NoResult:
+						ww = WikiPage(fn,data)
+						ww.owner=u
+						ww.parent=w
+						ww.superparent=s
+						ww.mainpage=False
+						db.store.add(ww)
 					else:
-						try:
-							t = db.get_by(TemplateMatch, obj_id=s.id, discr=d.id, detail=detail)
-						except NoResult:
-							t = TemplateMatch(obj=s, discr=d.id, detail=detail, data=data)
-							db.store.add(t)
-						else:
-							if t.data != data:
-								print "Warning: AssocTemplate '%s/%s.html' differs." % (name,d.name.lower())
-								if replace_templates:
-									t.data = data
-					db.store.flush()
-
-			for addon in self.addons:
-				try: ai = addon.initsite
-				except AttributeError: pass
-				else: ai(replace_templates)
-
-				# Named templates
-				try: at = addon.TEMPLATES
-				except AttributeError: pass
-				else:
-					for t in at:
-						data = open(os.path.join(addon.__path__[0],t)).read().decode("utf-8")
-						fn = u"%s/%s" % (os.path.split(addon.__path__[0])[1],t)
-						try:
-							t = db.get_by(Template, name=fn,superparent=s)
-						except NoResult:
-							t = Template(name=fn,data=data)
-							t.superparent = s
-							t.owner = u
-							db.store.add(t)
-						else:
-							if t.data != data:
-								print "Warning: Template '%s' differs." % (fn,)
-								if replace_templates:
-									t.data = data
+						ww.superparent=s
+						ww.mainpage=False
+						if ww.data != data:
+							print "Warning: DocPage '%s' differs." % (fn,)
 							if replace_templates:
-								t.superparent = s
-								t.owner = u
-					db.store.flush()
+								ww.data = data
+	
+				db.store.flush()
 
-				# View templates
-				for cls in addon.__dict__.values():
-					if not(isinstance(cls,type) and issubclass(cls,Object)):
-						continue
-					if cls.__name__ not in addon.__ALL__:
-						continue
-					for t,n in TM_DETAIL.items():
+			if not domain:
+				for d in db.store.find(Discriminator):
+					for detail,name in ((TM_DETAIL_SUBPAGE,"view"),
+						(TM_DETAIL_DETAIL,"details"),
+						(TM_DETAIL_HIERARCHY,"hierarchy"),
+						(TM_DETAIL_RSS,"rss"),
+						(TM_DETAIL_STRING,"linktext"),
+						(TM_DETAIL_EMAIL,"email"),
+						(TM_DETAIL_SNIPPET,"snippet")):
 						try:
-							data = open(os.path.join(addon.__path__[0],"%s.%s.html" % (cls.__name__.lower(),n.lower()))).read().decode("utf-8")
+							data = open("pybble/templates/%s/%s.html" % (name,d.name.lower(),)).read().decode("utf-8")
 						except (IOError,OSError):
-							continue
+							pass
 						else:
 							try:
-								t = db.get_by(TemplateMatch, obj_id=s.id, discr=cls.cls_discr(), detail=t)
+								t = db.get_by(TemplateMatch, obj_id=s.id, discr=d.id, detail=detail)
 							except NoResult:
-								t = TemplateMatch(obj=s, discr=cls.cls_discr(), detail=t, data=data)
+								t = TemplateMatch(obj=s, discr=d.id, detail=detail, data=data)
 								db.store.add(t)
 							else:
 								if t.data != data:
-									print "Warning: AddOn-Template %s: '%s.%s.html' differs." % (addon.__name__, cls.__name__, n.lower())
+									print "Warning: AssocTemplate '%s/%s.html' differs." % (name,d.name.lower())
 									if replace_templates:
 										t.data = data
+						db.store.flush()
+
+				for addon in self.addons:
+					try: ai = addon.initsite
+					except AttributeError: pass
+					else: ai(replace_templates)
+
+					# Named templates
+					try: at = addon.TEMPLATES
+					except AttributeError: pass
+					else:
+						for t in at:
+							data = open(os.path.join(addon.__path__[0],t)).read().decode("utf-8")
+							fn = u"%s/%s" % (os.path.split(addon.__path__[0])[1],t)
+							try:
+								t = db.get_by(Template, name=fn,superparent=s)
+							except NoResult:
+								t = Template(name=fn,data=data)
+								t.superparent = s
+								t.owner = u
+								db.store.add(t)
+							else:
+								if t.data != data:
+									print "Warning: Template '%s' differs." % (fn,)
+									if replace_templates:
+										t.data = data
+								if replace_templates:
+									t.superparent = s
+									t.owner = u
+						db.store.flush()
+
+					# View templates
+					for cls in addon.__dict__.values():
+						if not(isinstance(cls,type) and issubclass(cls,Object)):
+							continue
+						if cls.__name__ not in addon.__ALL__:
+							continue
+						for t,n in TM_DETAIL.items():
+							try:
+								data = open(os.path.join(addon.__path__[0],"%s.%s.html" % (cls.__name__.lower(),n.lower()))).read().decode("utf-8")
+							except (IOError,OSError):
+								continue
+							else:
+								try:
+									t = db.get_by(TemplateMatch, obj_id=s.id, discr=cls.cls_discr(), detail=t)
+								except NoResult:
+									t = TemplateMatch(obj=s, discr=cls.cls_discr(), detail=t, data=data)
+									db.store.add(t)
+								else:
+									if t.data != data:
+										print "Warning: AddOn-Template %s: '%s.%s.html' differs." % (addon.__name__, cls.__name__, n.lower())
+										if replace_templates:
+											t.data = data
 
 			db.store.commit()
 			print "Your root user is named '%s' and has the password '%s'." % (u.username, u.password)
