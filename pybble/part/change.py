@@ -28,7 +28,7 @@ def viewer(request, obj, **args):
 	            .first()
 	p = db.filter(Change, And(Change.timestamp<obj.timestamp,
 	                         Change.parent==obj.parent))\
-	            .order_by(Desc(Change.timestamp)\
+	            .order_by(Desc(Change.timestamp))\
 	            .first()
 	return render_my_template(request, obj=obj, next=n, prev=p, detail=TM_DETAIL_PAGE, **args)
 
