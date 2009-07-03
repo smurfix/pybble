@@ -77,7 +77,7 @@ class Pybble(object):
 
 			from pybble.models import Site,User,Object,Discriminator,Template,TemplateMatch,VerifierBase,WikiPage,Storage,BinData,StaticFile
 			from pybble.models import Group,Permission, add_mime,mime_ext, Renderer
-			from pybble.models import TM_DETAIL_SUBPAGE, PERM_READ,PERM_ADMIN,PERM_ADD, TM_DETAIL_DETAIL, TM_DETAIL, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_STRING
+			from pybble.models import TM_DETAIL_SUBPAGE, PERM_READ,PERM_ADMIN,PERM_ADD, TM_DETAIL_DETAIL, TM_DETAIL, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_STRING, TM_DETAIL_PREVIEW
 			from pybble import utils
 			from werkzeug import Request
 
@@ -287,6 +287,7 @@ class Pybble(object):
 
 				db.store.flush()
 
+			if not domain:
 				def get_template(fn):
 					with file(os.path.join(TEMPLATE_PATH,fn)) as f:
 						try:
@@ -394,7 +395,7 @@ class Pybble(object):
 						(TM_DETAIL_RSS,"rss"),
 						(TM_DETAIL_STRING,"linktext"),
 						(TM_DETAIL_EMAIL,"email"),
-						(TM_DETAIL_SNIPPET,"snippet")):
+						(TM_DETAIL_SNIPPET,"snippet"),
 						(TM_DETAIL_PREVIEW,"preview")):
 						try:
 							data = open("pybble/templates/%s/%s.html" % (name,d.name.lower(),)).read().decode("utf-8")
