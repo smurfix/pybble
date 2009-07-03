@@ -548,6 +548,28 @@ class Pybble(object):
 
 		return action
 
+	def dump(self):
+		def action():
+			from pybble import utils
+			from pybble.models import BaseObject, SiteUsers,VerifierBase,MIMEtype
+			utils.local.request = Request({})
+			utils.local.store = Store(database)
+			for o in db.store.find(BaseObject).order_by(BaseObject.id):
+				print unicode(o).encode("utf-8")
+				if o.owner: print "  O",unicode(o.owner).encode("utf-8")
+				if o.parent: print "  P",unicode(o.parent).encode("utf-8")
+				if o.superparent: print "  S",unicode(o.superparent).encode("utf-8")
+			for c in (SiteUsers,VerifierBase):
+				for o in db.store.find(c):
+					print unicode(o).encode("utf-8")
+			for o in db.store.find(MIMEtype):
+				print unicode(o).encode("utf-8")
+				for e in o.exts:
+					print "  "+unicode(e).encode("utf-8")
+
+			
+		return action
+
 	def show(self):
 		from pybble.models import TM_DETAIL_EMAIL, TM_DETAIL_RSS
 		from pybble.render import jinja_env

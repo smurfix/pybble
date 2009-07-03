@@ -175,12 +175,12 @@ class BaseObject(Storm):
 		ref = self._get_ref()
 		if ref:
 			return unicode(ref)
-		return u'‹%s %s %s›' % (self.__class__.__name__, self.id,d.__name__)
+		return u'‹%s %s %s›' % (self.__class__.__name__, self.id, Discriminator.get(self.discriminator) .name)
 	def __str__(self):
 		ref = self._get_ref()
 		if ref:
 			return str(ref)
-		return '<%s %s %s>' % (self.__class__.__name__, self.id,d.__name__)
+		return '<%s %s %s>' % (self.__class__.__name__, self.id, Discriminator.get(self.discriminator).name)
 	__repr__ = __str__
 
 
@@ -873,7 +873,7 @@ class User(Object):
 
 			p = db.store.find(Permission, And(Or(Permission.inherit != no_inh, Permission.inherit == None), Or(*(Permission.owner_id == u.id for u in user.groups)), Permission.parent_id == obj.id, *pq)).order_by(Desc(Permission.right))
 			if DEBUG_ACCESS:
-				print p._get_select()
+				print "Checking",obj
 			p = p.first()
 			if p is not None:
 				p = p.right
@@ -1243,7 +1243,15 @@ class SiteUsers(Storm):
 	__storm_table__ = "site_users"
 	__storm_primary__ = "site_id","user_id"
 	site_id = Int()
+	site = Reference(site_id, BaseObject.id)
 	user_id = Int()
+	user = Reference(user_id, BaseObject.id)
+
+	def __unicode__(self):
+		return u'‹%s: %s in %s›' % (self.__class__.__name__, self.user,self.site)
+	def __str__(self):
+		return '<%s: %s in %s>' % (self.__class__.__name__, self.user,self.site)
+	__repr__ = __str__
 
 Site.users = ReferenceSet(Site.id, SiteUsers.site_id,SiteUsers.user_id,User.id)
 User.sites = ReferenceSet(User.id, SiteUsers.user_id,SiteUsers.site_id,Site.id)
@@ -1900,6 +1908,7 @@ class BinData(Object):
 		return res
 			
 	def __init__(self,name, ext=None,mimetype=None, content=None, parent=None, storage=None):
+		super(BinData,self).__init__()
 		if not parent: parent = current_request.site
 		if not storage: storage = parent.default_storage
 		if mimetype:
@@ -1913,7 +1922,6 @@ class BinData(Object):
 		self.name = name
 		self._content = content
 		self.hash = hash_data(content)
-		super(BinData,self).__init__()
 		self.owner = current_request.user
 		self.parent = parent
 		self.superparent = storage
