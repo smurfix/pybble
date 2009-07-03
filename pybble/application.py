@@ -236,36 +236,35 @@ class Pybble(object):
 			a.verified=False
 			db.store.flush()
 
-			if not domain:
-				for d in db.store.find(Discriminator):
-					if db.store.find(Permission,And(Permission.discr==d.id,Permission.right>=0)).count():
-						continue
-					p=Permission(u, s, d, PERM_ADMIN)
-					p.superparent=s
-					db.store.add(p)
-				db.store.flush()
+			for d in db.store.find(Discriminator):
+				if db.store.find(Permission,And(Permission.discr==d.id,Permission.right>=0)).count():
+					continue
+				p=Permission(u, s, d, PERM_ADMIN)
+				p.superparent=s
+				db.store.add(p)
+			db.store.flush()
 
-				dw = db.get_by(Discriminator, name="WikiPage")
-				ds = db.get_by(Discriminator, name="Site")
-				dp = db.get_by(Discriminator, name="Permission")
-				dk = db.get_by(Discriminator, name="Comment")
-				dt = db.get_by(Discriminator, name="WantTracking")
-				dd = db.get_by(Discriminator, name="BinData")
+			dw = db.get_by(Discriminator, name="WikiPage")
+			ds = db.get_by(Discriminator, name="Site")
+			dp = db.get_by(Discriminator, name="Permission")
+			dk = db.get_by(Discriminator, name="Comment")
+			dt = db.get_by(Discriminator, name="WantTracking")
+			dd = db.get_by(Discriminator, name="BinData")
 
-				for d in (dw,ds,dt,dd):
-					if db.store.find(Permission, And(Permission.discr==d.id,Permission.right>=0,Permission.owner_id==a.id)).count():
-						continue
-					p=Permission(a, s, d, PERM_READ)
-					p.superparent=s
-					db.store.add(p)
+			for d in (dw,ds,dt,dd):
+				if db.store.find(Permission, And(Permission.discr==d.id,Permission.right>=0,Permission.owner_id==a.id)).count():
+					continue
+				p=Permission(a, s, d, PERM_READ)
+				p.superparent=s
+				db.store.add(p)
 
-				for d,e in ((ds,dd),(dw,dd),(ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk),(ds,dt)):
-					if db.store.find(Permission,And(Permission.new_discr==e.id,Permission.discr==d.id)).count():
-						continue
-					p=Permission(u, s, d, PERM_ADD)
-					p.new_discr=e.id
-					p.superparent=s
-					db.store.add(p)
+			for d,e in ((ds,dd),(dw,dd),(ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk),(ds,dt)):
+				if db.store.find(Permission,And(Permission.new_discr==e.id,Permission.discr==d.id)).count():
+					continue
+				p=Permission(u, s, d, PERM_ADD)
+				p.new_discr=e.id
+				p.superparent=s
+				db.store.add(p)
 
 				# View templates
 				for addon in self.addons:
