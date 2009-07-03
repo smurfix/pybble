@@ -155,10 +155,10 @@ class Pybble(object):
 					db.store.add(st)
 			else:
 				st.superparent = sd
-			db.store.flush()
 			if s.storage is None:
 				s.storage = st
 				db.store.flush()
+			utils.local.request.site = s
 
 			u=s.users.find(User.username==u"root").one()
 			if u is None:
@@ -395,6 +395,7 @@ class Pybble(object):
 						(TM_DETAIL_STRING,"linktext"),
 						(TM_DETAIL_EMAIL,"email"),
 						(TM_DETAIL_SNIPPET,"snippet")):
+						(TM_DETAIL_PREVIEW,"preview")):
 						try:
 							data = open("pybble/templates/%s/%s.html" % (name,d.name.lower(),)).read().decode("utf-8")
 						except (IOError,OSError):

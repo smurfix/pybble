@@ -36,7 +36,7 @@ def do_login(request):
 	if request.method == 'POST' and form.validate():
 		# create new user and show the confirmation page
 		try:
-			u = db.get_by(User, username=form.username.data)
+			u = db.get_by(User, parent_id=current_request.site.id, username=form.username.data)
 		except NoResult:
 			u = None
 		else:

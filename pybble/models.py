@@ -705,6 +705,13 @@ class User(Object):
 			password = unicode(random_string(9))
 		self.password=password
 		self.first_login = datetime.utcnow()
+		try:
+			db.get_by(User, parent_id=current_request.site.id, username=username)
+		except (AttributeError,NoResult):
+			pass
+		else:
+			raise RuntimeError(u"User '%s' already exists in %s" %
+			(username,current_request.site))
 		db.store.add(self)
 
 		if not self.anon:
