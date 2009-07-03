@@ -20,6 +20,11 @@
     </table>
 	{{ form.hash|safe }}
     <input type="submit" value="{% if obj %}Ändern{% else %}Speichern{% endif %}" />
+    <input type="submit" value="Vorschau" name="preview" />
     </form>
+	{% if showme %}
+	<hr /><h2>Vorschau</h2>
+	{{ showme }}
+	{% endif %}
 
 {% endblock %}

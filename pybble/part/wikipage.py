@@ -4,7 +4,7 @@ from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from pybble.utils import current_request, make_permanent
 from pybble.render import url_for, render_template, expose, render_my_template
-from pybble.models import Site, WikiPage, TM_DETAIL_PAGE
+from pybble.models import Site, WikiPage, TM_DETAIL_PAGE, TM_DETAIL_PREVIEW
 from pybble.views import view_oid
 
 from pybble.database import db,NoResult
@@ -59,6 +59,8 @@ def newer(request, parent, name=None):
 	form = WikiEditForm(request.form, prefix="wiki")
 	form.parent = parent
 	if request.method == 'POST' and form.validate():
+		if "preview" in request.form:
+			return render_template('edit/wikipage.html', parent=parent, form=form, name=form.name.data, title_trace=[form.name.data], showme=render_my_template(request, obj, detail=TM_DETAIL_PREVIEW, mimetype=None, showme=form.page.data.replace("\r","")))
 		obj = WikiPage(form.name.data,form.page.data.replace("\r",""))
 		if isinstance(parent,WikiPage) and not parent.mainpage:
 			parent = parent.parent
@@ -83,6 +85,9 @@ def editor(request, obj=None):
 	form = WikiEditForm(request.form, prefix="wiki")
 	form.obj = obj
 	if request.method == 'POST' and form.validate():
+		if "preview" in request.form:
+			return render_template('edit/wikipage.html', obj=obj, form=form, name=form.name.data, title_trace=[form.name.data], showme=render_my_template(request, obj, detail=TM_DETAIL_PREVIEW, mimetype=None, showme=form.page.data.replace("\r","")))
+
 		if form.hash.data != md5("%s.%s.%s" % (settings.SECRET_KEY, obj.id, obj.data)).digest().encode('base64').strip('\n ='):
 			flash("Die Seite hat sich zwischenzeitlich geändert!",False)
 			return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))

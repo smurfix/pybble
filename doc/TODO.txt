@@ -8,13 +8,15 @@ Unordered list of things to do …
 
 * language in path
 
-## Wiki
+## Comments
 
 * add a preview button
 
 ## main features
 
 * add a blog
+
+* make Preview buttons work without a page reload
 
 ### Files, Images
 

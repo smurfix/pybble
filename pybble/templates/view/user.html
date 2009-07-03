@@ -31,12 +31,13 @@
 
   <h3>Änderungen</h3>
   <table><thead>
-    <tr><td>Object</td><td>Change</td></tr>
+    <tr><td>Object</td><td>Change</td><td>Time</td></tr>
 	</thead><tbody>
-  {%- for o in obj.changes %}
+  {%- for o in obj.tracks %}
     	<tr>
 			<td><a href="{{url_for("pybble.views.view_oid", oid=o.change_obj.oid()) }}">{{ o.change_obj }}</a></td>
 			<td><a href="{{url_for("pybble.views.view_oid", oid=o.oid()) }}">{{ o}}</a></td>
+			<td>{{ o.timestamp }}</td>
 		</tr>
   {% endfor -%}
     </tbody></table>
