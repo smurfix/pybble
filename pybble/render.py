@@ -321,8 +321,8 @@ def send_mail(to='', template='', **context):
 		context["id"+str(x)] = "%d.%s%d@%s" % (time(),random_string(10),x,current_request.site.domain)
 	
 	mailServer = smtplib.SMTP(settings.MAILHOST)
-	mailServer.sendmail(context["site"].owner.email, to, jinja_env.get_template(template).render(**context))
-	db.it(mailServer, )
+	mailServer.sendmail(context["site"].owner.email, to, jinja_env.get_template(template).render(**context).encode("utf-8"))
+	mailServer.quit()
 
 
 

@@ -339,6 +339,10 @@ class Object(Storm):
 	
 	#all_children = relation('Object', backref=backref("superparent", remote_side=Object.id)) 
 
+	@property
+	def changes(self):
+		return db.store.find(Change, Change.parent_id == self.id)
+
 	def has_children(self, discr=None):
 		if discr:
 			return db.store.execute(Select(Count(), where=And(BaseObject.parent_id == self.id, BaseObject.discriminator == discr))).get_one()[0]
@@ -711,6 +715,14 @@ class User(Object):
 			else:
 				db.store.add(m)
 	
+	@property
+	def tracks(self):
+		return db.store.find(Tracker, Tracker.owner_id==self.id).order_by(Desc(Tracker.timestamp))
+
+	@property
+	def trackers(self):
+		return db.store.find(WantTracking, WantTracking.owner_id==self.id)
+
 	@property
 	def anon(self):
 		return self.password == ""
@@ -1562,8 +1574,6 @@ class Change(Object):
 	def change_obj(self):
 		return self.parent
 
-Object.changes = ReferenceSet(Change.parent_id,BaseObject.id)
-
 
 class Delete(Object):
 	"""\
@@ -1792,9 +1802,6 @@ Email: %s
 	   db.get_by(Discriminator,id=self.discr).name if self.discr is not None else "None",
 	   " ".join(wh) if wh else "-", \
 	   "yes" if self.email else "no")
-
-User.changes = ReferenceSet(User.id, Tracker.owner_id, order_by=Desc(Tracker.timestamp))
-User.trackers = ReferenceSet(User.id, WantTracking.owner_id)
 
 
 def add_mime(name,typ,subtyp,ext):

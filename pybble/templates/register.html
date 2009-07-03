@@ -2,7 +2,7 @@
 {% from 'form.html' import show, showb %}
 
 {% block body %}
-  <h2>Login</h2>
+  <h2>Anmeldung</h2>
     <form method="post" action="{{ action }}">
     <table>
 	  {{ show(form.username) }}
@@ -11,6 +11,6 @@
 	  {{ show(form.email) }}
     </table>
 	{{ form.next|safe }}
-    <input type="submit" value="Login" />
+    <input type="submit" value="Anmelden" />
     </form>
 {% endblock %}

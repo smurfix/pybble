@@ -178,7 +178,7 @@ def do_logout(request):
 		return redirect(request.args.get("next",None) or url_for("pybble.views.mainpage"))
 	else:
 		request.session.pop('uid', None)
-		request.user = get_anonymous_user(request.site)
+		request.user = request.site.anon_user
 		flash(u'Du hast dich erfolgreich abgemeldet.', True)
 		return redirect(url_for("pybble.views.mainpage"))
 

@@ -102,7 +102,7 @@ def add_user(request):
 #				session=request.session)
 #
 #		request.session.pop('uid', None)
-#		user = get_anonymous_user()
+#		user = request.site.anon_user
 
 	now = datetime.utcnow()
 	if user.cur_login is None or user.cur_login < now-timedelta(0,600):

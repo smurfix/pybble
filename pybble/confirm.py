@@ -5,6 +5,7 @@ from pybble.flashing import flash
 from pybble.models import Verifier, VerifierBase, obj_get
 from pybble.database import db,NoResult
 from wtforms import Form, TextField, validators
+from wtforms.validators import ValidationError
 from werkzeug.exceptions import NotFound
 
 ###
@@ -13,7 +14,7 @@ from werkzeug.exceptions import NotFound
 
 def code_exists(form, field):
 	try:
-		v = db.get_by(Verifier, code=field.data)
+		v = db.get_by(Verifier, code=str(field.data))
 	except NoResult:
 		raise ValidationError(u"Diesen Code kenne ich nicht.")
 	else:
@@ -33,7 +34,7 @@ def confirm(request, code=None):
 			return render_template('confirm.html', form=form, title_trace=[u"Bestätigung"])
 		code=form.code.data.lower()
 
-	v=db.get_by(Verifier, code=code)
+	v=db.get_by(Verifier, code=str(code))
 	if v.expired:
 		flash(u"Die Anfrage ist schon zu alt. Bitte schicke sie nochmal ab!")
 		return v.retry()
