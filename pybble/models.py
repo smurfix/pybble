@@ -85,7 +85,7 @@ class Discriminator(Storm,DbRepr):
 		if isinstance(discr, Discriminator):
 			return discr
 		elif isinstance(discr, basestring):
-			return db.get_by(Discriminator, name=discr)
+			return db.get_by(Discriminator, name=str(discr))
 		elif discr is None and obj is not None:
 			return db.get_by(Discriminator, id=obj.discriminator)
 		elif isinstance(discr, (int,long)):
@@ -698,6 +698,17 @@ class User(Object):
 	feed_pass = Unicode(allow_none=True)
 	feed_read = DateTime(allow_none=True)
 
+	@property
+	def data(self):
+		res="username: %s\n" % (self.username,)
+		if self.first_name or self.last_name:
+			res += self.first_name or ""
+			res += " " if self.first_name and self.last_name else ""
+			res += self.last_name or ""
+			res += "\n"
+		res += "First login: %s\nLast login: %s\n" % (self.first_login,self.last_login)
+		return res
+
 	def __init__(self, username, password=None):
 		super(User,self).__init__()
 		self.username=username
@@ -961,7 +972,7 @@ class User(Object):
 #		return db.filter_by(UserTracker,owner=self)\
 #		                    .filter(UserTracker.tracker.timestamp > datetime.utcnow() - timedelta(self.feed_age,0))\
 #		                    .order_by(UserTracker.id.desc())
-		for obj in db.store.find(UserTracker, UserTracker.owner == self, order_by=Desc(UserTracker.id)):
+		for obj in db.store.find(UserTracker, UserTracker.owner_id == self.id).order_by(Desc(UserTracker.id)):
 			if obj.parent.timestamp < latest:
 				return
 			yield obj

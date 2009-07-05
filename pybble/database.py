@@ -61,6 +61,8 @@ def _Filter(cls, *args, **kw):
 
 def _FilterBy(cls, **kw):
 	args = _ArgsList(cls,kw)
+	if not args:
+		return db.store.find(cls)
 	return db.store.find(cls, And(*args))
 
 #	res = 0

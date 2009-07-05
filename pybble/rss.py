@@ -49,7 +49,7 @@ def config_rss(request):
 	if request.method == 'POST' and form.validate():
 		user.feed_age = int(form.age.data)
 		if form.new_id.data or not user.feed_pass:
-			user.feed_pass = random_string(30)
+			user.feed_pass = unicode(random_string(30))
 		flash(u"Gespeichert.",True)
 		return redirect(url_for("pybble.views.mainpage"))
 

@@ -4,7 +4,7 @@ from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from pybble.utils import current_request, make_permanent
 from pybble.render import url_for, expose, render_template, send_mail
-from pybble.models import User, Verifier, VerifierBase
+from pybble.models import User, Verifier, VerifierBase, SiteUsers
 from pybble.database import db,NoResult
 from pybble.flashing import flash
 from pybble.session import logged_in
@@ -12,6 +12,7 @@ from wtforms import Form, BooleanField, TextField, PasswordField, HiddenField, v
 from wtforms.validators import ValidationError
 from jinja2 import Markup
 from datetime import datetime,timedelta
+from storm.locals import And
 
 ###
 ### Login
@@ -36,11 +37,15 @@ def do_login(request):
 	if request.method == 'POST' and form.validate():
 		# create new user and show the confirmation page
 		try:
-			u = db.get_by(User, parent_id=current_request.site.id, username=form.username.data)
+			u = db.store.find(User, And(User.username == form.username.data, SiteUsers.user_id == User.id, SiteUsers.site_id == current_request.site.id)).one()
+			if u is None:
+				raise NoResult
 		except NoResult:
+			print "No user",form.username.data,current_request.site
 			u = None
 		else:
 			if u.password != form.password.data:
+				print "no passwd",u,u.password,form.password.data
 				u = None
 		if u:
 			logged_in(request,u)

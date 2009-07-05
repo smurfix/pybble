@@ -7,7 +7,7 @@ from pybble.utils import STATIC_PATH, local, local_manager, \
 	 TEMPLATE_PATH, AuthError, all_addons
 from pybble.render import expose_map, url_map, send_mail, expose, TemplateNotFound
 from pybble.database import db, NoResult, dsn, database
-from storm.locals import Store,And,Or
+from storm.locals import Store,And,Or,Not
 
 import pybble.models
 import pybble.admin
@@ -486,16 +486,16 @@ class Pybble(object):
 			for s in db.filter_by(Site,**filter):
 				setup_code_env(s)
 				if user:
-					u = db.store.filter_by(User, site=s,name=user).value()
+					u = db.get_by(User, parent_id=s.id, name=user)
 				else:
 					u = None
-				tq = db.store.filter_by(Tracker, site=s)
+				tq = [ Tracker.superparent_id == s.id ]
 				if s.tracked:
-					tq = tq.filter(Tracker.timestamp>s.tracked)
+					tq.append(Tracker.timestamp > s.tracked)
 				if u:
-					tq = tq.filter_by(owner=u)
+					tq.append(Tracker.owner == u)
 
-				for t in tq.order_by(Tracker.timestamp):
+				for t in db.store.find(Tracker,And(*tq)).order_by(Tracker.timestamp):
 					o=t.change_obj
 					if o is None:
 						print "ChangeObj??",t
@@ -503,7 +503,7 @@ class Pybble(object):
 					wq=Or(WantTracking.discr==None,WantTracking.discr==o.discriminator)
 					processed = set()
 					while o:
-						wantq=And(wq, WantTracking.parent==o)
+						wantq=And(wq, WantTracking.parent_id==o.id)
 						if processed:
 							wantq=And(wantq, Not(Or(*( WantTracking.owner_id == i for i in processed))))
 
@@ -524,7 +524,7 @@ class Pybble(object):
 								if not w.track_new: continue
 								inew=t.parent
 
-							if db.store.filter_by(UserTracker, owner=w.owner, parent=t).count():
+							if db.filter_by(UserTracker, owner_id=w.owner_id, parent_id=t.id).count():
 								continue
 							ut=UserTracker(user=w.owner,tracker=t,want=w)
 							db.store.add(ut)
