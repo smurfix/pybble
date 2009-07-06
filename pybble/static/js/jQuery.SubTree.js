@@ -86,16 +86,16 @@ if(jQuery) (function($){
 				}
 				function clickLoad(c) {
 					var div = $(c).children('div.content')
-					if( ! div.length ) {
+					if( ! div.length || ! div.children().length) {
 						$(c).addClass('wait_content');
 						$.post(o.cscript, { dir: $(c).attr('rel') }, function(data) {
-							div = document.createElement("div");
-							$(div).addClass("content");
+							d = document.createElement("div");
+							$(d).addClass("content");
 							$(c).removeClass('wait_content');
-							$(div).css("display","hidden");
-							$(div).html(data);
-							$(c).children('div.content').filter(":first").replaceWith(div);
-							$(c).children('div.content:hidden').slideDown({ duration: o.expandSpeed, easing: o.expandEasing });
+							$(d).css("display","hidden");
+							$(d).html(data);
+							$(div).filter(":first").replaceWith(div);
+							$(c).children('div.content :hidden').slideDown({ duration: o.expandSpeed, easing: o.expandEasing });
 							// $(c).children('div.content:hidden').show();
 						});
 					} else if (div.filter(":hidden").length) {
