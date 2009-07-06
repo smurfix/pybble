@@ -68,17 +68,17 @@ if(jQuery) (function($){
 						// Expand
 						showTree( $(c) );
 						$(c).removeClass('collapsed').addClass('expanded');
-						if( ! div.length || div.filter(":hidden").length) clickLoad(c);
+						if( ! div.length || ! div.children().length || div.filter(":hidden").length) clickLoad(c);
 					} else if( $(c).hasClass('expanded') ) {
 						// Collapse
 						$(c).children('UL').slideUp({ duration: o.collapseSpeed, easing: o.collapseEasing });
 						// $(c).children('UL').hide();
 						$(c).removeClass('expanded').addClass('collapsed');
-						if( div.length && ! div.filter(":hidden").length ) clickLoad(c);
+						if( div.length && div.children().length && ! div.filter(":hidden").length ) clickLoad(c);
 					} else if( $(c).hasClass('mixed') ) {
 						// expand content
 						$(c).removeClass('mixed').addClass('expanded');
-						if( ! div.length || div.filter(":hidden").length) clickLoad(c);
+						if( ! div.length || ! div.children().length || div.filter(":hidden").length) clickLoad(c);
 					} else {
 						return true;
 					}
