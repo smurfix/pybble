@@ -116,7 +116,7 @@ database: %s
 
 	@property
 	def num_reg_mitglieder(self):
-		return db.store.filter_by(Mitglied, parent=self, aktiv=True).count()
+		return db.store.filter_by(Mitglied, parent_id=self.id, aktiv=True).count()
 
 	@classmethod
 	def html_new(cls,parent,name=None):
