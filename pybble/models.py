@@ -453,6 +453,16 @@ class Object(Storm):
 			for m in db.filter_by(t.table, **q):
 				yield m
 
+	def member_of(self,obj):
+		for t in self._member_rules:
+			q = dict(t.args)
+			q[t.src] = self
+			q[t.dst] = obj
+			for m in db.filter_by(t.table, **q):
+				return not getattr(m,"excluded",False)
+		return False
+
+
 	@property
 	def members(self):
 		for t in self._member_rules:
