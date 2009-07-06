@@ -93,7 +93,7 @@ class Pybble(object):
 					db.store.add(r)
 				else:
 					if r.cls != rc:
-						print "Warning: Renderer '%s' differs (%s | %s)." % (rn,r.cls,rc)
+						print "Warning: Renderer %d '%s' differs (%s | %s)." % (r.id,rn,r.cls,rc)
 						if replace_templates:
 							r.cls = rc
 
@@ -211,7 +211,7 @@ class Pybble(object):
 						else:
 							c = sf.content
 							if content != sf.content:
-								print "Warning: StaticFile '%s' differs." % (dp,)
+								print "Warning: StaticFile %d '%s' differs." % (sf.id,dp)
 								if replace_templates:
 									sf.bindata.record_deletion("replaced by update")
 									sf.record_deletion("replaced by update")
@@ -305,7 +305,7 @@ class Pybble(object):
 						db.store.add(t)
 					else:
 						if t.data != data:
-							print "Warning: Template '%s' differs." % (fn,)
+							print "Warning: Template %d '%s' differs." % (t.id,fn)
 							if replace_templates:
 								t.data = data
 						if replace_templates:
@@ -346,7 +346,7 @@ class Pybble(object):
 					db.store.add(w)
 				else:
 					if w.data != data:
-						print "Warning: DocPage 'TOC' differs."
+						print "Warning: DocPage %d 'TOC' differs." % (w.id,)
 						if replace_templates:
 							w.data = data
 					if not w.superparent:
@@ -381,7 +381,7 @@ class Pybble(object):
 						ww.superparent=s
 						ww.mainpage=False
 						if ww.data != data:
-							print "Warning: DocPage '%s' differs." % (fn,)
+							print "Warning: DocPage %d '%s' differs." % (ww.id,fn)
 							if replace_templates:
 								ww.data = data
 	
@@ -398,7 +398,7 @@ class Pybble(object):
 						(TM_DETAIL_SNIPPET,"snippet"),
 						(TM_DETAIL_PREVIEW,"preview")):
 						try:
-							data = open("pybble/templates/%s/%s.html" % (name,d.name.lower(),)).read().decode("utf-8")
+							data = open("pybble/templates/%s/%s.html" % (name,d.name.lower())).read().decode("utf-8")
 						except (IOError,OSError):
 							pass
 						else:
@@ -409,7 +409,7 @@ class Pybble(object):
 								db.store.add(t)
 							else:
 								if t.data != data:
-									print "Warning: AssocTemplate '%s/%s.html' differs." % (name,d.name.lower())
+									print "Warning: AssocTemplate %d '%s/%s.html' differs." % (t.id,name,d.name.lower())
 									if replace_templates:
 										t.data = data
 						db.store.flush()
@@ -435,7 +435,7 @@ class Pybble(object):
 								db.store.add(t)
 							else:
 								if t.data != data:
-									print "Warning: Template '%s' differs." % (fn,)
+									print "Warning: Template %d '%s' differs." % (t.id,fn)
 									if replace_templates:
 										t.data = data
 								if replace_templates:
@@ -462,7 +462,7 @@ class Pybble(object):
 									db.store.add(t)
 								else:
 									if t.data != data:
-										print "Warning: AddOn-Template %s: '%s.%s.html' differs." % (addon.__name__, cls.__name__, n.lower())
+										print "Warning: AddOn-Template %d %s: '%s.%s.html' differs." % (t.id, addon.__name__, cls.__name__, n.lower())
 										if replace_templates:
 											t.data = data
 
