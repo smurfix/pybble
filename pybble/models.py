@@ -1985,7 +1985,10 @@ class BinData(Object):
 	@property
 	def content(self):
 		if not hasattr(self,"_content"):
-			self._content = open(self.path).read()
+			try:
+				self._content = open(self.path).read()
+			except IOError:
+				self._content = open(self.old_path).read()
 		return self._content
 
 	@property
