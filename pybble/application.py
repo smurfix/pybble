@@ -237,7 +237,7 @@ class Pybble(object):
 			db.store.flush()
 
 			for d in db.store.find(Discriminator):
-				if db.store.find(Permission,And(Permission.discr==d.id,Permission.right>=0, Permission.parent_id==s.id)).count():
+				if db.store.find(Permission,And(Permission.discr==d.id,Permission.right>=PERM_ADMIN, Permission.parent_id==s.id)).count():
 					continue
 				p=Permission(u, s, d, PERM_ADMIN)
 				p.superparent=s
