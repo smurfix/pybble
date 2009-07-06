@@ -2,4 +2,4 @@
   {% if can_add(d_comment) %}
   <div class="new"><a href="{{ url_for("pybble.views.new_oid",oid=obj.oid(),discr=d_comment) }}">antworten</a></div>
   {% endif %}
-  {{ obj.data|render }}
+  {{ obj.data|markdown }}
