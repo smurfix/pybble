@@ -528,6 +528,10 @@ class Object(Storm):
 			Other objects return themselves.
 			"""
 		return self
+	
+	@property
+	def last_change(self):
+		return db.store.find(Change, Change.parent_id == self.id).order_by(Desc(Change.timestamp)).first()
 
 	@property
 	def pso(self): # parent/super/owner

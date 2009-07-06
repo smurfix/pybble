@@ -1,6 +1,11 @@
 {{ obj.data|markdown }}
+<hr />
+{%- set ch = obj.last_change %}
+{%- if ch %}
+<p><i><a href="{{ url_for("pybble.views.view_oid", oid=ch.oid()) }}">Letzte Änderung</a>: {{ ch.timestamp }} von <a href="{{ url_for("pybble.views.view_oid", oid=ch.owner.oid()) }}">{{ ch.owner.username }}</a></i></p>
+{%- endif %}
 {% if obj.mainpage and obj.has_children(d_wikipage) %}
-<hr /><h4>Untergeordnete Seiten:</h4>
+<h4>Untergeordnete Seiten:</h4>
 <p>
 {%-   set n=0 %}
 {%-   for o in obj.all_children(d_wikipage) %}
