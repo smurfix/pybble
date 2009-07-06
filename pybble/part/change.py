@@ -24,11 +24,11 @@ from storm.locals import Desc
 
 def viewer(request, obj, **args):
 	n = db.filter(Change, And(Change.timestamp>obj.timestamp,
-	                         Change.parent==obj.parent))\
+	                         Change.parent_id==obj.parent_id))\
 	            .order_by(Change.timestamp)\
 	            .first()
 	p = db.filter(Change, And(Change.timestamp<obj.timestamp,
-	                         Change.parent==obj.parent))\
+	                         Change.parent_id==obj.parent_id))\
 	            .order_by(Desc(Change.timestamp))\
 	            .first()
 	return render_my_template(request, obj=obj, next=n, prev=p, detail=TM_DETAIL_PAGE, **args)
