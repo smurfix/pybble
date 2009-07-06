@@ -609,7 +609,9 @@ class Pybble(object):
 			def Do(stmt):
 				db.store.execute(stmt)
 
+			local.store = Store(database)
 			execfile(script, globals(),locals())
+			db.store.commit()
 
 		return action
 
