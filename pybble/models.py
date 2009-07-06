@@ -921,9 +921,9 @@ class User(Object):
 				print >>sys.stderr, "Checking",obj
 			p = p.first()
 			if p is not None:
-				p = p.right
 				if DEBUG_ACCESS:
 					print >>sys.stderr,p
+				p = p.right
 				return p
 
 			no_inh = False
