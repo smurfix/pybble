@@ -94,7 +94,7 @@ if(jQuery) (function($){
 							$(c).removeClass('wait_content');
 							$(div).css("display","hidden");
 							$(div).html(data);
-							$(c).children('a.content').filter(":first").after(div);
+							$(c).children('div.content').filter(":first").replaceWith(div);
 							$(c).children('div.content:hidden').slideDown({ duration: o.expandSpeed, easing: o.expandEasing });
 							// $(c).children('div.content:hidden').show();
 						});
