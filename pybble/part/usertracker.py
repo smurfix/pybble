@@ -4,7 +4,7 @@ from pybble.utils import current_request
 from pybble.render import render_template, expose
 from pybble.models import UserTracker
 
-from storm.locals import And
+from storm.locals import And,Desc
 from datetime import datetime,timedelta
 from time import time
 
