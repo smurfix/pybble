@@ -252,7 +252,7 @@ def verein_unassoc(form, field):
 
 def check_unassoc(form, user):
 	try:
-		m = db.store.get_by(Mitglied, parent=form.parent, owner=user)
+		m = db.get_by(Mitglied, parent=form.parent, owner=user)
 	except NoResult:
 		pass
 	else:
