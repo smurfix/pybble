@@ -11,8 +11,8 @@ test -n "$newrev"
 settings=$(tempfile)
 (
   cat $DEST/localsettings.py  || true
-  git-ls-tree $newrev settings.py | while read a b c d ; do
-	git-cat-file blob $c
+  git ls-tree $newrev settings.py | while read a b c d ; do
+	git cat-file blob $c
   done
 ) | sed -ne 's/^\([A-Z_]*\)=\([0-9][0-9]*\|"[^"]*"\)/\1=${\1:-\2}/p' > $settings
 . $settings
@@ -28,9 +28,9 @@ fi
 export GIT_DIR="$(cd "$GIT_DIR"; pwd)"
 
 version=$(tempfile)
-git-ls-tree $newrev $VFILE | while read a b c d ; do
+git ls-tree $newrev $VFILE | while read a b c d ; do
 	test -s $version && exit 1
-	git-cat-file blob $c > $version
+	git cat-file blob $c > $version
 done
 test -s $version || exit 1
 VERSION=$(cat $version)
@@ -41,9 +41,9 @@ cd "$DEST"
 
 # Unpack source
 
-git-archive --format=tar $newrev | \
+git archive --format=tar $newrev | \
 	tar -x -f - --anchored --exclude=$VFILE
-comm -23 <(find * -type f -print |sort) <(git-ls-tree -r --name-only $newrev |sort) | fgrep -v -x localsettings.py | fgrep -v -x pybble.db | \
+comm -23 <(find * -type f -print |sort) <(git ls-tree -r --name-only $newrev |sort) | fgrep -v -x localsettings.py | fgrep -v -x pybble.db | \
 	while read f ; do rm -f "$f" ; done
 
 # update version
