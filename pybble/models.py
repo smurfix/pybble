@@ -780,9 +780,11 @@ class User(Object):
 			db.store.add(b)
 		else:
 			s.visited = datetime.utcnow()
+			if not s.superparent: # bugfix
+				s.superparent = current_request.site
 	
 	def last_visited(self,cls=None):
-		q = { "owner":self }
+		q = { "owner":self, "superparent":current_request.site }
 		if cls:
 			q["discr"] = cls.cls_discr()
 		try:
@@ -793,7 +795,7 @@ class User(Object):
 			return r.parent
 	
 	def all_visited(self, cls=None):
-		q = { "owner":self }
+		q = { "owner":self, "superparent":current_request.site }
 		if cls:
 			q["discr"] = cls.cls_discr()
 		return db.filter_by(Breadcrumb, **q).order_by(Desc(Breadcrumb.visited))
@@ -1517,7 +1519,8 @@ class Breadcrumb(Object):
 		Track page visits.
 		Owner: the user who did it.
 		Parent: The page thus visited.
-		discr: mirrors parent.discr for easier seekage
+		Superparent: The site.
+		discr: mirrors parent.discr, for easier selectage
 		"""
 	__storm_table__ = "breadcrumbs"
 	_discriminator = 14
@@ -1532,6 +1535,7 @@ class Breadcrumb(Object):
 		self.discr = obj.discriminator
 		self.owner = user
 		self.parent = obj
+		self.superparent = current_request.site
 		#self.seq = 1+(db.store.execute(select(Max(Breadcrumb.seq), And((Breadcrumb.owner==user,Breadcrumb.discr==self.discr))).scalar() or 0)
 
 	def __unicode__(self):

@@ -176,7 +176,6 @@ def view_oid_exp(request, oid, details):
 def view_oid(request, oid, **args):
 	obj = obj_get(oid)
 	request.user.will_read(obj)
-	request.user.visited(obj)
 
 	try: return tryAddOn(obj,"html_view", **args)
 	except NoRedir: pass

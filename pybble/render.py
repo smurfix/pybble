@@ -208,6 +208,7 @@ def render_my_template(request, obj, detail=None, mimetype=NotGiven, **context):
 		detail = TM_DETAIL_PAGE
 	if detail == TM_DETAIL_PAGE:
 		request.user.will_read(obj)
+		request.user.visited(obj)
 	else:
 		request.user.will_list(obj)
 
