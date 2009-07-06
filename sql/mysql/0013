@@ -1,0 +1,13 @@
+try:
+	Do("""ALTER TABLE bindata
+    ADD COLUMN `storage_seq` int(11) NOT NULL AUTO_INCREMENT DEFAULT NULL,
+    ADD UNIQUE KEY `storage_seq`(`storage_seq`)""")
+except Exception:
+	pass
+
+from pybble.models import BinData
+from pybble.database import db,database
+from storm.locals import Store
+db.store=Store(database)
+for b in db.store.find(BinData, BinData.superparent_id != None):
+	b._move_old()

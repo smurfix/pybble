@@ -28,12 +28,14 @@ CREATE TABLE `bindata` (
   `name` varchar(50) NOT NULL,
   `hash` tinyblob,
   `timestamp` timestamp NOT NULL default CURRENT_TIMESTAMP,
+  `storage_id` int(11) NOT NULL auto_increment,
   PRIMARY KEY  (`id`),
+  UNIQUE KEY `storage_id` (`storage_id`),
   UNIQUE KEY `hash` (`hash`(255)),
   KEY `bindata_mimeid` (`mime_id`),
   CONSTRAINT `bindata_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`),
   CONSTRAINT `bindata_mimeid` FOREIGN KEY (`mime_id`) REFERENCES `mimetype` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -284,7 +286,7 @@ CREATE TABLE `obj` (
   CONSTRAINT `obj_owner` FOREIGN KEY (`owner_id`) REFERENCES `obj` (`id`),
   CONSTRAINT `obj_parent` FOREIGN KEY (`parent_id`) REFERENCES `obj` (`id`),
   CONSTRAINT `obj_super` FOREIGN KEY (`superparent_id`) REFERENCES `obj` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=259 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=280 DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -628,4 +630,4 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2009-07-06  9:51:28
+-- Dump completed on 2009-07-06 13:30:59

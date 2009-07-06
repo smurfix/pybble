@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime,timedelta
-from storm.locals import RawStr,Unicode,Int,Bool, Reference,ReferenceSet,Proxy,Select,Storm,DateTime,Desc, And,Or, Count
+from storm.locals import RawStr,Unicode,Int,Bool, Reference,ReferenceSet,Proxy,Select,Storm,DateTime,Desc, And,Or, Count, AutoReload
 from storm.properties import PropertyPublisherMeta
 from storm.references import Relation
 from pybble.utils import random_string, current_request, AuthError
@@ -1300,7 +1300,6 @@ class SiteUsers(Storm):
 
 Site.users = ReferenceSet(Site.id, SiteUsers.site_id,SiteUsers.user_id,User.id)
 User.sites = ReferenceSet(User.id, SiteUsers.user_id,SiteUsers.site_id,Site.id)
-Site.storage = Reference(Site.storage_id, Storage.id)
 
 class Template(Object):
 	"""
@@ -1921,7 +1920,6 @@ class MIMEext(Storm):
 	__repr__ = __str__
 
 
-class _ContentExists: pass
 def hash_data(content):
 	from base64 import b64encode
 	try:
@@ -1942,6 +1940,7 @@ class BinData(Object):
 	_no_crumbs = True
 	_proxy = { "storage":"superparent" }
 
+	storage_seq = Int()
 	mime_id = Int(allow_none=False)
 	mime = Reference(mime_id,MIMEtype.id)
 	name = Unicode(allow_none=False)
@@ -1985,9 +1984,9 @@ class BinData(Object):
 
 	@property
 	def content(self):
-		if hasattr(self,"_content"):
-			return self._content
-		return open(self.path).read()
+		if not hasattr(self,"_content"):
+			self._content = open(self.path).read()
+		return self._content
 
 	@property
 	def mimetype(self):
@@ -2002,7 +2001,7 @@ class BinData(Object):
 		except Exception:
 			return "???"
 
-	def _get_chars(self):
+	def _old_get_chars(self):
 		if self.id is None:
 			db.store.flush()
 			if self.id is None:
@@ -2025,6 +2024,39 @@ class BinData(Object):
 			fc[-1] += "."+self.mime.ext
 		return fc
 
+	def _get_chars(self):
+		if self.storage_seq is None:
+			db.store.flush()
+			self.storage_seq = AutoReload
+			if self.storage_seq is None:
+				return "???"
+		id = self.storage_seq-1
+		chars = "23456789abcdefghjkmnopqrstuvwxyz"
+		midchars = "abcdefghjkmnopq"
+		fc = []
+		flast = chars[id % len(chars)]
+		id = id // len(chars)
+		while id:
+			c = chars[id % len(midchars)]
+			id = id // len(midchars)
+			c = chars[id % len(midchars)] + c
+			id = id // len(midchars)
+			fc.insert(0,c)
+		fc.append("_")
+		fc.append(self.name+"_"+self.hash[0:10]+flast)
+		if self.mime.ext:
+			fc[-1] += "."+self.mime.ext
+		return fc
+
+	def _move_old(self):
+		op = self.old_path
+		np = self.path
+		if op != np:
+			try:
+				os.rename(op,np)
+			except OSError:
+				pass
+
 	@property
 	def path(self):
 		fn = self.superparent.path
@@ -2034,6 +2066,12 @@ class BinData(Object):
 			os.makedirs(dir)
 		fn = os.path.join(dir,fc[-1])
 		return fn
+
+	@property
+	def old_path(self):
+		fn = self.superparent.path
+		fc = self._old_get_chars()
+		return os.path.join(fn,*fc)
 
 	def get_absolute_url(self):
 		fc = self._get_chars()
@@ -2053,9 +2091,9 @@ class BinData(Object):
 #		self._save_content()
 
 	def _save_content(self):
-		if self._content is _ContentExists:
-			return
 		p = self.path
+		if os.path.exists(p):
+			raise RuntimeError("File exists")
 		try:
 			open(p,"w").write(self.content)
 		except BaseException:
