@@ -16,6 +16,9 @@ from wtforms.validators import ValidationError
 from time import time
 from datetime import datetime,timedelta
 from pybble import _settings as settings
+import sys
+
+DEBUG_ACCESS = getattr(settings,"ACCESS_DEBUG",False)
 
 url_map = Map([Rule('/static/<file>', endpoint='static', build_only=True)])
 
@@ -335,6 +338,8 @@ for a,b in PERM.iteritems():
 			u = getattr(current_request,"user",None)
 			if not u:
 				raise ValidationError(u"Kein Benutzer")
+			if DEBUG_ACCESS:
+				print >>sys.stderr, "valid can_"+b+":", u,obj,a
 			if (u.can_do(obj, discr=obj, want=a) < a) \
 				if (a > PERM_NONE) \
 				else (u.can_do(obj, discr=obj, want=a) != a):
@@ -345,6 +350,8 @@ for a,b in PERM.iteritems():
 			u = getattr(current_request,"user",None)
 			if not u:
 				raise ValidationError(u"Kein Benutzer")
+			if DEBUG_ACCESS:
+				print >>sys.stderr, "valid can_self_"+b+":", u,obj,a
 			if u is obj:
 				return
 			if (u.can_do(obj, discr=obj, want=a) < a) \
@@ -362,6 +369,8 @@ for a,b in PERM.iteritems():
 			if isinstance(obj,basestring):
 				obj = obj_get(obj)
 			u = getattr(current_request,"user",None)
+			if DEBUG_ACCESS:
+				print >>sys.stderr, "can_do_"+b+":", u,obj,discr,a
 			if not u:
 				return False
 			if a > PERM_NONE:
@@ -378,6 +387,8 @@ for a,b in PERM.iteritems():
 			if isinstance(obj,basestring):
 				obj = obj_get(obj)
 			u = getattr(current_request,"user",None)
+			if DEBUG_ACCESS:
+				print >>sys.stderr, "will_do_"+b+":", u,obj,a
 			if not u:
 				raise AuthError(obj,a)
 			if a > PERM_NONE:

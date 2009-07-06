@@ -1140,6 +1140,8 @@ Inherited: %s
 for a,b in PERM.iteritems():
 	def can_do_closure(a,b):
 		def can_do(self, obj, discr=None, new_discr=None):
+			if DEBUG_ACCESS:
+				print >>sys.stderr, "can_"+b+":", self,obj,discr,new_discr
 			if a > PERM_NONE:
 				return self.can_do(obj, discr=discr, new_discr=new_discr, want=a) >= a
 			else:
@@ -1148,6 +1150,8 @@ for a,b in PERM.iteritems():
 			(b.lower() if a > PERM_NONE else "do nothing with",)
 
 		def will_do(self, obj, discr=None, new_discr=None):
+			if DEBUG_ACCESS:
+				print >>sys.stderr, "will_"+b+":", self,obj,discr,new_discr
 			if not can_do(self, obj, discr=discr, new_discr=new_discr):
 				raise AuthError(obj,a)
 		def can_err(self, obj, discr=None, new_discr=None):
