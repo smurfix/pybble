@@ -237,7 +237,7 @@ class Pybble(object):
 			db.store.flush()
 
 			for d in db.store.find(Discriminator):
-				if db.store.find(Permission,And(Permission.discr==d.id,Permission.right>=0)).count():
+				if db.store.find(Permission,And(Permission.discr==d.id,Permission.right>=0, Permission.parent_id==s.id)).count():
 					continue
 				p=Permission(u, s, d, PERM_ADMIN)
 				p.superparent=s
@@ -252,14 +252,14 @@ class Pybble(object):
 			dd = db.get_by(Discriminator, name="BinData")
 
 			for d in (dw,ds,dt,dd):
-				if db.store.find(Permission, And(Permission.discr==d.id,Permission.right>=0,Permission.owner_id==a.id)).count():
+				if db.store.find(Permission, And(Permission.discr==d.id,Permission.right>=0,Permission.owner_id==a.id, Permission.parent_id==s.id)).count():
 					continue
 				p=Permission(a, s, d, PERM_READ)
 				p.superparent=s
 				db.store.add(p)
 
 			for d,e in ((ds,dd),(dw,dd),(ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk),(ds,dt)):
-				if db.store.find(Permission,And(Permission.new_discr==e.id,Permission.discr==d.id)).count():
+				if db.store.find(Permission,And(Permission.new_discr==e.id,Permission.discr==d.id, Permission.parent_id==s.id)).count():
 					continue
 				p=Permission(u, s, d, PERM_ADD)
 				p.new_discr=e.id
