@@ -3,7 +3,10 @@
     Dies ist die Webseite des Vereins „{{ obj.name }}“.
   </p>
   <p>Er hat {{ obj.num_mitglieder }} Mitglieder; davon sind {{ obj.num_reg_mitglieder }} hier registriert.</p>
-  {% if USER.member_of(obj) %}
+  {% if USER.anon %}
+  <p>Wenn du dich als Vereinsmitglied registrieren bzw. dem Verein
+  beitreten willst, musst du dich erst einloggen.</p> 
+  {% elif USER.member_of(obj) %}
   <p>Du bist Vereinsmitglied.</p>
   <p>Die Liste der Mitglieder kommt demnächst.</p>
   {% for v in obj.all_children(d_vereinacct) %}{% if USER.can_read(v) %}
