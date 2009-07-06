@@ -910,7 +910,6 @@ class User(Object):
 			pq.append(Permission.new_discr == new_discr)
 
 		no_inh = True
-
 		done = set()
 		while obj:
 			if obj in done:
@@ -919,7 +918,7 @@ class User(Object):
 
 			p = db.store.find(Permission, And(Or(Permission.inherit != no_inh, Permission.inherit == None), Or(*(Permission.owner_id == u.id for u in user.groups)), Permission.parent_id == obj.id, *pq)).order_by(Desc(Permission.right))
 			if DEBUG_ACCESS:
-				print "Checking",obj
+				print >>sys.stderr, "Checking",obj
 			p = p.first()
 			if p is not None:
 				p = p.right
