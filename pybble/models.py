@@ -975,10 +975,6 @@ class User(Object):
 			p.delete()
 
 	@property
-	def tracks(self):
-		return list(db.store.find(UserTracker, UserTracker.owner == self, order_by=Desc(UserTracker.id)))
-
-	@property
 	def recent_tracks(self):
 		latest = datetime.utcnow() - timedelta(self.feed_age,0)
 #		return db.filter_by(UserTracker,owner=self)\
