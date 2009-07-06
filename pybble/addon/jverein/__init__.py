@@ -7,7 +7,7 @@ from storm.locals import Unicode,Int,DateTime,Bool, SQL
 from wtforms import Form,TextField,IntegerField,validators
 from wtforms.validators import ValidationError
 from pybble.utils import current_request
-from pybble.render import url_for, render_template, valid_obj, valid_admin, send_mail
+from pybble.render import url_for, render_template, valid_obj, valid_admin_self, send_mail
 from pybble.flashing import flash
 from jinja2 import Markup
 from pybble import _settings as settings
@@ -262,7 +262,7 @@ def check_unassoc(form, user):
 			raise ValidationError("Du musst dich freischalten!")
 
 class MitgliedForm(Form):
-	user = TextField('User', [valid_obj,valid_admin, verein_unassoc])
+	user = TextField('User', [valid_obj, valid_admin_self, verein_unassoc])
 	email = TextField('Email', [validators.length(min=3, max=150), verein_mail])
 
 class Mitglied(Object):
