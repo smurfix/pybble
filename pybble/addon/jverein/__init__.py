@@ -3,7 +3,7 @@
 from werkzeug import redirect
 from pybble.database import db, NoResult
 from pybble.models import Object,User,obj_get, VerifierBase, Verifier
-from storm.locals import Unicode,Int,DateTime,Bool
+from storm.locals import Unicode,Int,DateTime,Bool, SQL
 from wtforms import Form,TextField,IntegerField,validators
 from wtforms.validators import ValidationError
 from pybble.utils import current_request
