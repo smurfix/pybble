@@ -4,12 +4,14 @@
   <h2>Zuletzt besuchte Seiten</h2>
   <table>
     <thead>
-	  <tr><td>Seite</td><td>Datum</td><td>ID</td>
+	  <tr><td>Seite</td><td>vorher</td><td>von</td><td>bis</td><td>ID</td>
 	</thead><tbody>
       {% for o in q if o.parent %}
         <tr>
 		  <td><a href="{{url_for("pybble.views.view_oid", oid=o.parent.oid()) }}">{{ subline(o.parent) }}</a></td>
+		  <td>{{ o.last_visited }}</td>
 		  <td>{{ o.visited }}</td>
+		  <td>{{ o.cur_visited }}</td>
 		  <td>{{ o.parent.oid() }}</td>
 		</tr>
       {% else %}
@@ -18,7 +20,7 @@
 	</tbody>
   </table>
   <p>
-    Dieses Log zeichnet die letzten zehn besuchten Seiten jedes Typs auf.<br />
-	Es wird nicht permanent gespeichert, nicht in irgendeiner Form manuell oder automatisiert ausgewertet, und schon gar nicht an Dritte weitergegeben.
+    Dieses Log zeichnet die hier besuchten Seiten auf. Es dient dazu, neue Kommentare etc. auf bereits besuchten Seiten anzuzeigen.<br />
+	Es wird nicht in irgendeiner Form manuell oder automatisiert ausgewertet, und schon gar nicht an Dritte weitergegeben.
   </p>
 {% endblock %}

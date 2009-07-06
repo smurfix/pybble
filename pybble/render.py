@@ -8,7 +8,7 @@ from werkzeug.utils import http_date
 from pybble.utils import current_request, local, random_string, AuthError
 from pybble.models import PERM, PERM_NONE, PERM_ADD, Permission, obj_get, TemplateMatch, Template, WikiPage, \
 	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, StaticFile, obj_get, TM_DETAIL, \
-	TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name, MissingDummy
+	TM_DETAIL_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name, MissingDummy
 from pybble.database import db,NoResult,database
 from pybble.diff import textDiff
 from storm.locals import Store
@@ -211,9 +211,11 @@ def render_my_template(request, obj, detail=None, mimetype=NotGiven, **context):
 		detail = TM_DETAIL_PAGE
 	if detail == TM_DETAIL_PAGE:
 		request.user.will_read(obj)
-		request.user.visited(obj)
 	else:
 		request.user.will_list(obj)
+
+	if detail == TM_DETAIL_PAGE or detail == TM_DETAIL_SUBPAGE or detail == TM_DETAIL_DETAIL:
+		request.user.visits(obj)
 
 	context["obj"] = obj
 

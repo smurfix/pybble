@@ -771,19 +771,19 @@ class User(Object):
 		else:
 			return self.email
 
-	def visited(self,obj):
+	def visits(self,obj):
 		if getattr(obj,"_no_crumbs",False):
 			return # no recursive or similar nonsense, please
 		q = { "owner":self, "discr":obj.discriminator }
 		try:
 			s = db.get_by(Breadcrumb, parent=obj, **q)
 		except NoResult:
-			for b in db.filter_by(Breadcrumb,**q).order_by(Breadcrumb.visited)[10:]:
-				db.store.remove(b)
+#			for b in db.filter_by(Breadcrumb,**q).order_by(Breadcrumb.visited)[10:]:
+#				db.store.remove(b)
 			b = Breadcrumb(self,obj)
 			db.store.add(b)
 		else:
-			s.visited = datetime.utcnow()
+			s.visit()
 			if not s.superparent: # bugfix
 				s.superparent = current_request.site
 	
@@ -1532,6 +1532,8 @@ class Breadcrumb(Object):
 	discr = Int(allow_none=False)
 	#seq = Int()
 	visited = DateTime(default_factory=datetime.utcnow)
+	last_visited = DateTime(allow_none=True)
+	cur_visited = DateTime(default_factory=datetime.utcnow, allow_none=True)
 
 	def __init__(self, user, obj):
 		super(Breadcrumb,self).__init__()
@@ -1560,6 +1562,12 @@ class Breadcrumb(Object):
 	def __repr__(self):
 		return self.__str__()
 
+	def visit(self):
+		now = datetime.utcnow()
+		if self.cur_visited is None or self.cur_visited < now-timedelta(0,600):
+			self.last_visited = self.visited
+			self.visited = now
+		self.cur_visited = now
 
 	
 class Change(Object):

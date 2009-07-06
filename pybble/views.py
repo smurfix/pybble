@@ -5,10 +5,12 @@ from werkzeug.routing import BuildError
 from werkzeug.exceptions import NotFound
 from pybble.render import render_template, render_my_template, \
 	expose, url_for
-from pybble.models import TemplateMatch, TM_DETAIL_PAGE, obj_get, obj_class, MAX_BUILTIN, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY, Site, Object
+from pybble.models import TemplateMatch, TM_DETAIL_PAGE, obj_get, obj_class, MAX_BUILTIN, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY, Site, Object, \
+	Comment,Breadcrumb
 from pybble.database import db,NoResult
 from wtforms import Form, HiddenField, TextField, validators
 from pybble.flashing import flash
+from storm.locals import And
 import inspect,sys
 
 class NoRedir(BaseException):
@@ -156,8 +158,8 @@ def split_details_aux(request,obj,details):
 	for o in details:
 		if o in det:
 			continue
-		aux.add(o)
-		det.add(o)
+		aux.add(o.id)
+		det.add(o.id)
 		o = o.parent
 		while o and o != obj and o not in aux:
 			aux.add(o)
@@ -176,6 +178,19 @@ def view_oid_exp(request, oid, details):
 def view_oid(request, oid, **args):
 	obj = obj_get(oid)
 	request.user.will_read(obj)
+
+	if "details" not in args:
+		dv = [ Comment.superparent_id == obj.id ]
+		try:
+			bc = db.get_by(Breadcrumb, parent=obj)
+		except NoResult:
+			pass
+		else:
+			dv.append(Comment.added > bc.visited)
+		d = db.store.find(Comment, And(*dv))
+		d,a = split_details_aux(request,obj,d)
+		args["details"] = d
+		args["aux"] = a
 
 	try: return tryAddOn(obj,"html_view", **args)
 	except NoRedir: pass

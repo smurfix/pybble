@@ -1,6 +1,6 @@
 -- MySQL dump 10.11
 --
--- Host: intern    Database: test_pybble
+-- Host: intern.smurf.noris.de    Database: test_pybble
 -- ------------------------------------------------------
 -- Server version	5.0.51a-3ubuntu5.4-log
 
@@ -27,7 +27,7 @@ CREATE TABLE `bindata` (
   `mime_id` int(11) default NULL,
   `name` varchar(50) NOT NULL,
   `hash` tinyblob,
-  `timestamp` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
+  `timestamp` timestamp NOT NULL default CURRENT_TIMESTAMP,
   PRIMARY KEY  (`id`),
   UNIQUE KEY `hash` (`hash`(255)),
   KEY `bindata_mimeid` (`mime_id`),
@@ -95,11 +95,13 @@ SET character_set_client = utf8;
 CREATE TABLE `breadcrumbs` (
   `id` int(11) NOT NULL,
   `discr` tinyint(4) NOT NULL,
-  `visited` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
+  `visited` timestamp NOT NULL default CURRENT_TIMESTAMP,
+  `cur_visited` datetime default NULL,
+  `last_visited` datetime default NULL,
   PRIMARY KEY  (`id`),
   KEY `breadcrumb_discr` (`discr`),
-  CONSTRAINT `breadcrumb_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`),
-  CONSTRAINT `breadcrumb_discr` FOREIGN KEY (`discr`) REFERENCES `discriminator` (`id`)
+  CONSTRAINT `breadcrumb_discr` FOREIGN KEY (`discr`) REFERENCES `discriminator` (`id`),
+  CONSTRAINT `breadcrumb_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
@@ -191,7 +193,7 @@ CREATE TABLE `discriminator` (
   `infotext` varchar(250) default NULL,
   PRIMARY KEY  (`id`),
   UNIQUE KEY `name` (`name`(255))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=108 DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -239,7 +241,7 @@ CREATE TABLE `mimeext` (
   UNIQUE KEY `ext` (`ext`),
   KEY `mimetype_id` (`mime_id`),
   CONSTRAINT `mimetype_id` FOREIGN KEY (`mime_id`) REFERENCES `mimetype` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -257,7 +259,7 @@ CREATE TABLE `mimetype` (
   `ext` varchar(15) NOT NULL,
   PRIMARY KEY  (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -282,7 +284,7 @@ CREATE TABLE `obj` (
   CONSTRAINT `obj_owner` FOREIGN KEY (`owner_id`) REFERENCES `obj` (`id`),
   CONSTRAINT `obj_parent` FOREIGN KEY (`parent_id`) REFERENCES `obj` (`id`),
   CONSTRAINT `obj_super` FOREIGN KEY (`superparent_id`) REFERENCES `obj` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=259 DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -321,7 +323,7 @@ CREATE TABLE `renderer` (
   PRIMARY KEY  (`id`),
   UNIQUE KEY `name` (`name`),
   UNIQUE KEY `cls` (`cls`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -553,7 +555,7 @@ CREATE TABLE `verifierbase` (
   PRIMARY KEY  (`id`),
   UNIQUE KEY `name` (`name`),
   UNIQUE KEY `cls` (`cls`(255))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -626,4 +628,4 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2009-07-02  8:32:44
+-- Dump completed on 2009-07-06  9:51:28
