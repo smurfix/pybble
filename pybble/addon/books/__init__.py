@@ -41,9 +41,6 @@ class Bookstore(Object):
 		self.parent = parent
 		self.superparent = current_request.site
 	
-	def __unicode__(self):
-		return self.name
-		
 	@property
 	def data(self):
 		return """\
@@ -122,9 +119,6 @@ class Book(Object):
 		self.parent = parent
 		self.superparent = current_request.user
 		
-	def __unicode__(self):
-		return self.title
-
 	@property
 	def wanted(self):
 		b = self.superparent
