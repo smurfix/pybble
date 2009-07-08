@@ -327,7 +327,7 @@ class Pybble(object):
 			VerifierBase.register("register","pybble.login.verifier")
 			db.store.flush()
 
-			if domain and sd.has_children(Site._discriminator) == 1:
+			if name == "Pybble":
 				with file(os.path.join("doc","TOC.txt")) as f:
 					try:
 						data = f.read().decode("utf-8")
