@@ -15,6 +15,7 @@ from wtforms import Form, BooleanField, TextField, TextAreaField, \
 	SelectField, PasswordField, HiddenField, validators
 from wtforms.validators import ValidationError
 from datetime import datetime
+from storm.locals import And
 
 
 @expose("/admin/perm/<permission>")

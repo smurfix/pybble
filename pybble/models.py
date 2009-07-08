@@ -1089,8 +1089,9 @@ class Permission(Object):
 	new_discr = Int(allow_none=True)
 
 	def __init__(self, user, obj, discr, right, inherit=None, new_discr=None):
+		discr = Discriminator.get(discr,obj).id
 		super(Permission,self).__init__()
-		self.discr = Discriminator.get(discr,obj).id
+		self.discr = discr
 		self.right = right
 		self.inherit = inherit
 		self.owner = user
