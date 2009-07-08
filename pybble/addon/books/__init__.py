@@ -6,7 +6,8 @@ from pybble.models import Object
 from storm.locals import Unicode,Int,DateTime,RawStr
 from wtforms import Form,TextField,TextAreaField,validators
 from pybble.utils import current_request
-from pybble.render import url_for, render_template
+from pybble.render import url_for, render_template, render_my_template
+from pybble.models import TM_DETAIL_PAGE
 from datetime import datetime
 
 __ALL__ = ("Bookstore","Book","BookWant")
@@ -39,6 +40,9 @@ class Bookstore(Object):
 		self.owner = current_request.user
 		self.parent = parent
 		self.superparent = current_request.site
+	
+	def __unicode__(self):
+		return self.name
 		
 	@property
 	def data(self):
@@ -46,6 +50,13 @@ class Bookstore(Object):
 Name: %s
 Info: %s
 """ % (self.name,self.info)
+
+	def html_view(obj, **args):
+		try:
+			n = obj.parent.name
+		except AttributeError:
+			n = None
+		return render_my_template(current_request, obj=obj, detail=TM_DETAIL_PAGE, title_trace=[obj.name, n] if n else [obj.name], **args);
 
 	def html_edit(self):
 		form = StoreForm(current_request.form)
@@ -111,6 +122,9 @@ class Book(Object):
 		self.parent = parent
 		self.superparent = current_request.user
 		
+	def __unicode__(self):
+		return self.title
+
 	@property
 	def wanted(self):
 		b = self.superparent
@@ -154,6 +168,13 @@ Autor: %s
 			form.info.data = self.info
 
 		return render_template('books/edit.html', obj=self, form=form, name=form.name.data, title_trace=[self.name,"Bookstore"])
+
+	def html_view(obj, **args):
+		try:
+			n = obj.parent.name
+		except AttributeError:
+			n = None
+		return render_my_template(current_request, obj=obj, detail=TM_DETAIL_PAGE, title_trace=([obj.title, obj.parent.name] if n else [obj.title]), **args);
 
 	@classmethod
 	def html_new(cls,parent,name=None):
