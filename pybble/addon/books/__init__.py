@@ -116,7 +116,7 @@ class Book(Object):
 		b = self.superparent
 		while True:
 			try:
-				b = db.store.get_by(BookWant, parent=self,superparent=b)
+				b = db.get_by(BookWant, parent=self,superparent=b)
 			except NoResult:
 				return
 			else:
@@ -138,7 +138,7 @@ Autor: %s
 		if current_request.method == 'POST' and form.validate():
 			form.info.data = form.info.data.replace("\r","")
 			d = self.data
-			self.upc = form.upc.data
+			self.upc = str(form.upc.data)
 			self.title = form.title.data
 			self.author = form.author.data
 			self.info = form.info.data
@@ -163,7 +163,7 @@ Autor: %s
 		if current_request.method == 'POST' and form.validate():
 			form.info.data = form.info.data.replace("\r","")
 			obj = cls(parent)
-			obj.upc = form.upc.data
+			obj.upc = str(form.upc.data)
 			obj.title = form.title.data
 			obj.author = form.author.data
 			obj.info = form.info.data
@@ -195,7 +195,7 @@ class BookWant(Object):
 		self.superparent = book.superparent
 		while True:
 			try:
-				b = db.store.get_by(BookWant, parent=book,superparent=self.superparent)
+				b = db.get_by(BookWant, parent=book,superparent=self.superparent)
 			except NoResult:
 				break
 			else:
@@ -205,7 +205,7 @@ class BookWant(Object):
 		book=self.parent
 		if current_request.method == 'POST':
 			try:
-				b = db.store.get_by(BookWant, parent=book,superparent=self.superparent)
+				b = db.get_by(BookWant, parent=book,superparent=self.superparent)
 			except NoResult:
 				pass
 			else:
@@ -223,7 +223,7 @@ class BookWant(Object):
 			flash("Du hast das Buch doch gerade!",False)
 			return redirect(url_for("pybble.views.view_oid", oid=parent.oid()))
 		try:
-			b = db.store.get_by(BookWant, parent=parent, superparent=current_request.user)
+			b = db.get_by(BookWant, parent=parent, superparent=current_request.user)
 		except NoResult:
 			pass
 		else:
@@ -243,7 +243,7 @@ class BookWant(Object):
 		n = 0
 		while True:
 			try:
-				b = db.store.get_by(BookWant, parent=parent, superparent=b.superparent)
+				b = db.get_by(BookWant, parent=parent, superparent=b.superparent)
 			except NoResult:
 				break
 			else:

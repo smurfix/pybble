@@ -9,18 +9,18 @@ Details:
 </table>
 <div>{{obj.info|markdown}}</div>
 <h3>Ausleihwunschliste</h3>
-{% endif %}
-<p><a href="{{url_for("pybble.views.new_oid",oid=w.owner.oid())}}">{{w.owner.name}}</a> am {{w.requested}}.</p>
+<div>
+{% for w in obj.wanted %}
+<p><a href="{{ url_for("pybble.views.new_oid",oid=w.owner.oid()) }}">{{ w.owner.name }}</a> am {{ w.requested }}.</p>
 {% else %}
 <i>keine Ausleihwünsche.</i>
 {% endfor %}
 </div>
 
 <div>
+{% if can_add(d_bookwant) %}
 <a href="{{url_for("pybble.views.new_oid",oid=obj.oid(), discr=d_bookwant)}}">Buch ausleihen</a>
 |
+{% endif %}
 <i>Bestell-Link folgt</i>
 </div>
-<div>
-{% for w in obj.wanted %}
-{% if loop.first %}

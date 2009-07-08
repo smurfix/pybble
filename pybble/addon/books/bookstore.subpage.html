@@ -12,3 +12,23 @@ Das Regal enthält nur ein Buch.
 Im Regal befinden sich {{ n }} Bücher.
 {% endif %}
 </p>
+{% if n %}
+<div>
+<table>
+  <thead>
+    <td>Titel</td>
+    <td>Autor</td>
+    <td>UPC</td>
+    <td>Kommentare?</td>
+  </thead>
+{% for o in obj.all_children(d_book) %}
+  <tr>
+    <td><a href="{{ url_for("pybble.views.view_oid", oid=o.oid()) }}">{{ o.title }}</a></td>
+    <td>{{ o.author }}</td>
+    <td>{{ o.upc }}</td>
+    <td>{% set n = o.has_children(d_comment) %}{% if n == 0 %}keine Anmerkungen{% elif n == 1 %}eine Anmerkung{% else %}{{ n }} Anmerkungen{% endif %}</td>
+  </tr>
+{% endfor %}
+</table>
+</div>
+{% endif %}
