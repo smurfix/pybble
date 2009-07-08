@@ -28,14 +28,15 @@ CREATE TABLE `bindata` (
   `name` varchar(50) NOT NULL,
   `hash` tinyblob,
   `timestamp` timestamp NOT NULL default CURRENT_TIMESTAMP,
-  `storage_id` int(11) NOT NULL auto_increment,
+  `storage_seq` int(11) NOT NULL auto_increment,
+  `size` int(11) NOT NULL,
   PRIMARY KEY  (`id`),
-  UNIQUE KEY `storage_id` (`storage_id`),
+  UNIQUE KEY `storage_seq` (`storage_seq`),
   UNIQUE KEY `hash` (`hash`(255)),
   KEY `bindata_mimeid` (`mime_id`),
   CONSTRAINT `bindata_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`),
   CONSTRAINT `bindata_mimeid` FOREIGN KEY (`mime_id`) REFERENCES `mimetype` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -139,8 +140,8 @@ CREATE TABLE `comment` (
   `renderer_id` tinyint(4) default NULL,
   PRIMARY KEY  (`id`),
   KEY `cmt_renderer` (`renderer_id`),
-  CONSTRAINT `comment_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`),
-  CONSTRAINT `cmt_renderer` FOREIGN KEY (`renderer_id`) REFERENCES `renderer` (`id`)
+  CONSTRAINT `cmt_renderer` FOREIGN KEY (`renderer_id`) REFERENCES `renderer` (`id`),
+  CONSTRAINT `comment_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
@@ -160,8 +161,8 @@ CREATE TABLE `deleted` (
   PRIMARY KEY  (`id`),
   KEY `delobj_owner` (`old_owner_id`),
   KEY `delobj_super` (`old_superparent_id`),
-  CONSTRAINT `delobj_owner` FOREIGN KEY (`old_owner_id`) REFERENCES `obj` (`id`),
   CONSTRAINT `delete_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`),
+  CONSTRAINT `delobj_owner` FOREIGN KEY (`old_owner_id`) REFERENCES `obj` (`id`),
   CONSTRAINT `delobj_super` FOREIGN KEY (`old_superparent_id`) REFERENCES `obj` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
@@ -286,7 +287,7 @@ CREATE TABLE `obj` (
   CONSTRAINT `obj_owner` FOREIGN KEY (`owner_id`) REFERENCES `obj` (`id`),
   CONSTRAINT `obj_parent` FOREIGN KEY (`parent_id`) REFERENCES `obj` (`id`),
   CONSTRAINT `obj_super` FOREIGN KEY (`superparent_id`) REFERENCES `obj` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=280 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=292 DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -305,8 +306,8 @@ CREATE TABLE `permissions` (
   PRIMARY KEY  (`id`),
   KEY `permission_discr` (`discr`),
   KEY `permission_new_discr` (`new_discr`),
-  CONSTRAINT `permission_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`),
   CONSTRAINT `permission_discr` FOREIGN KEY (`discr`) REFERENCES `discriminator` (`id`),
+  CONSTRAINT `permission_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`),
   CONSTRAINT `permission_new_discr` FOREIGN KEY (`new_discr`) REFERENCES `discriminator` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
@@ -419,8 +420,8 @@ CREATE TABLE `template_match` (
   `inherit` tinyint(1) default NULL,
   PRIMARY KEY  (`id`),
   KEY `templatematch_discr` (`discr`),
-  CONSTRAINT `template_match_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`),
-  CONSTRAINT `templatematch_discr` FOREIGN KEY (`discr`) REFERENCES `discriminator` (`id`)
+  CONSTRAINT `templatematch_discr` FOREIGN KEY (`discr`) REFERENCES `discriminator` (`id`),
+  CONSTRAINT `template_match_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
@@ -598,8 +599,8 @@ CREATE TABLE `wanttracking` (
   `track_del` tinyint(1) NOT NULL,
   PRIMARY KEY  (`id`),
   KEY `wanttracking_discr` (`discr`),
-  CONSTRAINT `wanttracking_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`),
-  CONSTRAINT `wanttracking_discr` FOREIGN KEY (`discr`) REFERENCES `discriminator` (`id`)
+  CONSTRAINT `wanttracking_discr` FOREIGN KEY (`discr`) REFERENCES `discriminator` (`id`),
+  CONSTRAINT `wanttracking_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
@@ -630,4 +631,4 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2009-07-06 13:30:59
+-- Dump completed on 2009-07-08 11:46:29

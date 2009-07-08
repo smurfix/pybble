@@ -28,7 +28,7 @@
 <hr /><h4>Dateien:</h4>
 <p>
 {%- for o in obj.all_children(d_bindata) %}
-<a href="{{ url_for("pybble.render.download", oid=o.oid(),name=o.name+"."+o.ext) }}"><code>{{ o.name }}.{{o.ext}}</code></a> ({{0}} Bytes)<br />
+<a href="{{ url_for("pybble.render.download", oid=o.oid(),name=o.name+"."+o.ext) }}"><code>{{ o.name }}.{{o.ext}}</code></a> ({{ o.size|filesizeformat }})<br />
 {%- endfor %}
 </p>
 {%- endif %}

@@ -1947,6 +1947,7 @@ class BinData(Object):
 	name = Unicode(allow_none=False)
 	hash = RawStr(allow_none=False)
 	timestamp = DateTime(default_factory=datetime.utcnow)
+	size = Int()
 
 	static_files = ReferenceSet(id, BaseObject.parent_id)
 
@@ -1972,6 +1973,7 @@ class BinData(Object):
 		self.name = name
 		self._content = content
 		self.hash = hash_data(content)
+		self.size = len(content)
 		self.owner = current_request.user
 		self.parent = parent
 		self.superparent = storage
