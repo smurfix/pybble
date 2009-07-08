@@ -440,10 +440,8 @@ class Object(Storm):
 
 	@property
 	def templates(self):
-		q = [ BaseObject.parent_id == self.id ]
-		q.append(BaseObject.discriminator == TemplateMatch._discriminator)
-		q.append(BaseObject.id == TemplateMatch.id)
-		return db.store.find(TemplateMatch, And(*q), order_by=(TemplateMatch.discr,TemplateMatch.detail,TemplateMatch.inherit))
+		q = [ TemplateMatch.parent_id == self.id ]
+		return db.store.find(TemplateMatch, TemplateMatch.parent_id == self.id).order_by(TemplateMatch.discr,TemplateMatch.detail,TemplateMatch.inherit)
 
 	@property
 	def memberships(self):

@@ -2,6 +2,7 @@
 
 from pybble.render import expose, render_template
 from pybble.models import Template, obj_get
+from pybble.database import db
 
 ###
 ### Template editor
@@ -15,7 +16,7 @@ def list_templates(request,oid=None):
 	s = obj
 	t = []
 	while s:
-		t.extend(db.filter(Template, Template.superparent_id == s.id,order_by=Template.name))
+		t.extend(db.filter(Template, Template.superparent_id == s.id).order_by(Template.name))
 		s = s.parent
 	return render_template('templates.html', templates=t, obj=obj, title_trace=["Templates",request.site.name])
 	
