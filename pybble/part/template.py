@@ -14,6 +14,7 @@ from pybble.session import logged_in
 from wtforms import Form, BooleanField, TextField, TextAreaField, \
 	SelectField, PasswordField, HiddenField, validators
 from datetime import datetime
+from storm.locals import And
 
 ###
 ### Template editor
@@ -21,13 +22,13 @@ from datetime import datetime
 
 def known_name(form, field):
 	site = obj_get(form.site.data)
-	m = db.filter_by(Template, parent=site, name=field.data)
+	m = [ Template.parent_id == site.id, Template.name == field.data ]
 
 	id = getattr(form,"id",None)
 	if id:
-		m = m.filter(Template.id != id)
+		m.append(Template.id != id)
 
-	if m.count():
+	if db.store.find(Template,And(*m)).count():
 		raise ValidationError("Diese Vorlage existiert bereits.")
 
 class NamedTemplateForm(Form):
