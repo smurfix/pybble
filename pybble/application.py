@@ -93,7 +93,7 @@ class Pybble(object):
 					db.store.add(r)
 				else:
 					if r.cls != rc:
-						print "Warning: Renderer %d '%s' differs (%s | %s)." % (r.id,rn,r.cls,rc)
+						print (u"Warning: Renderer %d '%s' differs (%s | %s)." % (r.id,rn,r.cls,rc)).encode("utf-8")
 						if replace_templates:
 							r.cls = rc
 
@@ -175,7 +175,7 @@ class Pybble(object):
 					u.email=unicode(settings.ADMIN)
 				s.users.add(u)
 			else:
-				print u"%s found." % u
+				print (u"%s found." % u).encode("utf-8")
 
 			u.verified=True
 			u.parent = s
@@ -211,7 +211,7 @@ class Pybble(object):
 						else:
 							c = sf.content
 							if content != sf.content:
-								print "Warning: StaticFile %d '%s' differs." % (sf.id,dp)
+								print ("Warning: StaticFile %d '%s' differs." % (sf.id,dp)).encode("utf-8")
 								if replace_templates:
 									sf.bindata.record_deletion("replaced by update")
 									sf.record_deletion("replaced by update")
@@ -231,7 +231,7 @@ class Pybble(object):
 				a.sites.add(s)
 				db.store.add(a)
 			else:
-				print u"%s found." % a
+				print (u"%s found." % a).encode("utf-8")
 
 			a.verified=False
 			db.store.flush()
@@ -305,7 +305,7 @@ class Pybble(object):
 						db.store.add(t)
 					else:
 						if t.data != data:
-							print "Warning: Template %d '%s' differs." % (t.id,fn)
+							print (u"Warning: Template %d '%s' differs." % (t.id,fn)).encode("utf-8")
 							if replace_templates:
 								t.data = data
 						if replace_templates:
@@ -381,7 +381,7 @@ class Pybble(object):
 						ww.superparent=s
 						ww.mainpage=False
 						if ww.data != data:
-							print "Warning: DocPage %d '%s' differs." % (ww.id,fn)
+							print (u"Warning: DocPage %d '%s' differs." % (ww.id,fn)).encode("utf-8")
 							if replace_templates:
 								ww.data = data
 	
@@ -409,7 +409,7 @@ class Pybble(object):
 								db.store.add(t)
 							else:
 								if t.data != data:
-									print "Warning: AssocTemplate %d '%s/%s.html' differs." % (t.id,name,d.name.lower())
+									print (u"Warning: AssocTemplate %d '%s/%s.html' differs." % (t.id,name,d.name.lower())).encode("utf-8")
 									if replace_templates:
 										t.data = data
 						db.store.flush()
@@ -435,7 +435,7 @@ class Pybble(object):
 								db.store.add(t)
 							else:
 								if t.data != data:
-									print "Warning: Template %d '%s' differs." % (t.id,fn)
+									print (u"Warning: Template %d '%s' differs." % (t.id,fn)).encode("utf-8")
 									if replace_templates:
 										t.data = data
 								if replace_templates:
@@ -462,12 +462,12 @@ class Pybble(object):
 									db.store.add(t)
 								else:
 									if t.data != data:
-										print "Warning: AddOn-Template %d %s: '%s.%s.html' differs." % (t.id, addon.__name__, cls.__name__, n.lower())
+										print (u"Warning: AddOn-Template %d %s: '%s.%s.html' differs." % (t.id, addon.__name__, cls.__name__, n.lower())).encode("utf-8")
 										if replace_templates:
 											t.data = data
 
 			db.store.commit()
-			print "Your root user is named '%s' and has the password '%s'." % (u.username, u.password)
+			print (u"Your root user is named '%s' and has the password '%s'." % (u.username, u.password)).encode("utf-8")
 		return action
 
 	def trigger(self):
@@ -498,7 +498,7 @@ class Pybble(object):
 				for t in db.store.find(Tracker,And(*tq)).order_by(Tracker.timestamp):
 					o=t.change_obj
 					if o is None:
-						print "ChangeObj??",t
+						print (u"ChangeObj?? "+unicode(t)).encode("utf-8")
 						continue
 					wq=Or(WantTracking.discr==None,WantTracking.discr==o.discriminator)
 					processed = set()
