@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from werkzeug import redirect
+from pybble.flashing import flash
 from pybble.database import db, NoResult
 from pybble.models import Object
 from storm.locals import Unicode,Int,DateTime,RawStr
@@ -63,7 +64,10 @@ Info: %s
 			self.name = form.name.data
 			self.info = form.info.data
 			if self.data != d:
+				flash(u"Änderung gespeichert."), True)
 				self.record_change(d)
+			else:
+				flash(u"Daten unverändert.")
 
 			return redirect(url_for("pybble.views.view_oid", oid=self.oid()))
 		
@@ -84,6 +88,7 @@ Info: %s
 			obj.info = form.info.data
 
 			obj.record_creation()
+			flash(u"Daten gespeichert.", True)
 			return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
 		
 		elif current_request.method == 'GET':
@@ -138,7 +143,7 @@ Titel: %s
 Autor: %s
 
 %s
-""" % (self.upc,self.name,self.author,self.info)
+""" % (self.upc,self.title,self.author,self.info)
 
 	def html_edit(self):
 		form = BookForm(current_request.form)
@@ -151,7 +156,10 @@ Autor: %s
 			self.author = form.author.data
 			self.info = form.info.data
 			if self.data != d:
+				flash(u"Änderung gespeichert.", True)
 				self.record_change(d)
+			else:
+				flash(u"Daten sind unverändert.")
 
 			return redirect(url_for("pybble.views.view_oid", oid=self.oid()))
 		
@@ -161,7 +169,7 @@ Autor: %s
 			form.author.data = self.author
 			form.info.data = self.info
 
-		return render_template('books/edit.html', obj=self, form=form, name=form.name.data, title_trace=[self.name,"Bookstore"])
+		return render_template('books/edit.html', obj=self, form=form, name=form.title.data, title_trace=[self.title,"Edit Book"])
 
 	def html_view(obj, **args):
 		try:
@@ -183,6 +191,7 @@ Autor: %s
 			obj.author = form.author.data
 			obj.info = form.info.data
 
+			flash(u"Daten gespeichert.", True)
 			obj.record_creation()
 			return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
 		
