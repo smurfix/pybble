@@ -8,14 +8,14 @@ Details:
 <tr><th>UPC:</th><td>{{ obj.upc }}</td></tr>
 </table>
 <div>{{obj.info|markdown}}</div>
+{% if obj.has_superchildren(d_bookwant) %}
 <h3>Ausleihwunschliste</h3>
 <div>
 {% for w in obj.wanted %}
 <p><a href="{{ url_for("pybble.views.new_oid",oid=w.owner.oid()) }}">{{ w.owner.name }}</a> am {{ w.requested }}.</p>
-{% else %}
-<i>keine Ausleihwünsche.</i>
 {% endfor %}
 </div>
+{% endif %}
 
 <div>
 {% if can_add(d_bookwant) %}
