@@ -140,9 +140,9 @@ class Pybble(object):
 				s.parent = None
 			utils.current_request.site = s
 
-			for ext,typ,name in extensions:
+			for ext,typ,extname in extensions:
 				typ,subtyp = typ.split("/",1)
-				add_mime(name,typ,subtyp,ext)
+				add_mime(extname,typ,subtyp,ext)
 			db.store.flush()
 
 			try:
