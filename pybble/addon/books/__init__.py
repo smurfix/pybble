@@ -64,7 +64,7 @@ Info: %s
 			self.name = form.name.data
 			self.info = form.info.data
 			if self.data != d:
-				flash(u"Änderung gespeichert."), True)
+				flash(u"Änderung gespeichert.", True)
 				self.record_change(d)
 			else:
 				flash(u"Daten unverändert.")
