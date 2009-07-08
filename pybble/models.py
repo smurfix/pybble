@@ -477,7 +477,7 @@ class Object(Storm):
 		for t in self._member_rules:
 			q = dict(t.args)
 			q[t.dst] = self
-			n += db.store.find(t.table,**q).count()
+			n += db.filter_by(t.table,**q).count()
 		return n
 
 	_member_rules = []
