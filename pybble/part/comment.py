@@ -36,15 +36,20 @@ def newer(request, parent, name=None):
 		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
 
 	elif request.method == 'GET':
-		name = getattr(parent,"name",None)
-		if name is None:
-			name = ""
-		elif not name.startswith("Re: "):
-			name = "Re: "+name
 		form.name.data = name
 		data = getattr(parent,"data",None) or ""
 		if data:
 			data = "> "+data.rstrip().replace("\n","\n> ")+"\n"
+
+		name = getattr(parent,"name",None)
+		if name is None:
+			name = getattr(parent,"title",None)
+			if name is not None: data = "" ## don't quote book descr
+		if name is None:
+			name = ""
+		elif not name.startswith("Re: "):
+			name = "Re: "+name
+
 		form.page.data = data
 
 	return render_template('edit/comment.html', parent=parent, form=form, name=form.name.data, title_trace=["Kommentieren"])
