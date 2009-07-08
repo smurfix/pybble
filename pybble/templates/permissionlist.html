@@ -6,8 +6,8 @@
 	</thead><tbody>
   {%- for o in obj.uptree() %}
     {% for p in o.permissions %}
-    	<tr><td><a href="{{ url_for('pybble.views.detail_oid',oid=o.oid()) }}">{{ o }}</a></td>
-			<td><a href="{{ url_for('pybble.views.detail_oid',oid=p.owner.oid()) }}">{{ p.owner }}</a></td>
+    	<tr><td><a href="{{ url_for('pybble.views.detail_oid',oid=o.oid()) }}">{{ subline(o) }}</a></td>
+			<td><a href="{{ url_for('pybble.views.detail_oid',oid=p.owner.oid()) }}">{{ subline(p.owner) }}</a></td>
 			<td>{{ name_discr(p.discr) }}</td>
 			<td>{{ name_permission(p.right) }}</td>
 			<td>{{ name_discr(p.new_discr) if p.new_discr else "-" }}</td>
