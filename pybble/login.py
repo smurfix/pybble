@@ -13,6 +13,7 @@ from wtforms.validators import ValidationError
 from jinja2 import Markup
 from datetime import datetime,timedelta
 from storm.locals import And
+import sys
 
 ###
 ### Login
@@ -41,11 +42,11 @@ def do_login(request):
 			if u is None:
 				raise NoResult
 		except NoResult:
-			print "No user",form.username.data,current_request.site
+			print >>sys.stderr,"No user",form.username.data,current_request.site
 			u = None
 		else:
 			if u.password != form.password.data:
-				print "no passwd",u,u.password,form.password.data
+				print >>sys.stderr,"no passwd",u,u.password,form.password.data
 				u = None
 		if u:
 			logged_in(request,u)
