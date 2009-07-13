@@ -1,9 +1,9 @@
   <h2>Mitgliedschaftseintrag</h2>
   <p>
   	{% if obj.aktiv %}
-	{{ subline(obj.owner) }} ist Mitglied im Verein {{ subline(obj.parent) }}.
+	User „<a href="{{ url_for("pybble.views.view_oid", oid=obj_owner.oid()) }}">{{ subline(obj_owner) }}</a>“ ist Mitglied im Verein „<a href="{{ url_for("pybble.views.view_oid", oid=obj_parent.oid()) }}">{{ subline(obj_parent) }}“</a>.
 	{% else %}
-	{{ subline(obj.owner) }} hat sich als Mitglied im Verein {{ subline(obj.parent) }} gemeldet.<br />
+	User „<a href="{{ url_for("pybble.views.view_oid", oid=obj_owner.oid()) }}">{{ subline(obj_owner) }}</a>“ hat sich als Mitglied im Verein „<a href="{{ url_for("pybble.views.view_oid", oid=obj_parent.oid()) }}">{{ subline(obj.parent) }}</a>“ gemeldet.<br />
 	Diese ist aber noch nicht bestätigt.
 	{% endif %}
   </p>
