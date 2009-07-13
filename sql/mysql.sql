@@ -331,23 +331,6 @@ CREATE TABLE `renderer` (
 SET character_set_client = @saved_cs_client;
 
 --
--- Table structure for table `site_users`
---
-
-DROP TABLE IF EXISTS `site_users`;
-SET @saved_cs_client     = @@character_set_client;
-SET character_set_client = utf8;
-CREATE TABLE `site_users` (
-  `site_id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  UNIQUE KEY `site_id` (`site_id`,`user_id`),
-  KEY `site_users_user` (`user_id`),
-  CONSTRAINT `site_users_site` FOREIGN KEY (`site_id`) REFERENCES `obj` (`id`),
-  CONSTRAINT `site_users_user` FOREIGN KEY (`user_id`) REFERENCES `obj` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-SET character_set_client = @saved_cs_client;
-
---
 -- Table structure for table `sites`
 --
 

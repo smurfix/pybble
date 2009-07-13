@@ -21,10 +21,10 @@
   <table><thead>
     <tr><td>Object</td><td>Member?</td></tr>
 	</thead><tbody>
-  {%- for o in obj.memberships %}
+  {%- for m,o in obj.memberships %}
     	<tr>
-			<td><a href="{{url_for("pybble.views.view_oid", oid=o.parent.oid()) }}">{{ o.parent }}</a></td>
-			<td>{% if o.excluded %}<span style="color: red;">No</Span>{% else %}<span style="color: green;">Yes</span>{% endif %}</td>
+			<td><a href="{{url_for("pybble.views.view_oid", oid=o.oid()) }}">{{ subline(o) }}</a></td>
+			<td>{% if m.excluded %}<span style="color: red;">No</Span>{% else %}<span style="color: green;">Yes</span>{% endif %}</td>
 		</tr>
   {% endfor -%}
     </tbody></table>

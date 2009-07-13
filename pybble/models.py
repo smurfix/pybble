@@ -79,6 +79,8 @@ class Discriminator(Storm,DbRepr):
 	
 	@staticmethod
 	def get(discr, obj=None):
+		if discr is None and obj is None:
+			return None
 		if isinstance(discr, basestring):
 			try: discr = int(discr)
 			except ValueError: pass
@@ -92,6 +94,22 @@ class Discriminator(Storm,DbRepr):
 			return db.get_by(Discriminator, id=discr)
 		else:
 			return db.get_by(Discriminator, id=discr._discriminator)
+
+	@staticmethod
+	def num(discr):
+		if discr is None:
+			return None
+		if isinstance(discr, basestring):
+			try: discr = int(discr)
+			except ValueError: pass
+		if isinstance(discr, Discriminator):
+			return discr.id
+		elif isinstance(discr, basestring):
+			return db.get_by(Discriminator, name=str(discr)).id
+		elif isinstance(discr, (int,long)):
+			return discr
+		else:
+			return discr._discriminator
 
 class Renderer(Storm,DbRepr):
 	"""Render method for object content"""
@@ -345,18 +363,21 @@ class Object(Storm):
 
 	def has_children(self, discr=None):
 		if discr:
+			discr = Discriminator.num(discr)
 			return db.store.execute(Select(Count(), where=And(BaseObject.parent_id == self.id, BaseObject.discriminator == discr))).get_one()[0]
 		else:
 			return db.store.execute(Select(Count(), where=BaseObject.parent_id == self.id)).get_one()[0]
 
 	def has_superchildren(self, discr=None):
 		if discr:
+			discr = Discriminator.num(discr)
 			return db.store.execute(Select(Count(), where=And(BaseObject.superparent_id == self.id, BaseObject.discriminator == discr))).get_one()[0]
 		else:
 			return db.store.execute(Select(Count(), where=BaseObject.superparent_id == self.id)).get_one()[0]
 
 	def has_slaves(self, discr=None):
 		if discr:
+			discr = Discriminator.num(discr)
 			return db.store.execute(Select(Count(), where=And(BaseObject.owner_id == self.id, BaseObject.discriminator == discr))).get_one()[0]
 		else:
 			return db.store.execute(Select(Count(), where=BaseObject.owner_id == self.id)).get_one()[0]
@@ -364,6 +385,7 @@ class Object(Storm):
 	def all_children(self, discr=None, want=PERM_LIST):
 		q = [ BaseObject.parent_id == self.id ]
 		if discr:
+			discr = Discriminator.num(discr)
 			q.append(BaseObject.discriminator == discr)
 		for o in db.store.find(BaseObject, And(*q)):
 			if current_request.user.can_do(o, discr=discr, want=want):
@@ -371,12 +393,14 @@ class Object(Storm):
 
 	def all_superchildren(self, discr=None):
 		if discr:
+			discr = Discriminator.num(discr)
 			return db.store.find(BaseObject, BaseObject.superparent_id == self.id, BaseObject.discr == discr)
 		else:
 			return db.store.find(BaseObject, BaseObject.superparent_id == self.id)
 
 	def all_slaves(self, discr=None):
 		if discr:
+			discr = Discriminator.num(discr)
 			return db.store.find(BaseObject, BaseObject.owner_id == self.id, BaseObject.discr == discr)
 		else:
 			return db.store.find(BaseObject, BaseObject.owner_id == self.id)
@@ -443,15 +467,23 @@ class Object(Storm):
 		q = [ TemplateMatch.parent_id == self.id ]
 		return db.store.find(TemplateMatch, TemplateMatch.parent_id == self.id).order_by(TemplateMatch.discr,TemplateMatch.detail,TemplateMatch.inherit)
 
-	@property
-	def memberships(self):
+	def all_memberships(self, discr=None):
+		"""Return all objects (of some type?) I am a member of."""
+		discr = Discriminator.num(discr)
 		for t in self._member_rules:
 			q = dict(t.args)
 			q[t.src] = self
 			for m in db.filter_by(t.table, **q):
-				yield m
+				mm = getattr(m,t.dst)
+				if discr is None or mm._discriminator == discr:
+					yield m,mm
+
+	@property
+	def memberships(self):
+		return self.all_memberships()
 
 	def member_of(self,obj):
+		"""Am I a member of this?"""
 		for t in self._member_rules:
 			q = dict(t.args)
 			q[t.src] = self
@@ -461,16 +493,23 @@ class Object(Storm):
 		return False
 
 
-	@property
-	def members(self):
+	def all_members(self, discr=None):
+		"""Return all objects (of some type) which are my members."""
+		discr = Discriminator.num(discr)
 		for t in self._member_rules:
 			q = dict(t.args)
 			q[t.dst] = self
 			for m in db.filter_by(t.table, **q):
-				yield m
+				mm = getattr(m,t.src)
+				if discr is None or mm._discriminator == discr:
+					yield m,mm
+	@property
+	def members(self):
+		return self.all_members()
 
 	@property
 	def members_count(self):
+		"""Count my members."""
 		n = 0
 		for t in self._member_rules:
 			q = dict(t.args)
@@ -844,8 +883,7 @@ class User(Object):
 			ulq = [self]
 			while ulq:
 				u = ulq.pop(0)
-				for m in u.memberships:
-					g = m.group
+				for m,g in u.memberships:
 					if getattr(m,"excluded",False):
 						uld.add(g)
 						continue
@@ -1032,6 +1070,7 @@ class Member(Object):
 		self.excluded = False
 		try: del self._memberships
 		except AttributeError: pass
+		db.store.add(self)
 
 	@property
 	def data(self):
@@ -1283,22 +1322,6 @@ name: %s
 domain: %s
 """ % (self.name,self.domain)
 
-class SiteUsers(Storm):
-	__storm_table__ = "site_users"
-	__storm_primary__ = "site_id","user_id"
-	site_id = Int()
-	site = Reference(site_id, BaseObject.id)
-	user_id = Int()
-	user = Reference(user_id, BaseObject.id)
-
-	def __unicode__(self):
-		return u'‹%s: %s in %s›' % (self.__class__.__name__, self.user,self.site)
-	def __str__(self):
-		return '<%s: %s in %s>' % (self.__class__.__name__, self.user,self.site)
-	__repr__ = __str__
-
-Site.users = ReferenceSet(Site.id, SiteUsers.site_id,SiteUsers.user_id,User.id)
-User.sites = ReferenceSet(User.id, SiteUsers.user_id,SiteUsers.site_id,Site.id)
 
 class Template(Object):
 	"""

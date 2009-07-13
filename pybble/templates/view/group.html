@@ -3,8 +3,8 @@
 	  <tbody>
 		<tr><th>Gruppe:</th><td>{{ obj }}</td></tr>
 		<tr><th>Name:</th><td>{{ obj.name }}</td></tr>
-		{% for m in obj.members %}
-		<tr><th>{% if m.excluded %}Non-{% endif %}Member:</th><td><a href="{{url_for("pybble.views.view_oid", oid=m.owner.oid()) }}">{{ m.owner }}</a></td></tr>
+		{% for m,o in obj.members %}
+		<tr><th>{% if m.excluded %}Non-{% endif %}Member:</th><td><a href="{{url_for("pybble.views.view_oid", oid=o.oid()) }}">{{ subline(o) }}</a></td></tr>
 		{% endfor %}
 	  </tbody>
     </table>

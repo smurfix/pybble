@@ -160,20 +160,24 @@ class Pybble(object):
 				db.store.flush()
 			utils.local.request.site = s
 
-			u=s.users.find(User.username==u"root").one()
+			u = None
+			for uu in db.store.find(User, User.username==u"root"):
+				if uu.member_of(s):
+					u = uu
+					break
 			if u is None:
 				if sd.has_children(Site._discriminator) == 1:
-					for si in db.store.find(Site):
-						print "S",si,si.parent
-						for ui in si.users:
-							print "U",ui
-					u=sd.users.find(User.username==u"root").one()
+					u = None
+					for uu in db.store.find(User, User.username==u"root"):
+						if uu.member_of(sd):
+							u = uu
+							break
 					if not u: raise NoResult
 					print u"Recycling default user: %s" % u
 				else:
 					u=User(u"root")
 					u.email=unicode(settings.ADMIN)
-				s.users.add(u)
+				Member(u,s)
 			else:
 				print (u"%s found." % u).encode("utf-8")
 
@@ -467,6 +471,10 @@ class Pybble(object):
 											t.data = data
 
 			db.store.commit()
+			for si in db.store.find(Site):
+				print "S",si,si.parent
+				for uim,ui in si.all_members(User):
+					print "U",ui
 			print (u"Your root user is named '%s' and has the password '%s'." % (u.username, u.password)).encode("utf-8")
 		return action
 
@@ -552,7 +560,7 @@ class Pybble(object):
 	def dump(self):
 		def action():
 			from pybble import utils
-			from pybble.models import BaseObject, SiteUsers,VerifierBase,MIMEtype
+			from pybble.models import BaseObject, VerifierBase,MIMEtype
 			utils.local.request = Request({})
 			utils.local.store = Store(database)
 			for o in db.store.find(BaseObject).order_by(BaseObject.id):
@@ -560,7 +568,7 @@ class Pybble(object):
 				if o.owner: print "  O",unicode(o.owner).encode("utf-8")
 				if o.parent: print "  P",unicode(o.parent).encode("utf-8")
 				if o.superparent: print "  S",unicode(o.superparent).encode("utf-8")
-			for c in (SiteUsers,VerifierBase):
+			for c in (VerifierBase,):
 				for o in db.store.find(c):
 					print unicode(o).encode("utf-8")
 			for o in db.store.find(MIMEtype):
