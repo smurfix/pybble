@@ -1,0 +1,8 @@
+<h2>Neues Vereinsmitglied</h2>
+<p>
+Der User <a href="{{ url_for("pybble.views.view_oid", _external=True, oid=obj_owner.oid()) }}">{{ subline(obj_owner) }}</a> ist jetzt als Mitglied
+im Verein „<a href="{{ url_for("pybble.views.view_oid", _external=True, oid=obj_parent.oid()) }}">{{ subline(obj_parent) }}</a>“ registriert.
+
+<hr />
+<p>PS: Der Tracker, der diesen Eintrag deines Feeds generiert hat, ist 
+<a href="{{ url_for("pybble.views.view_oid", _external=True, oid=tracker.oid()) }}">dieser hier</a>.</p>

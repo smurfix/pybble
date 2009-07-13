@@ -1,0 +1,6 @@
+
+Der User {{ subline(obj_owner) }} ist jetzt als Mitglied
+im Verein „{{ subline(obj_parent) }}“ registriert.
+
+PS: Der Tracker, der diese Mail generiert hat, ist hier:
+{{ url_for("pybble.views.view_oid", _external=True, oid=tracker.oid()) }}
