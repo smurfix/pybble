@@ -1,1 +1,0 @@
-Do("""DROP TABLE `site_users`""")
