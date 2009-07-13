@@ -1,3 +1,7 @@
+try:
+	Do("""ALTER TABLE books DROp KEY `upc`""")
+except Exception:
+	pass
 Do("""ALTER TABLE books
-    MODIFY COLUMN `upc` tinyblob NULL DEFAULT NULL,
-    ADD UNIQUE KEY `upc`(`upc`(30))""")
+	MODIFY COLUMN `upc` tinyblob NULL DEFAULT NULL,
+	ADD UNIQUE KEY `upc`(`upc`(30))""")
