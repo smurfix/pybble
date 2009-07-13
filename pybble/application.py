@@ -471,10 +471,10 @@ class Pybble(object):
 											t.data = data
 
 			db.store.commit()
-			for si in db.store.find(Site):
-				print "S",si,si.parent
-				for uim,ui in si.all_members(User):
-					print "U",ui
+#			for si in db.store.find(Site):
+#				print "S",si,si.parent
+#				for uim,ui in si.all_members(User):
+#					print "U",ui
 			print (u"Your root user is named '%s' and has the password '%s'." % (u.username, u.password)).encode("utf-8")
 		return action
 
