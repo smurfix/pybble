@@ -36,7 +36,7 @@ CREATE TABLE `bindata` (
   KEY `bindata_mimeid` (`mime_id`),
   CONSTRAINT `bindata_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`),
   CONSTRAINT `bindata_mimeid` FOREIGN KEY (`mime_id`) REFERENCES `mimetype` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -50,9 +50,10 @@ CREATE TABLE `books` (
   `id` int(11) NOT NULL,
   `title` varchar(250) default NULL,
   `author` varchar(250) default NULL,
-  `upc` varchar(15) default NULL,
+  `upc` tinyblob,
   `info` text,
   PRIMARY KEY  (`id`),
+  UNIQUE KEY `upc` (`upc`(30)),
   CONSTRAINT `book_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
@@ -287,7 +288,7 @@ CREATE TABLE `obj` (
   CONSTRAINT `obj_owner` FOREIGN KEY (`owner_id`) REFERENCES `obj` (`id`),
   CONSTRAINT `obj_parent` FOREIGN KEY (`parent_id`) REFERENCES `obj` (`id`),
   CONSTRAINT `obj_super` FOREIGN KEY (`superparent_id`) REFERENCES `obj` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=292 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=352 DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -631,4 +632,4 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2009-07-08 11:46:29
+-- Dump completed on 2009-07-13  6:39:15
