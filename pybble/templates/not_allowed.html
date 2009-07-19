@@ -6,6 +6,11 @@
     Sie können auf das Objekt {{ obj }} ({{ obj.oid() }}) nicht zugreifen.<br />
     <span style="font-size: 0.6em;">You can't {{ name_permission(perm) if perm else "even think about" }} it.</span>
 	</p><p>
+	{% if USER.anon %}
+	Evtl. funktioniert das besser, wenn Sie sich <a href="{{ url_for('pybble.login.do_login', next=url()) }}" title="Login">einloggen</a>.
+	</p><p>
+	Ansonsten:
+	{% endif %}
 	Wenn Sie durch einen Klick auf irgendwas hierhin gekommen sind,
 	sagen Sie uns das bitte, denn dann ist es ein Fehler.
 	</p><p>
