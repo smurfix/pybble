@@ -543,13 +543,13 @@ class Pybble(object):
 								try:
 									if not mailServer:
 										mailServer = smtplib.SMTP(settings.MAILHOST)
-									p,s,o,d = t.change_obj.pso
+									op,os,oo,od = t.change_obj.pso
 									send_mail(ut.owner.email, 'tracker_email.txt', server=mailServer,
 										usertracker=ut, tracker=ut.parent,
 										user=ut.owner, site=s, watcher=w,
-										obj=t.change_obj, obj_owner=o,
-										obj_parent=p, obj_superparent=s,
-										obj_deleted=d)
+										obj=t.change_obj, obj_owner=oo,
+										obj_parent=op, obj_superparent=os,
+										obj_deleted=od, site=s)
 								except AuthError:
 									pass
 
