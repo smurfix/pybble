@@ -550,7 +550,7 @@ class Pybble(object):
 										user=ut.owner, site=s, watcher=w,
 										obj=t.change_obj, obj_owner=oo,
 										obj_parent=op, obj_superparent=os,
-										obj_deleted=od, site=s)
+										obj_deleted=od)
 								except AuthError:
 									pass
 
