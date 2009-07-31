@@ -23,13 +23,5 @@ from storm.locals import Desc
 ###
 
 def viewer(request, obj, **args):
-	n = db.filter(Change, And(Change.timestamp>obj.timestamp,
-	                         Change.parent_id==obj.parent_id))\
-	            .order_by(Change.timestamp)\
-	            .first()
-	p = db.filter(Change, And(Change.timestamp<obj.timestamp,
-	                         Change.parent_id==obj.parent_id))\
-	            .order_by(Desc(Change.timestamp))\
-	            .first()
-	return render_my_template(request, obj=obj, next=n, prev=p, detail=TM_DETAIL_PAGE, **args)
+	return render_my_template(request, obj=obj, next=obj.next_change, prev=obj.prev_change, detail=TM_DETAIL_PAGE, **args)
 
