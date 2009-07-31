@@ -503,6 +503,8 @@ class Pybble(object):
 				if u:
 					tq.append(Tracker.owner == u)
 
+				mailServer = None
+
 				for t in db.store.find(Tracker,And(*tq)).order_by(Tracker.timestamp):
 					o=t.change_obj
 					if o is None:
@@ -539,8 +541,10 @@ class Pybble(object):
 							if w.email:
 								utils.local.request.user = ut.owner
 								try:
+									if not mailServer:
+										mailServer = smtplib.SMTP(settings.MAILHOST)
 									p,s,o,d = t.change_obj.pso
-									send_mail(ut.owner.email, 'tracker_email.txt',
+									send_mail(ut.owner.email, 'tracker_email.txt', server=mailServer,
 										usertracker=ut, tracker=ut.parent,
 										user=ut.owner, site=s, watcher=w,
 										obj=t.change_obj, obj_owner=o,
@@ -557,6 +561,8 @@ class Pybble(object):
 					if not u:
 						s.tracked=t.timestamp
 				db.store.commit()
+				if mailServer:
+					mailServer.quit()
 
 		return action
 

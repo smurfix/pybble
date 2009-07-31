@@ -317,7 +317,7 @@ def get_dtd():
 import smtplib
 import email.Message
 
-def send_mail(to='', template='', **context):
+def send_mail(to='', template='', server=None, **context):
 	if "site" not in context:
 		context["site"] = current_request.site
 	if "user" not in context:
@@ -326,9 +326,13 @@ def send_mail(to='', template='', **context):
 	for x in range(3):
 		context["id"+str(x)] = "%d.%s%d@%s" % (time(),random_string(10),x,current_request.site.domain)
 	
-	mailServer = smtplib.SMTP(settings.MAILHOST)
+	if server:
+		mailServer = server
+	else:
+		mailServer = smtplib.SMTP(settings.MAILHOST)
 	mailServer.sendmail(context["site"].owner.email, to, jinja_env.get_template(template).render(**context).encode("utf-8"))
-	mailServer.quit()
+	if not server:
+		mailServer.quit()
 
 
 
