@@ -542,6 +542,7 @@ class Pybble(object):
 								utils.local.request.user = ut.owner
 								try:
 									if not mailServer:
+										import smtplib
 										mailServer = smtplib.SMTP(settings.MAILHOST)
 									op,os,oo,od = t.change_obj.pso
 									send_mail(ut.owner.email, 'tracker_email.txt', server=mailServer,
