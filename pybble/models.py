@@ -1640,13 +1640,13 @@ class Change(Object):
 
 	@property
 	def next_change(self):
-    	return db.filter(Change, And(Change.timestamp>self.timestamp,
+		return db.filter(Change, And(Change.timestamp>self.timestamp,
 		                             Change.parent_id==self.parent_id))\
                 	.order_by(Change.timestamp)\
                 	.first()
 	@property
 	def prev_change(self):
-    	return db.filter(Change, And(Change.timestamp<self.timestamp,
+		return db.filter(Change, And(Change.timestamp<self.timestamp,
 		                             Change.parent_id==self.parent_id))\
 					.order_by(Desc(Change.timestamp))\
 					.first()
