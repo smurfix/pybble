@@ -539,10 +539,13 @@ class Pybble(object):
 							if w.email:
 								utils.local.request.user = ut.owner
 								try:
+									p,s,o,d = t.change_obj.pso
 									send_mail(ut.owner.email, 'tracker_email.txt',
 										usertracker=ut, tracker=ut.parent,
 										user=ut.owner, site=s, watcher=w,
-										obj=t.change_obj)
+										obj=t.change_obj, obj_owner=o,
+										obj_parent=p, obj_superparent=s,
+										obj_deleted=d)
 								except AuthError:
 									pass
 
