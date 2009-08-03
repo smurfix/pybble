@@ -186,7 +186,8 @@ def view_oid(request, oid, **args):
 		except NoResult:
 			pass
 		else:
-			dv.append(Comment.added > bc.visited)
+			if bc.last_visited:
+				dv.append(Comment.added > bc.last_visited)
 		d = db.store.find(Comment, And(*dv))
 		d,a = split_details_aux(request,obj,d)
 		args["details"] = d
