@@ -22,7 +22,7 @@ def code_exists(form, field):
 			raise ValidationError(u"Dieser Code ist zu alt.")
 
 class ConfirmForm(Form):
-	code = TextField('Code', [validators.required(msg=u"Den Code solltest du schon angeben …"), validators.length(min=10, max=30), code_exists])
+	code = TextField('Code', [validators.required(u"Den Code solltest du schon angeben …"), validators.length(min=10, max=30), code_exists])
 
 @expose('/admin/confirm')
 @expose('/admin/confirm/<code>')

@@ -21,7 +21,7 @@ from datetime import datetime
 ###
 
 class CommentEditForm(Form):
-	name = TextField('Titel', [validators.required(msg=u"Bitte gib deinem Beitrag einen Titel."), validators.length(min=3, max=30)])
+	name = TextField('Titel', [validators.required(u"Bitte gib deinem Beitrag einen Titel."), validators.length(min=3, max=30)])
 	page = TextAreaField('Inhalt')
 
 def newer(request, parent, name=None):

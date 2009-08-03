@@ -20,8 +20,8 @@ import sys
 ###
 
 class LoginForm(Form):
-	username = TextField('Username', [validators.required(msg=u"Deinen Usernamen brauche ich schon …"), validators.length(min=3, max=30)])
-	password = PasswordField('Passwort', [validators.required(msg=u"Ohne (korrektes) Passwort geht es nicht weiter."), validators.length(min=5, max=30)])
+	username = TextField('Username', [validators.required(u"Deinen Usernamen brauche ich schon …"), validators.length(min=3, max=30)])
+	password = PasswordField('Passwort', [validators.required(u"Ohne (korrektes) Passwort geht es nicht weiter."), validators.length(min=5, max=30)])
 	remember = BooleanField('Eingeloggt bleiben')
 	next = HiddenField("next URL")
 
@@ -96,9 +96,9 @@ def no_such_email(form, field):
 		raise ValidationError(u"Einen Benutzer mit Mailadresse '%s' gibt es bereits" % (field.data,))
 
 class RegisterForm(Form):
-	username = TextField('Username', [validators.required(msg=u"Ohne Usernamen habe ich ein Problem."), validators.length(min=3, max=30), no_such_user])
-	email = TextField('Email', [validators.required(msg=u"Ohne Email-Adresse geht es nicht, sorry."), validators.email(u"Dies ist keine gültige Mailadresse."), no_such_email])
-	password = PasswordField('Passwort', [validators.required(msg=u"Leere Kennwörter sind mir zu unsicher!"), validators.length(min=5, max=30)])
+	username = TextField('Username', [validators.required(u"Ohne Usernamen habe ich ein Problem."), validators.length(min=3, max=30), no_such_user])
+	email = TextField('Email', [validators.required(u"Ohne Email-Adresse geht es nicht, sorry."), validators.email(u"Dies ist keine gültige Mailadresse."), no_such_email])
+	password = PasswordField('Passwort', [validators.required(u"Leere Kennwörter sind mir zu unsicher!"), validators.length(min=5, max=30)])
 	password2 = PasswordField('nochmal', [validators.equal_to('password',u"Die Paßwörter stimmen nicht überein.")])
 
 @expose('/admin/lostpw')

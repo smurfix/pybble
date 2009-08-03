@@ -45,10 +45,10 @@ def wikiparent(form,field):
 		raise ValidationError(u"Diese Seite muss als Hauptseite angelegt werden")
 
 class WikiEditForm(Form):
-	name = TextField('Name', [validators.required(msg=u"Die Seite braucht einen Namen!"), validators.length(min=3, max=30), newpage])
+	name = TextField('Name', [validators.required(u"Die Seite braucht einen Namen!"), validators.length(min=3, max=30), newpage])
 	page = TextAreaField('Page')
 	hash = HiddenField('Hash')
-	comment = TextField('Zusammenfassung', [validators.required(msg=u"Bitte sag uns kurz, was du geändert hast."), validators.length(min=3, max=200)])
+	comment = TextField('Zusammenfassung', [validators.required(u"Bitte sag uns kurz, was du geändert hast."), validators.length(min=3, max=200)])
 	mainpage = BooleanField(u'übergeordnete Seite', [wikiparent])
 	minor = BooleanField(u'nur Kleinigkeiten geändert')
 

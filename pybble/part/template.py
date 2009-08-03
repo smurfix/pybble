@@ -33,7 +33,7 @@ def known_name(form, field):
 
 class NamedTemplateForm(Form):
 	site = TextField('Site', [valid_obj])
-	name = TextField('Name', [validators.required(msg=u"Der Name fehlt."), validators.length(min=3, max=30), known_name])
+	name = TextField('Name', [validators.required(u"Der Name fehlt."), validators.length(min=3, max=30), known_name])
 	page = TextAreaField('Template')
 
 def editor(request, obj, parent=None):

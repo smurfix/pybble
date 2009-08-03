@@ -42,8 +42,8 @@ def free_domain(form, field):
 
 
 class SiteEditForm(Form):
-	name = TextField('Name', [validators.required(msg=u"Das Kind braucht einen Namen."), validators.length(min=3, max=30), free_name])
-	domain = TextField('Domain', [validators.required(msg=u"Ohne Domain habe ich ein Problem, das Kind wiederzufinden."), validators.length(min=3, max=100), free_domain])
+	name = TextField('Name', [validators.required(u"Das Kind braucht einen Namen."), validators.length(min=3, max=30), free_name])
+	domain = TextField('Domain', [validators.required(u"Ohne Domain habe ich ein Problem, das Kind wiederzufinden."), validators.length(min=3, max=100), free_domain])
 
 def editor(request, obj, name=None, parent=None):
 	assert parent is None

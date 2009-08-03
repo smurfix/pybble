@@ -21,8 +21,8 @@ def initsite(replace_templates):
 	pass
 	
 class StoreForm(Form):
-	name = TextField('Name', [validators.required(msg=u"Der Name fehlt"), validators.length(min=3, max=250)])
-	info = TextField('Info', [validators.required(msg=u"Der Infotext fehlt"), validators.length(min=3, max=250)])
+	name = TextField('Name', [validators.required(u"Der Name fehlt"), validators.length(min=3, max=250)])
+	info = TextField('Info', [validators.required(u"Der Infotext fehlt"), validators.length(min=3, max=250)])
 
 
 ## Database mods
@@ -99,10 +99,10 @@ Info: %s
 
 
 class BookForm(Form):
-	title = TextField('Titel', [validators.required(msg=u"Kein Buch ohne Titel!"), validators.length(min=3, max=250)])
-	author = TextField('Autor', [validators.required(msg=u"Kein Buch ohne Autor(en)!"), validators.length(min=3, max=250)])
+	title = TextField('Titel', [validators.required(u"Kein Buch ohne Titel!"), validators.length(min=3, max=250)])
+	author = TextField('Autor', [validators.required(u"Kein Buch ohne Autor(en)!"), validators.length(min=3, max=250)])
 	upc = TextField('UPC', [validators.optional(), validators.length(min=10, max=15)])
-	info = TextAreaField('Info', [validators.required(msg=u"Eine kurze Info zu diesem Buch muss sein."), validators.length(min=30)])
+	info = TextAreaField('Info', [validators.required(u"Eine kurze Info zu diesem Buch muss sein."), validators.length(min=30)])
 
 class Book(Object):
 	"""\
