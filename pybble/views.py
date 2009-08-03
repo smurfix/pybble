@@ -137,6 +137,10 @@ def delete_oid(request, oid):
 	return render_template('delete.html', form=form, title_trace=[u"Löschen"], obj=obj)
 
 def split_details(request,obj, details):
+	if details == "all":
+		for o in db.filter_by(Comment, superparent_id = obj.id):
+			yield o
+
 	for d in details.split("-"):
 		try:
 			o = db.get(BaseObject, int(d))
@@ -162,8 +166,9 @@ def split_details_aux(request,obj,details):
 		det.add(o.id)
 		o = o.parent
 		while o and o != obj and o not in aux:
-			aux.add(o)
+			aux.add(o.id)
 			o = o.parent
+	print >>sys.stderr,"DET",det,"AUX",aux
 	return det,aux
 
 
