@@ -17,7 +17,7 @@ from wtforms.validators import ValidationError
 from datetime import datetime
 
 class GroupForm(Form):
-	name = TextField('Name', [validators.length(min=3, max=30)])
+	name = TextField('Name', [validators.required(msg=u"Die Gruppe braucht einen Namen."), validators.length(min=3, max=30)])
 
 def newer(request, parent, name=None):
 	return editor(request, parent=parent)

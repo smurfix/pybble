@@ -47,8 +47,8 @@ def sel_ok(form, field):
 
 ## Verein: the base
 class VereinForm(Form):
-	name = TextField('Name', [validators.length(min=3, max=250)])
-	database = TextField('Database', [validators.length(min=3, max=30), sel_ok])
+	name = TextField('Name', [validators.required(msg=u"Kein Verein ohne Name!"), validators.length(min=3, max=250)])
+	database = TextField('Database', [validators.required(msg=u"Die Datenbank mit den Mitglieder-Infos hätte ich doch gerne."), validators.length(min=3, max=30), sel_ok])
 
 class Verein(Object):
 	"""\
@@ -263,7 +263,7 @@ def check_unassoc(form, user):
 
 class MitgliedForm(Form):
 	user = TextField('User', [valid_obj, valid_admin_self, verein_unassoc])
-	email = TextField('Email', [validators.length(min=3, max=150), verein_mail])
+	email = TextField('Email', [validators.required(msg=u"Ohne Mailadresse geht es nicht."), validators.length(min=3, max=150), verein_mail])
 
 class Mitglied(Object):
 	"""\

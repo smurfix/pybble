@@ -39,7 +39,7 @@ def check_type(form,field):
 				
 	
 class FileForm(Form):
-	name = TextField('Name', [validators.length(min=3, max=30)])
+	name = TextField('Name', [validators.required(msg=u"Jede Datei braucht einen Namen!"), validators.length(min=3, max=30)])
 	mime = SelectField('MIME Type', [check_type], choices=[(str(x.id),x.name) for x in db.store.find(MIMEtype)])
 
 def newer(request, parent, name=None):

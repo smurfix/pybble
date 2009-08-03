@@ -112,7 +112,7 @@ def copy_oid(request, oid, parent):
 
 class DeleteForm(Form):
 	next = HiddenField("next URL")
-	comment = TextField('Grund', [validators.length(min=3, max=200)])
+	comment = TextField('Grund', [validators.required(msg=u"Grund der Löschung?"), validators.length(min=3, max=200)])
 
 @expose('/delete/<oid>')
 def delete_oid(request, oid):

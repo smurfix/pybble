@@ -23,7 +23,7 @@ def initsite(replace_templates):
 	pass
 	
 class EditForm(Form):
-	name = TextField('Name', [validators.length(min=3, max=250)])
+	name = TextField('Name', [validators.required(msg=u"Der Name fehlt."), validators.length(min=3, max=250)])
 
 
 ## Database mods
