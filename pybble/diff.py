@@ -41,6 +41,41 @@ def textDiff(a, b):
 			raise AssertionError("Um, something's broken. I didn't expect a '" + `e[0]` + "'.")
 	return ''.join(out)
 
+def textOnlyDiff(a, b):
+	"""Takes in strings a and b and returns a human-readable ASCII diff."""
+
+	out = []
+	a, b = html2list(a), html2list(b)
+	s = difflib.SequenceMatcher(None, a, b)
+	for e in s.get_opcodes():
+		if e[0] == "replace":
+			# @@ need to do something more complicated here
+			# call textDiff but not for html, but for some html... ugh
+			# gonna cop-out for now
+			delt = ''.join(a[e[1]:e[2]])
+			inst = ''.join(b[e[3]:e[4]])
+			rest = ""
+			while delt and inst and delt[-1]==inst[-1]:
+				rest = inst[-1]+rest
+				delt = delt[:-1]
+				inst = inst[:-1]
+			out.append("{-%s-}{+%s+}%s" % (delt,inst,rest))
+		elif e[0] == "delete":
+			delt = ''.join(a[e[1]:e[2]])
+			out.append("{-%s-}" % (delt,))
+		elif e[0] == "insert":
+			inst = ''.join(b[e[3]:e[4]])
+			out.append("{+%s+}" % (inst,))
+		elif e[0] == "equal":
+			s = "".join(b[e[3]:e[4]])
+			ss = s.split("\n")
+			if len(ss) > 6:
+				s = "\n".join(ss[:3]+[u"[…]"]+ss[-3:])
+			out.append(esc(s))
+		else: 
+			raise AssertionError("Um, something's broken. I didn't expect a '" + `e[0]` + "'.")
+	return ''.join(out)
+
 def html2list(x, b=0):
 	mode = 'char'
 	cur = ''

@@ -10,7 +10,7 @@ from pybble.models import PERM, PERM_NONE, PERM_ADD, Permission, obj_get, Templa
 	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, StaticFile, obj_get, TM_DETAIL, \
 	TM_DETAIL_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name, MissingDummy
 from pybble.database import db,NoResult,database
-from pybble.diff import textDiff
+from pybble.diff import textDiff,textOnlyDiff
 from storm.locals import Store
 from wtforms.validators import ValidationError
 from time import time
@@ -175,6 +175,7 @@ def name_permission(id):
 jinja_env.globals['name_permission'] = name_permission
 
 jinja_env.globals['diff'] = textDiff
+jinja_env.globals['textdiff'] = textOnlyDiff
 
 for d in discr_list:
 	jinja_env.globals[str("d_"+d.name.lower())] = d.id
