@@ -52,14 +52,19 @@ def textOnlyDiff(a, b):
 			# @@ need to do something more complicated here
 			# call textDiff but not for html, but for some html... ugh
 			# gonna cop-out for now
+			pref = ""
 			delt = ''.join(a[e[1]:e[2]])
 			inst = ''.join(b[e[3]:e[4]])
 			rest = ""
+			while delt and inst and delt[0]==inst[0]:
+				pref += delt[0]
+				delt = delt[1:]
+				inst = inst[1:]
 			while delt and inst and delt[-1]==inst[-1]:
 				rest = inst[-1]+rest
 				delt = delt[:-1]
 				inst = inst[:-1]
-			out.append("{-%s-}{+%s+}%s" % (delt,inst,rest))
+			out.append("%s{-%s-}{+%s+}%s" % (pref,delt,inst,rest))
 		elif e[0] == "delete":
 			delt = ''.join(a[e[1]:e[2]])
 			out.append("{-%s-}" % (delt,))
