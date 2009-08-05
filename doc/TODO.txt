@@ -14,9 +14,14 @@ Unordered list of things to do …
 
 ## main features
 
-* add a blog
+** add a blog
+
+** Display multiple wiki pages on one page
+   (including their comments, files, etc.)
 
 * make Preview buttons work without a page reload
+
+* add memcache support to high-load code paths
 
 ### Files, Images
 
@@ -40,15 +45,17 @@ Unordered list of things to do …
 
 * install an initial observer
 
-* Atom feed
+* Atom feed?
 
 ### comment subsystem
 
 * move to an add-on
 
-* Comments via email
+* add comments via email
 
 * add user prefs how much to expand comments
+
+** fix the comment pre-expand link thing
 
 ### database
 
@@ -78,7 +85,7 @@ Unordered list of things to do …
 
 * allow re-mailing confirmation
 
-* don't store cleartext passwords
+** don't store cleartext passwords
 
 * cleanup membership caching code
 
