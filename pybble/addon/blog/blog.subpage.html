@@ -15,12 +15,14 @@ Ddas Blog hat {{ n }} Einträge.
   <thead>
     <td>Titel</td>
     <td>Autor</td>
+    <td>Datum</td>
     <td>Kommentare?</td>
   </thead>
 {% for o in obj.all_superchildren(d_blogentry) %}
   <tr>
     <td><a href="{{ url_for("pybble.views.view_oid", oid=o.oid()) }}">{{ o.title }}</a></td>
     <td><a href="{{ url_for("pybble.views.view_oid", oid=o.owner.oid()) }}">{{ subline(o.owner) }}</a></td>
+	<td>{{ o.date }}</td>
     <td>{% set n = o.has_superchildren(d_comment) %}{% if n == 0 %}kein Kommentar{% elif n == 1 %}ein Kommentar{% else %}{{ n }} Kommentare{% endif %}</td>
   </tr>
 {% endfor %}

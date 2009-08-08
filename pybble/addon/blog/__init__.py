@@ -117,6 +117,7 @@ class BlogEntry(Object):
 
 	title = Unicode(allow_none=False)
 	text = Unicode(allow_none=False)
+	date = DateTime(allow_none=False, default_factory=datetime.utcnow)
 
 	def __init__(self,parent):
 		self.owner = current_request.user

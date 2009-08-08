@@ -1,5 +1,6 @@
 {{ subline(user) }} ({{ url_for("pybble.views.detail_oid", _external=True, oid=user.oid()) }})
-hat einen Eintrag „{{ subline(obj) }}“
+hat zum {{ obj.date }}
+einen Eintrag „{{ subline(obj) }}“
 ({{ url_for("pybble.views.view_oid", _external=True, oid=obj.oid()) }})
 im Blog „{{ subline(obj.parent) }}“ ({{  url_for("pybble.views.view_oid", _external=True, oid=obj.parent.oid()) }})
 angelegt:

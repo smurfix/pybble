@@ -66,6 +66,7 @@ CREATE TABLE `blogentry` (
   `id` int(11) NOT NULL,
   `title` varchar(250) default NULL,
   `text` mediumtext,
+  `date` datetime NOT NULL,
   PRIMARY KEY  (`id`),
   CONSTRAINT `blogentry_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -647,4 +648,4 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2009-08-08  8:34:55
+-- Dump completed on 2009-08-08 12:46:58

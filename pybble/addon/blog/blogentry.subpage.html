@@ -1,3 +1,7 @@
 <h2>{{ obj.title }}</h2>
 <p>
-<div>{{obj.text|markdown}}</div>
+von <a href="{{ url_for("pybble.views.view_oid", oid=obj_owner.oid()) }}">{{ subline(obj_owner) }}</a>
+am {{ obj.date }}
+</p>
+<hr />
+{{obj.text|markdown}}
