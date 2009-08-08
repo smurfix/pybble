@@ -1,0 +1,14 @@
+{% extends 'layout.html' %}
+{% from 'form.html' import show, showb %}
+
+{% block body %}
+  <h2>Blog Entry „{{ obj.title }}“</h2>
+    <form method="post" action="{{ action }}">
+    <table>
+	  {{ show(form.title) }}
+	  {{ show(form.text, cols=80,rows=20) }}
+    </table>
+    <input type="submit" value="Update" />
+    </form>
+
+{% endblock %}

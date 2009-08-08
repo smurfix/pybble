@@ -1,0 +1,32 @@
+<h2>Blog „{{ obj.name }}“</h2>
+<p>
+{{obj.info}}
+</p>
+<p>
+{% set n = obj.has_superchildren(d_blogentry) -%}
+{% if n == 0 -%}
+Das Blog ist leer.
+{% elif n == 1 -%}
+Das Blog enthält nur einen Eintrag.
+{% else -%}
+Ddas Blog hat {{ n }} Einträge.
+{% endif %}
+</p>
+{% if n %}
+<div>
+<table>
+  <thead>
+    <td>Titel</td>
+    <td>Autor</td>
+    <td>Kommentare?</td>
+  </thead>
+{% for o in obj.all_superchildren(d_blogentry) %}
+  <tr>
+    <td><a href="{{ url_for("pybble.views.view_oid", oid=o.oid()) }}">{{ o.title }}</a></td>
+    <td><a href="{{ url_for("pybble.views.view_oid", oid=o.owner.oid()) }}">{{ subline(o.owner) }}</a></td>
+    <td>{% set n = o.has_superchildren(d_comment) %}{% if n == 0 %}kein Kommentar{% elif n == 1 %}ein Kommentar{% else %}{{ n }} Kommentare{% endif %}</td>
+  </tr>
+{% endfor %}
+</table>
+</div>
+{% endif %}

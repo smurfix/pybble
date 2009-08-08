@@ -1,0 +1,10 @@
+  <h2>Blog {{ obj.name }}</h2>
+    <table>
+	  <tbody>
+		<tr><th>Name:</th><td>{{ obj.name }}</td></tr>
+		<tr><th>Info:</th><td>{{ obj.info }}</td></tr>
+		<tr><th>unter:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.parent.oid()) }}">{{ obj.parent }}</a></td></tr>
+		<tr><th>Besitzer:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj.owner.oid()) }}">{{ obj.owner }}</a></td></tr>
+
+	  </tbody>
+    </table>
