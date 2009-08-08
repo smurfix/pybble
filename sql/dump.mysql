@@ -1,8 +1,10 @@
-#!/usr/bin/python
+#!/bin/sh -e
 
-from pybble import _settings as s
-import os
+tf=$(tempfile)
+grep DATABASE_ settings.py >$ft
+grep DATABASE_ localsettings.py >>$ft || true
 
-os.execlp("mysqldump", "mysqldump", "--no-data", "-h"+s.DATABASE_HOST, "-u"+s.DATABASE_USER, \
-	"-p"+s.DATABASE_PASSWORD, s.DATABASE_NAME)
+mysqldump --no-data -h$DATABASE_HOST -u$DATABASE_USER \
+	-p$DATABASE_PASSWORD $DATABASE_NAME | perl -pe 's/AUTO_INCREMENT=\d+\s+//'
 
+rm $tf
