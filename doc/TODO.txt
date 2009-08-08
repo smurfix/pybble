@@ -14,14 +14,16 @@ Unordered list of things to do …
 
 ## main features
 
-** add a blog
-
 ** Display multiple wiki pages on one page
    (including their comments, files, etc.)
 
 * make Preview buttons work without a page reload
 
 * add memcache support to high-load code paths
+
+### Blog
+
+** add prev/next pointers to blog entries
 
 ### Files, Images
 
