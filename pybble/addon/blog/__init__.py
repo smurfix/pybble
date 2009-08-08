@@ -33,8 +33,8 @@ class Blog(Object):
 	__storm_table__ = "blog"
 	_discriminator = 108
 
-	name = Unicode()
-	info = Unicode()
+	name = Unicode(allow_none=False)
+	info = Unicode(allow_none=False)
 
 	def __init__(self,parent):
 		self.owner = current_request.user
@@ -115,8 +115,8 @@ class BlogEntry(Object):
 	__storm_table__ = "blogentry"
 	_discriminator = 109
 
-	title = Unicode()
-	text = Unicode()
+	title = Unicode(allow_none=False)
+	text = Unicode(allow_none=False)
 
 	def __init__(self,parent):
 		self.owner = current_request.user
