@@ -391,19 +391,23 @@ class Object(Storm):
 			if current_request.user.can_do(o, discr=discr, want=want):
 				yield o
 
-	def all_superchildren(self, discr=None):
+	def all_superchildren(self, discr=None, want=PERM_LIST):
+		q = [ BaseObject.superparent_id == self.id ]
 		if discr:
 			discr = Discriminator.num(discr)
-			return db.store.find(BaseObject, BaseObject.superparent_id == self.id, BaseObject.discr == discr)
-		else:
-			return db.store.find(BaseObject, BaseObject.superparent_id == self.id)
+			q.append(BaseObject.discriminator == discr)
+		for o in db.store.find(BaseObject, And(*q)):
+			if current_request.user.can_do(o, discr=discr, want=want):
+				yield o
 
-	def all_slaves(self, discr=None):
+	def all_slaves(self, discr=None, want=PERM_LIST):
+		q = [ BaseObject.owner_id == self.id ]
 		if discr:
 			discr = Discriminator.num(discr)
-			return db.store.find(BaseObject, BaseObject.owner_id == self.id, BaseObject.discr == discr)
-		else:
-			return db.store.find(BaseObject, BaseObject.owner_id == self.id)
+			q.append(BaseObject.discriminator == discr)
+		for o in db.store.find(BaseObject, And(*q)):
+			if current_request.user.can_do(o, discr=discr, want=want):
+				yield o
 
 	@property
 	def children(self):
