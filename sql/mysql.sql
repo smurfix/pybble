@@ -40,6 +40,38 @@ CREATE TABLE `bindata` (
 SET character_set_client = @saved_cs_client;
 
 --
+-- Table structure for table `blog`
+--
+
+DROP TABLE IF EXISTS `blog`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `blog` (
+  `id` int(11) NOT NULL,
+  `name` varchar(250) default NULL,
+  `info` mediumtext,
+  PRIMARY KEY  (`id`),
+  CONSTRAINT `blog_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `blogentry`
+--
+
+DROP TABLE IF EXISTS `blogentry`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `blogentry` (
+  `id` int(11) NOT NULL,
+  `title` varchar(250) default NULL,
+  `text` mediumtext,
+  PRIMARY KEY  (`id`),
+  CONSTRAINT `blogentry_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
 -- Table structure for table `books`
 --
 
@@ -615,4 +647,4 @@ SET character_set_client = @saved_cs_client;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2009-07-13  6:39:15
+-- Dump completed on 2009-08-08  8:34:55

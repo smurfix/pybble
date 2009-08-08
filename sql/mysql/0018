@@ -1,0 +1,12 @@
+Do("""CREATE TABLE blog (
+    `id` int(11) NOT NULL DEFAULT '0',
+    `name` varchar(250) DEFAULT NULL,
+    `info` mediumtext DEFAULT NULL,
+     PRIMARY KEY(`id`),
+     CONSTRAINT `blog_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) ENGINE=innodb CHARACTER SET=utf8""")
+Do("""CREATE TABLE blogentry (
+    `id` int(11) NOT NULL DEFAULT '0',
+    `title` varchar(250) DEFAULT NULL,
+    `text` mediumtext DEFAULT NULL,
+     PRIMARY KEY(`id`),
+     CONSTRAINT `blogentry_id` FOREIGN KEY (`id`) REFERENCES `obj` (`id`) ON UPDATE cascade ON DELETE restrict) ENGINE=innodb CHARACTER SET=utf8""")
