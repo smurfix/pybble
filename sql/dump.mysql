@@ -1,8 +1,9 @@
 #!/bin/sh -e
 
 tf=$(tempfile)
-grep DATABASE_ settings.py >$ft
-grep DATABASE_ localsettings.py >>$ft || true
+grep DATABASE_ settings.py >$tf
+grep DATABASE_ localsettings.py >>$tf || true
+. $tf
 
 mysqldump --no-data -h$DATABASE_HOST -u$DATABASE_USER \
 	-p$DATABASE_PASSWORD $DATABASE_NAME | perl -pe 's/AUTO_INCREMENT=\d+\s+//'
