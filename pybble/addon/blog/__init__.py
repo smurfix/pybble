@@ -21,7 +21,7 @@ def initsite(replace_templates):
 	
 class BlogForm(Form):
 	name = TextField('Name', [validators.required(u"Der Name fehlt"), validators.length(min=3, max=250)])
-	info = TextField('Info', [validators.required(u"Der Infotext fehlt"), validators.length(min=3, max=250)])
+	info = TextAreaField('Info', [validators.required(u"Der Infotext fehlt"), validators.length(min=30)])
 
 
 ## Database mods
@@ -45,7 +45,8 @@ class Blog(Object):
 	def data(self):
 		return """\
 Name: %s
-Info: %s
+
+%s
 """ % (self.name,self.info)
 
 	def html_view(obj, **args):
@@ -59,6 +60,7 @@ Info: %s
 		form = BlogForm(current_request.form)
 		form.id = self.id
 		if current_request.method == 'POST' and form.validate():
+			form.info.data = form.info.data.replace("\r","")
 			d = self.data
 			self.name = form.name.data
 			self.info = form.info.data
@@ -82,6 +84,8 @@ Info: %s
 
 		form = BlogForm(current_request.form)
 		if current_request.method == 'POST' and form.validate():
+			form.info.data = form.info.data.replace("\r","")
+
 			obj = cls(parent)
 			obj.name = form.name.data
 			obj.info = form.info.data

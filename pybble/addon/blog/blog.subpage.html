@@ -1,7 +1,4 @@
-<h2>Blog „{{ obj.name }}“</h2>
-<p>
-{{obj.info}}
-</p>
+{{obj.info|markdown}}
 <p>
 {% set n = obj.has_superchildren(d_blogentry) -%}
 {% if n == 0 -%}

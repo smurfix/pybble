@@ -6,7 +6,7 @@
     <form method="post" action="{{ action }}">
     <table>
 	  {{ show(form.name) }}
-	  {{ show(form.info) }}
+	  {{ show(form.info, cols=80,rows=20) }}
     </table>
     <input type="submit" value="Update" />
     </form>
