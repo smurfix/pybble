@@ -16,7 +16,7 @@ from time import time
 @expose("/changes")
 def view_all(request):
 	user = request.user
-	f = (UserTracker.owner == user)
+	f = (UserTracker.owner_id == user.id)
 	last = request.session.get("chg_",None)
 	if last and time()-last[0] < 2*60:
 		pass
