@@ -696,7 +696,10 @@ def obj_class(id):
 
 def obj_get(oid):
 	"""Given an object ID, return the object"""
-	cid,id,hash = oid.split(".")
+	try:
+		cid,id,hash = oid.split(".")
+	except ValueError:
+		raise ValueError("bad OID: '%s'" % (oid,))
 	cls = obj_class(int(cid))
 	obj = db.get_by(cls, id=int(id))
 	if oid != obj.oid():
