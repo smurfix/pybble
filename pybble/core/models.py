@@ -5,6 +5,8 @@ import json
 import logging
 import datetime
 import random
+
+from mongoengine.errors import NotUniqueError
 from flask import url_for, current_app
 
 from pybble.core.db import db
@@ -21,6 +23,29 @@ from pybble.core.db import db
 
 logger = logging.getLogger()
 
+class ConfigDict(dict):
+	def __init__(self,site=None):
+		self.site = site
+		self.set_db = bool(site)
+	def __setitem__(self,k,v):
+		if self.set_db:
+			assert self.site
+			cfv = ConfigVar.get(k)
+			cf = SiteConfigVar(site=self.site, var=cfv, value=v)
+			try:
+				cf.save()
+			except NotUniqueError:
+				cf = SiteConfigVar.objects(site=self.site, var=cfv)[0]
+				cf.value=v
+				cf.save()
+			
+		super(ConfigDict,self).__setitem__(k,v)
+	
+	def disarm(self):
+		self.set_db = False
+	def arm(self):
+		self.set_db = True
+
 class Site(db.Document):
 	name = db.StringField(unique=True, required=True)
 	domain = db.StringField(unique=True, required=True)
@@ -36,6 +61,40 @@ class Site(db.Document):
 		for s in self.children:
 			for ss in s.children_tree:
 				yield ss
+
+	@property
+	def config(self):
+		if self.parent:
+			cfg = self.parent.config
+			cfg.disarm()
+		else:
+			cfg = ConfigDict()
+			for s in ConfigVar.objects:
+				cfg[s.name] = s.default
+		for s in SiteConfigVar.objects(site=self):
+			cfg[s.var.name] = s.value
+		cfg.site = self
+		cfg.arm()
+		return cfg
+
+class ConfigVar(db.Document):
+	name = db.StringField(unique=True, required=True)
+	info = db.StringField(required=True)
+	default = db.StructField()
+
+	@staticmethod
+	def get(name):
+		return ConfigVar.objects(name=name)[0]
+
+	@staticmethod
+	def exists(name,info,default=None):
+		cf = ConfigVar(name=name,info=info,default=default)
+		cf.save()
+	
+class SiteConfigVar(db.Document):
+	site = db.ReferenceField(Site)
+	var = db.ReferenceField(ConfigVar)
+	value = db.StructField()
 
 
 ###############################################################

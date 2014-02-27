@@ -2,8 +2,13 @@
 
 ##BP
 
+import pickle
+
 from mongoengine import fields
 from mongoengine.base.datastructures import BaseList
+
+class StructField(fields.BaseField):
+	pass
 
 
 class MultipleObjectsReturned(Exception):
