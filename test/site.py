@@ -7,9 +7,9 @@ import datetime
 import flask
 
 from flask.ext.mongoengine import MongoEngine
-from mongoengine.errors import NotUniqueError
+from mongoengine.errors import NotUniqueError,DoesNotExist
 from .base import TC
-from pybble.core.models import Site,ConfigVar
+from pybble.core.models import Site,ConfigVar,User
 
 class SiteTestCase(TC):
 
@@ -65,5 +65,44 @@ class SiteTestCase(TC):
 
 			site.config["TEST"] = [12,34]
 			self.assertEquals(site.config,{"TEST":[12,34],"TEST2":"234"})
+
+	def test_user(self):
+		with self.app.test_request_context():
+			User.objects.delete()
+			Site.objects.delete()
+			self.assertEqual(Site.objects.count(), 0)
+			site = Site(name='root', domain='test.example.com')
+			site.save()
+			site1 = Site(name='foo', domain='foo.test.example.com', parent=site)
+			site1.save()
+			site2 = Site(name='bar', domain='bar.test.example.com', parent=site)
+			site2.save()
+			site21 = Site(name='barf', domain='barf.test.example.com', parent=site2)
+			site21.save()
+
+			self.assertEqual(User.objects.count(), 0)
+			u1 = User(name="U1",email="u1@example.com",password="U1_PW", site=site)
+			u2 = User(name="U2",email="u2@example.com",password="U2_PW", site=site1)
+			u3 = User(name="U3",email="u3@example.com",password="U3_PW", site=site2)
+			u1.save(); u2.save(); u3.save();
+			self.assertNotEquals(u1,u2)
+			self.assertNotEquals(u2,u3)
+			self.assertNotEquals(u1,u3)
+
+			self.assertEquals(u1,User.find("U1",site))
+			self.assertEquals(u2,User.find("U2",site1))
+			self.assertEquals(u3,User.find("U3",site2))
+			self.assertEquals(u3,User.find("U3",site21))
+
+			self.assertEquals(u1,User.find("U1",site1))
+			self.assertEquals(u1,User.find("U1",site2))
+			self.assertEquals(u1,User.find("U1",site21))
+
+			self.assertRaises(DoesNotExist, User.find,"U2",site)
+			self.assertRaises(DoesNotExist, User.find,"U3",site)
+
+			self.assertRaises(DoesNotExist, User.find,"U2",site2)
+			self.assertRaises(DoesNotExist, User.find,"U3",site1)
+			self.assertRaises(DoesNotExist, User.find,"U2",site21)
 
 

@@ -7,7 +7,7 @@ import datetime
 import random
 
 from mongoengine.errors import NotUniqueError
-from flask import url_for, current_app
+from flask import url_for, current_app, g
 
 from pybble.core.db import db
 
@@ -97,6 +97,39 @@ class SiteConfigVar(db.Document):
 	value = db.StructField()
 
 
+###############################################################
+# Users
+###############################################################
+
+from flask.ext.login import UserMixin
+from mongoengine.errors import DoesNotExist
+
+class User(UserMixin, db.Document):
+	name = db.StringField(unique=True, required=True)
+	email = db.StringField(required=True)
+	password = db.StringField(required=True)
+	site = db.ReferenceField(Site)
+
+	def __eq__(self,x):
+		return self.name==x.name
+	def __ne__(self,x):
+		return self.name!=x.name
+
+	def get_id(self):
+		return self.name
+
+	@staticmethod
+	def find(username, site=None):
+		if site is None:
+			site = g.site
+		assert site
+		while site:
+			try:
+				return User.objects(name=username,site=site)[0]
+			except IndexError:
+				site = site.parent
+		raise DoesNotExist("User",username)
+	
 ###############################################################
 # Commom extendable base classes
 ###############################################################
