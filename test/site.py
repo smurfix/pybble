@@ -81,10 +81,9 @@ class SiteTestCase(TC):
 			site21.save()
 
 			self.assertEqual(User.objects.count(), 0)
-			u1 = User(name="U1",email="u1@example.com",password="U1_PW", site=site)
-			u2 = User(name="U2",email="u2@example.com",password="U2_PW", site=site1)
-			u3 = User(name="U3",email="u3@example.com",password="U3_PW", site=site2)
-			u1.save(); u2.save(); u3.save();
+			u1 = User.add(username="U1",email="u1@example.com",password="U1_PW", site=site)
+			u2 = User.add(username="U2",email="u2@example.com",password="U2_PW", site=site1)
+			u3 = User.add(username="U3",email="u3@example.com",password="U3_PW", site=site2)
 			self.assertNotEquals(u1,u2)
 			self.assertNotEquals(u2,u3)
 			self.assertNotEquals(u1,u3)
@@ -105,4 +104,10 @@ class SiteTestCase(TC):
 			self.assertRaises(DoesNotExist, User.find,"U3",site1)
 			self.assertRaises(DoesNotExist, User.find,"U2",site21)
 
+			self.assertRaises(NotUniqueError, User.add,"U1",site2)
+			self.assertRaises(NotUniqueError, User.add,"U1",site21)
+			self.assertRaises(NotUniqueError, User.add,"U3",site21)
+			# The test suite intentionally does not check whether
+			# a user may be added multiple times at different sites,
+			# e.g. whether User.add("U2",site21) succeeds
 

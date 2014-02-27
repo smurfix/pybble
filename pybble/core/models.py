@@ -130,6 +130,18 @@ class User(UserMixin, db.Document):
 				site = site.parent
 		raise DoesNotExist("User",username)
 	
+	@classmethod
+	def add(cls, username, site, **args):
+		try:
+			User.find(username,site)
+		except DoesNotExist:
+			pass
+		else:
+			raise NotUniqueError("User",username)
+		u = cls(name=username, site=site, **args)
+		u.save()
+		return u
+
 ###############################################################
 # Commom extendable base classes
 ###############################################################
