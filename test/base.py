@@ -16,7 +16,7 @@ class TC(unittest.TestCase):
 
 	def setUp(self):
 		app = flask.Flask(__name__)
-		app.config['MONGODB_DB'] = 'testing'
+		app.config['MONGODB_DB'] = 'pybble_test'
 		app.config['TESTING'] = True
 
 		class Todo(db.Document):
