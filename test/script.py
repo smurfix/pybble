@@ -74,7 +74,7 @@ class CapSys(object):
 		return out,err
 
 def capture(x):
-	@wraps
+	@wraps(x)
 	def runner(self):
 		with CapSys() as cap:
 			x(self,cap)
@@ -182,7 +182,7 @@ class CommandWithCatchAll(Command):
 		print(remaining_args)
 
 
-class TestCommands(unittest.TestCase):
+class TestRunCommands(unittest.TestCase):
 
 	TESTING = True
 
@@ -192,7 +192,7 @@ class TestCommands(unittest.TestCase):
 		self.app.config.from_object(self)
 
 
-class TestManager:
+class TestScripting:
 
 	TESTING = True
 
@@ -691,7 +691,7 @@ class TestManager:
 			assert 'correct [y]: no' in out
 
 
-class TestSubManager:
+class TestSubScripting:
 
 	TESTING = True
 
