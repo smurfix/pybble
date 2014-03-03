@@ -1,5 +1,17 @@
 #!/usr/bin/env python
-# -*- coding:utf-8 -*-
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, print_function, division
+##
+## This is part of Pybble, a WMS (Whatever Management System) based on
+## Jinja2/Haml, Werkzeug, Flask, and Optimism.
+##
+## Pybble is Copyright © 2014 by Matthias Urlichs <matthias@urlichs.de>,
+## it is licensed under the GPLv3. See the file `README.md` for details
+## as well as hopeful statements by the author.
+##
+## This paragraph is auto-generated and may self-destruct at any time.
+## Please do not remove the next line, or insert any blank lines before it.
+##BP
 
 from setuptools import setup, find_packages
 
@@ -10,7 +22,6 @@ def get_version(fname='pybble/version.py'):
         for line in f:
             if line.startswith('__version__'):
                 return eval(line.split('=')[-1])
-
 
 __version__ = ".".join(map(str, VERSION))
 __status__ = "Alpha"
@@ -43,7 +54,6 @@ try:
     }
 except ImportError:
     pass
-
 
 REQUIREMENTS = [i.strip() for i in open("requirements.txt").readlines()
                 if not i.startswith("http")]
