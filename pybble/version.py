@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-
-# -*- coding: utf-8 -*-
 from __future__ import absolute_import, print_function, division
 ##
 ## This is part of Pybble, a WMS (Whatever Management System) based on
