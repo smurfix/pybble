@@ -31,15 +31,7 @@ class Manager(BaseManager):
 		return super(Manager,self).handle(*a,**k)
 			
 	def create_app(self, app=None, **kwargs):
-		## cloned from flask.ext.script.Manager
-		if self.parent:
-			# Sub-manager, defer to parent Manager
-			return self.parent.create_app(**kwargs)
-
-		if isinstance(self.app, Flask):
-			return self.app
-
-		app = self.app(**kwargs)
+		app = super(Manager,self).create_app(app, **kwargs)
 		self.app = app
 		return app
 
