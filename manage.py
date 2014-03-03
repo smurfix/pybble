@@ -38,44 +38,47 @@ manager.add_option("-t", "--test", dest="test", required=False, default=False, h
 
 @manager.shell
 def make_shell_context():
-    " Update shell. "
-    return dict(app=manager.app, db=db)
+	" Update shell. "
+	return dict(app=manager.app, db=db)
 
 
 @manager.command
 def check():
-    """Prints app status"""
-    from pprint import pprint
-    print("Extensions:")
-    pprint(app.extensions)
-    print("Modules:")
-    pprint(app.blueprints)
-    print("App:")
-    return app
+	"""Prints app status"""
+	from flask import current_app
+	app = current_app
+
+	from pprint import pprint
+	print("App:",)
+	print str(app)
+	print("Extensions:")
+	pprint(app.extensions)
+	print("Modules:")
+	pprint(app.blueprints)
 
 
 #@manager.command
 #def populate():
-#    """Populate the database with sample data"""
-#    from quokka.utils.populate import Populate
-#    Populate(db)()
+#	"""Populate the database with sample data"""
+#	from quokka.utils.populate import Populate
+#	Populate(db)()
 #
 #
 #@manager.command
 #def show_config():
-#    "print all config variables"
-#    from pprint import pprint
-#    print("Config.")
-#    pprint(dict(app.config))
+#	"print all config variables"
+#	from pprint import pprint
+#	print("Config.")
+#	pprint(dict(app.config))
 #
 #manager.add_command("run0", Server(
-#    use_debugger=True,
-#    use_reloader=True,
-#    host='0.0.0.0',
-#    port=8000
+#	use_debugger=True,
+#	use_reloader=True,
+#	host='0.0.0.0',
+#	port=8000
 #))
 
 #load_blueprint_commands(manager)
 
 if __name__ == '__main__':
-    manager.run()
+	manager.run()
