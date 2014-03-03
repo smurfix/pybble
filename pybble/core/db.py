@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 ##BP
 
 from flask.ext.mongoengine import MongoEngine
