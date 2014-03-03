@@ -65,11 +65,14 @@ $ pip install -r requirements.txt
 
 ```bash
 $ $EDITOR local_settings.py
-===============quokka/quokka/local_settings.py===============
+===============./local_settings.py===============
 MONGODB_SETTINGS = {'DB': 'your_mongo_db'}
 DEBUG = True
-=============================================================
+=================================================
 ```
+
+In a production environment, you should password-protected access to your
+database! (TODO: Pybble should enforce that.)
 
 3. Populate with sample data (optional)
 
