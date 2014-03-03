@@ -1,4 +1,15 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import, print_function, division
+##
+## This is part of Pybble, a WMS (Whatever Management System) based on
+## Jinja2/Haml, Werkzeug, Flask, and Optimism.
+##
+## Pybble is Copyright © 2014 by Matthias Urlichs <matthias@urlichs.de>,
+## it is licensed under the GPLv3. See the file `README.md` for details
+## as well as hopeful statements by the author.
+##
+## This paragraph is auto-generated and may self-destruct at any time.
+## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
 import re
@@ -93,20 +104,17 @@ def run(command_line, manager_run):
 
 	return exit_code
 
-
 class SimpleCommand(Command):
 	'simple command'
 
 	def run(self):
 		print('OK')
 
-
 class NamedCommand(Command):
 	'named command'
 
 	def run(self):
 		print('OK')
-
 
 class ExplicitNamedCommand(Command):
 	'named command'
@@ -116,7 +124,6 @@ class ExplicitNamedCommand(Command):
 	def run(self):
 		print('OK')
 
-
 class NamespacedCommand(Command):
 	'namespaced command'
 
@@ -124,7 +131,6 @@ class NamespacedCommand(Command):
 
 	def run(self):
 		print('OK')
-
 
 class CommandWithArgs(Command):
 	'command with args'
@@ -135,7 +141,6 @@ class CommandWithArgs(Command):
 
 	def run(self, name):
 		print(name)
-
 
 class CommandWithOptions(Command):
 	'command with options'
@@ -148,7 +153,6 @@ class CommandWithOptions(Command):
 
 	def run(self, name):
 		print(name)
-
 
 class CommandWithDynamicOptions(Command):
 	'command with options'
@@ -168,7 +172,6 @@ class CommandWithDynamicOptions(Command):
 	def run(self, name):
 		print(name)
 
-
 class CommandWithCatchAll(Command):
 	'command with catch all args'
 
@@ -181,7 +184,6 @@ class CommandWithCatchAll(Command):
 	def run(self, remaining_args, foo):
 		print(remaining_args)
 
-
 class TestRunCommands(unittest.TestCase):
 
 	TESTING = True
@@ -190,7 +192,6 @@ class TestRunCommands(unittest.TestCase):
 
 		self.app = Flask(__name__)
 		self.app.config.from_object(self)
-
 
 class TestScripting:
 
@@ -575,7 +576,6 @@ class TestScripting:
 			out, err = capsys.readouterr()
 			assert 'hello [romeo]: juliette' in out
 
-
 	@capture
 	def test_command_with_prompt_bool(self, capsys):
 
@@ -615,7 +615,6 @@ class TestScripting:
 			code = run('manage.py hello', lambda: manager.run())
 			out, err = capsys.readouterr()
 			assert 'correct [y]: no' in out
-
 
 class TestSubScripting:
 

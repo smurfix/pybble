@@ -7,6 +7,7 @@ BEGIN {
 	open(BP,"_boilerplate.py") or die "no boilerplate file found\n";
 	$BP = <BP>;
 	close(BP);
+	$BP =~ s:\n+\z:\n##BP\n\n:;
 
 	$/ = "";
 }

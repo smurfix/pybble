@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if test $(git ls-files --modified | wc -l) != 0 ; then
+if test $(git ls-files --modified | fgrep -zv _boilerplate.py | wc -l) != 0 ; then
 	echo "You have modifications here" >&2
 	exit 1
 fi
