@@ -27,10 +27,11 @@ class ConfigDict(dict):
 	def __init__(self,site=None):
 		self.site = site
 		self.set_db = bool(site)
+
 	def __setitem__(self,k,v):
+		cfv = ConfigVar.get(k)
 		if self.set_db:
 			assert self.site
-			cfv = ConfigVar.get(k)
 			cf = SiteConfigVar(site=self.site, var=cfv, value=v)
 			try:
 				cf.save()
@@ -38,8 +39,29 @@ class ConfigDict(dict):
 				cf = SiteConfigVar.objects(site=self.site, var=cfv)[0]
 				cf.value=v
 				cf.save()
-			
-		super(ConfigDict,self).__setitem__(k,v)
+				self[k].pop(0)
+		if not cfv.prepend:
+			super(ConfigDict,self).__setitem__(k,v)
+		elif k in self:
+			self[k].insert(0,v)
+		else:
+			super(ConfigDict,self).__setitem__(k,[v])
+
+	def __delitem__(self,k):
+		cfv = ConfigVar.get(k)
+		if self.set_db:
+			assert self.site
+			try:
+				cf = SiteConfigVar.objects(site=self.site, var=cfv)[0]
+			except IndexError:
+				pass
+			else:
+				cf.delete()
+				self[k].pop(0)
+		elif self.site.parent:
+			super(ConfigDict,self).__setitem__(k,self.site.parent.config[k])
+		else:
+			super(ConfigDict,self).__setitem__(k,cfv.default)
 	
 	def disarm(self):
 		self.set_db = False
@@ -50,6 +72,7 @@ class Site(db.Document):
 	name = db.StringField(unique=True, required=True)
 	domain = db.StringField(unique=True, required=True)
 	parent = db.ReferenceField('Site')
+	app = db.StringField(required=True, default='_root')
 
 	@property
 	def children(self):
@@ -70,9 +93,15 @@ class Site(db.Document):
 		else:
 			cfg = ConfigDict()
 			for s in ConfigVar.objects:
-				cfg[s.name] = s.default
+				if s.prepend:
+					cfg[s.name] = s.default or []
+				else:
+					cfg[s.name] = s.default
 		for s in SiteConfigVar.objects(site=self):
-			cfg[s.var.name] = s.value
+			if s.var.prepend:
+				cfg[s.var.name].insert(0,s.value)
+			else:
+				cfg[s.var.name] = s.value
 		cfg.site = self
 		cfg.arm()
 		return cfg
@@ -81,14 +110,22 @@ class ConfigVar(db.Document):
 	name = db.StringField(unique=True, required=True)
 	info = db.StringField(required=True)
 	default = db.StructField()
+	prepend = db.BooleanField(default=False)
+
+	def __init__(self,**kv):
+		if kv.get("prepend",False):
+			v = kv.get("default",[])
+			if not hasattr(v,"prepend"):
+				v = [v]
+		super(ConfigVar,self).__init__(**kv)
 
 	@staticmethod
 	def get(name):
 		return ConfigVar.objects(name=name)[0]
 
 	@staticmethod
-	def exists(name,info,default=None):
-		cf = ConfigVar(name=name,info=info,default=default)
+	def exists(name,info,default=None,prepend=False):
+		cf = ConfigVar(name=name,info=info,default=default,prepend=prepend)
 		cf.save()
 	
 class SiteConfigVar(db.Document):

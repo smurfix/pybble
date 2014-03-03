@@ -201,75 +201,6 @@ class TestScripting:
 		self.app = Flask(__name__)
 		self.app.config.from_object(self)
 
-	def test_with_default_commands(self):
-
-		manager = Manager(self.app)
-
-		assert 'runserver' in manager._commands
-		assert 'shell' in manager._commands
-
-	def test_without_default_commands(self):
-
-		manager = Manager(self.app, with_default_commands=False)
-
-		assert 'runserver' not in manager._commands
-		assert 'shell' not in manager._commands
-
-	def test_add_command(self):
-
-		manager = Manager(self.app)
-		manager.add_command('simple', SimpleCommand())
-
-		assert isinstance(manager._commands['simple'], SimpleCommand)
-
-	def test_add_named_command(self):
-
-		manager = Manager(self.app)
-		manager.add_command(NamedCommand())
-
-		assert 'named' in manager._commands
-		assert isinstance(manager._commands['named'], NamedCommand)
-
-	def test_add_explicit_named_command(self):
-
-		manager = Manager(self.app)
-		manager.add_command(ExplicitNamedCommand())
-
-		name = ExplicitNamedCommand.name
-		assert name in manager._commands
-		assert isinstance(manager._commands[name], ExplicitNamedCommand)
-
-	def test_add_namespaced_command(self):
-
-		manager = Manager(self.app)
-		manager.add_command('one', NamespacedCommand())
-		manager.add_command('two', NamespacedCommand())
-
-		assert 'ns' in manager._commands
-		assert isinstance(manager._commands['ns'], Manager)
-		ns = manager._commands['ns']
-		assert isinstance(ns._commands['one'], NamespacedCommand)
-		assert isinstance(ns._commands['two'], NamespacedCommand)
-
-	def test_add_namespaced_simple_command(self):
-
-		manager = Manager(self.app)
-		manager.add_command('hello', SimpleCommand(), namespace='ns')
-		manager.add_command('world', SimpleCommand(), namespace='ns')
-
-		assert 'ns' in manager._commands
-		assert isinstance(manager._commands['ns'], Manager)
-		ns = manager._commands['ns']
-		assert isinstance(ns._commands['hello'], SimpleCommand)
-		assert isinstance(ns._commands['world'], SimpleCommand)
-
-	def test_add_command_class(self):
-
-		manager = Manager(self.app)
-		manager.add_command('simple', SimpleCommand)
-
-		assert isinstance(manager._commands['simple'], SimpleCommand)
-
 	@capture
 	def test_simple_command_decorator(self, capsys):
 
@@ -427,11 +358,6 @@ class TestScripting:
 		assert isinstance(manager._commands['simple'], SimpleCommand)
 
 		code = run('manage.py -c Development simple', lambda: manager.run())
-		out, err = capsys.readouterr()
-		assert code == 0
-		assert 'OK' in out
-
-		code = run('manage.py simple -c Development', lambda: manager.run())
 		out, err = capsys.readouterr()
 		assert code == 0
 		assert 'OK' in out

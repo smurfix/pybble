@@ -14,7 +14,7 @@ __license__ = "None. All rightes reserved. For now."
 __copyright__ = "Copyright © 2014, Matthias Urlichs"
 
 import os
-from pybble.core.admin import create_admin
+#from pybble.core.admin import create_admin
 #from quokka.core.app import QuokkaApp
 	# from .core.middleware import HTTPMethodOverrideMiddleware
 
@@ -25,22 +25,36 @@ except:
 	# If new environment not return error
 	pass
 
+ROOT_NAME = '_root'
 
 import logging
+logger = logging.getLogger('pybble.init')
 
 from flask import Flask, request, render_template, render_template_string, g, session, Markup, Response
+from flask.config import Config
+from pybble.core.db import db
 from time import time
 import os
 
 from hamlish_jinja import HamlishExtension
 from jinja2 import Template
 
-from quokka.core.app import QuokkaApp
-
 ###################################################
 # web server setup
 
-class HamlQuokka(QuokkaApp):
+class HamlPybble(Flask):
+	def __init__(self, name, config=None, **kw):
+		template_folder = config.get("TEMPLATE_ROOT",None)
+		if template_folder is None:
+			template_folder = os.path.join(os.getcwd(),'templates')
+		static_folder = config.get("static_ROOT",None)
+		if static_folder is None:
+			static_folder = os.path.join(os.getcwd(),'statics')
+
+		super(HamlPybble,self).__init__(name, template_folder=template_folder, static_folder=static_folder, **kw)
+		self.config = config
+		self.wsgi_app = CustomProxyFix(self.wsgi_app)
+
 	def create_jinja_environment(self):
 		"""Add support for .haml templates."""
 		rv = super(HamlQuokka,self).create_jinja_environment()
@@ -62,6 +76,8 @@ class HamlQuokka(QuokkaApp):
 			return True
 		return super(HamlQuokka,self).select_jinja_autoescape(filename)
 
+	def init_manager(self, mgr):
+		pass
 
 def datetimeformat(value, format='%d-%m-%Y %H:%M %Z%z'):
 	if isinstance(value,(int,float)):
@@ -99,55 +115,68 @@ class CustomProxyFix(object):
 #	app.register_blueprint(simple_page, url_prefix="/two", url_defaults={"special":True})
 
 
+from pybble.core.models import Site
 
+class _fake_app(Flask):
+	pass
+	#def __init__(self,config):
+	#	self.config = config
 
+ext_config = None
+def create_app(site=ROOT_NAME, config=None, test=False, init=False):
+	"""\
+		Setup an app instance. Configuration is loded from
+		* local_settings
+		* PYBBLE_SETTINGS
+		* the database
 
-def create_app(config=None, test=False, admin_instance=None, **settings):
-	app = HamlQuokka('pybble', template_folder=os.path.join(os.getcwd(),'templates'), static_folder=os.path.join(os.getcwd(),'static'))
-	app.wsgi_app = CustomProxyFix(app.wsgi_app)
+		:param site: The site name. The default is '_root'; there may be
+		             more than one one root site
+		:param config: A configuration file to load. Default is
+					   `local_settings` in production or `pybble.settings`
+					   in test mode.
+		:param init: A flag to initialize a root.
+		             Non-roots are created by explicit command.
+		"""
 
-	app.config.from_object(config or 'quokka.settings')
-	mode = os.environ.get('MODE', 'local')
-	if test:
-		mode = 'quokka.test'
+	global ext_config
+	if ext_config is None:
+		f_app = _fake_app(os.path.abspath(os.curdir))
+		ext_config = f_app.config
+		ext_config.from_object(config or ('pybble.test_settings' if test else 'local_settings'))
+		if not test:
+			ext_config.from_envvar("PYBBLE_SETTINGS", silent=True)
+		else:
+			ext_config.from_envvar("PYBBLE_TEST_SETTINGS", silent=True)
+	
+		db.init_app(f_app)
+
 	try:
-		app.config.from_object('%s_settings' % mode)
-	except ImportError:
-		pass
-
-	app.config.update(settings)
-
-	if not test:
-		app.config.from_envvar("QUOKKA_SETTINGS", silent=True)
+		site = Site.objects(name=site)[0]
+	except IndexError:
+		if init is None:
+			raise RuntimeError("Site does not exist")
+		if site != "_root":
+			raise RuntimeError("You cannot initialize a non-root site this way:")
+		site = Site(name=site, domain="localhost")
+		site.save()
 	else:
-		app.config.from_envvar("QUOKKATEST_SETTINGS", silent=True)
+		if init:
+			raise RuntimeError("Site exists")
+	cfg = site.config
+
+	# override with ext_config settings, no matter what
+	cfg.disarm()
+	cfg.update(ext_config)
+	cfg.arm()
+
+	app = HamlPybble(site.name, config=cfg)
 
 	# testing trick
 	# with app.test_request_context():
-	from quokka.ext import configure_extensions
-	configure_extensions(app, admin_instance or admin)
+#	from quokka.ext import configure_extensions
+#	configure_extensions(app, admin_instance or admin)
 
 	# app.wsgi_app = HTTPMethodOverrideMiddleware(app.wsgi_app)
 	return app
 
-
-def create_api(config=None, **settings):
-	return None
-
-
-def create_celery_app(app=None):
-	from celery import Celery
-	app = app or create_app()
-	celery = Celery(__name__, broker=app.config['CELERY_BROKER_URL'])
-	celery.conf.update(app.config)
-	TaskBase = celery.Task
-
-	class ContextTask(TaskBase):
-		abstract = True
-
-		def __call__(self, *args, **kwargs):
-			with app.app_context():
-				return TaskBase.__call__(self, *args, **kwargs)
-
-	celery.Task = ContextTask
-	return celery

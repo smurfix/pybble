@@ -48,23 +48,35 @@ class SiteTestCase(TC):
 			self.assertEqual(Site.objects.count(), 0)
 			site = Site(name='root', domain='test.example.com')
 			site.save()
+			site1 = Site(name='foo', domain='foo.example.com', parent=site)
+			site1.save()
 
 			ConfigVar.objects.delete()
 			self.assertEqual(ConfigVar.objects.count(), 0)
 			ConfigVar.exists("TEST","testing 123",123)
-			ConfigVar.exists("TEST2","testing 234","234")
+			ConfigVar.exists("TEST2","testing 234","234",True)
 			self.assertEqual(ConfigVar.objects.count(), 2)
 			self.assertRaises(NotUniqueError,ConfigVar.exists,"TEST","testing 123",123)
 			self.assertEqual(ConfigVar.objects.count(), 2)
 
 			cf = ConfigVar.get("TEST")
+			cf2 = ConfigVar.get("TEST2")
 			self.assertEquals(cf.default,123)
-			self.assertEquals(cf.default,123)
-
-			self.assertEquals(site.config,{"TEST":123,"TEST2":"234"})
+			self.assertEquals(cf2.default,u"234")
+			self.assertEquals(site.config,{"TEST":123,"TEST2":[u"234"]})
+			self.assertEquals(site1.config,{"TEST":123,"TEST2":[u"234"]})
 
 			site.config["TEST"] = [12,34]
-			self.assertEquals(site.config,{"TEST":[12,34],"TEST2":"234"})
+			self.assertEquals(site.config,{"TEST":[12,34],"TEST2":[u"234"]})
+			self.assertEquals(site1.config,{"TEST":[12,34],"TEST2":[u"234"]})
+			site1.config["TEST2"] = 987
+			self.assertEquals(site1.config,{"TEST":[12,34],"TEST2":[987,u"234"]})
+			del site1.config["TEST2"]
+			self.assertEquals(site1.config,{"TEST":[12,34],"TEST2":[u"234"]})
+			del site1.config["TEST2"]
+			self.assertEquals(site1.config,{"TEST":[12,34],"TEST2":[u"234"]})
+			# TODO: Cached site configs need invalidation
+			# (we don't have a cache yet)
 
 	def test_user(self):
 		with self.app.test_request_context():

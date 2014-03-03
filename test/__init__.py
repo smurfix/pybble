@@ -2,3 +2,4 @@
 
 from .site import *
 from .script import *
+from .manager import *

@@ -13,11 +13,12 @@ from flask.ext.mongoengine import MongoEngine
 from pybble.core.db import db
 
 class TC(unittest.TestCase):
+	MONGODB_DB = 'pybble_test'
+	TESTING = True
 
 	def setUp(self):
 		app = flask.Flask(__name__)
-		app.config['MONGODB_DB'] = 'pybble_test'
-		app.config['TESTING'] = True
+		app.config.from_object(self)
 
 		class Todo(db.Document):
 			title = db.StringField(max_length=60)
