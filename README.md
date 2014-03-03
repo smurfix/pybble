@@ -2,14 +2,26 @@ The Pybble Thing
 ===============================================
 
 ### Flask and MongoDB powered web "whatever" manager
-#### (alpha version, work in progress)
+### (alpha version, work in progress)
 
 <p align="center">
 <img src="docs/logo_256.png" alt="Pybble WMS" />
 </p>
 
 
-Pybble is a flexible web management platform powered by Python, Flask and MongoDB.
+Pybble is a flexible WMS ("Whatever Management System", which in contrast
+to a CMS isn't (just) about Content). It builds on 
+Jinja2/Haml, Werkzeug, Flask, MongoDB, and Optimism.
+
+Pybble is Copyright © 2014 by Matthias Urlichs <matthias@urlichs.de>,
+it is licensed under the GPLv3. See the file `LICENSE` for details.
+
+Note that I would have liked to publish this code under the AGPL instead
+(so that everybody will _have to_ share their extensions and other
+interesting pybble-related code), but life is not perfect, so I'll merely
+state my wish here that you in fact _do_ share your work. Whether you
+ultimately do, or not, is up to you. Just don't forget not to send your
+``localsettings.py`` file …
 
 
 Rationale
