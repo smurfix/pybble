@@ -22,22 +22,23 @@ from flask.ext.script._compat import StringIO, text_type
 from flask.ext.script import Command, Option, prompt, prompt_bool
 from .script import Catcher,capture,run
 from .base import TC
-from pybble.manager import Manager
+from pybble.manager.main import RootManager
 
 from pytest import raises
 
 class ManagerFlask(Flask):
+	TESTING = True
 	def init_manager(self,manager):
 		@manager.command
 		def hello(foo=12,*what,**kw):
-			print "Oh hello",foo
+			print("Oh hello",foo)
 	pass
 
 class TestManager(TC):
 	def setUp(self):
 		super(TestManager,self).setUp()
 		self.app = ManagerFlask(__name__)
-		self.manager = Manager(self.app)
+		self.manager = RootManager(self.app)
 
 	@capture
 	def test_simple_command_decorator(self, capsys):

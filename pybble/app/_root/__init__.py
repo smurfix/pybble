@@ -12,7 +12,10 @@ from __future__ import absolute_import, print_function, division
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
-from .site import *
-from .script import *
-from .manager import *
-from .app_config import *
+# This is the site's root app.
+# It contains the default templates and basic user+site administration.
+
+from .. import BaseApp
+
+class App(BaseApp):
+	pass

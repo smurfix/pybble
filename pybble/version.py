@@ -14,13 +14,13 @@ from __future__ import absolute_import, print_function, division
 
 ### DO NOT add anything here that's not a variable.
 
-VERSION = (0, 1, 0)
+VERSION = (0, 1, 1)
 
-__version__ = ".".join(map(str, VERSION))
-__status__ = "alpha"
-__description__ = "Modular multi-site web thing, powered by Flask and MongoDB"
-__author__ = "Matthias Urlichs"
-__email__ = "matthias@urlichs.de"
-__license__ = "GPLv3"
-__copyright__ = u"Copyright ©2014, Matthias Urlichs"
+version = ".".join(map(str, VERSION))
+status = "alpha"
+description = "Modular multi-site web thing, powered by Flask and MongoDB"
+author = "Matthias Urlichs"
+email = "matthias@urlichs.de"
+license = "GPLv3"
+copyright = u"Copyright ©2014, Matthias Urlichs"
 

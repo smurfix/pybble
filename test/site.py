@@ -20,16 +20,20 @@ import flask
 from flask.ext.mongoengine import MongoEngine
 from mongoengine.errors import NotUniqueError,DoesNotExist
 from .base import TC
-from pybble.core.models import Site,ConfigVar,User
+from pybble.core.models import Site,ConfigVar,SiteConfigVar,User
 
 class SiteTestCase(TC):
 
 	def setUp(self):
 		super(SiteTestCase,self).setUp()
+		with self.app.test_request_context():
+			User.objects.delete()
+			SiteConfigVar.objects.delete()
+			Site.objects.delete()
+			ConfigVar.objects.delete()
 
 	def test_create_root(self):
 		with self.app.test_request_context():
-			Site.objects.delete()
 			self.assertEqual(Site.objects.count(), 0)
 			site = Site(name='root', domain='test.example.com')
 			site.save()
@@ -37,7 +41,6 @@ class SiteTestCase(TC):
 
 	def test_create_multi(self):
 		with self.app.test_request_context():
-			Site.objects.delete()
 			self.assertEqual(Site.objects.count(), 0)
 			site = Site(name='root', domain='test.example.com')
 			site.save()
@@ -54,14 +57,12 @@ class SiteTestCase(TC):
 
 	def test_config(self):
 		with self.app.test_request_context():
-			Site.objects.delete()
 			self.assertEqual(Site.objects.count(), 0)
 			site = Site(name='root', domain='test.example.com')
 			site.save()
 			site1 = Site(name='foo', domain='foo.example.com', parent=site)
 			site1.save()
 
-			ConfigVar.objects.delete()
 			self.assertEqual(ConfigVar.objects.count(), 0)
 			ConfigVar.exists("TEST","testing 123",123)
 			ConfigVar.exists("TEST2","testing 234","234",True)
@@ -90,8 +91,6 @@ class SiteTestCase(TC):
 
 	def test_user(self):
 		with self.app.test_request_context():
-			User.objects.delete()
-			Site.objects.delete()
 			self.assertEqual(Site.objects.count(), 0)
 			site = Site(name='root', domain='test.example.com')
 			site.save()

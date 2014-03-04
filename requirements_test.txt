@@ -3,6 +3,7 @@ https://github.com/smurfix/jinja2/tarball/master
 https://github.com/smurfix/flask/tarball/master
 https://github.com/smurfix/flask-script/tarball/master
 https://github.com/smurfix/flask-login/tarball/master
+https://github.com/smurfix/blinker/tarball/master
 #WTForms
 #mongoengine>=0.8
 #flask_mongoengine

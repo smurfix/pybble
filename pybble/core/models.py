@@ -17,11 +17,15 @@ import json
 import logging
 import datetime
 import random
+import os
 
+from blinker import NamedSignal
 from mongoengine.errors import NotUniqueError
 from flask import url_for, current_app, g
+from flask.config import Config
 
-from pybble.core.db import db
+from .. import ROOT_NAME
+from .db import db
 
 #from flask.ext.misaka import markdown
 #
@@ -35,13 +39,30 @@ from pybble.core.db import db
 
 logger = logging.getLogger()
 
-class ConfigDict(dict):
+## a list of config-change signals, per site name.
+_config_changed = {}
+def _config_changed_sig(name):
+	sig = _config_changed.get(name)
+	if sig is None:
+		_config_changed[name] = sig = NamedSignal(name)
+	return sig
+def register_changed(app):
+	sig = _config_changed_sig(app.site.name)
+	sig.connect(app.read_config)
+
+class ConfigDict(Config):
 	def __init__(self,site=None):
+		self.root_path = os.curdir
 		self.site = site
 		self.set_db = bool(site)
 
 	def __setitem__(self,k,v):
-		cfv = ConfigVar.get(k)
+		try:
+			cfv = ConfigVar.get(k)
+		except IndexError:
+			if self.set_db:
+				raise IndexError(k)
+			cfv = None
 		if self.set_db:
 			assert self.site
 			cf = SiteConfigVar(site=self.site, var=cfv, value=v)
@@ -52,15 +73,21 @@ class ConfigDict(dict):
 				cf.value=v
 				cf.save()
 				self[k].pop(0)
-		if not cfv.prepend:
+		if not cfv or not cfv.prepend:
 			super(ConfigDict,self).__setitem__(k,v)
 		elif k in self:
 			self[k].insert(0,v)
 		else:
 			super(ConfigDict,self).__setitem__(k,[v])
+		if self.set_db and self.site is not None:
+			self.site.config_changed()
 
 	def __delitem__(self,k):
-		cfv = ConfigVar.get(k)
+		try:
+			cfv = ConfigVar.get(k)
+		except IndexError:
+			# can't delete values that are only read from settings
+			raise IndexError(k)
 		if self.set_db:
 			assert self.site
 			try:
@@ -74,6 +101,8 @@ class ConfigDict(dict):
 			super(ConfigDict,self).__setitem__(k,self.site.parent.config[k])
 		else:
 			super(ConfigDict,self).__setitem__(k,cfv.default)
+		if self.set_db and self.site is not None:
+			self.site.config_changed()
 	
 	def disarm(self):
 		self.set_db = False
@@ -84,7 +113,7 @@ class Site(db.Document):
 	name = db.StringField(unique=True, required=True)
 	domain = db.StringField(unique=True, required=True)
 	parent = db.ReferenceField('Site')
-	app = db.StringField(required=True, default='_root')
+	app = db.StringField(required=True, default=ROOT_NAME)
 
 	@property
 	def children(self):
@@ -117,6 +146,11 @@ class Site(db.Document):
 		cfg.site = self
 		cfg.arm()
 		return cfg
+	
+	def config_changed(self, **kwargs):
+		for s in self.children_tree:
+			sig = _config_changed_sig(s.name)
+			sig.send(self,**kwargs)
 
 class ConfigVar(db.Document):
 	name = db.StringField(unique=True, required=True)

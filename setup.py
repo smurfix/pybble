@@ -15,13 +15,7 @@ from __future__ import absolute_import, print_function, division
 
 from setuptools import setup, find_packages
 
-def get_version(fname='pybble/version.py'):
-	with open(fname) as f:
-		for line in f:
-			if line.startswith('__') or line.startswith("VERSION"):
-				var,val = line.split("=",1)
-				globals()[var.strip()] = eval(val,globals())
-	return vars
+import pybble.version as V
 
 kwargs = {}
 try:
@@ -72,20 +66,19 @@ classifiers = [
 try:
 	long_description = open('README.md').read()
 except:
-	long_description = __description__
+	long_description = V.description
 
-get_version()
 setup(name='pybble',
-	  version=__version__,
-	  description=__description__,
+	  version=V.version,
+	  description=V.description,
 	  long_description=long_description,
 	  classifiers=classifiers,
 	  keywords='pybble cms flask publishing mongodb',
-	  author=__author__,
-	  author_email=__email__,
+	  author=V.author,
+	  author_email=V.email,
 	  url='http://pybble.smurf.noris.de',
 	  download_url="https://github.com/smurfix/pybble/tarball/master",
-	  license=__license__,
+	  license=V.license,
 	  packages=find_packages(exclude=('doc', 'docs',)),
 	  package_dir={'pybble': 'pybble'},
 	  install_requires=REQUIREMENTS,
