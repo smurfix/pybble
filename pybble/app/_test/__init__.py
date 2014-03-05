@@ -12,8 +12,25 @@ from __future__ import absolute_import, print_function, division
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
-from .site import *
-from .script import *
-from .manager import *
-from .app_config import *
-from .app_run import *
+# This is the site's root app.
+# It contains the default templates and basic user+site administration.
+
+from flask import render_template
+from .. import BaseApp
+
+class App(BaseApp):
+	def init_routing(self):
+		@self.route('/one')
+		def get_one():
+			return "This is Number One"
+
+		@self.route('/two')
+		def get_two():
+			return render_template('two.haml')
+
+		@self.route('/three')
+		def get_three():
+			return render_template('three.html')
+
+	pass
+

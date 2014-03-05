@@ -14,7 +14,6 @@ from __future__ import absolute_import, print_function, division
 
 import re
 import sys
-import unittest
 from functools import wraps
 
 from flask import Flask
@@ -22,6 +21,7 @@ from flask.ext.script._compat import StringIO, text_type
 from flask.ext.script import Command, Manager, Option, prompt, prompt_bool
 
 from pytest import raises
+from .base import TC
 
 ## This is flask_script's test case, rewritten for testing with nose
 
@@ -184,7 +184,7 @@ class CommandWithCatchAll(Command):
 	def run(self, remaining_args, foo):
 		print(remaining_args)
 
-class TestRunCommands(unittest.TestCase):
+class TestRunCommands(TC):
 
 	TESTING = True
 
@@ -252,7 +252,7 @@ class TestScripting:
 		out, err = capsys.readouterr()
 		assert 'hello joe' in out
 
-		code = run('manage.py hello -h', manager.run)
+		code = run('manage.py hello -?', manager.run)
 		out, err = capsys.readouterr()
 		assert 'Prints your name' in out
 
@@ -284,7 +284,7 @@ class TestScripting:
 		out, err = capsys.readouterr()
 		assert 'NO' in out
 
-		code = run('manage.py verify -h', manager.run)
+		code = run('manage.py verify -?', manager.run)
 		out, err = capsys.readouterr()
 		assert 'Checks if verified' in out
 
@@ -327,7 +327,7 @@ class TestScripting:
 		out, err = capsys.readouterr()
 		assert 'hello joe' in out
 
-		code = run('manage.py hello -h', manager.run)
+		code = run('manage.py hello -?', manager.run)
 		out, err = capsys.readouterr()
 		assert 'Your name' in out
 
@@ -678,7 +678,7 @@ class TestSubScripting:
 		manager = Manager(self.app)
 		manager.add_command('sub_manager', sub_manager)
 
-		code = run('manage.py -h', manager.run)
+		code = run('manage.py -?', manager.run)
 		out, err = capsys.readouterr()
 		assert code == 0
 		assert 'Example sub-manager' in out
@@ -694,7 +694,7 @@ class TestSubScripting:
 		manager = Manager(self.app)
 		manager.add_command('sub_manager', sub_manager)
 
-		code = run('manage.py -h', manager.run)
+		code = run('manage.py -?', manager.run)
 		out, err = capsys.readouterr()
 		assert code == 0
 		assert 'sub_manager [--foo]' not in out
@@ -709,7 +709,7 @@ class TestSubScripting:
 		assert 'longer desc for submanager' in out
 		assert 'simple command' in out
 
-		code = run('manage.py sub_manager -h', manager.run)
+		code = run('manage.py sub_manager -?', manager.run)
 		out, err = capsys.readouterr()
 		assert code == 0
 		assert 'sub_manager [--foo]' in out
@@ -717,10 +717,10 @@ class TestSubScripting:
 		assert 'longer desc for submanager' in out
 		assert 'simple command' in out
 
-		code = run('manage.py sub_manager simple -h', manager.run)
+		code = run('manage.py sub_manager simple -?', manager.run)
 		out, err = capsys.readouterr()
 		assert code == 0
-		assert 'sub_manager [--foo] simple [-h]' in out
+		assert 'sub_manager [--foo] simple [-?]' in out
 		assert 'simple command' in out
 
 	def test_submanager_has_no_default_commands(self):

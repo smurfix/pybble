@@ -20,6 +20,8 @@ from functools import wraps
 from flask import Flask
 from flask.ext.script._compat import StringIO, text_type
 from flask.ext.script import Command, Option, prompt, prompt_bool
+from werkzeug.utils import cached_property
+
 from .script import Catcher,capture,run
 from .base import TC
 from pybble.manager.main import RootManager
@@ -27,22 +29,38 @@ from pybble.manager.main import RootManager
 from pytest import raises
 
 class ManagerFlask(Flask):
-	TESTING = True
+	testing = True
 	def init_manager(self,manager):
 		@manager.command
 		def hello(foo=12,*what,**kw):
 			print("Oh hello",foo)
 	pass
 
-class TestManager(TC):
+class ManagerTC(TC):
+	_manager = None
 	def setUp(self):
-		super(TestManager,self).setUp()
+		super(ManagerTC,self).setUp()
 		self.app = ManagerFlask(__name__)
-		self.manager = RootManager(self.app)
 
+	def manager(self, app=None):
+		return RootManager(app)
+
+	def run_manager(self, *args, **kwargs):
+		if len(args) == 1:
+			sys.argv = args[0].split(" ")
+		else:
+			sys.argv = args
+		exit_code = None
+		try:
+			exit_code = self.manager(kwargs.get('app',None)).run()
+		except SystemExit as e:
+			exit_code = e.code 
+		self.assertEqual(exit_code, kwargs.get('exit_code',0), " ".join(args))
+
+class TestManager(ManagerTC):
 	@capture
 	def test_simple_command_decorator(self, capsys):
-		code = run('manage.py app hello --foo=fubar', self.manager.run)
+		code = self.run_manager('manage.py -t app hello --foo=fubar', app=self.app)
 		out, err = capsys.readouterr()
 		assert 'Oh hello' in out
 

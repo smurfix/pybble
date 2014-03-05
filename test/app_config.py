@@ -43,10 +43,10 @@ class AppConfigTestCase(TC):
 		ConfigVar.exists("test1","Test One",-1)
 		ConfigVar.exists("test2","Test Two",-2)
 
-		app = create_app(site="root")
-		app1 = create_app(site="foo")
-		app2 = create_app(site="bar")
-		app11 = create_app(site="foofoo")
+		app = create_app(site="root", test=True)
+		app1 = create_app(site="foo", test=True)
+		app2 = create_app(site="bar", test=True)
+		app11 = create_app(site="foofoo", test=True)
 
 		self.assertEqual(app11.config["test1"],-1)
 		self.assertEqual(app11.config["test2"],-2)

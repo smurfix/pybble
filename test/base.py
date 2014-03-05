@@ -19,6 +19,53 @@ sys.path.insert(0,os.pardir)
 import unittest
 import datetime
 import flask
+from wsgi_intercept import WSGI_HTTPConnection,WSGI_HTTPSConnection
+from pybble.manager.main import SubdomainDispatcher
+
+main_app = None
+
+class Fake_HTTPConnection(WSGI_HTTPConnection):
+	def get_app(self, host, port):
+		return main_app,""
+class Fake_HTTPSConnection(WSGI_HTTPSConnection):
+	def get_app(self, host, port):
+		return main_app,""
+
+try:
+	from wsgi_intercept import http_client_intercept
+except ImportError:
+	skip_httpclient = True
+else:
+	skip_httpclient = False
+	http_client_intercept.HTTPInterceptorMixin = Fake_HTTPConnection
+	http_client_intercept.HTTPSInterceptorMixin = Fake_HTTPSConnection
+
+try:
+	from wsgi_intercept import httplib2_intercept
+except ImportError:
+	skip_httplib2 = True
+else:
+	skip_httplib2 = False
+	httplib2_intercept.InterceptorMixin = Fake_HTTPConnection
+
+try:
+	from wsgi_intercept import requests_intercept
+except ImportError:
+	skip_requests = True
+else:
+	skip_requests = False
+	requests_intercept.InterceptorMixin = Fake_HTTPConnection
+
+try:
+	from wsgi_intercept import urllib_intercept
+except ImportError:
+	skip_urllib = True
+else:
+	skip_urllib = False
+	urllib_intercept.HTTPInterceptorMixin = Fake_HTTPConnection
+	urllib_intercept.HTTPSInterceptorMixin = Fake_HTTPSConnection
+
+
 
 from flask.ext.mongoengine import MongoEngine
 from pybble.core.db import db
@@ -31,23 +78,40 @@ class TC(unittest.TestCase):
 		app = flask.Flask(__name__)
 		app.config.from_object(self)
 
-		class Todo(db.Document):
-			title = db.StringField(max_length=60)
-			text = db.StringField()
-			done = db.BooleanField(default=False)
-			pub_date = db.DateTimeField(default=datetime.datetime.now)
-
 		db.init_app(app)
-
-		Todo.drop_collection()
-		self.Todo = Todo
 
 		self.app = app
 		self.db = db
+		super(TC,self).setUp()
+		self.setUp2()
 
-#	def test_request_context(self):
-#		with self.app.test_request_context():
-#			todo = self.Todo(title='Test', text='test')
-#			todo.save()
-#			self.assertEqual(self.Todo.objects.count(), 1)
+	def setUp2(self):
+		pass
+	
 
+class WebTC(TC):
+	def setUp2(self):
+		global main_app
+		if main_app is None:
+			main_app = SubdomainDispatcher()
+		super(WebTC,self).setUp2()
+
+		if not skip_httpclient:
+			http_client_intercept.install()
+		if not skip_httplib2:
+			httplib2_intercept.install()
+		if not skip_requests:
+			requests_intercept.install()
+		if not skip_urllib:
+			urllib_intercept.install_opener()
+
+	def tearDown(self):
+		if not skip_httpclient:
+			http_client_intercept.uninstall()
+		if not skip_httplib2:
+			httplib2_intercept.uninstall()
+		if not skip_requests:
+			requests_intercept.uninstall()
+		if not skip_urllib:
+			urllib_intercept.uninstall_opener()
+		

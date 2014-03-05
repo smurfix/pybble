@@ -20,7 +20,7 @@ import random
 import os
 
 from blinker import NamedSignal
-from mongoengine.errors import NotUniqueError
+from mongoengine.errors import NotUniqueError,DoesNotExist
 from flask import url_for, current_app, g
 from flask.config import Config
 
@@ -59,9 +59,9 @@ class ConfigDict(Config):
 	def __setitem__(self,k,v):
 		try:
 			cfv = ConfigVar.get(k)
-		except IndexError:
+		except DoesNotExist:
 			if self.set_db:
-				raise IndexError(k)
+				raise DoesNotExist(k)
 			cfv = None
 		if self.set_db:
 			assert self.site
@@ -69,11 +69,12 @@ class ConfigDict(Config):
 			try:
 				cf.save()
 			except NotUniqueError:
-				cf = SiteConfigVar.objects(site=self.site, var=cfv)[0]
+				cf = SiteConfigVar.objects.get(site=self.site, var=cfv)
 				cf.value=v
 				cf.save()
-				self[k].pop(0)
-		if not cfv or not cfv.prepend:
+				if cfv is not None and cfv.prepend:
+					self[k].pop(0)
+		if cfv is None or not cfv.prepend:
 			super(ConfigDict,self).__setitem__(k,v)
 		elif k in self:
 			self[k].insert(0,v)
@@ -85,14 +86,14 @@ class ConfigDict(Config):
 	def __delitem__(self,k):
 		try:
 			cfv = ConfigVar.get(k)
-		except IndexError:
+		except DoesNotExist:
 			# can't delete values that are only read from settings
-			raise IndexError(k)
+			raise DoesNotExist(k)
 		if self.set_db:
 			assert self.site
 			try:
-				cf = SiteConfigVar.objects(site=self.site, var=cfv)[0]
-			except IndexError:
+				cf = SiteConfigVar.objects.get(site=self.site, var=cfv)
+			except DoesNotExist:
 				pass
 			else:
 				cf.delete()
@@ -114,6 +115,9 @@ class Site(db.Document):
 	domain = db.StringField(unique=True, required=True)
 	parent = db.ReferenceField('Site')
 	app = db.StringField(required=True, default=ROOT_NAME)
+	meta = {
+		'indexes': [('parent',)]
+	}
 
 	@property
 	def children(self):
@@ -167,17 +171,26 @@ class ConfigVar(db.Document):
 
 	@staticmethod
 	def get(name):
-		return ConfigVar.objects(name=name)[0]
+		try:
+			return ConfigVar.objects.get(name=name)
+		except DoesNotExist:
+			raise DoesNotExist("ConfigVar:"+name)
 
 	@staticmethod
 	def exists(name,info,default=None,prepend=False):
 		cf = ConfigVar(name=name,info=info,default=default,prepend=prepend)
 		cf.save()
+	meta = {
+		'indexes': [('name',)]
+	}
 	
 class SiteConfigVar(db.Document):
 	site = db.ReferenceField(Site)
-	var = db.ReferenceField(ConfigVar)
+	var = db.ReferenceField(ConfigVar, unique_with=("site",))
 	value = db.StructField()
+	meta = {
+		'indexes': [('site', 'var')]
+	}
 
 ###############################################################
 # Users
@@ -207,8 +220,8 @@ class User(UserMixin, db.Document):
 		assert site
 		while site:
 			try:
-				return User.objects(name=username,site=site)[0]
-			except IndexError:
+				return User.objects.get(name=username,site=site)
+			except DoesNotExist:
 				site = site.parent
 		raise DoesNotExist("User",username)
 	

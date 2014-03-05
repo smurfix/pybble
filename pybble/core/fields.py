@@ -16,9 +16,15 @@ import pickle
 
 from mongoengine import fields
 from mongoengine.base.datastructures import BaseList
+from ..core.json import rec_encode,rec_decode
 
 class StructField(fields.BaseField):
-	pass
+	def to_python(self, value):
+		return rec_decode(value)
+	def to_mongo(self, value):
+		return rec_encode(value)
+	def prepare_query_value(self, op, value):
+		raise RuntimeError("Cannot be used for querying",self)
 
 class MultipleObjectsReturned(Exception):
 	pass

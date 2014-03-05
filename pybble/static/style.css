@@ -1,0 +1,117 @@
+body        { background: #EEE; margin: 0; padding: 0 0; height: 100%; width: 100%; }
+body, input { font-family: 'Helvetica Neue', Arial,
+              sans-serif; font-weight: 300; font-size: 14px; }
+a           { color: #000; text-decoration: none; }
+a:hover     { background-color: #E8E8E8; }
+h1, h2      { margin: 0; color: #222; }
+h1 a        { text-decoration: none; }
+h2          { font-weight: normal; font-size: 24px; }
+.tagline    { color: #888; font-style: italic; margin: 0 0 20px 0; }
+.link div   { overflow: auto; font-size: 0.8em; white-space: pre;
+              padding: 4px 10px; margin: 5px 0; background: #EEE; }
+dt          { font-weight: normal; }
+.flashes    { margin-right: 5px; }
+.flashes .flash   { padding: 3px 8px; border-radius: 2px; width: auto; }
+.flash    { border-radius: 2px; width: auto; display: inline; }
+.error    { background: #ffDDDD; color: #CC0000; }
+.warn     { background: #ffeeDD; color: #CC8800; }
+.flashes .error { padding: 3px 8px; border-radius: 2px; }
+.flash .message { background: #DDffDD; color: #00CC00; }
+.urlinput   { width: 300px; }
+.inline     { display: inline; }
+div.buttons { padding-top: 10px; }
+h1.admin    { background: #FEE; }
+
+img#logo {
+	position: fixed;
+	top: 0px;
+	right: 0px;
+}
+input.enter { background: white;
+              border: 2px solid #aaa;
+	      text-decoration : none;
+              padding: 3px 6px;
+              margin-top: 10px;
+              margin-right: 8px;
+              border-radius: 4px; }
+input.enter:hover{ background: #EFE; }
+input.enter:active{color: #000; background: #AFA; }
+
+input.delete { background: white;
+              border: 2px solid #aaa;
+	      text-decoration : none;
+              padding: 3px 6px;
+              margin-top: 10px;
+              margin-right: 8px;
+              border-radius: 4px; }
+input.delete:hover{ background: #FEE; }
+input.delete:active{color: #000; background: #FAA; }
+
+a.edit      { background: white; 
+              border: 2px solid #aaa;
+	      text-decoration : none;
+              padding: 3px 6px;
+              margin-top: 10px;
+              margin-right: 8px;
+              border-radius: 4px; }
+a.edit:hover{ background: #EEE; }
+a.edit:active{color: #000; background: #AAA; }
+
+a.cancel      { background: white; 
+              border: 1.5px solid #aaa;
+	      text-decoration : none;
+              padding: 3px 6px;
+              margin-right: 8px;
+              border-radius: 4px; }
+a.cancel:hover{ background: #EEE; }
+a.cancel:active{color: #000; background: #AAA; }
+
+span.yes    { color: #080; }
+span.no     { color: #800; font-weight: bold; }
+pre         { margin-left: 2em; margin-right: 2em; }
+
+td { padding-right: 5px; }
+
+textarea { width: 30em; height: 10em; font-family: Courier, monospace; }
+
+/****** basic page layout **********************/
+
+div#header { position: absolute; top: 0px; width: 100%; font-size: 0.7em; }
+div.inside { margin: 5px; }
+div#page {
+    position: absolute; top: 200px; bottom: 30px;
+    box-sizing: border-box;
+    -o-box-sizing: border-box;
+    -icab-box-sizing: border-box;
+    -khtml-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    overflow: auto;
+    direction:rtl; 
+}
+div.inside {
+    direction:ltr;
+}
+div#page div.inside.monitor {
+	margin-left: 0px;
+}
+tbody#log th {
+	padding-left: 0px;
+	padding-right: 0px;
+}
+
+div#footer  { position: absolute; bottom: 0px; width: 100%; font-size: 0.7em; }
+div#footer div.left { float: left; text-align: left; }
+div#footer div.right { float: right; text-align: right; } 
+
+
+/****** monitor *************/
+
+div#log        { font-size: 0.8em; overflow: auto; height: inherit; }
+div#log ul     { list-style: none; padding-left: 0px; }
+div#log .error { padding: 3px 8px; border-radius: 2px; width: auto; background: #ffDDDD; color: #CC0000; font-size: 1.3em; }
+div#log .info  { padding: 3px 8px; border-radius: 2px; width: auto; background: #DDffDD; color: #00CC00; font-size: 1.3em; }
+
+table.single th { text-align: right; padding-right: 1em; }
+table.multi  th { text-align: left; }
+

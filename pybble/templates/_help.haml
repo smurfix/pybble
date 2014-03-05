@@ -1,0 +1,28 @@
+-macro render_field(field)
+	%tr
+		%th -> =field.label
+		%td -> =field(**kwargs)|safe
+	-if field.errors:
+		%tr
+			-for error in field.errors:
+				%td span=2
+					=error
+
+-macro show_menu(menu)
+	%ul
+		-for endpointa,epk,caption,submenus in menu
+			%li
+
+				-if not endpointa
+					%span.menudead
+						-if caption
+							=caption
+						-else
+							&nbsp;
+				-else
+					-if endpointa[0] == request.endpoint and not epk
+						%span.menuhit -> =caption
+					-else
+						%a href="{{ url_for(*endpointa,**epk) }}" -> =caption
+				-if submenus:
+					=show_menu(submenus)

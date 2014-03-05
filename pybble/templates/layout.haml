@@ -1,0 +1,76 @@
+<!doctype html>
+-from "_help.haml" import show_menu
+%html
+	%head
+		%title
+			-block title
+				=title or site.name
+		%link rel="icon" href="{{ url_for('static', filename='pybble.ico') }}" type="image/vnd.microsoft.icon"
+		%link rel="shortcut icon" href="{{ url_for('static', filename='pybble.ico') }}" type="image/vnd.microsoft.icon"
+		-block styles
+			%link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}"
+		-block scripts
+			%script. type="text/javascript" src="{{ url_for('static', filename='jquery.js') }}"
+
+	%body
+		%div#header
+			%div.inside
+				%h1
+					=title or site.name
+	
+				-with messages = get_flashed_messages(with_categories=true)
+					-if messages or error
+						%div.flashes
+							-if error
+								%div.error
+									=error
+							-for category, message in messages
+								%div.flash
+									%div class="{{ category }}"
+										=message
+
+				-if menu
+					%nav
+						=show_menu(menu)
+								
+				-block header
+					&nbsp;
+
+		%div#page
+			-block xbody
+				%div.inside
+					-block body
+						Content here. Eventually.
+
+		%div#footer
+			%div.inside
+				.left
+					-block foot_left
+						This is Pybble. You didn't customize this site yet.
+				.right
+					-block foot_right
+						-if g.user
+							.right
+								You are logged in as
+								=g.user.username
+								–
+								=g.user.firstname
+								=g.user.name
+						-else
+							You are not logged in.
+
+		%script type="text/javascript"
+			| //%![CDATA[
+			|$("a").attr("draggable",false);
+			|
+			|// set the content height to whatever is left when subtracting header and footer
+			|// necessary because inner scroll only works reliably with absolute positioning
+			|$(window).on('resize',function(){
+			| var hh = $('#header').height();
+			| $('#page').offset({top:hh, left:0});
+			| hh = $('body').height()-hh-$('#footer').height();
+			| $('#page').height(hh);
+			|});
+			|$(window).trigger('resize');
+			| //]]
+
