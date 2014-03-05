@@ -90,7 +90,6 @@ class SiteTestCase(TC):
 			self.assertIn("foofoofoo",c)
 			self.assertNotIn("bar",c)
 
-
 	def test_config(self):
 		with self.app.test_request_context():
 			self.assertEqual(Site.objects.count(), 0)

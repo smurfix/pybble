@@ -65,7 +65,6 @@ class WrapperApp(object):
 		self.config = None # force re-read
 		self.config = self.make_config(testing)
 
-
 class BaseApp(WrapperApp,Flask):
 	"""Pybble's basic WSGI application"""
 	config = None
@@ -259,7 +258,6 @@ def create_site(parent,domain,app,name):
 	site = Site(parent=parent, name=name, domain=domain, app=app)
 	site.save()
 	return site
-
 
 #@manager.command
 #def populate():
