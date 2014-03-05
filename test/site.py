@@ -20,13 +20,14 @@ import flask
 from flask.ext.mongoengine import MongoEngine
 from mongoengine.errors import NotUniqueError,DoesNotExist
 from .base import TC
-from pybble.core.models import Site,ConfigVar,SiteConfigVar,User
+from pybble.core.models import Site,ConfigVar,SiteConfigVar,User,Blueprint
 
 class SiteTestCase(TC):
 
 	def setUp(self):
 		super(SiteTestCase,self).setUp()
 		with self.app.test_request_context():
+			Blueprint.objects.delete()
 			User.objects.delete()
 			SiteConfigVar.objects.delete()
 			Site.objects.delete()

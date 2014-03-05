@@ -25,11 +25,13 @@ from flask.config import Config
 from flask._compat import string_types
 
 from flask.ext.script import Server
+from flask.ext.script.commands import ShowUrls
 from . import Manager,Command,Option
 from .. import ROOT_NAME
 from ..core.db import db
 from ..core.models import Site
 from ..app import create_site
+from ..blueprint import create_blueprint,drop_blueprint
 
 #from flask.ext.collect import Collect
 #from quokka import create_app
@@ -71,6 +73,8 @@ def config():
 	for k,v in app.config.items():
 		print("%s=%s" % (k,repr(v)))
 
+############################### Apps
+
 class AppCommand(Command):
 	"""Runs app-specific commands"""
 	capture_all_args = True
@@ -92,6 +96,8 @@ def list_apps():
 		if os.path.exists(os.path.join(path, fname, '__init__.py')) and \
 				not os.path.exists(os.path.join(path, fname, 'DISABLED')):
 			yield fname
+
+############################### Sites
 
 def list_sites(site,level=0):
 	if level:
@@ -129,6 +135,63 @@ class SitesCommand(Command):
 	def __call__(self,app):
 		list_sites(app.site)
 		
+############################### Blueprints
+
+def list_blueprints():
+	path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),"blueprint")
+	dir_list = os.listdir(path)
+	for fname in dir_list:
+		if os.path.exists(os.path.join(path, fname, '__init__.py')) and \
+				not os.path.exists(os.path.join(path, fname, 'DISABLED')):
+			yield fname
+
+class AddBlueprint(Command):
+	def __init__(self):
+		super(AddBlueprint,self).__init__()
+		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
+		self.add_option(Option("bp", nargs='?', action="store",help="The Pybble blueprint to install"))
+		self.add_option(Option("path", nargs='?', action="store",help="The path prefix to attach it to"))
+		self.add_option(Option("name", nargs='?', action="store",help="The blueprint's internal name"))
+	def __call__(self,app, help=False,bp=None,path=None,name=None):
+		if help or path is None:
+			self.parser.print_help()
+			print("Available blueprints: "+" ".join(list_blueprints()),file=sys.stderr)
+			sys.exit(not help)
+		if not path.startswith('/'):
+			print("This does not work -- paths must start with a slash.", file=sys.stderr)
+			sys.exit(1)
+		create_blueprint(site=app.site, path=path, blueprint=bp, name=name)
+		
+class DropBlueprint(Command):
+	def __init__(self):
+		super(DropBlueprint,self).__init__()
+		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
+		self.add_option(Option("name", nargs='?', action="store",help="The blueprint's internal name"))
+	def __call__(self,app, help=False,name=None):
+		if help or name is None:
+			self.parser.print_help()
+			sys.exit(not help)
+		drop_blueprint(app.site,name)
+		
+class ListBlueprint(Command):
+	def __call__(self,app, help=False):
+		if help:
+			self.parser.print_help()
+			sys.exit(not help)
+		for bp in app.site.blueprints:
+			print(bp.name,bp.blueprint,bp.path)
+		
+class BlueprintManager(Manager):
+	def __init__(self):
+		super(BlueprintManager,self).__init__()
+		self.add_command("add", AddBlueprint())
+		self.add_command("delete", DropBlueprint())
+		self.add_command("list", ListBlueprint())
+
+	def create_app(self, app):
+		return app
+	
+############################### Root
 
 class RootManager(Manager):
 	def __init__(self, app=None, *a,**kw):
@@ -146,9 +209,11 @@ class RootManager(Manager):
 	def add_root_commands(self):
 		self.command(check)
 		self.command(config)
+		self.add_command("urls",ShowUrls())
 		self.add_command("new",NewSiteCommand())
 		self.add_command("sites",SitesCommand())
 		self.add_command("app",AppCommand())
+		self.add_command("blueprint",BlueprintManager())
 		self.add_command("run",SubdomainServer())
 		self.shell(make_shell_context)
 
@@ -160,7 +225,11 @@ class RootManager(Manager):
 		from ..app import create_app
 		return create_app(**kw)
 
+############################### Accessing sub-sites by domain
+## (need
+
 class SubdomainServer(Server):
+	"""Actually run the server"""
 	def __call__(self,app, host,port,**opts):
 		dispatch = SubdomainDispatcher(app.site)
 		server = WSGIServer((host,port), dispatch)

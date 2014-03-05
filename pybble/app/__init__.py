@@ -18,8 +18,9 @@ import logging
 from time import time
 from importlib import import_module
 
-from flask import Flask, render_template
+from flask import Flask, request, render_template, g, session, Markup, Response
 from flask.config import Config
+from flask.templating import DispatchingJinjaLoader
 from flask.ext.script import Server
 
 from hamlish_jinja import HamlishExtension
@@ -30,6 +31,7 @@ from .. import ROOT_NAME
 from ..core.db import db
 from ..core.models import Site,ConfigVar,register_changed
 from ..manager import Manager,Command
+from ..blueprint import load_blueprints
 
 logger = logging.getLogger('pybble.app')
 
@@ -65,6 +67,7 @@ class WrapperApp(object):
 		self.config = None # force re-read
 		self.config = self.make_config(testing)
 
+
 class BaseApp(WrapperApp,Flask):
 	"""Pybble's basic WSGI application"""
 	config = None
@@ -84,7 +87,8 @@ class BaseApp(WrapperApp,Flask):
 		register_changed(self)
 
 		self.init_routing()
-
+		load_blueprints(self)
+	
 	def create_jinja_environment(self):
 		"""Add support for .haml templates."""
 		rv = super(BaseApp,self).create_jinja_environment()
@@ -107,6 +111,7 @@ class BaseApp(WrapperApp,Flask):
 				apps.add(s.app)
 				packs.append(PackageLoader('pybble.app.'+s.app))
 				s = s.parent
+		packs.append(DispatchingJinjaLoader(self))
 		packs.append(PackageLoader('pybble'))
 		rv.loader = ChoiceLoader(packs)
 		## TODO: inheritance from overridden templates
@@ -258,6 +263,7 @@ def create_site(parent,domain,app,name):
 	site = Site(parent=parent, name=name, domain=domain, app=app)
 	site.save()
 	return site
+
 
 #@manager.command
 #def populate():

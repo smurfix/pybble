@@ -120,6 +120,10 @@ class Site(db.Document):
 	}
 
 	@property
+	def blueprints(self):
+		return Blueprint.objects(parent=self)
+	
+	@property
 	def children(self):
 		return Site.objects(parent=self)
 	
@@ -155,6 +159,15 @@ class Site(db.Document):
 		for s in self.children_tree:
 			sig = _config_changed_sig(s.name)
 			sig.send(self,**kwargs)
+
+class Blueprint(db.Document):
+	name = db.StringField(required=True, unique_with=("parent",))
+	path = db.StringField(required=True)
+	parent = db.ReferenceField('Site')
+	blueprint = db.StringField(required=True)
+	meta = {
+		'indexes': [('parent',)]
+	}
 
 class ConfigVar(db.Document):
 	name = db.StringField(unique=True, required=True)

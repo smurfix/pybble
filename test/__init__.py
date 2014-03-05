@@ -17,3 +17,4 @@ from .script import *
 from .manager import *
 from .app_config import *
 from .app_run import *
+from .app_blueprint import *
