@@ -61,7 +61,6 @@ def load_blueprints(app):
 			app.register_blueprint(b, url_prefix=bp.path, **bp.params._data)
 		site = site.parent
 
-
 def create_blueprint(site, blueprint, path, name=None):
 	"""\
 		Attach a blueprint.
