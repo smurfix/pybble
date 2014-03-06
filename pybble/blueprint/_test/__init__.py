@@ -19,3 +19,7 @@ class Blueprint(BaseBlueprint):
 		@self.route('/blue')
 		def test_blue():
 			return render_template('blue.html')
+
+		@self.route('/yellow')
+		def test_yellow():
+			return "This is %s Color"%(self.params['color'],)

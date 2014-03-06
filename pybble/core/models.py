@@ -50,6 +50,9 @@ def register_changed(app):
 	sig = _config_changed_sig(app.site.name)
 	sig.connect(app.read_config)
 
+class KeyValue(db.DynamicEmbeddedDocument):
+	pass
+
 class ConfigDict(Config):
 	def __init__(self,site=None):
 		self.root_path = os.curdir
@@ -165,6 +168,7 @@ class Blueprint(db.Document):
 	path = db.StringField(required=True)
 	parent = db.ReferenceField('Site')
 	blueprint = db.StringField(required=True)
+	params = db.EmbeddedDocumentField(KeyValue, required=True, default=KeyValue)
 	meta = {
 		'indexes': [('parent',)]
 	}

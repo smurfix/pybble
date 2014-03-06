@@ -34,6 +34,7 @@ class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 			ConfigVar.objects.delete()
 			self.run_manager("mgr -t new _test test BlueprintAppTest")
 			self.run_manager("mgr -t -s test blueprint add _test /blue BlueprintTestPrint")
+			self.run_manager("mgr -t -s test blueprint param BlueprintTestPrint color Yellow")
 		super(AppRunTestCase,self).setUp2()
 
 	def test_one(self):
@@ -48,3 +49,6 @@ class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 		with self.app.test_request_context():
 			self.assertContent("http://test/blue/blue","Blue Color")
 
+	def test_four(self):
+		with self.app.test_request_context():
+			self.assertContent("http://test/blue/yellow","Yellow Color")

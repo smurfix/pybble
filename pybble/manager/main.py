@@ -29,7 +29,7 @@ from flask.ext.script.commands import ShowUrls
 from . import Manager,Command,Option
 from .. import ROOT_NAME
 from ..core.db import db
-from ..core.models import Site
+from ..core.models import Site,Blueprint
 from ..app import create_site
 from ..blueprint import create_blueprint,drop_blueprint
 
@@ -162,6 +162,38 @@ class AddBlueprint(Command):
 			sys.exit(1)
 		create_blueprint(site=app.site, path=path, blueprint=bp, name=name)
 		
+class ParamBlueprint(Command):
+	def __init__(self):
+		super(ParamBlueprint,self).__init__()
+		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
+		self.add_option(Option("name", nargs='?', action="store",help="The blueprint's internal name"))
+		self.add_option(Option("key", nargs='?', action="store",help="The parameter name"))
+		self.add_option(Option("value", nargs='?', action="store",help="The value"))
+	def __call__(self,app, help=False,name=None,key=None,value=None):
+		if help or name is None:
+			self.parser.print_help()
+			sys.exit(not help)
+		try:
+			bp = Blueprint.objects.get(name=name, parent=app.site)
+		except DoesNotExist:
+			raise DoesNotExist("Blueprint site=%s name=%s" % (app.site.name,name))
+		if key is None:
+			for k,v in bp.params._data.items():
+				print(k,v)
+			return
+		if value is None:
+			print(getattr(bp.params,key))
+			return
+		if value == "-":
+			delattr(bp.params,key)
+		else:
+			try:
+				value = eval(value)
+			except (SyntaxError,NameError):
+				pass
+			setattr(bp.params,key,value)
+		bp.save()
+		
 class DropBlueprint(Command):
 	def __init__(self):
 		super(DropBlueprint,self).__init__()
@@ -187,6 +219,7 @@ class BlueprintManager(Manager):
 		self.add_command("add", AddBlueprint())
 		self.add_command("delete", DropBlueprint())
 		self.add_command("list", ListBlueprint())
+		self.add_command("param", ParamBlueprint())
 
 	def create_app(self, app):
 		return app
