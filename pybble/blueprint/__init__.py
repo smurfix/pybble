@@ -35,14 +35,18 @@ logger = logging.getLogger('pybble.blueprint')
 class BaseBlueprint(FlaskBlueprint):
 	params = None
 	def register(self, app, options, first_registration=False):
+		self.app = app
 		self.add_routes()
 		@self.record
 		def get_params(state):
 			self.params = state.options
+			self.has_params()
 		super(BaseBlueprint,self).register(app, options, first_registration=first_registration)
 		# TODO: templates
 	
 	def add_routes(self):
+		pass
+	def has_params(self):
 		pass
 
 def load_blueprints(app):
@@ -55,10 +59,10 @@ def load_blueprints(app):
 			names.add(bp.name)
 			bp_mod = "pybble.blueprint."+bp.blueprint
 			bp_module = import_module(bp_mod)
-			b = bp_module.Blueprint(bp.name, bp_mod, template_folder= os.path.join(os.path.dirname(os.path.abspath(__file__)),bp.blueprint,'templates'))
+			b = bp_module.Blueprint(bp.name, bp_mod, url_prefix=bp.path, template_folder= os.path.join(os.path.dirname(os.path.abspath(__file__)),bp.blueprint,'templates'))
 			if not bp.path.startswith('/'):
 				bp.path = '/_broken/'+bp.path
-			app.register_blueprint(b, url_prefix=bp.path, **bp.params._data)
+			app.register_blueprint(b, **bp.params._data)
 		site = site.parent
 
 def create_blueprint(site, blueprint, path, name=None):

@@ -19,30 +19,35 @@ import flask
 
 from flask.ext.mongoengine import MongoEngine
 from mongoengine.errors import NotUniqueError,DoesNotExist
+from pybble.core.db import db
 from .manager import ManagerTC
-from pybble.core.models import Site,ConfigVar,SiteConfigVar,User
 from .base import WebTC
 from webunit.webunittest import WebTestCase
+from pybble.core.models import Site,ConfigVar,SiteConfigVar,User,Blueprint
 
-class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
+class TheData(db.Document):
+	foo = db.StringField(unique=True, required=True)
+	bar = db.IntField(default=123)
+
+
+class AdminTestCase(ManagerTC,WebTC,WebTestCase):
 	def setUp2(self):
 		with self.app.test_request_context():
+			TheData.objects.delete()
+			Blueprint.objects.delete()
 			User.objects.delete()
 			SiteConfigVar.objects.delete()
 			Site.objects.delete()
 			ConfigVar.objects.delete()
-			self.run_manager("mgr -t new AppTest _test test")
-		super(AppRunTestCase,self).setUp2()
 
-	def test_one(self):
-		with self.app.test_request_context():
-			self.assertContent("http://test/one","Number One")
-			
-	def test_two(self):
-		with self.app.test_request_context():
-			self.assertContent("http://test/two","Number Two")
+			self.run_manager("mgr -t new test _test test")
+			self.run_manager("mgr -t -s test blueprint add AdminTest _admin /doc")
+			self.run_manager("mgr -t -s test blueprint param AdminTest model test.admin.TheData")
 
-	def test_three(self):
-		with self.app.test_request_context():
-			self.assertContent("http://test/three","Number Three")
+			d = TheData(foo="Test Me")
+			d.save()
+		super(AdminTestCase,self).setUp2()
 
+	def test_index_present(self):
+		with self.app.test_request_context():
+			self.assertContent("http://test/doc/","Test Me")

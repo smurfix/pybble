@@ -13,6 +13,7 @@ from __future__ import absolute_import, print_function, division
 ##BP
 
 from .site import *
+from .admin import *
 from .script import *
 from .manager import *
 from .app_config import *

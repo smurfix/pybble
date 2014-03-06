@@ -17,7 +17,12 @@ from flask import render_template, abort
 from jinja2 import TemplateNotFound
 
 class Blueprint(BaseBlueprint):
+	def has_params(self):
+		import pdb;pdb.set_trace()
+		pass
+
 	def add_routes(self):
+		import pdb;pdb.set_trace()
 		super(Blueprint,self).add_routes()
 
 		@self.route('/red')
