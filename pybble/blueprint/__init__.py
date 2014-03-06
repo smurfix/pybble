@@ -39,7 +39,7 @@ class BaseBlueprint(FlaskBlueprint):
 		@self.record
 		def get_params(state):
 			self.params = state.options
-		super(BaseBlueprint,self).register(app, options, first_registration=False)
+		super(BaseBlueprint,self).register(app, options, first_registration=first_registration)
 		# TODO: templates
 	
 	def add_routes(self):
