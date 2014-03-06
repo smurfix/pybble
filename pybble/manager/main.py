@@ -110,19 +110,19 @@ def list_sites(site,level=0):
 	for s in site.children:
 		list_sites(s,level)
 
-class NewSiteCommand(Command):
+class AddSiteCommand(Command):
 	"""Add a new sub-app"""
 	add_help = False
 
 	def __init__(self):
-		super(NewSiteCommand,self).__init__()
+		super(AddSiteCommand,self).__init__()
 		self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
+		self.add_option(Option("name", nargs='?', action="store",help="The new site's name"))
 		self.add_option(Option("app", nargs='?', action="store",help="The Pybble app module to install"))
 		self.add_option(Option("domain", nargs='?', action="store",help="The domain to listen to"))
-		self.add_option(Option("name", nargs='?', action="store",help="The new site's name"))
 
 	def __call__(self,app_, args=(), domain=None,app=None,name=None, help=False):
-		if help or name is None:
+		if help or domain is None:
 			self.parser.print_help()
 			print("Available apps: "+" ".join(list_apps()),file=sys.stderr)
 			sys.exit(not help)
@@ -243,7 +243,7 @@ class RootManager(Manager):
 		self.command(check)
 		self.command(config)
 		self.add_command("urls",ShowUrls())
-		self.add_command("new",NewSiteCommand())
+		self.add_command("new",AddSiteCommand())
 		self.add_command("sites",SitesCommand())
 		self.add_command("app",AppCommand())
 		self.add_command("blueprint",BlueprintManager())
