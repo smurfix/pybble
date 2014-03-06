@@ -32,9 +32,9 @@ class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 			SiteConfigVar.objects.delete()
 			Site.objects.delete()
 			ConfigVar.objects.delete()
-			self.run_manager("mgr -t new _test test BlueprintAppTest")
-			self.run_manager("mgr -t -s test blueprint add _test /blue BlueprintTestPrint")
-			self.run_manager("mgr -t -s test blueprint param BlueprintTestPrint color Yellow")
+			self.run_manager("mgr -t new BlueTest _test test")
+			self.run_manager("mgr -t -s test blueprint add BlueTest _test /blue")
+			self.run_manager("mgr -t -s test blueprint param BlueTest color Yellow")
 		super(AppRunTestCase,self).setUp2()
 
 	def test_one(self):

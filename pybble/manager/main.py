@@ -149,9 +149,9 @@ class AddBlueprint(Command):
 	def __init__(self):
 		super(AddBlueprint,self).__init__()
 		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
+		self.add_option(Option("name", nargs='?', action="store",help="The blueprint's internal name"))
 		self.add_option(Option("bp", nargs='?', action="store",help="The Pybble blueprint to install"))
 		self.add_option(Option("path", nargs='?', action="store",help="The path prefix to attach it to"))
-		self.add_option(Option("name", nargs='?', action="store",help="The blueprint's internal name"))
 	def __call__(self,app, help=False,bp=None,path=None,name=None):
 		if help or path is None:
 			self.parser.print_help()
