@@ -4,6 +4,7 @@ https://github.com/smurfix/flask/tarball/master
 https://github.com/smurfix/flask-script/tarball/master
 https://github.com/smurfix/flask-login/tarball/master
 https://github.com/smurfix/blinker/tarball/master
+#python-texttable
 #WTForms
 #mongoengine>=0.8
 #flask_mongoengine
