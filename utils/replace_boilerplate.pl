@@ -4,7 +4,7 @@ my $BP;
 
 BEGIN {
 	$/ = undef;
-	open(BP,"_boilerplate.py") or die "no boilerplate file found\n";
+	open(BP,"utils/_boilerplate.py") or die "no boilerplate file found\n";
 	$BP = <BP>;
 	close(BP);
 	$BP =~ s:\n+\z:\n\n:;
