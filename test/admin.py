@@ -23,7 +23,6 @@ from pybble.core.db import db
 from .manager import ManagerTC
 from .base import WebTC
 from webunit.webunittest import WebTestCase
-from pybble.core.models import Site,ConfigVar,SiteConfigVar,User,Blueprint
 
 class TheData(db.Document):
 	foo = db.StringField(unique=True, required=True)
@@ -31,22 +30,18 @@ class TheData(db.Document):
 
 
 class AdminTestCase(ManagerTC,WebTC,WebTestCase):
-	def setUp2(self):
-		with self.app.test_request_context():
-			TheData.objects.delete()
-			Blueprint.objects.delete()
-			User.objects.delete()
-			SiteConfigVar.objects.delete()
-			Site.objects.delete()
-			ConfigVar.objects.delete()
+	def cleanData(self):
+		TheData.objects.delete()
+		super(AdminTestCase,self).cleanData()
 
-			self.run_manager("mgr -t new test _test test")
-			self.run_manager("mgr -t -s test blueprint add AdminTest _admin /doc")
-			self.run_manager("mgr -t -s test blueprint param AdminTest model test.admin.TheData")
+	def setupData(self):
+		super(AdminTestCase,self).setupData()
+		self.run_manager("mgr -t new test _test test")
+		self.run_manager("mgr -t -s test blueprint add AdminTest _admin /doc")
+		self.run_manager("mgr -t -s test blueprint param AdminTest model test.admin.TheData")
 
-			d = TheData(foo="Test Me")
-			d.save()
-		super(AdminTestCase,self).setUp2()
+		d = TheData(foo="Test Me")
+		d.save()
 
 	def test_index_present(self):
 		with self.app.test_request_context():

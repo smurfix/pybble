@@ -67,32 +67,54 @@ else:
 
 from flask.ext.mongoengine import MongoEngine
 from pybble.core.db import db
+from pybble.core.models import Site,ConfigVar,SiteConfigVar,User,Blueprint
 
 class TC(unittest.TestCase):
 	MONGODB_DB = 'pybble_test'
 	TESTING = True
+	app_class = flask.Flask
+
+	def clear_db(self):
+		with self.app.test_request_context():
+			Blueprint.objects.delete()
+			User.objects.delete()
+			SiteConfigVar.objects.delete()
+			Site.objects.delete()
+			ConfigVar.objects.delete()
 
 	def setUp(self):
-		app = flask.Flask(__name__)
+		super(TC,self).setUp()
+		app = self.app_class(__name__)
 		app.config.from_object(self)
 
 		db.init_app(app)
 
 		self.app = app
 		self.db = db
-		super(TC,self).setUp()
-		self.setUp2()
+		with self.app.test_request_context():
+			self.cleanData()
+			self.setupData()
+			self.setupRest()
 
-	def setUp2(self):
+	def cleanData(self):
+		with self.app.test_request_context():
+			Blueprint.objects.delete()
+			User.objects.delete()
+			SiteConfigVar.objects.delete()
+			Site.objects.delete()
+			ConfigVar.objects.delete()
+
+	def setupData(self):
+		pass
+	def setupRest(self):
 		pass
 	
 
 class WebTC(TC):
-	def setUp2(self):
+	def setupRest(self):
+		super(WebTC,self).setupRest()
 		global main_app
-		if main_app is None:
-			main_app = SubdomainDispatcher()
-		super(WebTC,self).setUp2()
+		main_app = SubdomainDispatcher()
 
 		if not skip_httpclient:
 			http_client_intercept.install()

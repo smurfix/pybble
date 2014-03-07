@@ -16,6 +16,7 @@ import re
 import sys
 import unittest
 from functools import wraps
+import logging
 
 from flask import Flask
 from flask.ext.script._compat import StringIO, text_type
@@ -28,6 +29,8 @@ from pybble.manager.main import RootManager
 
 from pytest import raises
 
+logger = logging.getLogger('test.manager')
+
 class ManagerFlask(Flask):
 	testing = True
 	def init_manager(self,manager):
@@ -37,15 +40,13 @@ class ManagerFlask(Flask):
 	pass
 
 class ManagerTC(TC):
-	_manager = None
-	def setUp(self):
-		super(ManagerTC,self).setUp()
-		self.app = ManagerFlask(__name__)
+	app_class = ManagerFlask
 
 	def manager(self, app=None):
 		return RootManager(app)
 
 	def run_manager(self, *args, **kwargs):
+		logger.debug("MGR: "+" ".join(args))
 		if len(args) == 1:
 			sys.argv = args[0].split(" ")
 		else:

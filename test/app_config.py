@@ -26,9 +26,7 @@ from pybble.app import create_app
 class AppConfigTestCase(TC):
 
 	def setup_sites(self):
-		SiteConfigVar.objects.delete()
-		ConfigVar.objects.delete()
-		Site.objects.delete()
+		self.clear_db()
 
 		self.assertEqual(Site.objects.count(), 0)
 		site = Site(name='root', domain='test.example.com')

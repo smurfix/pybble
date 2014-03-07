@@ -25,14 +25,9 @@ from .base import WebTC
 from webunit.webunittest import WebTestCase
 
 class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
-	def setUp2(self):
-		with self.app.test_request_context():
-			User.objects.delete()
-			SiteConfigVar.objects.delete()
-			Site.objects.delete()
-			ConfigVar.objects.delete()
-			self.run_manager("mgr -t new AppTest _test test")
-		super(AppRunTestCase,self).setUp2()
+	def setupData(self):
+		super(AppRunTestCase,self).setupData()
+		self.run_manager("mgr -t new AppTest _test test")
 
 	def test_one(self):
 		with self.app.test_request_context():

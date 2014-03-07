@@ -24,15 +24,6 @@ from pybble.core.models import Site,ConfigVar,SiteConfigVar,User,Blueprint
 
 class SiteTestCase(TC):
 
-	def setUp(self):
-		super(SiteTestCase,self).setUp()
-		with self.app.test_request_context():
-			Blueprint.objects.delete()
-			User.objects.delete()
-			SiteConfigVar.objects.delete()
-			Site.objects.delete()
-			ConfigVar.objects.delete()
-
 	def test_create_root(self):
 		with self.app.test_request_context():
 			self.assertEqual(Site.objects.count(), 0)

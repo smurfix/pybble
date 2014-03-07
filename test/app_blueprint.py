@@ -25,17 +25,11 @@ from .base import WebTC
 from webunit.webunittest import WebTestCase
 
 class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
-	def setUp2(self):
-		with self.app.test_request_context():
-			Blueprint.objects.delete()
-			User.objects.delete()
-			SiteConfigVar.objects.delete()
-			Site.objects.delete()
-			ConfigVar.objects.delete()
-			self.run_manager("mgr -t new BlueTest _test test")
-			self.run_manager("mgr -t -s test blueprint add BlueTest _test /blue")
-			self.run_manager("mgr -t -s test blueprint param BlueTest color Yellow")
-		super(AppRunTestCase,self).setUp2()
+	def setupData(self):
+		super(AppRunTestCase,self).setupData()
+		self.run_manager("mgr -t new BlueTest _test test")
+		self.run_manager("mgr -t -s test blueprint add BlueTest _test /blue")
+		self.run_manager("mgr -t -s test blueprint param BlueTest color Yellow")
 
 	def test_one(self):
 		with self.app.test_request_context():
