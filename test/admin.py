@@ -28,7 +28,6 @@ class TheData(db.Document):
 	foo = db.StringField(unique=True, required=True)
 	bar = db.IntField(default=123)
 
-
 class AdminTestCase(ManagerTC,WebTC,WebTestCase):
 	def cleanData(self):
 		TheData.objects.delete()
