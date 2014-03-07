@@ -14,6 +14,7 @@ from .. import BaseBlueprint
 class TheView(AdminBaseView):
 	@expose('/')
 	def index(self):
+		self._template_args['model'] = self.base.model
 		return self.render(['admin/index.haml','admin/index.html'])
 
 class FakeAdmin(object):
@@ -45,6 +46,7 @@ class Blueprint(BaseBlueprint):
 			base = import_module(base)
 			self.model = getattr(base,model)
 		self.view = TheView(self.name+"_view", endpoint=self.name, url=self.url_prefix)
+		self.view.base = self
 		view_bp = self.view.create_blueprint(FakeAdmin(self))
 		view_bp.name = self.name+"_view"
 		self.app.register_blueprint(view_bp)
@@ -53,5 +55,4 @@ class Blueprint(BaseBlueprint):
 		def send_file(filename):
 			return send_from_directory(static_folder, filename)
 		self.app.add_url_rule(self.url_prefix + '/static/<path:filename>', endpoint='admin.static', view_func=send_file)
-
 

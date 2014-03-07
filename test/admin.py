@@ -40,9 +40,9 @@ class AdminTestCase(ManagerTC,WebTC,WebTestCase):
 		self.run_manager("mgr -t -s test blueprint add AdminTest _admin /doc")
 		self.run_manager("mgr -t -s test blueprint param AdminTest model test.admin.TheData")
 
-		d = TheData(foo="Test Me")
+		d = TheData(foo="Test Me Hard")
 		d.save()
 
 	def test_index_present(self):
 		with self.app.test_request_context():
-			self.assertContent("http://test/doc/","Test Me")
+			self.assertContent("http://test/doc/","Test Me Hard")

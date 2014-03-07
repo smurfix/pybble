@@ -1,0 +1,7 @@
+-extends 'admin/master.html'
+
+-block body
+	-for doc in model.objects
+		%p
+			=doc.foo
+			=doc.bar
