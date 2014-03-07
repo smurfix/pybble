@@ -123,6 +123,12 @@ class Site(db.Document):
 	}
 	_parents = None
 
+	def __repr__(self):
+		return "<%s: %s>" % (self.__class__.__name__,self.name)
+	def __unicode__(self):
+		return "%s: %s" % (self.__class__.__name__,self.name)
+	__str__=__unicode__
+
 	@property
 	def blueprints(self):
 		return Blueprint.objects(site=self)
@@ -184,6 +190,11 @@ class Blueprint(db.Document):
 	meta = {
 		'indexes': [('site',)]
 	}
+	def __repr__(self):
+		return "<%s: %s @%s>" % (self.__class__.__name__,self.name,self.site.name)
+	def __unicode__(self):
+		return "%s:%s@%s" % (self.__class__.__name__,self.name,self.site.name)
+	__str__=__unicode__
 
 class ConfigVar(db.Document):
 	"""Describes one configuration variable."""
@@ -213,6 +224,11 @@ class ConfigVar(db.Document):
 	meta = {
 		'indexes': [('name',)]
 	}
+	def __repr__(self):
+		return "<%s: %s>" % (self.__class__.__name__,self.name)
+	def __unicode__(self):
+		return "%s:%s" % (self.__class__.__name__,self.name)
+	__str__=__unicode__
 	
 class SiteConfigVar(db.Document):
 	"""This is one configuration variable's value for a site."""
@@ -222,4 +238,9 @@ class SiteConfigVar(db.Document):
 	meta = {
 		'indexes': [('site', 'var')]
 	}
+	def __repr__(self):
+		return "<%s: %s=%s @%s>" % (self.__class__.__name__,self.var.name,repr(self.value),self.site.name)
+	def __unicode__(self):
+		return "%s:%s=%s@%s" % (self.__class__.__name__,self.var.name,repr(self.value),self.site.name)
+	__str__=__unicode__
 
