@@ -19,6 +19,7 @@ import logging
 from importlib import import_module
 from threading import Lock
 from gevent.wsgi import WSGIServer
+from mongoengine.errors import DoesNotExist
 
 from flask import Flask
 from flask.config import Config
@@ -174,7 +175,7 @@ class ParamBlueprint(Command):
 			self.parser.print_help()
 			sys.exit(not help)
 		try:
-			bp = Blueprint.objects.get(name=name, parent=app.site)
+			bp = Blueprint.objects.get(name=name, site=app.site)
 		except DoesNotExist:
 			raise DoesNotExist("Blueprint site=%s name=%s" % (app.site.name,name))
 		if key is None:

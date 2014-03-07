@@ -20,7 +20,6 @@ import flask
 from flask.ext.mongoengine import MongoEngine
 from mongoengine.errors import NotUniqueError,DoesNotExist
 from .manager import ManagerTC
-from pybble.core.models import Site,ConfigVar,SiteConfigVar,User
 from .base import WebTC
 from webunit.webunittest import WebTestCase
 

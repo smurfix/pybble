@@ -43,9 +43,16 @@ class Blueprint(BaseBlueprint):
 		except KeyError:
 			pass
 		else:
-			base = import_module(base)
-			self.model = getattr(base,model)
-		self.view = TheView(self.name+"_view", endpoint=self.name, url=self.url_prefix)
+			self.model = getattr(import_module(base),model)
+
+		try:
+			base,view = self.params['view'].rsplit('.',1)
+		except KeyError:
+			view = TheView
+		else:
+			view = getattr(import_module(base), view)
+
+		self.view = view(self.name+"_view", endpoint=self.name, url=self.url_prefix)
 		self.view.base = self
 		view_bp = self.view.create_blueprint(FakeAdmin(self))
 		view_bp.name = self.name+"_view"

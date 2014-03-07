@@ -80,7 +80,7 @@ def create_blueprint(site, blueprint, path, name=None):
 	assert bp_module.Blueprint is not None, "App '%s' does not exist"%(app,)
 	if name is None:
 		name = blueprint
-	bp = Blueprint(parent=site, name=name, path=path, blueprint=blueprint)
+	bp = Blueprint(site=site, name=name, path=path, blueprint=blueprint)
 	bp.save()
 	return bp
 

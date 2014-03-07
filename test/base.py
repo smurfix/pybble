@@ -67,7 +67,7 @@ else:
 
 from flask.ext.mongoengine import MongoEngine
 from pybble.core.db import db
-from pybble.core.models import Site,ConfigVar,SiteConfigVar,User,Blueprint
+from pybble.core.models import Site,ConfigVar,SiteConfigVar,Blueprint
 
 class TC(unittest.TestCase):
 	MONGODB_DB = 'pybble_test'
@@ -77,7 +77,6 @@ class TC(unittest.TestCase):
 	def clear_db(self):
 		with self.app.test_request_context():
 			Blueprint.objects.delete()
-			User.objects.delete()
 			SiteConfigVar.objects.delete()
 			Site.objects.delete()
 			ConfigVar.objects.delete()
@@ -99,7 +98,6 @@ class TC(unittest.TestCase):
 	def cleanData(self):
 		with self.app.test_request_context():
 			Blueprint.objects.delete()
-			User.objects.delete()
 			SiteConfigVar.objects.delete()
 			Site.objects.delete()
 			ConfigVar.objects.delete()
