@@ -263,26 +263,11 @@ def create_site(parent,domain,app,name):
 	site.save()
 	return site
 
-#@manager.command
-#def populate():
-#   """Populate the database with sample data"""
-#   from quokka.utils.populate import Populate
-#   Populate(db)()
-#
-#
-#@manager.command
-#def show_config():
-#   "print all config variables"
-#   from pprint import pprint
-#   print("Config.")
-#   pprint(dict(app.config))
-#
-#manager.add_command("run0", Server(
-#   use_debugger=True,
-#   use_reloader=True,
-#   host='0.0.0.0',
-#   port=8000
-#))
-
-#load_blueprint_commands(manager)
+def list_apps():
+	path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),"app")
+	dir_list = os.listdir(path)
+	for fname in dir_list:
+		if os.path.exists(os.path.join(path, fname, '__init__.py')) and \
+				not os.path.exists(os.path.join(path, fname, 'DISABLED')):
+			yield fname
 

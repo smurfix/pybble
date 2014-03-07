@@ -31,15 +31,8 @@ from . import Manager,Command,Option
 from .. import ROOT_NAME
 from ..core.db import db
 from ..core.models import Site,Blueprint
-from ..app import create_site
+from ..app import create_site, list_apps
 from ..blueprint import create_blueprint,drop_blueprint
-
-class _fake_app(Flask):
-	"""
-	This class is only used to load the configuration
-	and for initial database access
-	"""
-	pass
 
 def make_shell_context():
 	" Update shell. "
@@ -66,68 +59,6 @@ def config():
 	for k,v in app.config.items():
 		print("%s=%s" % (k,repr(v)))
 
-############################### Apps
-
-class AppCommand(Command):
-	"""Runs app-specific commands"""
-	capture_all_args = True
-	add_help = False
-
-	def __init__(self):
-		super(AppCommand,self).__init__()
-		self.add_option(Option("-h","--help", dest="help",action="store_true"))
-
-	def __call__(self,app,args, help=False, **kwargs):
-		mgr = Manager(app)
-		app.init_manager(mgr)
-		mgr.handle("manage.py app",args)
-
-def list_apps():
-	path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),"app")
-	dir_list = os.listdir(path)
-	for fname in dir_list:
-		if os.path.exists(os.path.join(path, fname, '__init__.py')) and \
-				not os.path.exists(os.path.join(path, fname, 'DISABLED')):
-			yield fname
-
-############################### Sites
-
-def list_sites(site,level=0):
-	if level:
-		prefix=u"  "*((level-1)*2) + u"↳ "
-	else:
-		prefix=""
-	
-	print(prefix+site.domain,site.app,site.name)
-	level += 1
-	for s in site.children:
-		list_sites(s,level)
-
-class AddSiteCommand(Command):
-	"""Add a new sub-app"""
-	add_help = False
-
-	def __init__(self):
-		super(AddSiteCommand,self).__init__()
-		self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
-		self.add_option(Option("name", nargs='?', action="store",help="The new site's name"))
-		self.add_option(Option("app", nargs='?', action="store",help="The Pybble app module to install"))
-		self.add_option(Option("domain", nargs='?', action="store",help="The domain to listen to"))
-
-	def __call__(self,app_, args=(), domain=None,app=None,name=None, help=False):
-		if help or domain is None:
-			self.parser.print_help()
-			print("Available apps: "+" ".join(list_apps()),file=sys.stderr)
-			sys.exit(not help)
-		create_site(app_.site,domain,app,name)
-		
-class SitesCommand(Command):
-	"""Show a list of known sites"""
-	add_help = False
-
-	def __call__(self,app):
-		list_sites(app.site)
-		
 ############################### Root
 
 class RootManager(Manager):
@@ -145,6 +76,8 @@ class RootManager(Manager):
 
 	def add_root_commands(self):
 		from .blueprint import BlueprintManager
+		from .app import AppCommand
+		from .site import AddSiteCommand,SitesCommand
 
 		self.command(check)
 		self.command(config)
