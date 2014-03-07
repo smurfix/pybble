@@ -49,7 +49,7 @@ class BaseBlueprint(FlaskBlueprint):
 	def has_params(self):
 		pass
 
-def load_blueprints(app):
+def load_app_blueprints(app):
 	site = app.site
 	names = set() 
 	while site is not None:
@@ -87,6 +87,14 @@ def create_blueprint(site, blueprint, path, name=None):
 def drop_blueprint(site,name):
 	bp = Blueprint.objects.get(parent=site, name=name)
 	bp.delete()
+
+def list_blueprints():
+	path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),"blueprint")
+	dir_list = os.listdir(path)
+	for fname in dir_list:
+		if os.path.exists(os.path.join(path, fname, '__init__.py')) and \
+				not os.path.exists(os.path.join(path, fname, 'DISABLED')):
+			yield fname
 
 #@manager.command
 #def populate():

@@ -31,7 +31,7 @@ from .. import ROOT_NAME
 from ..core.db import db
 from ..core.models import Site,ConfigVar,register_changed
 from ..manager import Manager,Command
-from ..blueprint import load_blueprints
+from ..blueprint import load_app_blueprints
 
 logger = logging.getLogger('pybble.app')
 
@@ -86,7 +86,7 @@ class BaseApp(WrapperApp,Flask):
 		register_changed(self)
 
 		self.init_routing()
-		load_blueprints(self)
+		load_app_blueprints(self)
 	
 	def create_jinja_environment(self):
 		"""Add support for .haml templates."""
