@@ -3,5 +3,5 @@
 -block body
 	-for doc in model.objects
 		%p
-			=doc.foo
-			=doc.bar
+			%a href={{ url_for(".edit",doc=doc.uid) }}
+				=doc

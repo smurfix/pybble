@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, print_function, division
 ##
@@ -13,18 +12,13 @@ from __future__ import absolute_import, print_function, division
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
-import logging
+from . import BaseContentDriver
+from ..core.models.doc import RenderedContent
 
-from flask.ext.script import Server
-from pybble import ROOT_NAME
-from pybble.core.db import db
+class TextContent(RenderedContent):
+	text = db.StringField(required=True)
 
-#from flask.ext.collect import Collect
-#from quokka.core.db import db
-#from quokka.ext.blueprints import load_blueprint_commands
+class ContentDriver(BaseContentDriver):
+	datatype = TextContent
+	pass
 
-from pybble.manager.main import RootManager
-manager = RootManager()
-
-if __name__ == '__main__':
-	manager.run()

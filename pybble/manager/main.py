@@ -32,7 +32,6 @@ from .. import ROOT_NAME
 from ..core.db import db
 from ..core.models import Site,Blueprint
 from ..app import create_site, list_apps
-from ..blueprint import create_blueprint,drop_blueprint
 
 def make_shell_context():
 	" Update shell. "
@@ -78,15 +77,23 @@ class RootManager(Manager):
 		from .blueprint import BlueprintManager
 		from .app import AppCommand
 		from .site import AddSiteCommand,SitesCommand
+		from .populate import PopulateCommand
+		from .contenttype import ContentTypeManager
 
-		self.command(check)
-		self.command(config)
+		coremanager = Manager()
+		coremanager.__doc__ = "Examine and change Pybble's internal data"
+		coremanager.command(check)
+		coremanager.command(config)
+		coremanager.add_command("type",ContentTypeManager())
+
 		self.add_command("urls",ShowUrls())
 		self.add_command("new",AddSiteCommand())
 		self.add_command("sites",SitesCommand())
+		self.add_command("populate",PopulateCommand())
 		self.add_command("app",AppCommand())
 		self.add_command("blueprint",BlueprintManager())
 		self.add_command("run",SubdomainServer())
+		self.add_command("core",coremanager)
 		self.shell(make_shell_context)
 
 	def create_app(self, app=None, **kw):

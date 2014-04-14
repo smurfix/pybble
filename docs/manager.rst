@@ -52,16 +52,47 @@ python manage.py
 
 		-	Arguments
 
-			name        The blueprint's internal name
-			key         The parameter name
-			value       The value
+				name        The blueprint's internal name
+				key         The parameter name
+				value       The value
 
 		Omitting the value will print that parameter; if you also omit the
 		key, a list of that blueprint's key+value pairs will be printed.
 
 -	core
 
-	Examine and change Pybble's internal data
+	Examine and change Pybble's internal and mainly-non-site-specific data.
+
+	-	type
+
+		Manipulate known content types.
+
+		-	add
+
+			Add a type to the (MongoDB) list of known handlers.
+
+		  		name        The contenttype's name
+				type        The class that can render/edit this content
+				doc         Slightly more verbose documentation
+
+		-	list
+
+			List the known handlers.
+
+		-	delete
+
+			Drop a type. Obviously, no content may depend on that entry.
+
+
+	-	config
+
+		Dumps the site's configuration data.
+
+		XXX: Warning: this may leak the app secret, or other site configuration items.
+
+	-	check
+		
+		Dumps some status information.
 
 -	shell
 
@@ -123,9 +154,17 @@ python manage.py
 
 	-	Arguments
 
-		name        The new site's name
-		app         The Pybble app module to install
-		domain      The domain to listen to
+		-	name
+		
+			The new site's name
+
+		-	app
+		
+			The Pybble app module to install
+
+		-	domain
+		
+			The domain to listen to
 
 	Calling `new` without arguments will list the installed apps.
 

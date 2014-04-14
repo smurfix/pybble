@@ -15,7 +15,7 @@ from __future__ import absolute_import, print_function, division
 import sys
 from flask import Flask
 from flask.ext.script import Manager as BaseManager
-from flask.ext.script import Command,Option
+from flask.ext.script import Command,Option # used by pybble.manager.main
 
 class Manager(BaseManager):
 	def add_default_commands(self):

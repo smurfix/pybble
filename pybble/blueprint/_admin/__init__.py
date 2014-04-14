@@ -23,6 +23,12 @@ from flask.ext.admin import BaseView as AdminBaseView
 
 from .. import BaseBlueprint
 
+_doc="""
+This is the administrative front-end for your site.
+
+You typically add it under /admin.
+"""
+
 class TheView(AdminBaseView):
 	@expose('/')
 	def index(self):

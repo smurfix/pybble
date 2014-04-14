@@ -16,6 +16,7 @@ import os
 import sys
 import logging
 from mongoengine.errors import DoesNotExist
+from importlib import import_module
 
 from . import Manager,Command,Option
 from ..core.models import Blueprint
@@ -33,10 +34,30 @@ class AddBlueprint(Command):
 			self.parser.print_help()
 			print("Available blueprints: "+" ".join(list_blueprints()),file=sys.stderr)
 			sys.exit(not help)
-		if not path.startswith('/'):
+		if path == "/":
+			path = None
+		elif not path.startswith('/'):
 			print("This does not work -- paths must start with a slash.", file=sys.stderr)
 			sys.exit(1)
 		create_blueprint(site=app.site, path=path, blueprint=bp, name=name)
+		
+class DocBlueprint(Command):
+	def __init__(self):
+		super(DocBlueprint,self).__init__()
+		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
+		self.add_option(Option("name", nargs='?', action="store",help="The blueprint's internal name"))
+	def __call__(self,app, help=False,name=None):
+		if help or name is None:
+			if help:
+				self.parser.print_help()
+			print("Available blueprints: "+" ".join(list_blueprints()),file=sys.stderr)
+			return
+		bp_module = import_module("pybble.blueprint."+name)
+		doc = getattr(bp_module,'_doc', bp_module.__doc__)
+		if not doc:
+			print("Sorry, but the blueprint '%s' does not seem to have documentation" % (name,))
+			return
+		print(doc)
 		
 class ParamBlueprint(Command):
 	def __init__(self):
@@ -90,12 +111,14 @@ class ListBlueprint(Command):
 			print(bp.name,bp.blueprint,bp.path)
 		
 class BlueprintManager(Manager):
+	"""URLs and their content"""
 	def __init__(self):
 		super(BlueprintManager,self).__init__()
 		self.add_command("add", AddBlueprint())
 		self.add_command("delete", DropBlueprint())
 		self.add_command("list", ListBlueprint())
 		self.add_command("param", ParamBlueprint())
+		self.add_command("doc", DocBlueprint())
 
 	def create_app(self, app):
 		return app

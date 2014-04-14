@@ -118,8 +118,10 @@ class Site(db.Document):
 	domain = db.StringField(unique=True, required=True)
 	parent = db.ReferenceField('Site', reverse_delete_rule=db.CASCADE)
 	app = db.StringField(required=True, default=ROOT_NAME)
+	homepage = db.ReferenceField('BaseDocument', required=False) ## reverse_delete_rule=db.NULLIFY # at end
 	meta = {
-		'indexes': [('parent',)]
+		'indexes': [('parent',)],
+		'collection': 'pybble_core_site',
 	}
 	_parents = None
 
@@ -188,7 +190,8 @@ class Blueprint(db.Document):
 	blueprint = db.StringField(required=True, verbose_name="import the code at")
 	params = db.EmbeddedDocumentField(KeyValue, required=True, default=KeyValue)
 	meta = {
-		'indexes': [('site',)]
+		'indexes': [('site',)],
+		'collection': 'pybble_core_blueprint',
 	}
 	def __repr__(self):
 		return "<%s: %s @%s>" % (self.__class__.__name__,self.name,self.site.name)
@@ -222,7 +225,8 @@ class ConfigVar(db.Document):
 		cf = ConfigVar(name=name,info=info,default=default,prepend=prepend)
 		cf.save()
 	meta = {
-		'indexes': [('name',)]
+		'indexes': [('name',)],
+		'collection': 'pybble_core_configvar',
 	}
 	def __repr__(self):
 		return "<%s: %s>" % (self.__class__.__name__,self.name)
@@ -236,7 +240,8 @@ class SiteConfigVar(db.Document):
 	var = db.ReferenceField(ConfigVar, unique_with=("site",), reverse_delete_rule=db.CASCADE)
 	value = db.StructField()
 	meta = {
-		'indexes': [('site', 'var')]
+		'indexes': [('site', 'var')],
+		'collection': 'pybble_core_config',
 	}
 	def __repr__(self):
 		return "<%s: %s=%s @%s>" % (self.__class__.__name__,self.var.name,repr(self.value),self.site.name)
@@ -244,3 +249,16 @@ class SiteConfigVar(db.Document):
 		return "%s:%s=%s@%s" % (self.__class__.__name__,self.var.name,repr(self.value),self.site.name)
 	__str__=__unicode__
 
+class BaseDocument(db.Document):
+	"""Base class for anything that's 'content'"""
+#	def __new__(cls,*a,**k):
+#		assert True,"You must descend from `pybble.models.doc.Document`, not this class."
+##	This is only here because site.homepage trivially refers to it.
+
+	site = db.ReferenceField(Site, reverse_delete_rule=db.DENY)
+	meta = {
+		'allow_inheritance': True,
+		'abstract': True,
+	}
+
+Site.register_delete_rule(BaseDocument, 'site', db.NULLIFY)

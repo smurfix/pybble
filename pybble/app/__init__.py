@@ -254,6 +254,9 @@ def create_app(app=None, config=None, site=ROOT_NAME, verbose=None, test=False):
 			datefmt=app.config['LOGGER_DATE_FORMAT']
 		)
 
+	from ..core.models.doc import ContentType
+	ContentType.init_types()
+
 	return app
 
 def create_site(parent,domain,app,name):
@@ -264,7 +267,7 @@ def create_site(parent,domain,app,name):
 	return site
 
 def list_apps():
-	path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),"app")
+	path = os.path.dirname(os.path.abspath(__file__))
 	dir_list = os.listdir(path)
 	for fname in dir_list:
 		if os.path.exists(os.path.join(path, fname, '__init__.py')) and \
