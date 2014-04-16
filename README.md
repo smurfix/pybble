@@ -32,11 +32,15 @@ This is personal.
 I manage a bunch of small semi-customized web servers (my sister's
 paintings, my personal website, my very personal website, a photo club …).
 They all ran on different platforms (Django, Drupal, …) and updating these
-is a major hassle (Drupal can't do it automatically due to a bug).
-In addition, I want to share some content, I want to create my own views
-without futzing around with Drupal's view editor, I want a single
-admin login for all of this, I want everything in either git or the
-database. The list goes on.
+is a major hassle (Drupal can't do it automatically due to an intractable
+bug which nobody seems to be able to fix).
+
+In addition, I want to *very* selectively share some content, I want to
+create my own views without futzing around with Drupal's view editor, I
+want a single admin login for all of this, I want everything in either git
+or the database -- no file system stuff, other than uploaded content.
+
+The list goes on.
 
 I looked at Quokka, it has some neat ideas but its content structure
 somehow doesn't want to fit to my brain.
@@ -49,9 +53,11 @@ Quick start
 
 0. Prepare your system
 
-You need a MongoDB instance.
-Pybble runs on Python 2.7
-You might want to install virtualenv.
+You need SQLAlchemy. Pybble is tested with the 0.9 branch.
+Pybble runs on Python 2.7; 3.4 should work but is not tested yet.
+
+You might want to install virtualenv, but frankly I use system packaging
+for everything (this is one of Pybble's goals …) so I don't bother.
 
 1. Get Pybble
 
@@ -61,22 +67,30 @@ $ cd pybble
 $ pip install -r requirements.txt
 ```
 
-2. Define your MongoDB settings
+2. Define your SQL settings
 
-```bash
-$ $EDITOR local_settings.py
-===============./local_settings.py===============
-MONGODB_SETTINGS = {'DB': 'your_mongo_db'}
+```
+# $EDITOR LOGIN.py
+===============./LOGIN.py===============
+mysql_user="test"
+mysql_pass=""
+mysql_host="localhost"
+mysql_database="test_pybble"
+
+####### REPLACE THE SECRET KEY WITH SOMETHING RANDOM #######
+# Do not use the same string in production and testing/staging/debugging.
+# Never check this file into any version control system.
+SECRET_KEY="We hack all your data"
 DEBUG = True
 =================================================
 ```
 
-In a production environment, you should password-protected access to your
-database! (TODO: Pybble should enforce that.)
+You should
 
-3. Populate with sample data (optional)
+3. Populate with initial data
 
 ```bash
+$ python manage.py setupdb
 $ python manage.py populate 
 
 ```
@@ -92,7 +106,7 @@ P4$$W0Rd
 5. Run
 
 ```bash
-$ python run.py
+$ python manage.py runserver
 ```
 6. Access on http://localhost:5000 
 7. Admin on http://localhost:5000/admin

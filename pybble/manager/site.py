@@ -17,7 +17,7 @@ import os
 import sys
 
 from . import Command,Option
-from ..core.models import Site
+from ..core.models.site import Site
 from ..app import create_site, list_apps
 
 def list_sites(site,level=0):

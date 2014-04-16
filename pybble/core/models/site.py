@@ -12,6 +12,26 @@ from __future__ import absolute_import, print_function, division
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
+from datetime import datetime,timedelta
+
+from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
+from sqlalchemy.orm import relationship,backref
+
+from pybble.compat import py2_unicode
+
+from ..db import Base, Column
+
+from pybble.utils import random_string, current_request, AuthError
+
+from werkzeug import import_string
+from jinja2.utils import Markup
+from pybble.core import config
+import sys,os
+from copy import copy
+
+from . import DummyObject,ObjectRef, TM_DETAIL_PAGE
+from ._descr import D
+
 class DummySite(DummyObject):
 	"""A site without content."""
 	def __init__(self,domain,name=None):
@@ -34,9 +54,10 @@ class DummySite(DummyObject):
 		return self.parent.get_template(detail)
 
 @py2_unicode
-class App(Base):
+class App(ObjectRef):
 	"""An App known to pybble"""
 	__tablename__ = "apps"
+	_descr = D.App
 
 	path = Column(Unicode, nullable=False)
 	name = Column(Unicode, nullable=False)
@@ -47,9 +68,10 @@ class App(Base):
 	__repr__ = __str__
 
 @py2_unicode
-class Blueprint(Base):
-	"""A Flask blueprint known to pybble"""
+class Blueprint(ObjectRef):
+	"""A Flask blueprint known to pybble. Usually a child of the master site"""
 	__tablename__ = "blueprints"
+	_descr = D.Blueprint
 
 	path = Column(Unicode, nullable=False)
 	name = Column(Unicode, nullable=False)
@@ -60,21 +82,23 @@ class Blueprint(Base):
 	__repr__ = __str__
 
 @py2_unicode
-class Site(Object):
-	"""A web domain. 'owner' is set to the domain's superuser."""
+class Site(ObjectRef):
+	"""A web domain / app."""
 	__tablename__ = "sites"
-	__mapper_args__ = {'polymorphic_identity': 5}
+	_descr = D.Site
 
 	domain = Column(Unicode, nullable=False)
 	name = Column(Unicode, nullable=False)
-	tracked = DateTime(nullable=False, default_factory=datetime.utcnow)
+	tracked = Column(DateTime,nullable=False, default=datetime.utcnow)
 	## Datestamp of newest fully-processed Tracker object
 
-	storage_id = Column(Integer, nullable=True)
-	storage = Reference(storage_id,Storage.id)
+	superuser = relationship("Object", primaryjoin="owner_id==Object.id")
+	app = relationship("Object", primaryjoin="superparent_id==Object.id")
 
-	app_id = Column(Integer, nullable=True)
-	app = Reference(app_id,App.id)
+	storages = relationship("Storage", primaryjoin="Site.id==Storage.parent_id")
+
+	app_id = Column(Integer, ForeignKey(App.id), nullable=True)
+	app = relationship(App, primaryjoin=app_id==App.id)
 
 	def __storm_pre_flush__(self):
 		self.tracked = datetime.utcnow()
@@ -130,45 +154,13 @@ domain: %s
 """ % (self.name,self.domain)
 
 @py2_unicode
-class SiteBlueprint(Base):
+class SiteBlueprint(ObjectRef):
 	"""A blueprint attached to a site's path"""
 	__tablename__ = "site_blueprint"
+	_descr = D.SiteBlueprint
 
-	path = db.StringField(required=True, verbose_name="where to
-			attach")
+	path = Column(Unicode, required=True) ## (, verbose_name="where to attach")
 
-	## Datestamp of newest fully-processed Tracker object
+	site = relationship("Site", primaryjoin="parent_id==Site.id")
+	blueprint = relationship("Blueprint", primaryjoin="superparent_id==Blueprint.id")
 
-	storage_id = Column(Integer, nullable=True)
-	storage = Reference(storage_id,Storage.id)
-
-	app_id = Column(Integer, nullable=True)
-	app = Reference(app_id,App.id)
-
-class Template(Object):
-	"""
-		A template for rendering.
-		parent: Site the template applies to.
-		owner: user who created the template.
-		"""
-	__tablename__ = "templates"
-	__mapper_args__ = {'polymorphic_identity': 6}
-
-	name = Column(Unicode, nullable=False)
-	data = Column(Unicode)
-	modified = DateTime(default_factory=datetime.utcnow)
-
-	def __storm_pre_flush__(self):
-		self.modified = datetime.utcnow()
-		super(Template,self).__storm_pre_flush__()
-
-	def __init__(self, name, data, parent=None):
-		super(Template,self).__init__()
-		self.name = name
-		self.data = data
-		self.owner = current_request.user
-		self.parent = parent or current_request.site
-		self.superparent = getattr(parent,"site",None) or current_request.site
-
-	def __repr__(self):
-		return "'<%s:%d>'" % (self.__class__.__name__,self.id)

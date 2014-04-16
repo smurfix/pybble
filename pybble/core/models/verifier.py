@@ -12,6 +12,31 @@ from __future__ import absolute_import, print_function, division
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
+from . import Site
+from flask import current_app,g
+from flask.ext.security import UserMixin, RoleMixin
+from flask.ext.security.utils import encrypt_password
+
+from datetime import datetime,timedelta
+
+from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
+from sqlalchemy.orm import relationship,backref
+
+from pybble.compat import py2_unicode
+
+from ..db import Base, Column
+
+from pybble.utils import random_string, current_request, AuthError
+
+from werkzeug import import_string
+from jinja2.utils import Markup
+from pybble.core import config
+import sys,os
+from copy import copy
+
+from . import DummyObject,ObjectRef, TM_DETAIL_PAGE
+from ._descr import D
+
 VerifierBases = {}
 class VerifierBase(Base):
 	"""
@@ -46,22 +71,23 @@ class VerifierBase(Base):
 			assert v.cls == cls
 
 @py2_unicode
-class Verifier(Object):
+class Verifier(ObjectRef):
 	"""
 		Verification emails (or similar).
 		Parent: the thing to be verified.
 		Owner: the user who's asked.
 		"""
 	__tablename__ = "verifiers"
-	__mapper_args__ = {'polymorphic_identity': 8}
+	_discr = D.Verifier
 
 	base_id = Column(Integer)
-	base = Reference(base_id, VerifierBase.id)
+	base = relationship(VerifierBase, primaryjoin=base_id==VerifierBase.id)
+
 	code = Column(Unicode, nullable=False)
 
-	added = DateTime(default_factory=datetime.utcnow, nullable=False)
-	repeated = DateTime(nullable=True)
-	timeout = DateTime(nullable=False)
+	added = Column(DateTime,default=datetime.utcnow, nullable=False)
+	repeated = Column(DateTime,nullable=True)
+	timeout = Column(DateTime,nullable=False)
 
 	def __init__(self,base, obj, user=None, code=None, days=None):
 		super(Verifier,self).__init__()

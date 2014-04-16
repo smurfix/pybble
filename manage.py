@@ -17,7 +17,6 @@ import logging
 
 from flask.ext.script import Server
 from pybble import ROOT_NAME
-from pybble.core.db import db
 
 #from flask.ext.collect import Collect
 #from quokka.core.db import db

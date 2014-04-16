@@ -12,11 +12,30 @@ from __future__ import absolute_import, print_function, division
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
+from datetime import datetime,timedelta
+
+from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
+from sqlalchemy.orm import relationship,backref
+
+from pybble.compat import py2_unicode
+
+from ..db import Base, Column
+
+from pybble.utils import random_string, current_request, AuthError
+
+from werkzeug import import_string
+from jinja2.utils import Markup
+from pybble.core import config
+import sys,os
+from copy import copy
+
+from . import DummyObject,ObjectRef, TM_DETAIL_PAGE
+from ._descr import D
+
 @py2_unicode
-class Storage(Object):
+class Storage(ObjectRef):
 	"""A box for binary data files"""
-	__tablename__ = "storage"
-	__mapper_args__ = {'polymorphic_identity': 21}
+	_descr = D.Storage
 	_no_crumbs = True
 
 	name = Column(Unicode, nullable=False)

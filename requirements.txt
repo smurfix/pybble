@@ -1,5 +1,6 @@
 SQLAlchemy>=0.9
 https://github.com/smurfix/markupsafe/tarball/master
+https://github.com/smurfix/markupdown/tarball/master
 https://github.com/smurfix/jinja2/tarball/master
 https://github.com/smurfix/flask/tarball/master
 https://github.com/smurfix/flask-script/tarball/master

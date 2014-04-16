@@ -12,110 +12,55 @@ from __future__ import absolute_import, print_function, division
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
-def add_mime(name,typ,subtyp,ext):
-	ext = unicode(ext)
+from datetime import datetime
 
-	try:
-		t = db.get_by(MIMEtype,typ=typ,subtyp=subtyp)
-	except NoResult:
-		t=MIMEtype()
-		t.name = unicode(name)
-		t.typ = typ
-		t.subtyp = subtyp
-		t.ext = ext
-		db.store.add(t)
-		db.store.flush()
-		return t
-	else:
-		assert name == t.name
-		if ext != t.ext:
-			try:
-				tt = db.get_by(MIMEext,ext=ext)
-			except NoResult:
-				tt = MIMEext()
-				tt.mime = t
-				tt.ext = ext
-				db.store.add(tt)
-				db.store.flush()
-		return t
+from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
+from sqlalchemy.orm import relationship,backref
+from sqlalchemy import event
 
-def mime_ext(ext):
-	try:
-		return db.get_by(MIMEtype,ext=ext)
-	except NoResult:
-		return db.get_by(MIMEext,ext=ext).mime
+from pybble.compat import py2_unicode
 
-@py2_unicode
-class MIMEtype(Base):
-	"""Known MIME Types"""
-	__tablename__ = "mimetype"
-	id = Column(Integer, primary_key=True)
-	name = Column(Unicode, nullable=False)
-	typ = Column(Unicode, nullable=False)
-	subtyp = Column(Unicode, nullable=False)
-	ext = Column(Unicode, nullable=False) # primary extension
-	exts = ReferenceSet(id,"MIMEext.mime_id")
-	
-	@property
-	def mimetype(self):
-		return "%s/%s" % (self.typ,self.subtyp)
+from ..db import Base, Column
 
-	def __str__(self):
-		return u"‹%s %s: .%s %s›" % (self.__class__.__name__, self.id,self.ext,self.mimetype)
-	__repr__ = __str__
+from pybble.utils import random_string, current_request, AuthError
 
-def find_mimetype(typ,subtyp=None):
-	if subtyp is None:
-		typ,subtyp = typ.split("/")
-	return db.get_by(MIMEtype,typ=typ, subtyp=subtyp)
+from werkzeug import import_string
+from jinja2.utils import Markup
+from pybble.core import config
+import sys,os
+from copy import copy
 
-@py2_unicode
-class MIMEext(Base):
-	"""Extensions for MIME types"""
-	__tablename__ = "mimeext"
-	id = Column(Integer, primary_key=True)
-	mime_id = Column(Integer)
-	mime = Reference(mime_id,MIMEtype.id)
-	ext = Column(Unicode, nullable=False)
+from . import DummyObject,ObjectRef, TM_DETAIL_PAGE
+from ._descr import D
 
-	def __str__(self):
-		return u"‹%s %s: %s %s›" % (self.__class__.__name__, self.id,self.ext,unicode(self.mime))
-	__repr__ = __str__
-
-def hash_data(content):
-	from base64 import b64encode
-	try:
-		from hashlib import sha1
-	except ImportError:
-		from sha import sha as sha1
-	return b64encode(sha1(content).digest(),altchars="-_").rstrip("=")
+logger = logging.getLogger('pybble.core.models.files')
 
 @py2_unicode
 class BinData(Base):
 	"""
-		Stores one data file
+		Stores (a reference to) one data file
 		owner: whoever uploaded the thing
-		parent: some object this is attached to
+		parent: the object this is attached to
 		superparent: the storage
 		"""
 	__tablename__ = "bindata"
 	__mapper_args__ = {'polymorphic_identity': 22}
 	_no_crumbs = True
-	_proxy = { "storage":"superparent" }
+	
+	# Alias for .superparent
+	storage = relationship("Object", foreign_keys=['superparent_id'])
 
-	storage_seq = Column(Integer)
-	mime_id = Column(Integer, nullable=False)
-	mime = Reference(mime_id,MIMEtype.id)
+	storage_seq = Column(Integer, primary_key=True, autoincrement=True)
+	mime_id = Column(Integer, ForeignKey("MIMEtype.id"), nullable=False)
+	mime = relationship(mime_id, primaryjoin="mime_id==MIMEtype.id")
 	name = Column(Unicode, nullable=False)
 	hash = Column(Unicode, nullable=False)
-	timestamp = DateTime(default_factory=datetime.utcnow)
+	timestamp = Column(DateTime,default=datetime.utcnow)
 	size = Column(Integer)
-
-	static_files = ReferenceSet(id, BaseObject.parent_id)
 
 	@staticmethod
 	def lookup(content):
-		res = db.store.find(BinData, And(BinData.hash == hash_data(content)), BinData.superparent_id != None).one()
+		res = BinData.q.filter(BinData.hash == hash_data(content), BinData.superparent != None).one()
 		if not res:
 			raise NoResult
 		return res
@@ -152,6 +97,7 @@ class BinData(Base):
 				self._content = open(self.path).read()
 			except IOError:
 				self._content = open(self.old_path).read()
+				self._move_old()
 		return self._content
 
 	@property
@@ -160,6 +106,7 @@ class BinData(Base):
 			return self.mime.mimetype
 		except Exception:
 			return "???/???"
+
 	@property
 	def ext(self):
 		try:
@@ -169,7 +116,7 @@ class BinData(Base):
 
 	def _old_get_chars(self):
 		if self.id is None:
-			db.store.flush()
+			db.flush()
 			if self.id is None:
 				return "???"
 		id = self.id-1
@@ -192,8 +139,7 @@ class BinData(Base):
 
 	def _get_chars(self):
 		if self.storage_seq is None:
-			db.store.flush()
-			self.storage_seq = AutoReload
+			db.flush()
 			if self.storage_seq is None:
 				return "???"
 		id = self.storage_seq-1
@@ -221,7 +167,7 @@ class BinData(Base):
 			try:
 				os.rename(op,np)
 			except OSError:
-				pass
+				logger.warn(u"Could not rename ‘{}’ to ‘{}’".format(op,np))
 
 	@property
 	def path(self):
@@ -268,23 +214,21 @@ class BinData(Base):
 			raise
 
 @py2_unicode
-class StaticFile(Object):
+class StaticFile(ObjectRef):
 	"""\
 		Record that a static file belongs to a specific site.
 		Superparent: The site.
-		Parent: The storage.
+		Parent: The file.
 		"""
 	__tablename__ = "staticfile"
-	__mapper_args__ = {'polymorphic_identity': 20}
+	_descr = D.StaticFile
 	_no_crumbs = True
-	_proxy = { "bindata":"parent" }
+
+	# alias for .parent
+	bindata = relationship("Object", foreign_keys=['parent_id'])
 
 	path = Column(Unicode, nullable=False)
-	modified = DateTime(default_factory=datetime.utcnow)
-
-	def __storm_pre_flush__(self):
-		self.modified = datetime.utcnow()
-		super(StaticFile,self).__storm_pre_flush__()
+	modified = DateTime(default=datetime.utcnow)
 
 	def __init__(self, path, bin):
 		super(StaticFile,self).__init__()
@@ -311,3 +255,4 @@ class StaticFile(Object):
 	def mimetype(self):
 		return self.bindata.mimetype
 
+event.listen(StaticFile, 'before_insert', update_modified)

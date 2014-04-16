@@ -13,121 +13,140 @@ from __future__ import absolute_import, print_function, division
 ##BP
 
 from . import Site
-from ..db import db
 from flask import current_app,g
 from flask.ext.security import UserMixin, RoleMixin
 from flask.ext.security.utils import encrypt_password
-from mongoengine.queryset import queryset_manager
 
-# Auth
-class Role(db.Document, RoleMixin):
-	name = db.StringField(max_length=80, unique_with=('site',))
-	description = db.StringField(max_length=255)
+from datetime import datetime,timedelta
 
-	@classmethod
-	def createrole(cls, name,site=None, description=None):
-		if site is None:
-			site = g.site
-		return cls.objects.create(
-			name=name,
-			site=site,
-			description=description
-		)
+from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
+from sqlalchemy.orm import relationship,backref
 
-	def __unicode__(self):
-		return u"{0} ({1})".format(self.name, self.description or 'Role')
+from pybble.compat import py2_unicode
 
-class User(db.DynamicDocument, UserMixin):
-	name = db.StringField(max_length=255, unique=True)
-	email = db.EmailField(max_length=255, unique=True)
-	password = db.StringField(max_length=255)
-	active = db.BooleanField(default=True)
-	changed_at = db.DateTimeField()
-	roles = db.ListField(
-		db.ReferenceField(Role, reverse_delete_rule=db.DENY), default=[]
-	)
+from ..db import Base, Column
 
-	@queryset_manager
-	def objects(cls, q):
-		return q(roles__site__in=g.site.parents)
+from pybble.utils import random_string, current_request, AuthError
 
-	last_login_at = db.DateTimeField()
-	current_login_at = db.DateTimeField()
-	last_login_ip = db.StringField(max_length=255)
-	current_login_ip = db.StringField(max_length=255)
-	login_count = db.IntField()
+from werkzeug import import_string
+from jinja2.utils import Markup
+from pybble.core import config
+import sys,os
+from copy import copy
 
-	username = db.StringField(max_length=50, required=False, unique=True)
+from . import DummyObject,ObjectRef, TM_DETAIL_PAGE
+from ._descr import D
 
-	remember_token = db.StringField(max_length=255)
-	authentication_token = db.StringField(max_length=255)
+## Auth
+#class Role(ObjectRef, RoleMixin):
+#	name = db.StringField(max_length=80, unique_with=('site',))
+#	description = db.StringField(max_length=255)
+#
+#	@classmethod
+#	def createrole(cls, name,site=None, description=None):
+#		if site is None:
+#			site = g.site
+#		return cls.objects.create(
+#			name=name,
+#			site=site,
+#			description=description
+#		)
+#
+#	def __unicode__(self):
+#		return u"{0} ({1})".format(self.name, self.description or 'Role')
+#
+#class User(db.DynamicDocument, UserMixin):
+#	name = db.StringField(max_length=255, unique=True)
+#	email = db.EmailField(max_length=255, unique=True)
+#	password = db.StringField(max_length=255)
+#	active = db.BooleanField(default=True)
+#	changed_at = db.DateTimeField()
+#	roles = db.ListField(
+#		db.ReferenceField(Role, reverse_delete_rule=db.DENY), default=[]
+#	)
+#
+#	@queryset_manager
+#	def objects(cls, q):
+#		return q(roles__site__in=g.site.parents)
+#
+#	last_login_at = db.DateTimeField()
+#	current_login_at = db.DateTimeField()
+#	last_login_ip = db.StringField(max_length=255)
+#	current_login_ip = db.StringField(max_length=255)
+#	login_count = db.IntField()
+#
+#	username = db.StringField(max_length=50, required=False, unique=True)
+#
+#	remember_token = db.StringField(max_length=255)
+#	authentication_token = db.StringField(max_length=255)
+#
+#	def clean(self, *args, **kwargs):
+#		if not self.username:
+#			self.username = User.generate_username(self.email)
+#
+#		 super(User, self).clean(*args, **kwargs)
+##		try:
+##			super(User, self).clean(*args, **kwargs)
+##		except Exception:
+##			pass
+#
+#	@classmethod
+#	def generate_username(cls, email):
+#		username = email.lower()
+#		for item in ['@', '.', '-', '+']:
+#			username = username.replace(item, '_')
+#		return username
+#
+#	def set_password(self, password, save=False):
+#		self.password = encrypt_password(password)
+#		if save:
+#			self.save()
+#
+#	@classmethod
+#	def createuser(cls, name, email, password,
+#				   site=None, active=True, roles=None, username=None):
+#
+#		username = username or cls.generate_username(email)
+#		if site is None:
+#			site = current_app.site
+#		return cls.objects.create(
+#			name=name,
+#			email=email,
+#			password=encrypt_password(password),
+#			active=active,
+#			roles=roles,
+#			username=username
+#		)
+#
+#	@property
+#	def display_name(self):
+#		return self.name or self.email
+#
+#	def __unicode__(self):
+#		return u"{0} <{1}>".format(self.name or '', self.email)
+#
+#	@property
+#	def connections(self):
+#		return Connection.objects(user_id=str(self.id))
+#
+#class Connection(db.Document):
+#	user_id = db.ObjectIdField()
+#	provider_id = db.StringField(max_length=255)
+#	provider_user_id = db.StringField(max_length=255)
+#	access_token = db.StringField(max_length=255)
+#	secret = db.StringField(max_length=255)
+#	display_name = db.StringField(max_length=255)
+#	full_name = db.StringField(max_length=255)
+#	profile_url = db.StringField(max_length=512)
+#	image_url = db.StringField(max_length=512)
+#	rank = db.IntField(default=1)
+#
+#	@property
+#	def user(self):
+#		return User.objects(id=self.user_id).first()
 
-	def clean(self, *args, **kwargs):
-		if not self.username:
-			self.username = User.generate_username(self.email)
-
-		 super(User, self).clean(*args, **kwargs)
-#		try:
-#			super(User, self).clean(*args, **kwargs)
-#		except Exception:
-#			pass
-
-	@classmethod
-	def generate_username(cls, email):
-		username = email.lower()
-		for item in ['@', '.', '-', '+']:
-			username = username.replace(item, '_')
-		return username
-
-	def set_password(self, password, save=False):
-		self.password = encrypt_password(password)
-		if save:
-			self.save()
-
-	@classmethod
-	def createuser(cls, name, email, password,
-				   site=None, active=True, roles=None, username=None):
-
-		username = username or cls.generate_username(email)
-		if site is None:
-			site = current_app.site
-		return cls.objects.create(
-			name=name,
-			email=email,
-			password=encrypt_password(password),
-			active=active,
-			roles=roles,
-			username=username
-		)
-
-	@property
-	def display_name(self):
-		return self.name or self.email
-
-	def __unicode__(self):
-		return u"{0} <{1}>".format(self.name or '', self.email)
-
-	@property
-	def connections(self):
-		return Connection.objects(user_id=str(self.id))
-
-class Connection(db.Document):
-	user_id = db.ObjectIdField()
-	provider_id = db.StringField(max_length=255)
-	provider_user_id = db.StringField(max_length=255)
-	access_token = db.StringField(max_length=255)
-	secret = db.StringField(max_length=255)
-	display_name = db.StringField(max_length=255)
-	full_name = db.StringField(max_length=255)
-	profile_url = db.StringField(max_length=512)
-	image_url = db.StringField(max_length=512)
-	rank = db.IntField(default=1)
-
-	@property
-	def user(self):
-		return User.objects(id=self.user_id).first()
 @py2_unicode
-class User(Object):
+class User(ObjectRef):
 	"""\
 		Authorized users.
 		Owner: Managing user; some sort of root for anon users.
@@ -135,20 +154,20 @@ class User(Object):
 		SuperParent: for anon users, the site they're used with.
 		"""
 	__tablename__ = "users"
-	__mapper_args__ = {'polymorphic_identity': 2}
+	_descr = D.User
 	        
 	username = Column(Unicode, nullable=False)
 	first_name = Column(Unicode)
 	last_name = Column(Unicode)
 	email = Column(Unicode)
 	password = Column(Unicode, nullable=False)
-	first_login = DateTime(nullable=False)
-	last_login = DateTime()
-	cur_login = DateTime()
+	first_login = Column(DateTime, nullable=False)
+	last_login = Column(DateTime)
+	cur_login = Column(DateTime)
 
 	feed_age = Column(Integer, nullable=False, default=10)
 	feed_pass = Column(Unicode, nullable=True)
-	feed_read = DateTime(nullable=True)
+	feed_read = Column(DateTime, nullable=True)
 
 	@property
 	def data(self):
@@ -175,7 +194,7 @@ class User(Object):
 		else:
 			raise RuntimeError(u"User '%s' already exists in %s" %
 			(username,current_request.site))
-		db.store.add(self)
+		db.add(self)
 
 		if not self.anon:
 			try:
@@ -183,7 +202,7 @@ class User(Object):
 			except (AttributeError,RuntimeError):
 				pass
 			else:
-				db.store.add(m)
+				db.add(m)
 	
 	@property
 	def tracks(self):
@@ -219,7 +238,7 @@ class User(Object):
 #			for b in db.filter_by(Breadcrumb,**q).order_by(Breadcrumb.visited)[10:]:
 #				db.store.remove(b)
 			b = Breadcrumb(self,obj)
-			db.store.add(b)
+			db.add(b)
 		else:
 			s.visit()
 			if not s.superparent: # bugfix
@@ -259,7 +278,7 @@ class User(Object):
 			m = db.get_by(Member, user_id=self.id,group_id=site.id)
 		except NoResult:
 			if v:
-				db.store.add(Member(user=self,group=site))
+				db.add(Member(user=self,group=site))
 		else:
 			if not v:
 				db.store.remove(m)
@@ -302,16 +321,16 @@ class User(Object):
 		if obj is not current_request.site and \
 		   ru and ru.can_admin(current_request.site, discr=current_request.site.classdiscr):
 			if DEBUG_ACCESS:
-				print >>sys.stderr,"ADMIN",obj
+				print("ADMIN",obj, file=sys.stderr)
 			return want if want and want < 0 else PERM_ADMIN
 
 		if want>0 and want<=PERM_READ and obj.owner==user:
 			if DEBUG_ACCESS:
-				print >>sys.stderr,"OWN",obj
+				print("OWN",obj, file=sys.stderr)
 			return want
 
 		if DEBUG_ACCESS:
-			print >>sys.stderr,"PERM", Discriminator.get(discr).name if discr else "-", Discriminator.get(new_discr) if new_discr else "-", (PERM_name(want) if want else "-")+":",obj,"FOR",user,"AT",current_request.site, u"⇒"
+			print("PERM", Discriminator.get(discr).name if discr else "-", Discriminator.get(new_discr) if new_discr else "-", (PERM_name(want) if want else "-")+":",obj,"FOR",user,"AT",current_request.site, u"⇒", file=sys.stderr)
 
 		pq = []
 		if want is not None:
@@ -355,11 +374,11 @@ class User(Object):
 
 			p = db.store.find(Permission, And(Or(Permission.inherit != no_inh, Permission.inherit == None), Or(*(Permission.owner_id == u.id for u in user.groups)), Permission.parent_id == obj.id, *pq)).order_by(Desc(Permission.right))
 			if DEBUG_ACCESS:
-				print >>sys.stderr, "Checking",obj
+				print("Checking",obj, file=sys.stderr)
 			p = p.first()
 			if p is not None:
 				if DEBUG_ACCESS:
-					print >>sys.stderr,p
+					print(p, file=sys.stderr)
 				p = p.right
 				return p
 
@@ -367,7 +386,7 @@ class User(Object):
 			obj = obj.parent
 
 		if DEBUG_ACCESS:
-			print >>sys.stderr,"NONE"
+			print("NONE", file=sys.stderr)
 		return PERM_NONE
 
 	def will_do(user,obj,discr=None, perm=PERM_NONE):
@@ -397,7 +416,7 @@ class User(Object):
 			p.right = right
 		else:
 			p = Permission(user,obj,discr,right,inherit)
-			db.store.add(p)
+			db.add(p)
 
 	def forbid(user,obj, discr=None, inherit=None):
 		discr = Discriminator.get(discr,obj).id
@@ -429,14 +448,14 @@ class User(Object):
 	def has_trackers(self):
 		return db.store.find(WantTracking, WantTracking.owner == self).count()
 
-class Group(Object):
+class GroupRef(ObjectRef):
 	"""
 		A group of users. (Usually.)
 		superparent: the site this group belongs to.
 		owner: the managing user; the site, for system groups.
 		"""
 	__tablename__ = "groups"
-	__mapper_args__ = {'polymorphic_identity': 4}
+	_descr = D.GroupRef
 	        
 	name = Column(Unicode)
 
@@ -450,16 +469,18 @@ def named_group(owner, name):
 	"""Return the site-specific group with that name."""
 	return db.get_by(Group,name=name, owner=site)
 
-class Member(Object):
+class Member(ObjectRef):
 	"""\
 		Indicates membership of one object of another.
 		owner: the individual who's the member.
 		parent: the group
 		"""
 	__tablename__ = "groupmembers"
-	__mapper_args__ = {'polymorphic_identity': 13}
+	_descr = D.Member
 	_no_crumbs = True
-	_proxy = { "user":"owner", "group":"parent" };
+
+	user = relationship("Object", foreign_keys=['owner_id'])
+	group = relationship("Object", foreign_keys=['parent_id'])
 
 	excluded = Column(Boolean, nullable=False,default=False)
 
@@ -470,7 +491,7 @@ class Member(Object):
 		self.excluded = False
 		try: del self._memberships
 		except AttributeError: pass
-		db.store.add(self)
+		db.add(self)
 
 	@property
 	def data(self):
@@ -495,7 +516,7 @@ Member: %s
 Object.new_member_rule(Member, "owner","parent")
 
 @py2_unicode
-class Permission(Object):
+class Permission(ObjectRef):
 	"""
 		Permission checks: This user can do that to objects of yonder type.
 		Owner: the enabled user/group
@@ -510,7 +531,7 @@ class Permission(Object):
 		new_discr: The type of object that may be added
 		"""
 	__tablename__ = "permissions"
-	__mapper_args__ = {'polymorphic_identity': 10}
+	_descr = D.Permission
 	_no_crumbs = True
 
 	right = Column(Integer, nullable=False)
@@ -563,7 +584,7 @@ for a,b in PERM.iteritems():
 	def can_do_closure(a,b):
 		def can_do(self, obj, discr=None, new_discr=None):
 			if DEBUG_ACCESS:
-				print >>sys.stderr, "can_"+b+":", self,obj,discr,new_discr
+				print("can_"+b+":", self,obj,discr,new_discr, file=sys.stderr)
 			if a > PERM_NONE:
 				return self.can_do(obj, discr=discr, new_discr=new_discr, want=a) >= a
 			else:
@@ -573,11 +594,11 @@ for a,b in PERM.iteritems():
 
 		def will_do(self, obj, discr=None, new_discr=None):
 			if DEBUG_ACCESS:
-				print >>sys.stderr, "will_"+b+":", self,obj,discr,new_discr
+				print("will_"+b+":", self,obj,discr,new_discr, file=sys.stderr)
 			if not can_do(self, obj, discr=discr, new_discr=new_discr):
 				raise AuthError(obj,a)
 		def can_err(self, obj, discr=None, new_discr=None):
-			if isinstance(obj,(DummyUser,DummySite)) and discr in (User._discriminator,Site._discriminator,None) and new_discr is None and a>0 and a<=PERM_READ:
+			if isinstance(obj,(DummyUser,DummySite)) and (discr is None or Discriminator.get(discr).id in (D.User,D.Site)) and new_discr is None and a>0 and a<=PERM_READ:
 				return True
 			return False
 		def will_err(self, obj, discr=None, new_discr=None):

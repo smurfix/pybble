@@ -25,9 +25,11 @@ from flask._compat import implements_to_string as py2_unicode
 from . import config
 #from zuko.db.logger import logged_session
 
-engine = create_engine(config.mysql_uri+'?charset=utf-8', pool_recycle=100)
-db_session = scoped_session(sessionmaker(autocommit=False,
-                                         autoflush=False,
+engine = create_engine(config.mysql_uri+'?charset=utf-8', pool_recycle=255)
+# don't keep database connections open for more than 5min
+
+db = scoped_session(sessionmaker(autocommit=False,
+                                         #autoflush=False,
                                          bind=engine))
 
 class IDrenderer(IntegerFieldRenderer):
@@ -94,18 +96,18 @@ class Base(object):
 	def __html__(self):
 		return '<a href="%s">%s</a>' % (url_for('admin.show', table=self.__class__.__name__.lower(), id=self.id), escape(self._name))
 
-	q = db_session.query_property(query_cls=limitedQuery)
+	q = db.query_property(query_cls=limitedQuery)
 
 Base = declarative_base(cls=Base)
-Base.query = db_session.query_property(query_cls=limitedQuery)
+Base.query = db.query_property(query_cls=limitedQuery)
 Base.super_readonly = False
-#logged_session(db_session,Base)
+#logged_session(db,Base)
 
 def register(app):
 	@app.teardown_request
 	def shutdown_session(exception=None):
 		if exception:
-			db_session.rollback()
+			db.rollback()
 		else:
-			db_session.commit()
-		db_session.close()
+			db.commit()
+		db.close()

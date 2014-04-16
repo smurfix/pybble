@@ -30,7 +30,7 @@ from flask.ext.script.commands import ShowUrls
 from . import Manager,Command,Option
 from .. import ROOT_NAME
 from ..core.db import db
-from ..core.models import Site,Blueprint
+from ..core.models.site import Site,Blueprint
 from ..app import create_site, list_apps
 
 def make_shell_context():
@@ -78,13 +78,13 @@ class RootManager(Manager):
 		from .app import AppCommand
 		from .site import AddSiteCommand,SitesCommand
 		from .populate import PopulateCommand
-		from .contenttype import ContentTypeManager
+		from .content import ContentManager
 
 		coremanager = Manager()
 		coremanager.__doc__ = "Examine and change Pybble's internal data"
 		coremanager.command(check)
 		coremanager.command(config)
-		coremanager.add_command("type",ContentTypeManager())
+		coremanager.add_command("data",ContentManager())
 
 		self.add_command("urls",ShowUrls())
 		self.add_command("new",AddSiteCommand())

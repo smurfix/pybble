@@ -19,7 +19,7 @@ from mongoengine.errors import DoesNotExist
 from importlib import import_module
 
 from . import Manager,Command,Option
-from ..core.models import Blueprint
+from ..core.models.site import Blueprint
 from ..blueprint import create_blueprint,drop_blueprint,list_blueprints
 
 class AddBlueprint(Command):

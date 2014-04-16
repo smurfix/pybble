@@ -13,11 +13,6 @@ from __future__ import absolute_import, print_function, division
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
-## This file contains global constants and related code.
-## It may not refer to any other Pybble modules.
-
-import os
-
 ## This is the default name for the site root.
 ## There should be only one.
 ROOT_NAME = '_root'

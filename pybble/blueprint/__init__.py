@@ -27,7 +27,7 @@ from mongoengine.errors import DoesNotExist
 
 from .. import ROOT_NAME
 from ..core.db import db
-from ..core.models import Site,Blueprint
+from ..core.models.site import Site,Blueprint
 from ..manager import Manager,Command
 
 logger = logging.getLogger('pybble.blueprint')

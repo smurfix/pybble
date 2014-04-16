@@ -18,15 +18,14 @@ import logging
 from mongoengine.errors import DoesNotExist
 
 from . import Manager,Command,Option
-from ..core.models.doc import ContentType
 
 logger = logging.getLogger('pybble.manager.populate')
 
 content_types = [
-	('page','Web page',"A complete HTML-rendered web page"),
-	('text','Plain text',"raw text, no formatting"),
-	('html','HTML content',"one HTML element"),
-	('haml','HAML template',"HTML template (HAML syntax)"),
+	('text','html','html','Web page',"A complete HTML-rendered web page"),
+	('text','plain','txt','Plain text',"raw text, no formatting"),
+	('text','html+obj',None,'HTML content',"one HTML element"),
+	('text','html+haml','haml','HAML template',"HTML template (HAML syntax)"),
 ]
 class PopulateCommand(Command):
 #	def __init__(self):
@@ -36,22 +35,23 @@ class PopulateCommand(Command):
 #		self.add_option(Option("bp", nargs='?', action="store",help="The Pybble blueprint to install"))
 #		self.add_option(Option("path", nargs='?', action="store",help="The path prefix to attach it to"))
 	def __call__(self,app):
-		from ..core.models import Site
-		from ..core.models.doc import ContentType
+		from ..core.models.site import Site
+		from ..core.models.types import MIMEtype
 		from .. import ROOT_NAME
 		try:
-			root = Site.objects.get(name=ROOT_NAME)
+			root = Site.q.get_by(name=ROOT_NAME)
 		except DoesNotExist:
-			raise RuntimeError("Duh? The root site should have been auto-created.")
+			db.add(Site(name=ROOT_NAME))
+			logger.debug("The root site has been created.")
 		else:
 			logger.debug("The root site exists. Good.")
+		db.commit()
 
-		for type,name,doc in content_types:
+		for type,subtype,ext,name,doc in content_types:
 			try:
-				ContentType.get(type)
+				MIMEtype.get_by(typ=type,subtyp=subtype)
 			except DoesNotExist:
-				ContentType(type=type, name=name, doc=doc).save()
-				logger.info("Content type '%s' (%s) created." % (type,name))
-			else:
-				logger.debug("Content type '%s' (%s) exists." % (type,name))
+				db.add(MIMEtype(typ=type, subtyp=subtype, ext=ext, name=name, doc=doc))
+				logger.info("MIME type '%s/%s' (%s) created." % (type,subtype,name))
+		db.commit()
 		

@@ -15,22 +15,21 @@ from __future__ import absolute_import, print_function, division
 from datetime import datetime,timedelta
 
 from sqlalchemy import Integer, Unicode, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import event
+from sqlalchemy.orm import relationship,backref
 
-from pybble.compat import py2_unicode
+from ...compat import py2_unicode
+from ..json import register_object
 
-from . import Base, Column
+from ..db import Base, Column
 
 from pybble.utils import random_string, current_request, AuthError
 
-from pybble.decorators import add_to
 from werkzeug import import_string
 from jinja2.utils import Markup
-from pybble import _settings as settings
+from pybble.core import config
 import sys,os
 from copy import copy
-
-DEBUG_ACCESS=settings.ACCESS_DEBUG
 
 """Max ID of built-in tables; the rest are extensions"""
 MAX_BUILTIN = 42
@@ -166,21 +165,6 @@ class Discriminator(Base):
 #					print "Ref",a
 #					
 
-def _get_ref(n):
-	def _get_one(self):
-		self._obj_init()
-		id = getattr(self._obj,n+"_id")
-		if id is None: return id
-		return db.store.get(BaseObject,id)
-	return _get_one
-def _set_ref(n):
-	def _set_one(self,val):
-		self._obj_init()
-		if val is not None:
-			val = val.id
-		setattr(self._obj,n+"_id",val)
-	return _set_one
-
 class DummyObject(object):
 	id=0
 	owner=None
@@ -210,7 +194,7 @@ class DummyUser(DummyObject):
 class Object(Base):
 	"""The base type of all pointed-to objects."""
 	__tablename__ = "obj"
-	__mapper_args__ = {'polymorphic_on': discriminator}
+	__mapper_args__ = {'polymorphic_on': 'discriminator'}
 	#__abstract__ = True
 
 	owner_id = Column(Integer)       # user who created this node
@@ -218,9 +202,12 @@ class Object(Base):
 	superparent_id = Column(Integer) # indirect ancestor (replied-to wiki page)
 	## XXX The individual tables should document the semantics of these pointers if they don't match
 	
-	owned = relationship("Object", backref=backref('owner', remote_side=['id'])
-	children = relationship("Object", backref=backref('parent', remote_side=['id'])
-	superchildren = relationship("Object", backref=backref('superparent', remote_side=['id'])
+	#owner = relationship("Object", foreign_keys=['owner_id'])
+	## these are built by the next three lines' backref
+
+	owned = relationship("Object", remote_side=['owner_id'], backref=backref('owner', foreign_keys=['owner_id'], remote_side=['id']))
+	children = relationship("Object", remote_side=['parent_id'], backref=backref('parent', foreign_keys=['parent_id'], remote_side=['id']))
+	superchildren = relationship("Object", remote_side=['superparent_id'], backref=backref('superparent', foreign_keys=['superparent_id'], remote_side=['id']))
 
 	discriminator = Column(Integer, nullable=False)
 
@@ -240,7 +227,7 @@ class Object(Base):
 
 	@property
 	def deleted(self):
-		return self.parent is None and self.superparent is None and self.owner is None
+		return self.parent_id is None and self.superparent_id is None and self.owner_id is None
 	
 	#all_children = relation('Object', backref=backref("superparent", remote_side=Object.id)) 
 
@@ -439,7 +426,7 @@ class Object(Base):
 		if self.id is None:
 			db.store.flush()
 		return "%d.%d.%s" % (self.discriminator, self.id, 
-		                        md5(self.__class__.__name__ + str(self.id) + settings.SECRET_KEY)\
+		                        md5(self.__class__.__name__ + str(self.id) + config.SECRET_KEY)\
 		                            .digest().encode('base64').strip('\n =')[:10].replace("+","/-").replace("/","_"))
 
 	def get_template(self, detail=TM_DETAIL_PAGE):
@@ -526,6 +513,51 @@ class Object(Base):
 			return None
 		return self.parent.default_storage
 
+class ObjectMeta(type(Object)):
+	def __init__(cls, name, bases, dct):
+		if '__abstract__' not in dct:
+			xid = dct.get('id',None)
+			if xid is None:
+				xid = Column(None, ForeignKey(Object.id), primary_key=True)
+				setattr(cls,'id',xid)
+			xmp = dct.get('__mapper_args__',None)
+			if xmp is None:
+				xmp = {}
+				setattr(cls,'__mapper_args__',xmp)
+			xmp.setdefault('polymorphic_identity',dct['_descr'])
+			xmp.setdefault('inherit_condition',(xid == Object.id,))
+			xmp.setdefault('primary_key',(xid,))
+			if '__tablename__' not in dct:
+				setattr(cls,'__tablename__',name.lower())
+			if "modified" in dct:
+				event.listen(cls,'before_update',update_modified)
+
+		super(ObjectMeta, cls).__init__(name, bases, dct)
+
+def update_modified(mapper, connection, target):
+	"""Utility helper for event.listen('before_update')"""
+	target.modified = datetime.utcnow()
+
+class ObjectRef(Object):
+	__abstract__ = True
+	__metaclass__ = ObjectMeta
+
+
+@register_object
+class _obj(object):
+    cls = Object
+    clsname = "obj"
+
+    @staticmethod
+    def encode(obj):
+        ## the string is purely for human consumption and therefore does not have a time zone
+        return {"i":obj.id,"s":str(obj)}
+
+    @staticmethod
+    def decode(i,s=None,**_):
+		return Object.get_by(id=i)
+
+
 #Object.children = relation(Object, remote_side=Object.parent_id, primaryjoin=(Object.id==Object.parent_id)) 
 #Object.superchildren = relation(Object, remote_side=Object.superparent_id, primaryjoin=(Object.id==Object.superparent_id)) 
 #Object.slaves = relation(Object, remote_side=Object.owner_id, primaryjoin=(Object.id==Object.owner_id)) 
@@ -579,7 +611,7 @@ class renderObject(Object):
 
 	__abstract__ = True
 	renderer_id = Column(Integer, nullable=True)
-	renderer = Reference(renderer_id,Renderer.id)
+	renderer = relationship(Renderer, primaryjoin=renderer_id==Renderer.id)
 
 	def __init__(self,renderer = None):
 		if renderer is not None:

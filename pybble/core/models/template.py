@@ -12,18 +12,39 @@ from __future__ import absolute_import, print_function, division
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
+from datetime import datetime,timedelta
+
+from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
+from sqlalchemy.orm import relationship,backref
+
+from pybble.compat import py2_unicode
+
+from ..db import Base, Column
+
+from pybble.utils import random_string, current_request, AuthError
+
+from werkzeug import import_string
+from jinja2.utils import Markup
+from pybble.core import config
+import sys,os
+from copy import copy
+
+from . import DummyObject,ObjectRef, TM_DETAIL_PAGE
+from ._descr import D
+
 @py2_unicode
-class TemplateMatch(Object):
+class TemplateMatch(ObjectRef):
 	"""
 		Associate a template to an object.
 		Parent: The object which the template is for.
 		"""
 	__tablename__ = "template_match"
-	__mapper_args__ = {'polymorphic_identity': 12}
-	_proxy = { "obj":"parent" }
+	_descr = D.TemplateMatch
+
+	obj = relationship("Object", foreign_keys=['parent_id'])
 
 	data = Column(Unicode)
-	modified = DateTime(default_factory=datetime.utcnow)
+	modified = Column(DateTime,default=datetime.utcnow)
 
 	def __storm_pre_flush__(self):
 		self.modified = datetime.utcnow()

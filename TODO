@@ -1,0 +1,10 @@
+migrate passwords
+
+multi language
+
+move to flask and flask.ext.* idioms
+
+add object deletion
+	* clean up references to marked-as-deleted objects
+	* then really delete them
+

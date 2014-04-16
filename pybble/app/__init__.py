@@ -29,7 +29,8 @@ from mongoengine.errors import DoesNotExist
 
 from .. import ROOT_NAME
 from ..core.db import db
-from ..core.models import Site,ConfigVar,register_changed
+from ..core.models.site import Site
+from ..core.models.config import ConfigVar,register_changed
 from ..manager import Manager,Command
 from ..blueprint import load_app_blueprints
 

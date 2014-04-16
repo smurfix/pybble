@@ -16,13 +16,28 @@ from __future__ import absolute_import, print_function, division
 	Change tracking: updated and deleted objects
 	"""
 
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship
+from datetime import datetime,timedelta
 
-from . import Object
+from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
+from sqlalchemy.orm import relationship,backref
+
+from pybble.compat import py2_unicode
+
+from ..db import Base, Column
+
+from pybble.utils import random_string, current_request, AuthError
+
+from werkzeug import import_string
+from jinja2.utils import Markup
+from pybble.core import config
+import sys,os
+from copy import copy
+
+from . import DummyObject,ObjectRef, TM_DETAIL_PAGE
+from ._descr import D
 
 @py2_unicode
-class Breadcrumb(Object):
+class Breadcrumb(ObjectDef):
 	"""\
 		Track page visits.
 		Owner: the user who did it.
@@ -31,14 +46,14 @@ class Breadcrumb(Object):
 		discr: mirrors parent.discr, for easier selectage
 		"""
 	__tablename__ = "breadcrumbs"
-	__mapper_args__ = {'polymorphic_identity': 14}
+	_descr = D.Breadcrumb
 	_no_crumbs = True
 
 	discr = Column(Integer, nullable=False)
 	#seq = Column(Integer)
-	visited = DateTime(default_factory=datetime.utcnow)
-	last_visited = DateTime(nullable=True)
-	cur_visited = DateTime(default_factory=datetime.utcnow, nullable=True)
+	visited = Column(DateTime,default=datetime.utcnow)
+	last_visited = Column(DateTime,nullable=True)
+	cur_visited = Column(DateTime,default=datetime.utcnow, nullable=True)
 
 	def __init__(self, user, obj):
 		super(Breadcrumb,self).__init__()
@@ -67,17 +82,17 @@ class Breadcrumb(Object):
 		self.cur_visited = now
 
 @py2_unicode	
-class Change(Object):
+class Change(ObjectRef):
 	"""\
 		Track content changes.
 		Owner: the user who did it.
 		Parent: The page thus changed.
 		"""
 	__tablename__ = "changes"
-	__mapper_args__ = {'polymorphic_identity': 15}
+	_descr = D.Change
 	_no_crumbs = True
 
-	timestamp = DateTime(default_factory=datetime.utcnow)
+	timestamp = Column(DateTime,default=datetime.utcnow)
 	data = Column(Unicode)
 	comment = Column(Unicode, nullable=True)
 
@@ -120,7 +135,7 @@ class Change(Object):
                 	.first()
 
 @py2_unicode
-class Delete(Object):
+class Delete(ObjectRef):
 	"""\
 		Track deleted content.
 		Owner: the user who did it.
@@ -128,7 +143,7 @@ class Delete(Object):
 		Superparent: the object's original parent.
 		"""
 	__tablename__ = "deleted"
-	__mapper_args__ = {'polymorphic_identity': 16}
+	_descr = D.Delete
 	_no_crumbs = True
 
 	comment = Column(Unicode, nullable=True)
@@ -139,15 +154,11 @@ class Delete(Object):
 	@property
 	def old_parent_id(self): return self.superparent_id
 
-	old_owner = relationship("Object", primaryjoin="old_owner_id==Object.id", nullable=True)
-	old_parent = relationship("Object", primaryjoin="superparent_id==Object.id", nullable=True) ## for symmetry
-	old_superparent = relationship("Object", primaryjoin="old_superparent_id==Object.id", nullable=True)
+	old_owner = relationship("Object", primaryjoin="old_owner_id==Object.id")
+	old_parent = relationship("Object", primaryjoin="superparent_id==Object.id")
+	old_superparent = relationship("Object", primaryjoin="old_superparent_id==Object.id")
 
-	old_owner = Reference(old_owner_id, BaseObject.id)
-	old_parent = property(_get_ref("superparent"),_set_ref("superparent"))
-	old_superparent = Reference(old_superparent_id, BaseObject.id)
-
-	timestamp = DateTime(default_factory=datetime.utcnow)
+	timestamp = Column(DateTime,default=datetime.utcnow)
 
 	def __init__(self, user, obj, comment):
 		super(Delete,self).__init__()
@@ -175,7 +186,7 @@ class Delete(Object):
 		return self.parent
 
 @py2_unicode
-class Tracker(Object):
+class Tracker(ObjectRef):
 	"""\
 		Track any kind of change, for purpose of RSSification, Emails, et al.
 		Owner: the user who did it.
@@ -183,11 +194,12 @@ class Tracker(Object):
 		Superparent: The site.
 		"""
 	__tablename__ = "tracking"
-	__mapper_args__ = {'polymorphic_identity': 17}
+	_descr = D.Tracker
 	_no_crumbs = True
-	_proxy = { "site":"superparent" }
 
-	timestamp = DateTime(default_factory=datetime.utcnow)
+	site = relationship("Object", foreign_keys=['superparent_id'])
+
+	timestamp = Column(DateTime,default=datetime.utcnow)
 
 	def __init__(self, user, obj, site = None):
 		super(Tracker,self).__init__()
@@ -233,9 +245,11 @@ class UserTracker(Object):
 		Superparent: the WantTracker that's responsible.
 		"""
 	__tablename__ = "usertracking"
-	__mapper_args__ = {'polymorphic_identity': 18}
+	_descr = D.UserTracker
 	_no_crumbs = True
-	_proxy = { "user":"owner", "tracker":"parent" }
+
+	user = relationship("Object", foreign_keys=['owner_id'])
+	owner = relationship("Object", foreign_keys=['parent_id'])
 
 	def __init__(self, user, tracker, want):
 		super(UserTracker,self).__init__()
@@ -268,7 +282,9 @@ class WantTracking(Object):
 	__tablename__ = "wanttracking"
 	__mapper_args__ = {'polymorphic_identity': 19}
 	_display_name = "Beobachtungs-Eintrag"
-	_proxy = { "obj":"parent", "user":"owner" }
+
+	obj = relationship("Object", foreign_keys=['parent_id'])
+	user = relationship("Object", foreign_keys=['owner_id'])
 
 	discr = Column(Integer, nullable=True)
 	email = Column(Boolean, nullable=False) # send mail, not just RSS/on-site?
