@@ -41,7 +41,7 @@ class TemplateMatch(ObjectRef):
 	__tablename__ = "template_match"
 	_descr = D.TemplateMatch
 
-	obj = relationship("Object", foreign_keys=['parent_id'])
+	obj = relationship("Object", foreign_keys='(parent_id,)')
 
 	data = Column(Unicode)
 	modified = Column(DateTime,default=datetime.utcnow)

@@ -25,7 +25,7 @@ from flask import url_for, current_app, g
 from flask.config import Config
 
 from ..db import db
-from ... import settings
+from ... import ROOT_NAME
 
 from datetime import datetime,timedelta
 
@@ -76,6 +76,18 @@ class ConfigDict(Config):
 		self.root_path = os.curdir
 		self.site = site
 		self.set_db = bool(site)
+		
+		s = site
+		while s:
+			for v in SiteConfigVar.q.filter_by(site=s):
+				self.setdefault(v.var.name, v.value)
+			s = s.parent
+
+		# find defaults
+		for v in ConfigVar.q.all():
+			if v.deleted:
+				continue
+			self.setdefault(v.name, v.value)
 
 	def __setitem__(self,k,v):
 		try:
@@ -93,16 +105,7 @@ class ConfigDict(Config):
 				cf = SiteConfigVar.q.get(site=self.site, var=cfv)
 				cf.value=v
 				cf.save()
-				if cfv is not None and cfv.prepend:
-					self[k].pop(0)
-		if cfv is None or not cfv.prepend:
-			super(ConfigDict,self).__setitem__(k,v)
-		elif k in self:
-			self[k].insert(0,v)
-		else:
-			super(ConfigDict,self).__setitem__(k,[v])
-		if self.set_db and self.site is not None:
-			self.site.config_changed()
+		super(ConfigDict,self).__setitem__(k,v)
 
 	def __delitem__(self,k):
 		try:
@@ -160,30 +163,18 @@ class ConfigVar(ObjectRef, JsonValue):
 	name = Column(Unicode, unique=True)
 	info = Column(Unicode)
 	value = Column(Unicode)
-	prepend = Column(Boolean,default=False)
-
-	def __init__(self,**kv):
-		if kv.get("prepend",False):
-			v = kv.get("default",[])
-			if not hasattr(v,"prepend"):
-				v = [v]
-		super(ConfigVar,self).__init__(**kv)
 
 	@staticmethod
 	def get(name):
 		try:
-			return ConfigVar.objects.get(name=name)
+			return ConfigVar.q.get(name=name)
 		except DoesNotExist:
 			raise DoesNotExist("ConfigVar:"+name)
 
 	@staticmethod
-	def exists(name,info,default=None,prepend=False):
-		cf = ConfigVar(name=name,info=info,default=default,prepend=prepend)
+	def exists(name,info,default=None):
+		cf = ConfigVar(name=name,info=info,default=default)
 		cf.save()
-	meta = {
-		'indexes': [('name',)],
-		'collection': 'pybble_core_configvar',
-	}
 	def __str__(self):
 		if self.var is None or self.site is None:
 			return super(SiteConfigVar).__str__()
@@ -198,8 +189,8 @@ class SiteConfigVar(ObjectRef, JsonValue):
 	"""This is one configuration variable's value for a site."""
 	_descr = D.SiteConfigVar
 
-	site = relationship("Object", foreign_keys=['parent_id'])
-	var = relationship("Object", foreign_keys=['superparent_id'])
+	site = relationship("Object", foreign_keys='(parent_id,)')
+	var = relationship("Object", foreign_keys='(superparent_id,)')
 	# Owner: the user who last set the variable
 
 	def __str__(self):

@@ -12,17 +12,14 @@ from __future__ import absolute_import, print_function, division
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
-import datetime
-
 ## You absolutely _must_ implement these in your local_settings.py file.
-
-#MONGODB_SETTINGS={'DB': 'pybble'}
 #SECRET_KEY="If you do not change this to something random, you deserve to get hacked."
 
-## These are our default settings.
+## These are a bunch of "required" default settings.
 
 APPLICATION_ROOT=None
 DEBUG=False
+d_DEBUG=""
 JSON_AS_ASCII=True
 JSONIFY_PRETTYPRINT_REGULAR=False
 JSON_SORT_KEYS=False

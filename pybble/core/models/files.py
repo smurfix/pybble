@@ -48,7 +48,7 @@ class BinData(Base):
 	_no_crumbs = True
 	
 	# Alias for .superparent
-	storage = relationship("Object", foreign_keys=['superparent_id'])
+	storage = relationship("Object", foreign_keys='(superparent_id,)')
 
 	storage_seq = Column(Integer, primary_key=True, autoincrement=True)
 	mime_id = Column(Integer, ForeignKey("MIMEtype.id"), nullable=False)
@@ -225,7 +225,7 @@ class StaticFile(ObjectRef):
 	_no_crumbs = True
 
 	# alias for .parent
-	bindata = relationship("Object", foreign_keys=['parent_id'])
+	bindata = relationship("Object", foreign_keys='(parent_id,)')
 
 	path = Column(Unicode, nullable=False)
 	modified = DateTime(default=datetime.utcnow)

@@ -479,8 +479,8 @@ class Member(ObjectRef):
 	_descr = D.Member
 	_no_crumbs = True
 
-	user = relationship("Object", foreign_keys=['owner_id'])
-	group = relationship("Object", foreign_keys=['parent_id'])
+	user = relationship("Object", foreign_keys='(owner_id,)')
+	group = relationship("Object", foreign_keys='(parent_id,)')
 
 	excluded = Column(Boolean, nullable=False,default=False)
 

@@ -22,6 +22,7 @@ from . import Manager,Command,Option
 logger = logging.getLogger('pybble.manager.populate')
 
 content_types = [
+	## MIME type,subtype, file extension, name, description
 	('text','html','html','Web page',"A complete HTML-rendered web page"),
 	('text','plain','txt','Plain text',"raw text, no formatting"),
 	('text','html+obj',None,'HTML content',"one HTML element"),
@@ -37,21 +38,40 @@ class PopulateCommand(Command):
 	def __call__(self,app):
 		from ..core.models.site import Site
 		from ..core.models.types import MIMEtype
+		from ..core.models.config import ConfigVar
 		from .. import ROOT_NAME
+
+		## main site
 		try:
 			root = Site.q.get_by(name=ROOT_NAME)
 		except DoesNotExist:
-			db.add(Site(name=ROOT_NAME))
+			root = Site(name=ROOT_NAME)
+			db.add(root)
 			logger.debug("The root site has been created.")
 		else:
 			logger.debug("The root site exists. Good.")
 		db.commit()
 
+		## MIME types
 		for type,subtype,ext,name,doc in content_types:
 			try:
-				MIMEtype.get_by(typ=type,subtyp=subtype)
+				MIMEtype.q.get_by(typ=type,subtyp=subtype)
 			except DoesNotExist:
 				db.add(MIMEtype(typ=type, subtyp=subtype, ext=ext, name=name, doc=doc))
 				logger.info("MIME type '%s/%s' (%s) created." % (type,subtype,name))
 		db.commit()
 		
+		## default variables
+		from pybble.manager import default_settings as DS
+		for k,v in DS.__dict__.items():
+			if k != k.upper(): continue
+			try:
+				cf = ConfigVar.q.get_by(name=k)
+			except DoesNotExist:
+				cf = ConfigVar(parent=root, name=k, value=v)
+				db.add(ConfigVar(parent=root, name=k, value=v))
+
+			if not cf.info:
+				cf.info = getattr(DS,'d_'+k,None)
+		db.commit()
+

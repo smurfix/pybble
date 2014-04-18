@@ -197,7 +197,7 @@ class Tracker(ObjectRef):
 	_descr = D.Tracker
 	_no_crumbs = True
 
-	site = relationship("Object", foreign_keys=['superparent_id'])
+	site = relationship("Object", foreign_keys='(superparent_id,)')
 
 	timestamp = Column(DateTime,default=datetime.utcnow)
 
@@ -248,8 +248,8 @@ class UserTracker(Object):
 	_descr = D.UserTracker
 	_no_crumbs = True
 
-	user = relationship("Object", foreign_keys=['owner_id'])
-	owner = relationship("Object", foreign_keys=['parent_id'])
+	user = relationship("Object", foreign_keys='(owner_id,)')
+	owner = relationship("Object", foreign_keys='(parent_id,)')
 
 	def __init__(self, user, tracker, want):
 		super(UserTracker,self).__init__()
@@ -283,7 +283,7 @@ class WantTracking(Object):
 	__mapper_args__ = {'polymorphic_identity': 19}
 	_display_name = "Beobachtungs-Eintrag"
 
-	obj = relationship("Object", foreign_keys=['parent_id'])
+	obj = relationship("Object", foreign_keys='(parent_id,)')
 	user = relationship("Object", foreign_keys=['owner_id'])
 
 	discr = Column(Integer, nullable=True)

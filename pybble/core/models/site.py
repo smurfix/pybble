@@ -58,6 +58,7 @@ class App(ObjectRef):
 	"""An App known to pybble"""
 	__tablename__ = "apps"
 	_descr = D.App
+	_module = None
 
 	path = Column(Unicode, nullable=False)
 	name = Column(Unicode, nullable=False)
@@ -66,6 +67,12 @@ class App(ObjectRef):
 	def __str__(self):
 		return u"‹App ‚%s‘ @ %s›" % (self.name, self.path)
 	__repr__ = __str__
+
+	def load(self):
+		"""Load the app's module"""
+		if self._module is None:
+			self._module = import_string(self.name)
+		return self._module
 
 @py2_unicode
 class Blueprint(ObjectRef):
@@ -92,10 +99,10 @@ class Site(ObjectRef):
 	tracked = Column(DateTime,nullable=False, default=datetime.utcnow)
 	## Datestamp of newest fully-processed Tracker object
 
-	superuser = relationship("Object", primaryjoin="owner_id==Object.id")
-	app = relationship("Object", primaryjoin="superparent_id==Object.id")
-
-	storages = relationship("Storage", primaryjoin="Site.id==Storage.parent_id")
+	## NOT YET WORKING
+	#superuser = relationship("Object", primaryjoin="owner_id==Object.id")
+	#app = relationship("Object", primaryjoin="superparent_id==Object.id")
+	#storages = relationship("Storage", primaryjoin="Site.id==Storage.parent_id")
 
 	app_id = Column(Integer, ForeignKey(App.id), nullable=True)
 	app = relationship(App, primaryjoin=app_id==App.id)

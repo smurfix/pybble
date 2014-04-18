@@ -202,12 +202,13 @@ class Object(Base):
 	superparent_id = Column(Integer) # indirect ancestor (replied-to wiki page)
 	## XXX The individual tables should document the semantics of these pointers if they don't match
 	
-	#owner = relationship("Object", foreign_keys=['owner_id'])
-	## these are built by the next three lines' backref
+	owner = relationship("Object", foreign_keys='(owner_id,)')
+	parent = relationship("Object", foreign_keys='(parent_id,)')
+	superparent = relationship("Object", foreign_keys='(superparent_id,)')
 
-	owned = relationship("Object", remote_side=['owner_id'], backref=backref('owner', foreign_keys=['owner_id'], remote_side=['id']))
-	children = relationship("Object", remote_side=['parent_id'], backref=backref('parent', foreign_keys=['parent_id'], remote_side=['id']))
-	superchildren = relationship("Object", remote_side=['superparent_id'], backref=backref('superparent', foreign_keys=['superparent_id'], remote_side=['id']))
+	#owned = relationship("Object", remote_side=[owner_id], backref=backref('owner', foreign_keys=[owner_id], remote_side=['id']))
+	#children = relationship("Object", remote_side=[parent_id], backref=backref('parent', foreign_keys=[parent_id], remote_side=['id']))
+	#superchildren = relationship("Object", remote_side=[superparent_id], backref=backref('superparent', foreign_keys=[superparent_id], remote_side=['id']))
 
 	discriminator = Column(Integer, nullable=False)
 

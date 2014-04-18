@@ -212,12 +212,7 @@ def create_app(app=None, config=None, site=ROOT_NAME, verbose=None, test=False):
 		if config:
 			ext_config.from_object(config)
 		else:
-			ext_config.from_object("pybble.settings")
-
-			if not test:
-				ext_config.from_object("local_settings")
-			else:
-				ext_config.from_object("pybble.test_settings")
+			ext_config.from_object("pybble.core.config")
 
 			envvar = "PYBBLE_SETTINGS" if not test else "PYBBLE_TEST_SETTINGS"
 			if envvar in os.environ:
@@ -225,28 +220,22 @@ def create_app(app=None, config=None, site=ROOT_NAME, verbose=None, test=False):
 
 		assert test == ext_config.get('TESTING',False)
 	
-	db.init_app(cfg_app)
-	for k,v in cfg_app.config.items():
-		try:
-			ConfigVar.get(k)
-		except DoesNotExist:
-			logger.warn("Adding config default: %s = %s", k,repr(v))
-			ConfigVar.exists(k,default=v,info="Default")
-
 	if not isinstance(site,Site):
 		try:
-			site = Site.objects.get(domain=site)
+			site = Site.q.get_by(domain=site)
 		except DoesNotExist:
 			try:
-				site = Site.objects.get(name=site)
+				site = Site.q.get_by(name=site)
 			except DoesNotExist:
-				if site != "_root":
+				if site != ROOT_NAME:
 					raise RuntimeError("The site '%s' does not exist yet."%(site,))
 				logger.warn("Creating a new root site")
 				site = create_site(None,"localhost","_root",ROOT_NAME)
 
-	app_module = import_module("pybble.app."+site.app)
-	app = app_module.App(site, test=test)
+	if site.app is None:
+		app = cfg_app
+	else:
+		app = site.app.load().App(site, test=test)
 
 	if verbose:
 		logging.basicConfig(
