@@ -44,8 +44,8 @@ class VerifierBase(Base):
 		"""
 
 	__tablename__ = "verifierbase"
-	name = Column(Unicode, nullable=False)
-	cls = Column(Unicode, nullable=False)
+	name = Column(Unicode(30), nullable=False)
+	cls = Column(Unicode(100), nullable=False)
 	_mod = None
 
 	def __init__(self, name, cls):
@@ -83,7 +83,7 @@ class Verifier(ObjectRef):
 	base_id = Column(Integer)
 	base = relationship(VerifierBase, primaryjoin=base_id==VerifierBase.id)
 
-	code = Column(Unicode, nullable=False)
+	code = Column(Unicode(30), nullable=False)
 
 	added = Column(DateTime,default=datetime.utcnow, nullable=False)
 	repeated = Column(DateTime,nullable=True)

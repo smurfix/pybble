@@ -73,11 +73,11 @@ class MIMEtype(Base):
 	"""Known MIME Types"""
 	__tablename__ = "mimetype"
 
-	name = Column(Unicode, nullable=False)
-	typ = Column(Unicode, nullable=False)
-	subtyp = Column(Unicode, nullable=False)
-	doc = Column(Unicode, nullable=True)
-	ext = Column(Unicode, nullable=False) # primary extension
+	name = Column(Unicode(30), nullable=False)
+	typ = Column(Unicode(30), nullable=False)
+	subtyp = Column(Unicode(30), nullable=False)
+	doc = Column(Unicode(1000), nullable=True)
+	ext = Column(Unicode(10), nullable=False) # primary extension
 	exts = ReferenceSet(id,"MIMEext.mime_id")
 	
 	@property
@@ -100,7 +100,7 @@ class MIMEext(Base):
 
 	mime_id = Column(Integer, ForeignKey(MIMEtype.id), nullable=False)
 	mime = relationship(mime_id,primaryjoin=mime_id==MIMEtype.id)
-	ext = Column(Unicode, nullable=False)
+	ext = Column(Unicode(10), nullable=False)
 
 	def __str__(self):
 		return u"‹%s %s: %s %s›" % (self.__class__.__name__, self.id,self.ext,unicode(self.mime))

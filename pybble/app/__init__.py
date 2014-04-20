@@ -222,7 +222,9 @@ def create_app(app=None, config=None, site=ROOT_NAME, verbose=None, test=False):
 		assert test == ext_config.get('TESTING',False)
 	
 	with cfg_app.test_request_context('/'):
-		if not isinstance(site,Site):
+		if site is None:
+			pass
+		elif not isinstance(site,Site):
 			try:
 				site = Site.q.get_by(domain=site)
 			except NoResultFound:
@@ -234,7 +236,7 @@ def create_app(app=None, config=None, site=ROOT_NAME, verbose=None, test=False):
 					logger.warn("Creating a new root site")
 					site = create_site(None,"localhost","_root",ROOT_NAME)
 
-		if site.app is None:
+		if site is None or site.app is None:
 			app = cfg_app
 		else:
 			app = site.app.load().App(site, test=test)
@@ -245,9 +247,6 @@ def create_app(app=None, config=None, site=ROOT_NAME, verbose=None, test=False):
 				format=app.config['LOGGER_FORMAT'],
 				datefmt=app.config['LOGGER_DATE_FORMAT']
 			)
-
-		from ..core.models.doc import ContentType
-		ContentType.init_types()
 
 	return app
 

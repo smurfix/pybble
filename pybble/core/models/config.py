@@ -138,7 +138,7 @@ class ConfigDict(Config):
 class JSON(TypeDecorator):
 	"""Represents any Python object as a json-encoded string.
 	"""
-	impl = VARCHAR
+	impl = VARCHAR(100000)
 
 	def process_bind_param(self, value, dialect):
 		if value is not None:
@@ -160,9 +160,8 @@ class ConfigVar(ObjectRef, JsonValue):
 
 	# Parent: the object this setting is mainly applied to
 
-	name = Column(Unicode, unique=True)
-	info = Column(Unicode)
-	value = Column(Unicode)
+	name = Column(Unicode(30), unique=True)
+	info = Column(Unicode(100))
 
 	@staticmethod
 	def get(name):

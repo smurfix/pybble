@@ -34,6 +34,8 @@ __all__ = ('DEBUG', 'rpc_user','rpc_pass','cert','SECRET_KEY','rpc_url','rpc_por
 
 if "DEBUG" not in globals():
 	DEBUG = False
+if "TRACE" not in globals():
+	TRACE = False
 #if not hasattr(LOGIN,"SECRET_KEY"):
 #	LOGIN.SECRET_KEY = "development version"
 #	print("WARNING: Set a secret key! Do not use in production!", file=sys.stderr)
@@ -46,10 +48,10 @@ if "mysql_database" not in globals():
 
 if "mysql_uri" not in globals():
 	if "mysql_user" in globals() and "mysql_pass" in globals():
-		mysql_uri = "mysql://%s:%s@%s:%s/%s?charset=utf8" % (mysql_user,mysql_pass,mysql_host,mysql_port,mysql_database)
+		mysql_uri = "mysql://%s:%s@%s:%s/%s" % (mysql_user,mysql_pass,mysql_host,mysql_port,mysql_database)
 if "mysql_admin_uri" not in globals():
 	if "mysql_admin_user" in globals() and "mysql_admin_pass" in globals():
-		mysql_admin_uri = "mysql://%s:%s@%s:%s/%s?charset=utf8" % (mysql_admin_user,mysql_admin_pass,mysql_host,mysql_port,mysql_database)
+		mysql_admin_uri = "mysql://%s:%s@%s:%s/%s" % (mysql_admin_user,mysql_admin_pass,mysql_host,mysql_port,mysql_database)
 
 if "web_port" not in globals():
 	web_port = 8080

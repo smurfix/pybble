@@ -25,7 +25,14 @@ from flask._compat import implements_to_string as py2_unicode
 from . import config
 #from zuko.db.logger import logged_session
 
-engine = create_engine(config.mysql_uri+'?charset=utf-8', pool_recycle=255)
+def db_engine(**kw):
+	kw.setdefault('pool_recycle',255)
+	kw.setdefault('uri',config.mysql_uri)
+	if config.TRACE:
+		kw.setdefault('echo',True)
+	return create_engine(kw.pop('uri')+'?charset=utf8', **kw)
+engine = db_engine()
+
 # don't keep database connections open for more than 5min
 
 db = scoped_session(sessionmaker(autocommit=False,

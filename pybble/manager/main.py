@@ -69,6 +69,7 @@ class RootManager(Manager):
 	def add_root_options(self):
 		self.add_option("-c", "--config", dest="config", required=False, default=None, help="Config file to use")
 		self.add_option("-s", "--site", dest="site", required=False, default=ROOT_NAME, help="which Site to run on")
+		self.add_option("-S", "--no-site", dest="site", action="store_const", const=None, required=False, help="Do not choose a site")
 		self.add_option("-v", "--verbose", dest="verbose", action="count", default=0, required=False, help="Enable verbose logging")
 		self.add_option("-t", "--test", dest="test", action="store_true", required=False, default=False, help="Use the test database")
 
@@ -77,6 +78,7 @@ class RootManager(Manager):
 		from .app import AppCommand
 		from .site import AddSiteCommand,SitesCommand
 		from .populate import PopulateCommand
+		from .schema import SchemaCommand
 		from .content import ContentManager
 
 		coremanager = Manager()
@@ -89,6 +91,7 @@ class RootManager(Manager):
 		self.add_command("new",AddSiteCommand())
 		self.add_command("sites",SitesCommand())
 		self.add_command("populate",PopulateCommand())
+		self.add_command("schema",SchemaCommand())
 		self.add_command("app",AppCommand())
 		self.add_command("blueprint",BlueprintManager())
 		self.add_command("run",SubdomainServer())

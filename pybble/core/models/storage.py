@@ -38,9 +38,9 @@ class Storage(ObjectRef):
 	_descr = D.Storage
 	_no_crumbs = True
 
-	name = Column(Unicode, nullable=False)
-	path = Column(Unicode, nullable=False)
-	url = Column(Unicode, nullable=False)
+	name = Column(Unicode(30), nullable=False)
+	path = Column(Unicode(1000), nullable=False)
+	url = Column(Unicode(200), nullable=False)
 
 	def __init__(self, name,path,url):
 		super(Storage,self).__init__()

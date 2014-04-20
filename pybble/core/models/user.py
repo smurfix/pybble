@@ -156,17 +156,17 @@ class User(ObjectRef):
 	__tablename__ = "users"
 	_descr = D.User
 	        
-	username = Column(Unicode, nullable=False)
-	first_name = Column(Unicode)
-	last_name = Column(Unicode)
-	email = Column(Unicode)
-	password = Column(Unicode, nullable=False)
+	username = Column(Unicode(30), nullable=False)
+	first_name = Column(Unicode(50))
+	last_name = Column(Unicode(50))
+	email = Column(Unicode(200))
+	password = Column(Unicode(200), nullable=False)
 	first_login = Column(DateTime, nullable=False)
 	last_login = Column(DateTime)
 	cur_login = Column(DateTime)
 
 	feed_age = Column(Integer, nullable=False, default=10)
-	feed_pass = Column(Unicode, nullable=True)
+	feed_pass = Column(Unicode(30), nullable=True)
 	feed_read = Column(DateTime, nullable=True)
 
 	@property
@@ -457,7 +457,7 @@ class GroupRef(ObjectRef):
 	__tablename__ = "groups"
 	_descr = D.GroupRef
 	        
-	name = Column(Unicode)
+	name = Column(Unicode(30))
 
 	def __init__(self,name,owner,site=None):
 		super(Group,self).__init__()

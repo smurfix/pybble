@@ -1,5 +1,7 @@
 #!/usr/bin/make -f
 
+all: fetch pybble/utils/sql_diff.py
+
 .PHONY:	test
 test:
 	@nosetests
@@ -11,6 +13,7 @@ test:
 update:
 	@sh utils/update_boilerplate
 
+.PHONY: fetch
 fetch: pybble/static/jquery.js pybble/static/jquery.ui.js pybble/static/jquery.ui.css
 
 pybble/static/jquery.js:
@@ -21,4 +24,7 @@ pybble/static/jquery.ui.js:
 
 pybble/static/jquery.ui.css:
 	wget -O $@ http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css
+
+pybble/utils/sql_diff.py: pybble/utils/sql_diff.g
+	yapps $< $@
 

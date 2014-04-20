@@ -60,9 +60,9 @@ class App(ObjectRef):
 	_descr = D.App
 	_module = None
 
-	path = Column(Unicode, nullable=False)
-	name = Column(Unicode, nullable=False)
-	doc = Column(Unicode, nullable=True)
+	path = Column(Unicode(1000), nullable=False)
+	name = Column(Unicode(30), nullable=False)
+	doc = Column(Unicode(1000), nullable=True)
 
 	def __str__(self):
 		return u"‹App ‚%s‘ @ %s›" % (self.name, self.path)
@@ -80,9 +80,9 @@ class Blueprint(ObjectRef):
 	__tablename__ = "blueprints"
 	_descr = D.Blueprint
 
-	path = Column(Unicode, nullable=False)
-	name = Column(Unicode, nullable=False)
-	doc = Column(Unicode, nullable=True)
+	path = Column(Unicode(1000), nullable=False)
+	name = Column(Unicode(30), nullable=False)
+	doc = Column(Unicode(1000), nullable=True)
 
 	def __str__(self):
 		return u"‹Blueprint ‚%s‘ @ %s›" % (self.name, self.path)
@@ -94,8 +94,8 @@ class Site(ObjectRef):
 	__tablename__ = "sites"
 	_descr = D.Site
 
-	domain = Column(Unicode, nullable=False)
-	name = Column(Unicode, nullable=False)
+	domain = Column(Unicode(100), nullable=False)
+	name = Column(Unicode(30), nullable=False)
 	tracked = Column(DateTime,nullable=False, default=datetime.utcnow)
 	## Datestamp of newest fully-processed Tracker object
 
@@ -162,7 +162,7 @@ class SiteBlueprint(ObjectRef):
 	__tablename__ = "site_blueprint"
 	_descr = D.SiteBlueprint
 
-	path = Column(Unicode, required=True) ## (, verbose_name="where to attach")
+	path = Column(Unicode(1000), required=True) ## (, verbose_name="where to attach")
 
 	site = ObjectRef._alias("parent")
 	blueprint = ObjectRef._alias("superparent")

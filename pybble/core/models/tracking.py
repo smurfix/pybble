@@ -93,8 +93,8 @@ class Change(ObjectRef):
 	_no_crumbs = True
 
 	timestamp = Column(DateTime,default=datetime.utcnow)
-	data = Column(Unicode)
-	comment = Column(Unicode, nullable=True)
+	data = Column(Unicode(100000))
+	comment = Column(Unicode(1000), nullable=True)
 
 	def __init__(self, user, obj, data, comment = None):
 		super(Change,self).__init__()
@@ -146,7 +146,7 @@ class Delete(ObjectRef):
 	_descr = D.Delete
 	_no_crumbs = True
 
-	comment = Column(Unicode, nullable=True)
+	comment = Column(Unicode(1000), nullable=True)
 
 	## The old parent is in self.superparent
 	old_owner_id = Column(Integer, ForeignKey(Object.id), nullable=True)

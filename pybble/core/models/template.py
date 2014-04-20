@@ -43,7 +43,7 @@ class TemplateMatch(ObjectRef):
 
 	obj = relationship("Object", foreign_keys='(parent_id,)')
 
-	data = Column(Unicode)
+	data = Column(Unicode(100000))
 	modified = Column(DateTime,default=datetime.utcnow)
 
 	def __storm_pre_flush__(self):

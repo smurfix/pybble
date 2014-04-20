@@ -53,8 +53,8 @@ class BinData(Base):
 	storage_seq = Column(Integer, primary_key=True, autoincrement=True)
 	mime_id = Column(Integer, ForeignKey("MIMEtype.id"), nullable=False)
 	mime = relationship(mime_id, primaryjoin="mime_id==MIMEtype.id")
-	name = Column(Unicode, nullable=False)
-	hash = Column(Unicode, nullable=False)
+	name = Column(Unicode(30), nullable=False)
+	hash = Column(Unicode(33), nullable=False)
 	timestamp = Column(DateTime,default=datetime.utcnow)
 	size = Column(Integer)
 
@@ -227,7 +227,7 @@ class StaticFile(ObjectRef):
 	# alias for .parent
 	bindata = relationship("Object", foreign_keys='(parent_id,)')
 
-	path = Column(Unicode, nullable=False)
+	path = Column(Unicode(1000), nullable=False)
 	modified = DateTime(default=datetime.utcnow)
 
 	def __init__(self, path, bin):

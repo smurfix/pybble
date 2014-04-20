@@ -67,9 +67,9 @@ class Discriminator(Base):
 	"""Discriminator for Object"""
 	__tablename__ = "discriminator"
 
-	name = Column(Unicode, nullable=False)
-	display_name = Column(Unicode, nullable=True)
-	infotext = Column(Unicode, nullable=True)
+	name = Column(Unicode(30), nullable=False)
+	display_name = Column(Unicode(100), nullable=True)
+	infotext = Column(Unicode(250), nullable=True)
 
 	def __init__(self, cls):
 		self.id = cls._discriminator
@@ -598,8 +598,8 @@ def obj_get(oid):
 class Renderer(Base):
 	"""Render method for object content"""
 	__tablename__ = "renderer"
-	name = Column(Unicode, nullable=False)
-	cls = Column(Unicode, nullable=False)
+	name = Column(Unicode(30), nullable=False)
+	cls = Column(Unicode(100), nullable=False)
 	_mod = None
 
 	def __init__(self, name, cls):
