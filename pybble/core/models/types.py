@@ -33,8 +33,6 @@ from copy import copy
 from . import DummyObject,ObjectRef, TM_DETAIL_PAGE
 from ._descr import D
 
-logger = logging.getLogger('pybble.core.models.files')
-
 def add_mime(name,typ,subtyp,ext):
 	ext = unicode(ext)
 
