@@ -76,7 +76,6 @@ class MIMEtype(Base):
 	subtyp = Column(Unicode(30), nullable=False)
 	doc = Column(Unicode(1000), nullable=True)
 	ext = Column(Unicode(10), nullable=False) # primary extension
-	exts = ReferenceSet(id,"MIMEext.mime_id")
 	
 	@property
 	def mimetype(self):
@@ -97,7 +96,7 @@ class MIMEext(Base):
 	__tablename__ = "mimeext"
 
 	mime_id = Column(Integer, ForeignKey(MIMEtype.id), nullable=False, index=True)
-	mime = relationship(mime_id,primaryjoin=mime_id==MIMEtype.id)
+	mime = relationship(mime_id,primaryjoin=mime_id==MIMEtype.id, backref=backref('exts'))
 	ext = Column(Unicode(10), nullable=False)
 
 	def __str__(self):

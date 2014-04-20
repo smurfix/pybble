@@ -14,7 +14,7 @@ from __future__ import absolute_import, print_function, division
 
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, DateTime
+from sqlalchemy import Integer, Unicode, DateTime, Boolean
 from sqlalchemy.orm import relationship,backref
 
 from pybble.compat import py2_unicode

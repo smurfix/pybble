@@ -18,7 +18,7 @@ from __future__ import absolute_import, print_function, division
 
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
+from sqlalchemy import Integer, Unicode, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship,backref
 
 from pybble.compat import py2_unicode
@@ -33,11 +33,11 @@ from pybble.core import config
 import sys,os
 from copy import copy
 
-from . import DummyObject,ObjectRef, TM_DETAIL_PAGE
+from . import DummyObject,ObjectRef
 from ._descr import D
 
 @py2_unicode
-class Breadcrumb(ObjectDef):
+class Breadcrumb(ObjectRef):
 	"""\
 		Track page visits.
 		Owner: the user who did it.
@@ -149,8 +149,8 @@ class Delete(ObjectRef):
 	comment = Column(Unicode(1000), nullable=True)
 
 	## The old parent is in self.superparent
-	old_owner_id = Column(Integer, ForeignKey(Object.id), nullable=True, index=True)
-	old_superparent_id = Column(Integer, ForeignKey(Object.id), nullable=True, index=True)
+	old_owner_id = Column(Integer, ForeignKey(ObjectRef.id), nullable=True, index=True)
+	old_superparent_id = Column(Integer, ForeignKey(ObjectRef.id), nullable=True, index=True)
 	@property
 	def old_parent_id(self): return self.superparent_id
 
@@ -237,19 +237,17 @@ class Tracker(ObjectRef):
 		return isinstance(self.parent, Delete)
 
 @py2_unicode
-class UserTracker(Object):
+class UserTracker(ObjectRef):
 	"""\
 		Record that a change be reported to a user. This will be auto-built from Tracker and WantTracking objects.
-		Owner: the user who owns the tracker.
-		Parent: The tracker object this is reporting on.
-		Superparent: the WantTracker that's responsible.
 		"""
 	__tablename__ = "usertracking"
 	_descr = D.UserTracker
 	_no_crumbs = True
 
-	user = relationship("Object", foreign_keys='(owner_id,)')
-	owner = relationship("Object", foreign_keys='(parent_id,)')
+	user = ObjectRef._alias("owner")
+	tracker = ObjectRef._alias("parent")
+	want_tracking = ObjectRef._alias("superparent")
 
 	def __init__(self, user, tracker, want):
 		super(UserTracker,self).__init__()
@@ -271,7 +269,7 @@ class UserTracker(Object):
 		return self.parent.change_obj
 
 @py2_unicode
-class WantTracking(Object):
+class WantTracking(ObjectRef):
 	"""
 		Record that a user wants changes reported.
 		Parent: The object which should be tracked.
@@ -279,12 +277,11 @@ class WantTracking(Object):
 		email: send email when this happens.
 		track_new/_mod/_del: track new / modified / deleted content
 		"""
-	__tablename__ = "wanttracking"
-	__mapper_args__ = {'polymorphic_identity': 19}
+	_descr = D.WantTracking
 	_display_name = "Beobachtungs-Eintrag"
 
-	obj = relationship("Object", foreign_keys='(parent_id,)')
-	user = relationship("Object", foreign_keys=['owner_id'])
+	obj = ObjectRef._alias("parent")
+	user = ObjectRef._alias("owner")
 
 	discr = Column(Integer, nullable=True)
 	email = Column(Boolean, nullable=False) # send mail, not just RSS/on-site?

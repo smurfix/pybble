@@ -8,6 +8,7 @@ https://github.com/smurfix/flask-login/tarball/master
 https://github.com/smurfix/blinker/tarball/master
 https://github.com/smurfix/formalchemy/tarball/master
 https://github.com/smurfix/yapps/tarball/master
+Flask-Security
 #python-texttable
 #WTForms
 #blinker

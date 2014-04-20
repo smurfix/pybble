@@ -13,6 +13,7 @@ from __future__ import absolute_import, print_function, division
 ##BP
 
 from datetime import datetime
+import logging
 
 from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
 from sqlalchemy.orm import relationship,backref
@@ -30,8 +31,9 @@ from pybble.core import config
 import sys,os
 from copy import copy
 
-from . import DummyObject,ObjectRef, TM_DETAIL_PAGE
+from . import DummyObject,ObjectRef, update_modified
 from ._descr import D
+from .types import MIMEtype
 
 logger = logging.getLogger('pybble.core.models.files')
 
@@ -51,8 +53,8 @@ class BinData(Base):
 	storage = relationship("Object", foreign_keys='(superparent_id,)')
 
 	storage_seq = Column(Integer, primary_key=True, autoincrement=True)
-	mime_id = Column(Integer, ForeignKey("MIMEtype.id"), nullable=False, index=True)
-	mime = relationship(mime_id, primaryjoin="mime_id==MIMEtype.id")
+	mime_id = Column(Integer, ForeignKey(MIMEtype.id), nullable=False, index=True)
+	mime = relationship(mime_id, primaryjoin=mime_id==MIMEtype.id)
 	name = Column(Unicode(30), nullable=False)
 	hash = Column(Unicode(33), nullable=False)
 	timestamp = Column(DateTime,default=datetime.utcnow)
@@ -228,7 +230,7 @@ class StaticFile(ObjectRef):
 	bindata = relationship("Object", foreign_keys='(parent_id,)')
 
 	path = Column(Unicode(1000), nullable=False)
-	modified = DateTime(default=datetime.utcnow)
+	modified = Column(DateTime,default=datetime.utcnow)
 
 	def __init__(self, path, bin):
 		super(StaticFile,self).__init__()

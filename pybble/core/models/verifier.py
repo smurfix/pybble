@@ -12,7 +12,6 @@ from __future__ import absolute_import, print_function, division
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
-from . import Site
 from flask import current_app,g
 from flask.ext.security import UserMixin, RoleMixin
 from flask.ext.security.utils import encrypt_password
@@ -78,7 +77,7 @@ class Verifier(ObjectRef):
 		Owner: the user who's asked.
 		"""
 	__tablename__ = "verifiers"
-	_discr = D.Verifier
+	_descr = D.Verifier
 
 	base_id = Column(Integer)
 	base = relationship(VerifierBase, primaryjoin=base_id==VerifierBase.id)

@@ -17,9 +17,12 @@ import sys
 from ..core.db import db,db_engine,Base
 
 from . import Manager,Command,Option
-from..core import config
+from ..core import config
 
 from sqlalchemy import create_engine
+from sqlalchemy.exc import ProgrammingError
+
+from ..core.models import _all
 
 class SchemaCommand(Command):
 	def __call__(self,app):
@@ -40,9 +43,14 @@ class SchemaCommand(Command):
 	def dump_current(self, dest=sys.stdout):
 		engine = db_engine(uri=config.mysql_admin_uri)
 		for k in Base.metadata.tables.keys():
-			r = engine.execute("show create table `{}`".format(k))
-			for x in r:
-				print(x[1]+";", file=dest)
+			try:
+				r = engine.execute("show create table `{}`".format(k))
+			except ProgrammingError as err:
+				print("# Table `{}` does not exist?".format(k), file=dest)
+				pass
+			else:
+				for x in r:
+					print(x[1]+";", file=dest)
 
 	def __call__(self,app, help=False,exe=False,diff=False, **kwargs):
 		if help:

@@ -12,14 +12,14 @@ from __future__ import absolute_import, print_function, division
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
-from . import Site
+from .site import Site
 from flask import current_app,g
 from flask.ext.security import UserMixin, RoleMixin
 from flask.ext.security.utils import encrypt_password
 
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, DateTime
+from sqlalchemy import Integer, Unicode, DateTime, Boolean
 from sqlalchemy.orm import relationship,backref
 
 from pybble.compat import py2_unicode
@@ -34,7 +34,8 @@ from pybble.core import config
 import sys,os
 from copy import copy
 
-from . import DummyObject,ObjectRef, TM_DETAIL_PAGE
+from . import DummyUser,Object,ObjectRef, PERM,PERM_NONE
+from .site import DummySite
 from ._descr import D
 
 ## Auth
