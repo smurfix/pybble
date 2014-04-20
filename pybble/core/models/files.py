@@ -38,21 +38,23 @@ from .types import MIMEtype
 logger = logging.getLogger('pybble.core.models.files')
 
 @py2_unicode
-class BinData(Base):
+class BinData(ObjectRef):
 	"""
 		Stores (a reference to) one data file
 		owner: whoever uploaded the thing
 		parent: the object this is attached to
 		superparent: the storage
 		"""
-	__tablename__ = "bindata"
-	__mapper_args__ = {'polymorphic_identity': 22}
+	_descr = D.BinData
 	_no_crumbs = True
 	
 	# Alias for .superparent
 	storage = relationship("Object", foreign_keys='(superparent_id,)')
 
-	storage_seq = Column(Integer, primary_key=True, autoincrement=True)
+	storage_seq = Column(Integer, autoincrement=True, index=True)
+	## The mysql driver ignores autoincrement on non-primary-key columns.
+	## Workaround: see end of file.
+
 	mime_id = Column(Integer, ForeignKey(MIMEtype.id), nullable=False, index=True)
 	mime = relationship(mime_id, primaryjoin=mime_id==MIMEtype.id)
 	name = Column(Unicode(30), nullable=False)
@@ -258,3 +260,11 @@ class StaticFile(ObjectRef):
 		return self.bindata.mimetype
 
 event.listen(StaticFile, 'before_insert', update_modified)
+
+## The mysql driver ignores autoincrement on non-primary-key columns.
+## Workaround:
+from sqlalchemy import event
+from sqlalchemy.schema import DDL
+event.listen(BinData.__table__, 'after_create',
+	    DDL("ALTER TABLE bindata CHANGE storage_seq storage_seq INT AUTO_INCREMENT NOT NULL", on="mysql"))
+
