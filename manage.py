@@ -13,10 +13,11 @@ from __future__ import absolute_import, print_function, division
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
+from pybble import ROOT_NAME
+
 import logging
 
 from flask.ext.script import Server
-from pybble import ROOT_NAME
 
 #from flask.ext.collect import Collect
 #from quokka.core.db import db

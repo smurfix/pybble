@@ -13,6 +13,20 @@ from __future__ import absolute_import, print_function, division
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
+## Use gevent.
+if True:
+	## You get spurious errors if the core threading module is imported
+	## before monkeypatching.
+	import sys
+	if 'threading' in sys.modules:
+		raise Exception('threading module loaded before patching!')
+	del sys
+
+	## All OK, so now go ahead.
+	import gevent.monkey
+	gevent.monkey.patch_all()
+	del gevent
+
 ## This is the default name for the site root.
 ## There should be only one.
 ROOT_NAME = '_root'
