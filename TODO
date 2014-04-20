@@ -8,3 +8,6 @@ add object deletion
 	* clean up references to marked-as-deleted objects
 	* then really delete them
 
+sql_diff:
+	varchar(>65535) vs. mediumtext/longtext
+	index drop+create dance
