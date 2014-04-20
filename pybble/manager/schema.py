@@ -59,8 +59,8 @@ Else, use SQLAlchemy directly (which does not catch all differences).
 			from tempfile import NamedTemporaryFile
 			f1 = NamedTemporaryFile()
 			f2 = NamedTemporaryFile()
-			self.dump_current(f1)
-			self.dump_intended(f2)
+			self.dump_intended(f1)
+			self.dump_current(f2)
 			f1.flush()
 			f2.flush()
 
