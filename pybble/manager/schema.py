@@ -83,7 +83,7 @@ Else, use SQLAlchemy directly (which does not catch all differences).
 			opt.db1=None
 			opt.db2=None
 			opt.skip_tables = ""
-			opt.skip_flags = "e"
+			opt.skip_flags = "ae" ## skip: a=field order e=DB engine
 			opt.init=True
 			opt.execstr=False
 
