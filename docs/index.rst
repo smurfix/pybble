@@ -13,14 +13,13 @@ Unlike other frameworks which want you to set up a new instance for every
 webspace, Pybble is a common box for (potentally) different Web apps which
 share a common base. This base consists of site, config, user, and
 access rights management. Sites are hierarchic. Users can be present on
-different sites with varying access rights and parameters.
+different sites with individual access rights and parameters.
 
-You should probably start with :ref:`installation`. Next, read about the
-common :ref:`datastructure` which Pybble offers, and build a personal web
-history app in our :ref:`tutorial`.
+You should probably start with :ref:`installation` and ref:`setup`.
+Next, read about the common :ref:`datastructure` which Pybble offers, and
+build a personal web history application in our :ref:`tutorial`.
 
-Pybble depends on `Flask`_ and a couple of its modules. You might want to
-start reading its documentation:
+Pybble depends on `Flask`_ and a couple of its modules.
 
 -   `Flask Documentation <http://flask.pocoo.org/docs`_
 
