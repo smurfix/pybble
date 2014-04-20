@@ -199,9 +199,9 @@ class Object(Base):
 
 	id = Column(Integer, primary_key=True, label="ID", renderer=IDrenderer)
 
-	owner_id = Column(Integer,ForeignKey(id))       # user who created this node
-	parent_id = Column(Integer,ForeignKey(id))      # direct ancestor (replied-to comment)
-	superparent_id = Column(Integer,ForeignKey(id)) # indirect ancestor (replied-to wiki page)
+	owner_id = Column(Integer,ForeignKey(id), index=True)       # user who created this node
+	parent_id = Column(Integer,ForeignKey(id), index=True)      # direct ancestor (replied-to comment)
+	superparent_id = Column(Integer,ForeignKey(id), index=True) # indirect ancestor (replied-to wiki page)
 	## XXX The individual tables should document the semantics of these pointers if they don't match
 	
 	owner = relationship("Object", foreign_keys=(owner_id,))

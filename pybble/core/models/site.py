@@ -104,7 +104,7 @@ class Site(ObjectRef):
 	#app = relationship("Object", primaryjoin="superparent_id==Object.id")
 	#storages = relationship("Storage", primaryjoin="Site.id==Storage.parent_id")
 
-	app_id = Column(Integer, ForeignKey(App.id), nullable=True)
+	app_id = Column(Integer, ForeignKey(App.id), nullable=True, index=True)
 	app = relationship(App, primaryjoin=app_id==App.id)
 
 	def __init__(self,domain,name=None):

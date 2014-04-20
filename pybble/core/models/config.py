@@ -28,7 +28,7 @@ from ... import ROOT_NAME
 
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, ForeignKey, DateTime, Boolean
+from sqlalchemy import Integer, Unicode, DateTime, Boolean
 from sqlalchemy.orm import relationship,backref
 from sqlalchemy.types import TypeDecorator, VARCHAR
 from sqlalchemy.orm.exc import NoResultFound

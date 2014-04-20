@@ -98,7 +98,7 @@ class MIMEext(Base):
 	"""Extensions for MIME types"""
 	__tablename__ = "mimeext"
 
-	mime_id = Column(Integer, ForeignKey(MIMEtype.id), nullable=False)
+	mime_id = Column(Integer, ForeignKey(MIMEtype.id), nullable=False, index=True)
 	mime = relationship(mime_id,primaryjoin=mime_id==MIMEtype.id)
 	ext = Column(Unicode(10), nullable=False)
 

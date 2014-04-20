@@ -51,7 +51,7 @@ class BinData(Base):
 	storage = relationship("Object", foreign_keys='(superparent_id,)')
 
 	storage_seq = Column(Integer, primary_key=True, autoincrement=True)
-	mime_id = Column(Integer, ForeignKey("MIMEtype.id"), nullable=False)
+	mime_id = Column(Integer, ForeignKey("MIMEtype.id"), nullable=False, index=True)
 	mime = relationship(mime_id, primaryjoin="mime_id==MIMEtype.id")
 	name = Column(Unicode(30), nullable=False)
 	hash = Column(Unicode(33), nullable=False)

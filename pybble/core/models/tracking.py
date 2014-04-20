@@ -149,8 +149,8 @@ class Delete(ObjectRef):
 	comment = Column(Unicode(1000), nullable=True)
 
 	## The old parent is in self.superparent
-	old_owner_id = Column(Integer, ForeignKey(Object.id), nullable=True)
-	old_superparent_id = Column(Integer, ForeignKey(Object.id), nullable=True)
+	old_owner_id = Column(Integer, ForeignKey(Object.id), nullable=True, index=True)
+	old_superparent_id = Column(Integer, ForeignKey(Object.id), nullable=True, index=True)
 	@property
 	def old_parent_id(self): return self.superparent_id
 
