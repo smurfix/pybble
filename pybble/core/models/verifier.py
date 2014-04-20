@@ -13,27 +13,23 @@ from __future__ import absolute_import, print_function, division
 ##BP
 
 from flask import current_app,g
-from flask.ext.security import UserMixin, RoleMixin
-from flask.ext.security.utils import encrypt_password
 
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, DateTime
+from sqlalchemy import Integer, Unicode, DateTime, ForeignKey
 from sqlalchemy.orm import relationship,backref
+from sqlalchemy.orm.exc import NoResultFound
 
 from pybble.compat import py2_unicode
 
 from ..db import Base, Column
 
-from pybble.utils import random_string, current_request, AuthError
+from pybble.utils import random_string
 
 from werkzeug import import_string
-from jinja2.utils import Markup
 from pybble.core import config
-import sys,os
-from copy import copy
 
-from . import DummyObject,ObjectRef, TM_DETAIL_PAGE
+from . import ObjectRef
 from ._descr import D
 
 VerifierBases = {}
@@ -45,6 +41,7 @@ class VerifierBase(Base):
 	__tablename__ = "verifierbase"
 	name = Column(Unicode(30), nullable=False)
 	cls = Column(Unicode(100), nullable=False)
+	doc = Column(Unicode(1000), nullable=True)
 	_mod = None
 
 	def __init__(self, name, cls):
@@ -63,7 +60,7 @@ class VerifierBase(Base):
 		name = unicode(name)
 		try:
 			v = db.get_by(VerifierBase,name=name)
-		except NoResult:
+		except NoResultFound:
 			v=VerifierBase(name=name, cls=cls)
 			db.store.add(v)
 		else:
@@ -79,7 +76,7 @@ class Verifier(ObjectRef):
 	__tablename__ = "verifiers"
 	_descr = D.Verifier
 
-	base_id = Column(Integer)
+	base_id = Column(Integer, ForeignKey(VerifierBase.id), index=True)
 	base = relationship(VerifierBase, primaryjoin=base_id==VerifierBase.id)
 
 	code = Column(Unicode(30), nullable=False)

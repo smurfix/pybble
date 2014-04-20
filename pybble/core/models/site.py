@@ -16,20 +16,16 @@ from datetime import datetime,timedelta
 
 from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
 from sqlalchemy.orm import relationship,backref
-
-from pybble.compat import py2_unicode
-
-from ..db import Base, Column
-
-from pybble.utils import random_string, current_request, AuthError
+from sqlalchemy.orm.exc import NoResultFound
 
 from werkzeug import import_string
-from jinja2.utils import Markup
-from pybble.core import config
-import sys,os
-from copy import copy
 
-from . import DummyObject,ObjectRef, TM_DETAIL_PAGE
+from ... import ROOT_SITE_NAME
+from ...compat import py2_unicode
+from ...utils import current_request
+from .. import config
+from ..db import Base, Column, db
+from . import DummyObject,Object, ObjectRef, TM_DETAIL_PAGE
 from ._descr import D
 
 class DummySite(DummyObject):
@@ -41,7 +37,7 @@ class DummySite(DummyObject):
 		self.name=name
 		try:
 			self.parent = db.get_by(Site,domain=u"")
-		except NoResult:
+		except NoResultFound:
 			pass
 		else:
 			self.parent_id = self.parent.id
@@ -50,7 +46,7 @@ class DummySite(DummyObject):
 		if isinstance(self,DummySite) and detail == TM_DETAIL_SUBPAGE:
 			raise MissingDummy
 		if not self.parent:
-			raise NoResult
+			raise NoResultFound
 		return self.parent.get_template(detail)
 
 @py2_unicode
@@ -93,6 +89,8 @@ class Site(ObjectRef):
 	"""A web domain / app."""
 	__tablename__ = "sites"
 	_descr = D.Site
+	#id = Column(None, ForeignKey(Object.id), primary_key=True)
+	#__mapper_args__ = {'polymorphic_identity':D.Site, 'inherit_condition': id == Object.id}
 
 	domain = Column(Unicode(100), nullable=False)
 	name = Column(Unicode(30), nullable=False)
@@ -114,31 +112,24 @@ class Site(ObjectRef):
 		self.domain=unicode(domain)
 		self.name=name
 
-		try:
-			s = db.get_by(Site,domain=u"")
-		except NoResult:
-			if domain == "":
-				s = None
-			else:
-				s = Site(name=u"Main default site",domain=u"")
-				db.store.add(s)
-		self.parent = s
+		if name == ROOT_SITE_NAME:
+			s = None
+		else:
+			s = Site.get_by(name=ROOT_SITE_NAME)
+			self.parent = s
 
 		try:
 			self.owner = current_request.user
 		except (AttributeError,RuntimeError):
-			self.owner = None
-		db.store.add(self)
-		u = User(u"",u"")
-		u.superparent = self
-		db.store.add(u)
+			self.owner = None if s is None else s.owner
+		db.add(self)
 
 	@property
 	def anon_user(self):
 		while True:
 			try:
 				return db.get_by(User, superparent_id=self.id, username=u"", password=u"")
-			except NoResult:
+			except NoResultFound:
 				if site.parent:
 					site = site.parent
 				else:
@@ -164,6 +155,6 @@ class SiteBlueprint(ObjectRef):
 
 	path = Column(Unicode(1000), required=True) ## (, verbose_name="where to attach")
 
-	site = ObjectRef._alias("parent")
-	blueprint = ObjectRef._alias("superparent")
+	site = Object._alias('parent')
+	blueprint = Object._alias('superparent')
 

@@ -18,6 +18,8 @@ import logging
 
 from sqlalchemy.orm.exc import NoResultFound
 
+from ..utils import random_string
+from ..core.db import db
 from . import Manager,Command,Option
 
 logger = logging.getLogger('pybble.manager.populate')
@@ -43,19 +45,34 @@ class PopulateCommand(Command):
 
 	def main(self):
 		from ..core.models.site import Site
+		from ..core.models.user import User
 		from ..core.models.types import MIMEtype
 		from ..core.models.config import ConfigVar
-		from .. import ROOT_NAME
+		from .. import ROOT_SITE_NAME,ROOT_USER_NAME
 
 		## main site
 		try:
-			root = Site.q.get_by(name=ROOT_NAME)
+			root = Site.q.get_by(name=ROOT_SITE_NAME)
 		except NoResultFound:
-			root = Site(name=ROOT_NAME)
+			root = Site(domain="localhost", name=ROOT_SITE_NAME)
 			db.add(root)
 			logger.debug("The root site has been created.")
 		else:
 			logger.debug("The root site exists. Good.")
+		db.commit()
+
+		## main user
+		superuser = root.owner
+		if superuser is None:
+			password = random_string()
+			superuser = User(ROOT_USER_NAME,password)
+			db.add(superuser)
+			root.owner = superuser
+			logger.info(u"The root user has been created. Password: ‘{}’.".format(password))
+		elif superuser.username != ROOT_USER_NAME:
+			logger.warn(u"The root site's owner is ‘{}’, not ‘{}’".format(superuser.username,ROOT_USER_NAME))
+		else:
+			logger.debug("The root user exists. Good.")
 		db.commit()
 
 		## MIME types

@@ -24,7 +24,6 @@ from flask import url_for, current_app, g
 from flask.config import Config
 
 from ..db import db
-from ... import ROOT_NAME
 
 from datetime import datetime,timedelta
 
@@ -37,15 +36,9 @@ from pybble.compat import py2_unicode
 
 from ..db import Base, Column
 
-from pybble.utils import random_string, current_request, AuthError
-
-from werkzeug import import_string
-from jinja2.utils import Markup
 from pybble.core import config
-import sys,os
-from copy import copy
 
-from . import DummyObject,ObjectRef
+from . import ObjectRef
 from ._descr import D
 
 #from flask.ext.misaka import markdown
@@ -188,8 +181,8 @@ class SiteConfigVar(ObjectRef, JsonValue):
 	"""This is one configuration variable's value for a site."""
 	_descr = D.SiteConfigVar
 
-	site = ObjectRef._alias("parent")
-	var = ObjectRef._alias("superparent")
+	site = ObjectRef._alias('parent')
+	var = ObjectRef._alias('superparent')
 	# Owner: the user who last set the variable
 
 	def __str__(self):

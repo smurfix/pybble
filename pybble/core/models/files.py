@@ -23,15 +23,12 @@ from pybble.compat import py2_unicode
 
 from ..db import Base, Column
 
-from pybble.utils import random_string, current_request, AuthError
+from pybble.utils import current_request
 
-from werkzeug import import_string
-from jinja2.utils import Markup
 from pybble.core import config
-import sys,os
-from copy import copy
+import os
 
-from . import DummyObject,ObjectRef, update_modified
+from . import Object,ObjectRef, update_modified
 from ._descr import D
 from .types import MIMEtype
 
@@ -48,15 +45,14 @@ class BinData(ObjectRef):
 	_descr = D.BinData
 	_no_crumbs = True
 	
-	# Alias for .superparent
-	storage = relationship("Object", foreign_keys='(superparent_id,)')
+	storage = Object._alias('superparent')
 
 	storage_seq = Column(Integer, autoincrement=True, index=True)
 	## The mysql driver ignores autoincrement on non-primary-key columns.
 	## Workaround: see end of file.
 
 	mime_id = Column(Integer, ForeignKey(MIMEtype.id), nullable=False, index=True)
-	mime = relationship(mime_id, primaryjoin=mime_id==MIMEtype.id)
+	mime = relationship(MIMEtype, primaryjoin=mime_id==MIMEtype.id)
 	name = Column(Unicode(30), nullable=False)
 	hash = Column(Unicode(33), nullable=False)
 	timestamp = Column(DateTime,default=datetime.utcnow)
@@ -64,10 +60,7 @@ class BinData(ObjectRef):
 
 	@staticmethod
 	def lookup(content):
-		res = BinData.q.filter(BinData.hash == hash_data(content), BinData.superparent != None).one()
-		if not res:
-			raise NoResult
-		return res
+		return BinData.q.filter(BinData.hash == hash_data(content), BinData.superparent != None).one()
 			
 	def __init__(self,name, ext=None,mimetype=None, content=None, parent=None, storage=None):
 		super(BinData,self).__init__()
@@ -228,8 +221,7 @@ class StaticFile(ObjectRef):
 	_descr = D.StaticFile
 	_no_crumbs = True
 
-	# alias for .parent
-	bindata = relationship("Object", foreign_keys='(parent_id,)')
+	bindata = Object._alias('parent')
 
 	path = Column(Unicode(1000), nullable=False)
 	modified = Column(DateTime,default=datetime.utcnow)

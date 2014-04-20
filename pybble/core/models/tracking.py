@@ -25,15 +25,11 @@ from pybble.compat import py2_unicode
 
 from ..db import Base, Column
 
-from pybble.utils import random_string, current_request, AuthError
+from pybble.utils import current_request
 
-from werkzeug import import_string
-from jinja2.utils import Markup
 from pybble.core import config
-import sys,os
-from copy import copy
 
-from . import DummyObject,ObjectRef
+from . import Object,ObjectRef
 from ._descr import D
 
 @py2_unicode
@@ -154,9 +150,9 @@ class Delete(ObjectRef):
 	@property
 	def old_parent_id(self): return self.superparent_id
 
-	old_owner = relationship("Object", primaryjoin="old_owner_id==Object.id")
-	old_parent = relationship("Object", primaryjoin="superparent_id==Object.id")
-	old_superparent = relationship("Object", primaryjoin="old_superparent_id==Object.id")
+	old_owner = relationship(Object, primaryjoin=old_owner_id==Object.id)
+	old_parent = Object._alias('superparent')
+	old_superparent = relationship(Object, primaryjoin=old_superparent_id==Object.id)
 
 	timestamp = Column(DateTime,default=datetime.utcnow)
 
@@ -197,7 +193,7 @@ class Tracker(ObjectRef):
 	_descr = D.Tracker
 	_no_crumbs = True
 
-	site = relationship("Object", foreign_keys='(superparent_id,)')
+	site = Object._alias('superparent')
 
 	timestamp = Column(DateTime,default=datetime.utcnow)
 
@@ -245,9 +241,9 @@ class UserTracker(ObjectRef):
 	_descr = D.UserTracker
 	_no_crumbs = True
 
-	user = ObjectRef._alias("owner")
-	tracker = ObjectRef._alias("parent")
-	want_tracking = ObjectRef._alias("superparent")
+	user = ObjectRef._alias('owner')
+	tracker = ObjectRef._alias('parent')
+	want_tracking = ObjectRef._alias('superparent')
 
 	def __init__(self, user, tracker, want):
 		super(UserTracker,self).__init__()
@@ -280,8 +276,8 @@ class WantTracking(ObjectRef):
 	_descr = D.WantTracking
 	_display_name = "Beobachtungs-Eintrag"
 
-	obj = ObjectRef._alias("parent")
-	user = ObjectRef._alias("owner")
+	obj = ObjectRef._alias('parent')
+	user = ObjectRef._alias('owner')
 
 	discr = Column(Integer, nullable=True)
 	email = Column(Boolean, nullable=False) # send mail, not just RSS/on-site?

@@ -21,6 +21,7 @@ from datetime import datetime,timedelta
 
 from sqlalchemy import Integer, Unicode, DateTime, Boolean
 from sqlalchemy.orm import relationship,backref
+from sqlalchemy.orm.exc import NoResultFound
 
 from pybble.compat import py2_unicode
 
@@ -28,11 +29,8 @@ from ..db import Base, Column
 
 from pybble.utils import random_string, current_request, AuthError
 
-from werkzeug import import_string
-from jinja2.utils import Markup
 from pybble.core import config
-import sys,os
-from copy import copy
+import sys
 
 from . import DummyUser,Object,ObjectRef, PERM,PERM_NONE
 from .site import DummySite
@@ -190,7 +188,7 @@ class User(ObjectRef):
 		self.first_login = datetime.utcnow()
 		try:
 			db.get_by(User, parent_id=current_request.site.id, username=username)
-		except (AttributeError,NoResult):
+		except (AttributeError,NoResultFound):
 			pass
 		else:
 			raise RuntimeError(u"User '%s' already exists in %s" %
@@ -235,7 +233,7 @@ class User(ObjectRef):
 		q = { "owner":self, "discr":obj.discriminator }
 		try:
 			s = db.get_by(Breadcrumb, parent=obj, **q)
-		except NoResult:
+		except NoResultFound:
 #			for b in db.filter_by(Breadcrumb,**q).order_by(Breadcrumb.visited)[10:]:
 #				db.store.remove(b)
 			b = Breadcrumb(self,obj)
@@ -251,7 +249,7 @@ class User(ObjectRef):
 			q["discr"] = cls.cls_discr()
 		try:
 			r = db.filter_by(Breadcrumb, **q).order_by(Desc(Breadcrumb.visited)).first()
-		except NoResult:
+		except NoResultFound:
 			return None
 		if r:
 			return r.parent
@@ -267,7 +265,7 @@ class User(ObjectRef):
 			site = current_request.site
 		try:
 			m = db.get_by(Member,user=self,group=site)
-		except NoResult:
+		except NoResultFound:
 			return False
 		else:
 			return not m.excluded
@@ -277,7 +275,7 @@ class User(ObjectRef):
 			site = current_request.site
 		try:
 			m = db.get_by(Member, user_id=self.id,group_id=site.id)
-		except NoResult:
+		except NoResultFound:
 			if v:
 				db.add(Member(user=self,group=site))
 		else:
@@ -480,8 +478,8 @@ class Member(ObjectRef):
 	_descr = D.Member
 	_no_crumbs = True
 
-	user = relationship("Object", foreign_keys='(owner_id,)')
-	group = relationship("Object", foreign_keys='(parent_id,)')
+	user = Object._alias('owner')
+	group = Object._alias('parent')
 
 	excluded = Column(Boolean, nullable=False,default=False)
 

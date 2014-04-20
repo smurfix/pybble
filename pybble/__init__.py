@@ -29,5 +29,6 @@ if True:
 
 ## This is the default name for the site root.
 ## There should be only one.
-ROOT_NAME = '_root'
+ROOT_SITE_NAME = '_root'
+ROOT_USER_NAME = 'root'
 

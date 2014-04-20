@@ -23,7 +23,6 @@ from flask import Blueprint as FlaskBlueprint
 from flask.config import Config
 from flask.ext.script import Server
 
-from .. import ROOT_NAME
 from ..core.db import db
 from ..core.models.site import Site,Blueprint
 from ..manager import Manager,Command

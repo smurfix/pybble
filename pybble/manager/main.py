@@ -27,7 +27,7 @@ from flask._compat import string_types
 from flask.ext.script import Server
 from flask.ext.script.commands import ShowUrls
 from . import Manager,Command,Option
-from .. import ROOT_NAME
+from .. import ROOT_SITE_NAME
 from ..core.db import db
 from ..core.models.site import Site,Blueprint
 from ..app import create_site, list_apps
@@ -68,7 +68,7 @@ class RootManager(Manager):
 
 	def add_root_options(self):
 		self.add_option("-c", "--config", dest="config", required=False, default=None, help="Config file to use")
-		self.add_option("-s", "--site", dest="site", required=False, default=ROOT_NAME, help="which Site to run on")
+		self.add_option("-s", "--site", dest="site", required=False, default=ROOT_SITE_NAME, help="which Site to run on")
 		self.add_option("-S", "--no-site", dest="site", action="store_const", const=None, required=False, help="Do not choose a site")
 		self.add_option("-v", "--verbose", dest="verbose", action="count", default=0, required=False, help="Enable verbose logging")
 		self.add_option("-t", "--test", dest="test", action="store_true", required=False, default=False, help="Use the test database")
@@ -123,7 +123,7 @@ class SubdomainDispatcher(object):
 
 	:param root: Only dispatch to sites within this sub-hierarchy
 	"""
-	def __init__(self, root=ROOT_NAME):
+	def __init__(self, root=ROOT_SITE_NAME):
 		if isinstance(root,string_types):
 			root = Site.objects.get(name=root)
 		self.root = root

@@ -17,20 +17,15 @@ from datetime import datetime
 from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
 from sqlalchemy.orm import relationship,backref
 from sqlalchemy import event
+from sqlalchemy.orm.exc import NoResultFound
 
 from pybble.compat import py2_unicode
 
 from ..db import Base, Column
 
-from pybble.utils import random_string, current_request, AuthError
-
-from werkzeug import import_string
-from jinja2.utils import Markup
 from pybble.core import config
-import sys,os
-from copy import copy
 
-from . import DummyObject,ObjectRef, TM_DETAIL_PAGE
+from . import ObjectRef
 from ._descr import D
 
 def add_mime(name,typ,subtyp,ext):
@@ -38,7 +33,7 @@ def add_mime(name,typ,subtyp,ext):
 
 	try:
 		t = db.get_by(MIMEtype,typ=typ,subtyp=subtyp)
-	except NoResult:
+	except NoResultFound:
 		t=MIMEtype()
 		t.name = unicode(name)
 		t.typ = typ
@@ -52,7 +47,7 @@ def add_mime(name,typ,subtyp,ext):
 		if ext != t.ext:
 			try:
 				tt = db.get_by(MIMEext,ext=ext)
-			except NoResult:
+			except NoResultFound:
 				tt = MIMEext()
 				tt.mime = t
 				tt.ext = ext
@@ -63,7 +58,7 @@ def add_mime(name,typ,subtyp,ext):
 def mime_ext(ext):
 	try:
 		return db.get_by(MIMEtype,ext=ext)
-	except NoResult:
+	except NoResultFound:
 		return db.get_by(MIMEext,ext=ext).mime
 
 @py2_unicode
@@ -96,7 +91,7 @@ class MIMEext(Base):
 	__tablename__ = "mimeext"
 
 	mime_id = Column(Integer, ForeignKey(MIMEtype.id), nullable=False, index=True)
-	mime = relationship(mime_id,primaryjoin=mime_id==MIMEtype.id, backref=backref('exts'))
+	mime = relationship(MIMEtype, primaryjoin=mime_id==MIMEtype.id, backref=backref('exts'))
 	ext = Column(Unicode(10), nullable=False)
 
 	def __str__(self):

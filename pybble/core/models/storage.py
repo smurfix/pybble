@@ -21,15 +21,12 @@ from pybble.compat import py2_unicode
 
 from ..db import Base, Column
 
-from pybble.utils import random_string, current_request, AuthError
+from pybble.utils import current_request
 
-from werkzeug import import_string
-from jinja2.utils import Markup
 from pybble.core import config
-import sys,os
-from copy import copy
+import os
 
-from . import DummyObject,ObjectRef, TM_DETAIL_PAGE
+from . import ObjectRef
 from ._descr import D
 
 @py2_unicode

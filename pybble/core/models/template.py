@@ -21,15 +21,9 @@ from pybble.compat import py2_unicode
 
 from ..db import Base, Column
 
-from pybble.utils import random_string, current_request, AuthError
-
-from werkzeug import import_string
-from jinja2.utils import Markup
 from pybble.core import config
-import sys,os
-from copy import copy
 
-from . import DummyObject,ObjectRef, TM_DETAIL_PAGE
+from . import Object,ObjectRef, TM_DETAIL
 from ._descr import D
 
 @py2_unicode
@@ -41,7 +35,7 @@ class TemplateMatch(ObjectRef):
 	__tablename__ = "template_match"
 	_descr = D.TemplateMatch
 
-	obj = relationship("Object", foreign_keys='(parent_id,)')
+	obj = Object._alias('parent')
 
 	data = Column(Unicode(100000))
 	modified = Column(DateTime,default=datetime.utcnow)

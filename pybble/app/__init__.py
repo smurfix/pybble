@@ -28,7 +28,7 @@ from flask.ext.script import Server
 from hamlish_jinja import HamlishExtension
 from jinja2 import Template,ChoiceLoader,PackageLoader
 
-from .. import ROOT_NAME
+from .. import ROOT_SITE_NAME
 from ..core.db import db
 from ..core.models.site import Site
 from ..core.models.config import ConfigVar,register_changed
@@ -186,7 +186,7 @@ class _fake_app(Flask):
 	"""
 	pass
 
-def create_app(app=None, config=None, site=ROOT_NAME, verbose=None, test=False):
+def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, test=False):
 	"""\
 		Setup an app instance. Configuration is loded from
 		* local_settings
@@ -231,10 +231,10 @@ def create_app(app=None, config=None, site=ROOT_NAME, verbose=None, test=False):
 				try:
 					site = Site.q.get_by(name=site)
 				except NoResultFound:
-					if site != ROOT_NAME:
+					if site != ROOT_SITE_NAME:
 						raise RuntimeError("The site '%s' does not exist yet."%(site,))
 					logger.warn("Creating a new root site")
-					site = create_site(None,"localhost","_root",ROOT_NAME)
+					site = create_site(None,"localhost","_root",ROOT_SITE_NAME)
 
 		if site is None or site.app is None:
 			app = cfg_app

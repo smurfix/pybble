@@ -23,12 +23,11 @@ from ..json import register_object
 
 from ..db import Base, Column, IDrenderer
 
-from pybble.utils import random_string, current_request, AuthError
+from pybble.utils import current_request
 
 from werkzeug import import_string
 from jinja2.utils import Markup
 from pybble.core import config
-import sys,os
 from copy import copy
 
 """Max ID of built-in tables; the rest are extensions"""
@@ -204,9 +203,13 @@ class Object(Base):
 	superparent_id = Column(Integer,ForeignKey(id), index=True) # indirect ancestor (replied-to wiki page)
 	## XXX The individual tables should document the semantics of these pointers if they don't match
 	
-	owner = relationship("Object", foreign_keys=(owner_id,))
-	parent = relationship("Object", foreign_keys=(parent_id,))
-	superparent = relationship("Object", foreign_keys=(superparent_id,))
+	children = relationship("Object", backref=backref('parent', remote_side=[id]), foreign_keys=(parent_id,))
+	superchildren = relationship("Object", backref=backref('superparent', remote_side=[id]), foreign_keys=(superparent_id,))
+	owned = relationship("Object", backref=backref('owner', remote_side=[id]), foreign_keys=(owner_id,))
+
+	#owner = relationship("Object", foreign_keys=(owner_id,))
+	#parent = relationship("Object", foreign_keys=(parent_id,))
+	#superparent = relationship("Object", foreign_keys=(superparent_id,))
 
 	#owned = relationship("Object", remote_side=[owner_id], backref=backref('owner', foreign_keys=[owner_id], remote_side=['id']))
 	#children = relationship("Object", remote_side=[parent_id], backref=backref('parent', foreign_keys=[parent_id], remote_side=['id']))
@@ -304,7 +307,7 @@ class Object(Base):
 			if self.deleted:
 				try:
 					d = db.get_by(Delete, parent=self)
-				except NoResult:
+				except NoResultFound:
 					return None
 				else:
 					self = d.superparent
@@ -423,7 +426,7 @@ class Object(Base):
 		if self.deleted:
 			try:
 				d = db.get_by(Delete,parent=self)
-			except NoResult:
+			except NoResultFound:
 				return (None,None,None,None)
 			else:
 				return (d.superparent, d.old_superparent, d.old_owner,"DEL ")
@@ -481,7 +484,7 @@ class Object(Base):
 
 			no_inherit = False
 
-		raise NoResult("Template %d for %s" % (detail,str(self)))
+		raise NoResultFound("Template %d for %s" % (detail,str(self)))
 
 	@property
 	def data(self):
@@ -526,7 +529,7 @@ class Object(Base):
 
 class ObjectMeta(type(Object)):
 	def __init__(cls, name, bases, dct):
-		if '__abstract__' not in dct:
+		if '_descr' in dct:
 			xid = dct.get('id',None)
 			if xid is None:
 				xid = Column(None, ForeignKey(Object.id), primary_key=True)
@@ -550,8 +553,11 @@ def update_modified(mapper, connection, target):
 	target.modified = datetime.utcnow()
 
 class ObjectRef(Object):
-	__abstract__ = True
 	__metaclass__ = ObjectMeta
+
+	#__abstract__ = True
+	## this would prevent inheritance from working
+	## but fortunately, as the class is otherwise empty, it doesn't matter
 
 
 @register_object
@@ -568,10 +574,6 @@ class _obj(object):
     def decode(i,s=None,**_):
 		return Object.get_by(id=i)
 
-
-#Object.children = relation(Object, remote_side=Object.parent_id, primaryjoin=(Object.id==Object.parent_id)) 
-#Object.superchildren = relation(Object, remote_side=Object.superparent_id, primaryjoin=(Object.id==Object.superparent_id)) 
-#Object.slaves = relation(Object, remote_side=Object.owner_id, primaryjoin=(Object.id==Object.owner_id)) 
 
 def obj_class(id):
 	"""Given a discriminator ID, return the referred object's class."""
@@ -640,7 +642,7 @@ class renderObject(Object):
 			return _call
 		try:
 			return _wrap(db.get_by(Renderer,id=self.renderer_id)._module)
-		except NoResult:
+		except NoResultFound:
 			def _wr(*a,**k):
 				return "<pre>"+Markup.escape(self.data)+"<pre>\n"
 			return _wr
