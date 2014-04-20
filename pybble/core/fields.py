@@ -14,8 +14,6 @@ from __future__ import absolute_import, print_function, division
 
 import pickle
 
-from mongoengine import fields
-from mongoengine.base.datastructures import BaseList
 from ..core.json import rec_encode,rec_decode
 
 class StructField(fields.BaseField):

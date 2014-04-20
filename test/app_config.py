@@ -17,8 +17,6 @@ import unittest
 import datetime
 import flask
 
-from flask.ext.mongoengine import MongoEngine
-from mongoengine.errors import NotUniqueError,DoesNotExist
 from .base import TC
 from pybble.core.models import Site,ConfigVar,SiteConfigVar
 from pybble.app import create_app

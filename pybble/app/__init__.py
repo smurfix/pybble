@@ -18,6 +18,8 @@ import logging
 from time import time
 from importlib import import_module
 
+from sqlalchemy.orm.exc import NoResultFound
+
 from flask import Flask, request, render_template, g, session, Markup, Response
 from flask.config import Config
 from flask.templating import DispatchingJinjaLoader
@@ -25,7 +27,6 @@ from flask.ext.script import Server
 
 from hamlish_jinja import HamlishExtension
 from jinja2 import Template,ChoiceLoader,PackageLoader
-from mongoengine.errors import DoesNotExist
 
 from .. import ROOT_NAME
 from ..core.db import db
@@ -220,32 +221,33 @@ def create_app(app=None, config=None, site=ROOT_NAME, verbose=None, test=False):
 
 		assert test == ext_config.get('TESTING',False)
 	
-	if not isinstance(site,Site):
-		try:
-			site = Site.q.get_by(domain=site)
-		except DoesNotExist:
+	with cfg_app.test_request_context('/'):
+		if not isinstance(site,Site):
 			try:
-				site = Site.q.get_by(name=site)
-			except DoesNotExist:
-				if site != ROOT_NAME:
-					raise RuntimeError("The site '%s' does not exist yet."%(site,))
-				logger.warn("Creating a new root site")
-				site = create_site(None,"localhost","_root",ROOT_NAME)
+				site = Site.q.get_by(domain=site)
+			except NoResultFound:
+				try:
+					site = Site.q.get_by(name=site)
+				except NoResultFound:
+					if site != ROOT_NAME:
+						raise RuntimeError("The site '%s' does not exist yet."%(site,))
+					logger.warn("Creating a new root site")
+					site = create_site(None,"localhost","_root",ROOT_NAME)
 
-	if site.app is None:
-		app = cfg_app
-	else:
-		app = site.app.load().App(site, test=test)
+		if site.app is None:
+			app = cfg_app
+		else:
+			app = site.app.load().App(site, test=test)
 
-	if verbose:
-		logging.basicConfig(
-			level=getattr(logging, app.config['LOGGER_LEVEL']),
-			format=app.config['LOGGER_FORMAT'],
-			datefmt=app.config['LOGGER_DATE_FORMAT']
-		)
+		if verbose:
+			logging.basicConfig(
+				level=getattr(logging, app.config['LOGGER_LEVEL']),
+				format=app.config['LOGGER_FORMAT'],
+				datefmt=app.config['LOGGER_DATE_FORMAT']
+			)
 
-	from ..core.models.doc import ContentType
-	ContentType.init_types()
+		from ..core.models.doc import ContentType
+		ContentType.init_types()
 
 	return app
 

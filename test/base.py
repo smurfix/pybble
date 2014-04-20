@@ -65,7 +65,6 @@ else:
 	urllib_intercept.HTTPInterceptorMixin = Fake_HTTPConnection
 	urllib_intercept.HTTPSInterceptorMixin = Fake_HTTPSConnection
 
-from flask.ext.mongoengine import MongoEngine
 from pybble.core.db import db
 from pybble.core.models import Site,ConfigVar,SiteConfigVar,Blueprint
 

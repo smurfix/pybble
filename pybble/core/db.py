@@ -45,33 +45,17 @@ class IDrenderer(IntegerFieldRenderer):
 
 class LimitQuery(query.Query):
 	"""A query which allows limits on GET"""
-##	TODO
-#	def get(self, ident):
-#		if not hasattr(g,'user') or g.user.superuser:
-#			return super(LimitQuery,self).get(ident)
-#
-#		if hasattr(ident, '__composite_values__'):
-#		    ident = ident.__composite_values__()
-#
-#		ident = util.to_list(ident)
-#
-#		mapper = self._only_full_mapper_zero("get")
-#
-#		if len(ident) != len(mapper.primary_key):
-#		    raise sa_exc.InvalidRequestError(
-#		    "Incorrect number of values in identifier to formulate "
-#		    "primary key for query.get(); primary key columns are %s" %
-#		    ','.join("'%s'" % c for c in mapper.primary_key))
-#
-#		key = mapper.identity_key_from_primary_key(ident)
-#		key = (getattr(key[0],"id") == key[1][0])
-#		return self.filter(key).one()
+	def get_by(self,**kw):
+		return self.filter_by(**kw).one()
 
-def limitedQuery(mapper,*a,**k):
-	q = LimitQuery(mapper,*a,**k)
-	if hasattr(g,'user') and not g.user.superuser:
-		q = mapper.class_._q(q)
-	return q
+
+#def limitedQuery(mapper,session):
+#	return session.query(mapper)
+
+#	q = LimitQuery(mapper,*a,**k)
+#	if hasattr(g,'user') and not g.user.superuser:
+#		q = mapper.class_._q(q)
+#	return q
 
 @py2_unicode
 class Base(object):
@@ -96,10 +80,9 @@ class Base(object):
 	def __html__(self):
 		return '<a href="%s">%s</a>' % (url_for('admin.show', table=self.__class__.__name__.lower(), id=self.id), escape(self._name))
 
-	q = db.query_property(query_cls=limitedQuery)
+	q = db.query_property(query_cls=LimitQuery)
 
 Base = declarative_base(cls=Base)
-Base.query = db.query_property(query_cls=limitedQuery)
 Base.super_readonly = False
 #logged_session(db,Base)
 

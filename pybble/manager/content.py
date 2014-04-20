@@ -15,7 +15,6 @@ from __future__ import absolute_import, print_function, division
 import os
 import sys
 import logging
-from mongoengine.errors import DoesNotExist
 
 from . import Manager,Command,Option
 from ..core.models import Object

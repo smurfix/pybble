@@ -6,7 +6,7 @@ import sys
 from time import mktime
 from json.encoder import JSONEncoder
 from json.decoder import JSONDecoder
-from .. import settings
+from . import config
 from .utils import attrdict, TZ,UTC, format_dt
 import datetime as dt
 
@@ -74,8 +74,8 @@ class Encoder(JSONEncoder):
 		self.main = main
 		super(Encoder,self).__init__(skipkeys=False, ensure_ascii=False,
 			check_circular=False, allow_nan=False, sort_keys=False,
-			indent=(2 if settings.DEBUG else None),
-			separators=((', ', ': ') if settings.DEBUG else (',', ':')),
+			indent=(2 if config.DEBUG else None),
+			separators=((', ', ': ') if config.DEBUG else (',', ':')),
 			encoding='utf-8')
 
 	def default(self, data):

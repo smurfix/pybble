@@ -16,9 +16,8 @@ from __future__ import absolute_import, print_function, division
 import unittest
 import datetime
 import flask
+#from sqlalchemy.orm.exc import NoResultFound
 
-from flask.ext.mongoengine import MongoEngine
-from mongoengine.errors import NotUniqueError,DoesNotExist
 from .base import TC
 from pybble.core.models import Site,ConfigVar,SiteConfigVar,Blueprint
 
@@ -145,12 +144,12 @@ class SiteTestCase(TC):
 #			self.assertEquals(u1,User.find("U1",site2))
 #			self.assertEquals(u1,User.find("U1",site21))
 #
-#			self.assertRaises(DoesNotExist, User.find,"U2",site)
-#			self.assertRaises(DoesNotExist, User.find,"U3",site)
+#			self.assertRaises(NoResultFound, User.find,"U2",site)
+#			self.assertRaises(NoResultFound, User.find,"U3",site)
 #
-#			self.assertRaises(DoesNotExist, User.find,"U2",site2)
-#			self.assertRaises(DoesNotExist, User.find,"U3",site1)
-#			self.assertRaises(DoesNotExist, User.find,"U2",site21)
+#			self.assertRaises(NoResultFound, User.find,"U2",site2)
+#			self.assertRaises(NoResultFound, User.find,"U3",site1)
+#			self.assertRaises(NoResultFound, User.find,"U2",site21)
 #
 #			self.assertRaises(NotUniqueError, User.add,"U1",site2)
 #			self.assertRaises(NotUniqueError, User.add,"U1",site21)

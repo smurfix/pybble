@@ -21,7 +21,7 @@ from sqlalchemy.orm import relationship,backref
 from ...compat import py2_unicode
 from ..json import register_object
 
-from ..db import Base, Column
+from ..db import Base, Column, IDrenderer
 
 from pybble.utils import random_string, current_request, AuthError
 
@@ -197,19 +197,29 @@ class Object(Base):
 	__mapper_args__ = {'polymorphic_on': 'discriminator'}
 	#__abstract__ = True
 
-	owner_id = Column(Integer)       # user who created this node
-	parent_id = Column(Integer)      # direct ancestor (replied-to comment)
-	superparent_id = Column(Integer) # indirect ancestor (replied-to wiki page)
+	id = Column(Integer, primary_key=True, label="ID", renderer=IDrenderer)
+
+	owner_id = Column(Integer,ForeignKey(id))       # user who created this node
+	parent_id = Column(Integer,ForeignKey(id))      # direct ancestor (replied-to comment)
+	superparent_id = Column(Integer,ForeignKey(id)) # indirect ancestor (replied-to wiki page)
 	## XXX The individual tables should document the semantics of these pointers if they don't match
 	
-	owner = relationship("Object", foreign_keys='(owner_id,)')
-	parent = relationship("Object", foreign_keys='(parent_id,)')
-	superparent = relationship("Object", foreign_keys='(superparent_id,)')
+	owner = relationship("Object", foreign_keys=(owner_id,))
+	parent = relationship("Object", foreign_keys=(parent_id,))
+	superparent = relationship("Object", foreign_keys=(superparent_id,))
 
 	#owned = relationship("Object", remote_side=[owner_id], backref=backref('owner', foreign_keys=[owner_id], remote_side=['id']))
 	#children = relationship("Object", remote_side=[parent_id], backref=backref('parent', foreign_keys=[parent_id], remote_side=['id']))
 	#superchildren = relationship("Object", remote_side=[superparent_id], backref=backref('superparent', foreign_keys=[superparent_id], remote_side=['id']))
 
+	@staticmethod
+	def _alias(what):
+		def _get(self):
+			return getattr(self,what)
+		def _set(self,data):
+			setattr(self,what,data)
+		return property(_get,_set)
+		
 	discriminator = Column(Integer, nullable=False)
 
 	@property
@@ -526,7 +536,7 @@ class ObjectMeta(type(Object)):
 				xmp = {}
 				setattr(cls,'__mapper_args__',xmp)
 			xmp.setdefault('polymorphic_identity',dct['_descr'])
-			xmp.setdefault('inherit_condition',(xid == Object.id,))
+			xmp.setdefault('inherit_condition', xid == Object.id)
 			xmp.setdefault('primary_key',(xid,))
 			if '__tablename__' not in dct:
 				setattr(cls,'__tablename__',name.lower())

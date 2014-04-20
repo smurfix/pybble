@@ -15,7 +15,8 @@ from __future__ import absolute_import, print_function, division
 import os
 import sys
 import logging
-from mongoengine.errors import DoesNotExist
+
+from sqlalchemy.orm.exc import NoResultFound
 
 from . import Manager,Command,Option
 
@@ -35,7 +36,12 @@ class PopulateCommand(Command):
 #		self.add_option(Option("name", nargs='?', action="store",help="The blueprint's internal name"))
 #		self.add_option(Option("bp", nargs='?', action="store",help="The Pybble blueprint to install"))
 #		self.add_option(Option("path", nargs='?', action="store",help="The path prefix to attach it to"))
+
 	def __call__(self,app):
+		with app.test_request_context('/'):
+			self.main()
+
+	def main(self):
 		from ..core.models.site import Site
 		from ..core.models.types import MIMEtype
 		from ..core.models.config import ConfigVar
@@ -44,7 +50,7 @@ class PopulateCommand(Command):
 		## main site
 		try:
 			root = Site.q.get_by(name=ROOT_NAME)
-		except DoesNotExist:
+		except NoResultFound:
 			root = Site(name=ROOT_NAME)
 			db.add(root)
 			logger.debug("The root site has been created.")
@@ -56,7 +62,7 @@ class PopulateCommand(Command):
 		for type,subtype,ext,name,doc in content_types:
 			try:
 				MIMEtype.q.get_by(typ=type,subtyp=subtype)
-			except DoesNotExist:
+			except NoResultFound:
 				db.add(MIMEtype(typ=type, subtyp=subtype, ext=ext, name=name, doc=doc))
 				logger.info("MIME type '%s/%s' (%s) created." % (type,subtype,name))
 		db.commit()
@@ -67,7 +73,7 @@ class PopulateCommand(Command):
 			if k != k.upper(): continue
 			try:
 				cf = ConfigVar.q.get_by(name=k)
-			except DoesNotExist:
+			except NoResultFound:
 				cf = ConfigVar(parent=root, name=k, value=v)
 				db.add(ConfigVar(parent=root, name=k, value=v))
 

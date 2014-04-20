@@ -19,7 +19,6 @@ import logging
 from importlib import import_module
 from threading import Lock
 from gevent.wsgi import WSGIServer
-from mongoengine.errors import DoesNotExist
 
 from flask import Flask
 from flask.config import Config

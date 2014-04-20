@@ -1,0 +1,8 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+mysql_user="test"
+mysql_pass="test"
+mysql_database="test"
+SECRET_KEY="Do not even think of not changing this"
+

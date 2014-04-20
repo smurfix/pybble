@@ -237,7 +237,6 @@ def format_dt(value, format='%Y-%m-%d %H:%M:%S'):
 		return value.replace(tzinfo=UTC).astimezone(TZ).strftime(format)
 
 from pprint import PrettyPrinter,_safe_repr
-from bson import SON as _SON
 import datetime as _dt
 try:
     from cStringIO import StringIO as _StringIO
@@ -257,10 +256,6 @@ class UTFPrinter(PrettyPrinter,object):
 			object = object.decode("utf-8")
 		elif typ is _dt.datetime:
 			return "DT( %s )"%(format_dt(object),),True,False
-		elif issubclass(typ,_SON):
-			# This loses ordering, but I don't want to replicate even more code here
-			object = dict(object.items())
-			return super(UTFPrinter,self).format(object, context, maxlevels, level)
 		elif typ is not unicode:
 			return _safe_repr(object, context, maxlevels, level)
 

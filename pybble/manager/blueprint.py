@@ -15,8 +15,8 @@ from __future__ import absolute_import, print_function, division
 import os
 import sys
 import logging
-from mongoengine.errors import DoesNotExist
 from importlib import import_module
+from sqlalchemy.orm.exc import NoResultFound
 
 from . import Manager,Command,Option
 from ..core.models.site import Blueprint
@@ -72,8 +72,8 @@ class ParamBlueprint(Command):
 			sys.exit(not help)
 		try:
 			bp = Blueprint.objects.get(name=name, site=app.site)
-		except DoesNotExist:
-			raise DoesNotExist("Blueprint site=%s name=%s" % (app.site.name,name))
+		except NoResultFound:
+			raise NoResultFound("Blueprint site=%s name=%s" % (app.site.name,name))
 		if key is None:
 			for k,v in bp.params._data.items():
 				print(k,v)

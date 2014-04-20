@@ -107,10 +107,6 @@ class Site(ObjectRef):
 	app_id = Column(Integer, ForeignKey(App.id), nullable=True)
 	app = relationship(App, primaryjoin=app_id==App.id)
 
-	def __storm_pre_flush__(self):
-		self.tracked = datetime.utcnow()
-		super(Site,self).__storm_pre_flush__()
-
 	def __init__(self,domain,name=None):
 		super(Site,self).__init__()
 		if name is None:
@@ -168,6 +164,6 @@ class SiteBlueprint(ObjectRef):
 
 	path = Column(Unicode, required=True) ## (, verbose_name="where to attach")
 
-	site = relationship("Site", primaryjoin="parent_id==Site.id")
-	blueprint = relationship("Blueprint", primaryjoin="superparent_id==Blueprint.id")
+	site = ObjectRef._alias("parent")
+	blueprint = ObjectRef._alias("superparent")
 

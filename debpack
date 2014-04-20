@@ -1,0 +1,10 @@
+python-flask-script
+python-gevent
+python-formalchemy
+python-flask-sqlalchemy
+python-mysqldb
+python-tz
+python-markdown
+python-hamlish-jinja
+#
+mysql-server

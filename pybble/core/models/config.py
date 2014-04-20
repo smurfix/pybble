@@ -20,7 +20,6 @@ import random
 import os
 
 from blinker import NamedSignal
-from mongoengine.errors import NotUniqueError,DoesNotExist
 from flask import url_for, current_app, g
 from flask.config import Config
 
@@ -32,6 +31,7 @@ from datetime import datetime,timedelta
 from sqlalchemy import Integer, Unicode, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship,backref
 from sqlalchemy.types import TypeDecorator, VARCHAR
+from sqlalchemy.orm.exc import NoResultFound
 
 from pybble.compat import py2_unicode
 
@@ -92,9 +92,9 @@ class ConfigDict(Config):
 	def __setitem__(self,k,v):
 		try:
 			cfv = ConfigVar.q.get(k)
-		except DoesNotExist:
+		except NoResultFound:
 			if self.set_db:
-				raise DoesNotExist(k)
+				raise NoResultFound(k)
 			cfv = None
 		if self.set_db:
 			assert self.site
@@ -110,14 +110,14 @@ class ConfigDict(Config):
 	def __delitem__(self,k):
 		try:
 			cfv = ConfigVar.get(k)
-		except DoesNotExist:
+		except NoResultFound:
 			# can't delete values that are only read from settings
-			raise DoesNotExist(k)
+			raise NoResultFound(k)
 		if self.set_db:
 			assert self.site
 			try:
 				cf = SiteConfigVar.objects.get(site=self.site, var=cfv)
-			except DoesNotExist:
+			except NoResultFound:
 				pass
 			else:
 				cf.delete()
@@ -168,8 +168,8 @@ class ConfigVar(ObjectRef, JsonValue):
 	def get(name):
 		try:
 			return ConfigVar.q.get(name=name)
-		except DoesNotExist:
-			raise DoesNotExist("ConfigVar:"+name)
+		except NoResultFound:
+			raise NoResultFound("ConfigVar:"+name)
 
 	@staticmethod
 	def exists(name,info,default=None):
@@ -177,11 +177,11 @@ class ConfigVar(ObjectRef, JsonValue):
 		cf.save()
 	def __str__(self):
 		if self.var is None or self.site is None:
-			return super(SiteConfigVar).__str__()
+			return super(ConfigVar).__str__()
 		return u"‹%s: %s=%s @%s›" % (self.__class__.__name__,self.var.name,repr(self.value),self.site.name)
 	def __repr__(self):
 		if self.var is None or self.site is None:
-			return super(SiteConfigVar).__repr__()
+			return super(ConfigVar).__repr__()
 		return "%s:%s=%s@%s" % (self.__class__.__name__,self.var.name,repr(self.value),self.site.name)
 
 @py2_unicode
@@ -189,8 +189,8 @@ class SiteConfigVar(ObjectRef, JsonValue):
 	"""This is one configuration variable's value for a site."""
 	_descr = D.SiteConfigVar
 
-	site = relationship("Object", foreign_keys='(parent_id,)')
-	var = relationship("Object", foreign_keys='(superparent_id,)')
+	site = ObjectRef._alias("parent")
+	var = ObjectRef._alias("superparent")
 	# Owner: the user who last set the variable
 
 	def __str__(self):
