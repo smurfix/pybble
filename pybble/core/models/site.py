@@ -51,7 +51,8 @@ class DummySite(DummyObject):
 
 @py2_unicode
 class App(ObjectRef):
-	"""An App known to pybble"""
+	"""An App known to pybble."""
+	## Part of the object system so that it can be access-controlled if necessary.
 	__tablename__ = "apps"
 	_descr = D.App
 	_module = None
@@ -73,6 +74,7 @@ class App(ObjectRef):
 @py2_unicode
 class Blueprint(ObjectRef):
 	"""A Flask blueprint known to pybble. Usually a child of the master site"""
+	## Part of the object system so that it can be access-controlled if necessary.
 	__tablename__ = "blueprints"
 	_descr = D.Blueprint
 
@@ -97,13 +99,13 @@ class Site(ObjectRef):
 	tracked = Column(DateTime,nullable=False, default=datetime.utcnow)
 	## Datestamp of newest fully-processed Tracker object
 
-	## NOT YET WORKING
-	#superuser = relationship("Object", primaryjoin="owner_id==Object.id")
-	#app = relationship("Object", primaryjoin="superparent_id==Object.id")
-	#storages = relationship("Storage", primaryjoin="Site.id==Storage.parent_id")
+	superuser = Object._alias("parent")
+	app = Object._alias("superparent")
 
-	app_id = Column(Integer, ForeignKey(App.id), nullable=True, index=True)
-	app = relationship(App, primaryjoin=app_id==App.id)
+	## NOT YET WORKING
+	@property
+	def storages(self):
+		return self.all_children("Storage")
 
 	def __init__(self,domain,name=None):
 		super(Site,self).__init__()
@@ -122,7 +124,6 @@ class Site(ObjectRef):
 			self.owner = current_request.user
 		except (AttributeError,RuntimeError):
 			self.owner = None if s is None else s.owner
-		db.add(self)
 
 	@property
 	def anon_user(self):

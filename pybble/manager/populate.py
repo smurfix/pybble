@@ -44,18 +44,41 @@ class PopulateCommand(Command):
 			self.main()
 
 	def main(self):
+		from ..core.models import Discriminator
+		from ..core.models._descr import D
 		from ..core.models.site import Site
 		from ..core.models.user import User
 		from ..core.models.types import MIMEtype
 		from ..core.models.config import ConfigVar
 		from .. import ROOT_SITE_NAME,ROOT_USER_NAME
 
+		count = added = updated = 0
+
+		## Object discriminators
+		for id,name in D.items():
+			count += 1
+			doc = D._doc.get(id,None)
+			try:
+				d = Discriminator.q.get_by(id=id)
+			except NoResultFound:
+				d = Discriminator(id=id,name=name, display_name=name, infotext=doc)
+				db.add(d)
+				added += 1
+			else:
+				if doc and (d.infotext is None or d.infotext != doc):
+					d.infotext = doc
+					updated += 1
+		db.commit()
+		if count == added:
+			logger.debug("Discriminators have been loaded.")
+		elif added or updated:
+			logger.debug("{}/{} discriminators updated/added.".format(updated,added))
+
 		## main site
 		try:
 			root = Site.q.get_by(name=ROOT_SITE_NAME)
 		except NoResultFound:
 			root = Site(domain="localhost", name=ROOT_SITE_NAME)
-			db.add(root)
 			logger.debug("The root site has been created.")
 		else:
 			logger.debug("The root site exists. Good.")
@@ -66,7 +89,6 @@ class PopulateCommand(Command):
 		if superuser is None:
 			password = random_string()
 			superuser = User(ROOT_USER_NAME,password)
-			db.add(superuser)
 			root.owner = superuser
 			logger.info(u"The root user has been created. Password: ‘{}’.".format(password))
 		elif superuser.username != ROOT_USER_NAME:
@@ -78,9 +100,10 @@ class PopulateCommand(Command):
 		## MIME types
 		for type,subtype,ext,name,doc in content_types:
 			try:
-				MIMEtype.q.get_by(typ=type,subtyp=subtype)
+				mt = MIMEtype.q.get_by(typ=type,subtyp=subtype)
 			except NoResultFound:
-				db.add(MIMEtype(typ=type, subtyp=subtype, ext=ext, name=name, doc=doc))
+				mt = MIMEtype(typ=type, subtyp=subtype, ext=ext, name=name, doc=doc)
+				db.add(mt)
 				logger.info("MIME type '%s/%s' (%s) created." % (type,subtype,name))
 		db.commit()
 		
@@ -92,7 +115,7 @@ class PopulateCommand(Command):
 				cf = ConfigVar.q.get_by(name=k)
 			except NoResultFound:
 				cf = ConfigVar(parent=root, name=k, value=v)
-				db.add(ConfigVar(parent=root, name=k, value=v))
+				db.flush()
 
 			if not cf.info:
 				cf.info = getattr(DS,'d_'+k,None)

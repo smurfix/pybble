@@ -16,6 +16,7 @@ from __future__ import absolute_import, print_function, division
 #SECRET_KEY="If you do not change this to something random, you deserve to get hacked."
 
 ## These are a bunch of "required" default settings.
+import datetime
 
 APPLICATION_ROOT=None
 DEBUG=False
@@ -47,3 +48,4 @@ LOGGER_LEVEL="DEBUG"
 LOGGER_FORMAT='%(asctime)s %(name)-12s %%(levelname)-8s %%(message)s'
 LOGGER_DATE_FORMAT='%Y-%m-%d %H:%M:%S'
 
+del datetime

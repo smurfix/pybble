@@ -21,7 +21,7 @@ from sqlalchemy.orm import relationship,backref
 from ...compat import py2_unicode
 from ..json import register_object
 
-from ..db import Base, Column, IDrenderer
+from ..db import Base, Column, IDrenderer, db
 
 from pybble.utils import current_request
 
@@ -69,10 +69,6 @@ class Discriminator(Base):
 	name = Column(Unicode(30), nullable=False)
 	display_name = Column(Unicode(100), nullable=True)
 	infotext = Column(Unicode(250), nullable=True)
-
-	def __init__(self, cls):
-		self.id = cls._discriminator
-		self.name = cls.__name__
 
 	def __str__(self):
 		return u'‹D:%s=%s›' % (d,self.__class__.__name__, self.id, self.name)
@@ -223,12 +219,12 @@ class Object(Base):
 			setattr(self,what,data)
 		return property(_get,_set)
 		
-	discriminator = Column(Integer, nullable=False)
+	discriminator = Column(Integer, ForeignKey(Discriminator.id), nullable=False)
 
 	@property
 	def discr(self): return Discriminator.get(self.discriminator)
 
-	_rec_str = False
+	_rec_str = False ## marker for possibly-recursive __str__ calls
 
 	def __str__(self):
 		if self.deleted: d = "DEL "
@@ -540,7 +536,8 @@ class ObjectMeta(type(Object)):
 				setattr(cls,'__mapper_args__',xmp)
 			xmp.setdefault('polymorphic_identity',dct['_descr'])
 			xmp.setdefault('inherit_condition', xid == Object.id)
-			xmp.setdefault('primary_key',(xid,))
+			# xmp.setdefault('primary_key',(xid,))
+			## DO NOT enable this line. It is wrong.
 			if '__tablename__' not in dct:
 				setattr(cls,'__tablename__',name.lower())
 			if "modified" in dct:
@@ -554,6 +551,9 @@ def update_modified(mapper, connection, target):
 
 class ObjectRef(Object):
 	__metaclass__ = ObjectMeta
+	def __init__(self,*a,**k):
+		super(ObjectRef,self).__init__(*a,**k)
+		db.add(self)
 
 	#__abstract__ = True
 	## this would prevent inheritance from working

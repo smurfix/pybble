@@ -50,6 +50,10 @@ if "mysql_uri" not in globals():
 	if "mysql_user" in globals() and "mysql_pass" in globals():
 		mysql_uri = "mysql://%s:%s@%s:%s/%s" % (mysql_user,mysql_pass,mysql_host,mysql_port,mysql_database)
 if "mysql_admin_uri" not in globals():
+	if "mysql_admin_user" not in globals() and "mysql_user" in globals():
+		mysql_admin_user = mysql_user
+	if "mysql_admin_pass" not in globals() and "mysql_pass" in globals():
+		mysql_admin_pass = mysql_pass
 	if "mysql_admin_user" in globals() and "mysql_admin_pass" in globals():
 		mysql_admin_uri = "mysql://%s:%s@%s:%s/%s" % (mysql_admin_user,mysql_admin_pass,mysql_host,mysql_port,mysql_database)
 

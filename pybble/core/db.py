@@ -73,6 +73,7 @@ class Base(object):
 	
 	id = Column(Integer, primary_key=True, label="ID", renderer=IDrenderer)
 
+	# canonical representation
 	@property
 	def _name(self):
 		if hasattr(self,'name'):

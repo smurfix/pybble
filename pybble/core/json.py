@@ -36,6 +36,20 @@ class _datetime(object):
 			return dt.datetime(*a).replace(tzinfo=TZ)
 
 @register_object
+class _timedelta(object):
+	cls = dt.timedelta
+	clsname = "timedelta"
+
+	@staticmethod
+	def encode(obj):
+		## the string is purely for human consumption and therefore does not have a time zone
+		return {"t":obj.total_seconds(),"s":str(obj)}
+
+	@staticmethod
+	def decode(t,s=None,**_):
+		return dt.timedelta(0,t)
+
+@register_object
 class _date(object):
 	cls = dt.date
 	clsname = "date"
@@ -69,9 +83,8 @@ class _time(object):
 		return dt.time(*a)
 
 class Encoder(JSONEncoder):
-	def __init__(self,main=()):
+	def __init__(self):
 		self.objcache = {}
-		self.main = main
 		super(Encoder,self).__init__(skipkeys=False, ensure_ascii=False,
 			check_circular=False, allow_nan=False, sort_keys=False,
 			indent=(2 if config.DEBUG else None),
@@ -87,19 +100,7 @@ class Encoder(JSONEncoder):
 		return super(Encoder,self).default(data)
 
 def encode(data):
-	main = set()
-	try:
-		d = data["data"]
-		if d._d is None:
-			d._read()
-		if isinstance(d,(list,tuple)):
-			for dd in d:
-				main.add(dd)
-		else:
-			main.add(d)
-	except (TypeError,KeyError,AttributeError):
-		raise ## pass?
-	return Encoder(main).encode(data)
+	return Encoder().encode(data)
 
 class Decoder(JSONDecoder):
 	def __init__(self, proxy):

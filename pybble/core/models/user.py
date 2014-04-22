@@ -191,15 +191,10 @@ class User(ObjectRef):
 		else:
 			raise RuntimeError(u"User '%s' already exists in %s" %
 			(username,current_request.site))
-		db.add(self)
 
 		if not self.anon:
-			try:
-				m = Member(self,current_request.site.anon_user)
-			except (AttributeError,RuntimeError):
-				pass
-			else:
-				db.add(m)
+			m = Member(self,current_request.site.anon_user)
+		db.flush()
 	
 	@property
 	def tracks(self):
@@ -234,8 +229,7 @@ class User(ObjectRef):
 		except NoResultFound:
 #			for b in db.filter_by(Breadcrumb,**q).order_by(Breadcrumb.visited)[10:]:
 #				db.store.remove(b)
-			b = Breadcrumb(self,obj)
-			db.add(b)
+			Breadcrumb(self,obj)
 		else:
 			s.visit()
 			if not s.superparent: # bugfix
@@ -275,7 +269,7 @@ class User(ObjectRef):
 			m = db.get_by(Member, user_id=self.id,group_id=site.id)
 		except NoResultFound:
 			if v:
-				db.add(Member(user=self,group=site))
+				Member(user=self,group=site)
 		else:
 			if not v:
 				db.store.remove(m)
@@ -413,7 +407,6 @@ class User(ObjectRef):
 			p.right = right
 		else:
 			p = Permission(user,obj,discr,right,inherit)
-			db.add(p)
 
 	def forbid(user,obj, discr=None, inherit=None):
 		discr = Discriminator.get(discr,obj).id
@@ -488,7 +481,6 @@ class Member(ObjectRef):
 		self.excluded = False
 		try: del self._memberships
 		except AttributeError: pass
-		db.add(self)
 
 	@property
 	def data(self):
