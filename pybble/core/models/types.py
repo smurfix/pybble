@@ -70,7 +70,7 @@ class MIMEtype(Base):
 	typ = Column(Unicode(30), nullable=False)
 	subtyp = Column(Unicode(30), nullable=False)
 	doc = Column(Unicode(1000), nullable=True)
-	ext = Column(Unicode(10), nullable=False) # primary extension
+	ext = Column(Unicode(10), nullable=True) # primary extension
 	
 	@property
 	def mimetype(self):
