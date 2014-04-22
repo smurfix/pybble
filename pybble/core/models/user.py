@@ -12,7 +12,6 @@ from __future__ import absolute_import, print_function, division
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
-from .site import Site
 from flask import current_app,g
 from flask.ext.security import UserMixin, RoleMixin
 from flask.ext.security.utils import encrypt_password
@@ -23,18 +22,17 @@ from sqlalchemy import Integer, Unicode, DateTime, Boolean
 from sqlalchemy.orm import relationship,backref
 from sqlalchemy.orm.exc import NoResultFound
 
-from pybble.compat import py2_unicode
-
-from ..db import Base, Column
+from ...compat import py2_unicode
+from ..db import Base, Column, db
+from . import DummyUser,Object,ObjectRef, PERM,PERM_NONE
+from .site import DummySite, Site
+from ._descr import D
 
 from pybble.utils import random_string, current_request, AuthError
 
 from pybble.core import config
 import sys
 
-from . import DummyUser,Object,ObjectRef, PERM,PERM_NONE
-from .site import DummySite
-from ._descr import D
 
 ## Auth
 #class Role(ObjectRef, RoleMixin):
