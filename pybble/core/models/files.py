@@ -23,7 +23,7 @@ from pybble.compat import py2_unicode
 
 from ..db import Base, Column
 
-from pybble.utils import current_request
+from flask import request
 
 from pybble.core import config
 import os
@@ -64,7 +64,7 @@ class BinData(ObjectRef):
 			
 	def __init__(self,name, ext=None,mimetype=None, content=None, parent=None, storage=None):
 		super(BinData,self).__init__()
-		if not parent: parent = current_request.site
+		if not parent: parent = request.site
 		if not storage: storage = parent.default_storage
 		if mimetype:
 			self.mime = mimetype
@@ -78,7 +78,7 @@ class BinData(ObjectRef):
 		self._content = content
 		self.hash = hash_data(content)
 		self.size = len(content)
-		self.owner = current_request.user
+		self.owner = request.user
 		self.parent = parent
 		self.superparent = storage
 		self._save_content()
@@ -229,7 +229,7 @@ class StaticFile(ObjectRef):
 	def __init__(self, path, bin):
 		super(StaticFile,self).__init__()
 		self.path = path
-		self.superparent = current_request.site
+		self.superparent = request.site
 		self.parent = bin
 		
 	def __str__(self):

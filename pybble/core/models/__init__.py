@@ -23,8 +23,7 @@ from ..json import register_object
 
 from ..db import Base, Column, IDrenderer, db
 
-from pybble.utils import current_request
-
+from flask import request
 from werkzeug import import_string
 from jinja2.utils import Markup
 from pybble.core import config
@@ -85,13 +84,13 @@ class Discriminator(Base):
 		if isinstance(discr, Discriminator):
 			return discr
 		elif isinstance(discr, basestring):
-			return db.get_by(Discriminator, name=str(discr))
+			return Discriminator.q.get_by(name=str(discr))
 		elif discr is None and obj is not None:
-			return db.get_by(Discriminator, id=obj.discriminator)
+			return Discriminator.q.get_by(id=obj.discriminator)
 		elif isinstance(discr, (int,long)):
-			return db.get_by(Discriminator, id=discr)
+			return Discriminator.q.get_by(id=discr)
 		else:
-			return db.get_by(Discriminator, id=discr._discriminator)
+			return Discriminator.q.get_by(id=discr._discriminator)
 
 	@staticmethod
 	def num(discr):
@@ -103,7 +102,7 @@ class Discriminator(Base):
 		if isinstance(discr, Discriminator):
 			return discr.id
 		elif isinstance(discr, basestring):
-			return db.get_by(Discriminator, name=str(discr)).id
+			return Discriminator.q.get_by(name=str(discr)).id
 		elif isinstance(discr, (int,long)):
 			return discr
 		else:
@@ -248,7 +247,7 @@ class Object(Base):
 			discr = Discriminator.num(discr)
 			res = res.filter(discriminator=discr)
 		for o in db.store.find(BaseObject, And(*q)):
-			if want is None or current_request.user.can_do(o, discr=discr, want=want):
+			if want is None or request.user.can_do(o, discr=discr, want=want):
 				yield o
 	def all_children(self, discr=None, want=PERM_LIST):
 		return self._all_X("parent",discr,want)
@@ -302,7 +301,7 @@ class Object(Base):
 
 			if self.deleted:
 				try:
-					d = db.get_by(Delete, parent=self)
+					d = Delete.q.get_by(parent=self)
 				except NoResultFound:
 					return None
 				else:
@@ -386,7 +385,7 @@ class Object(Base):
 
 	@property
 	def trackings(self):
-		return db.filter_by(WantTracking,parent=self, user=current_request.user)
+		return db.filter_by(WantTracking,parent=self, user=request.user)
 
 	@property
 	def classname(self):
@@ -421,7 +420,7 @@ class Object(Base):
 	def pso(self): # parent/super/owner/deletedFlag
 		if self.deleted:
 			try:
-				d = db.get_by(Delete,parent=self)
+				d = Delete.q.get_by(parent=self)
 			except NoResultFound:
 				return (None,None,None,None)
 			else:
@@ -473,8 +472,8 @@ class Object(Base):
 				obj = s
 			elif got_site:
 				break
-			elif current_request.site not in seen:
-				obj = current_request.site # last resort
+			elif request.site not in seen:
+				obj = request.site # last resort
 			else:
 				break
 
@@ -489,7 +488,7 @@ class Object(Base):
 	def uptree(self):
 		while self:
 			yield self
-			ru = getattr(current_request,"user",None)
+			ru = getattr(request,"user",None)
 			if isinstance(self,Site) and not (ru and ru.can_admin(self)):
 				return
 			self = self.parent
@@ -497,17 +496,17 @@ class Object(Base):
 	def record_creation(self):
 		"""Record the fact that a user created this object"""
 		db.store.add(self)
-		Tracker(current_request.user,self)
+		Tracker(request.user,self)
 
 	def record_change(self,content=None,comment=None):
 		"""Record the fact that a user changed this object, and why"""
 		if content is None:
 			content = self.data
-		Change(current_request.user,self,content,comment)
+		Change(request.user,self,content,comment)
 
 	def record_deletion(self,comment=None):
 		"""Record the fact that a user killed this object, and why"""
-		Delete(current_request.user,self,comment)
+		Delete(request.user,self,comment)
 
 		self.owner = None
 		self.parent = None
@@ -528,7 +527,7 @@ class ObjectMeta(type(Object)):
 		if '_descr' in dct:
 			xid = dct.get('id',None)
 			if xid is None:
-				xid = Column(None, ForeignKey(Object.id), primary_key=True)
+				xid = Column(None, ForeignKey(Object.id, ondelete='CASCADE', onupdate='RESTRICT'), primary_key=True)
 				setattr(cls,'id',xid)
 			xmp = dct.get('__mapper_args__',None)
 			if xmp is None:
@@ -572,7 +571,7 @@ class _obj(object):
 
     @staticmethod
     def decode(i,s=None,**_):
-		return Object.get_by(id=i)
+		return Object.q.get_by(id=i)
 
 
 def obj_class(id):
@@ -592,7 +591,7 @@ def obj_get(oid):
 	except ValueError:
 		raise ValueError("bad OID: '%s'" % (oid,))
 	cls = obj_class(int(cid))
-	obj = db.get_by(cls, id=int(id))
+	obj = cls.q.get_by(id=int(id))
 	if oid != obj.oid():
 		raise ValueError("This object does not exist: " % (oid,))
 	return obj
@@ -629,7 +628,7 @@ class renderObject(Object):
 	def __init__(self,renderer = None):
 		if renderer is not None:
 			if not isinstance(renderer,Renderer):
-				renderer = db.get_by(Renderer,name=renderer)
+				renderer = Renderer.q.get_by(name=renderer)
 			self.renderer_id = renderer.id
 	
 	@property
@@ -641,7 +640,7 @@ class renderObject(Object):
 				r(self,*a,**k)
 			return _call
 		try:
-			return _wrap(db.get_by(Renderer,id=self.renderer_id)._module)
+			return _wrap(Renderer.q.get_by(id=self.renderer_id)._module)
 		except NoResultFound:
 			def _wr(*a,**k):
 				return "<pre>"+Markup.escape(self.data)+"<pre>\n"

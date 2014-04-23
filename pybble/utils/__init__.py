@@ -47,8 +47,6 @@ local = Local()
 local_manager = LocalManager([local])
 
 application = local('application')
-current_request = local('request')
-store = local('store')
 
 def validate_url(url):
 	return urlparse(url)[0] in ALLOWED_SCHEMES

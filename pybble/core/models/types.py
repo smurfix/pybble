@@ -32,7 +32,7 @@ def add_mime(name,typ,subtyp,ext):
 	ext = unicode(ext)
 
 	try:
-		t = db.get_by(MIMEtype,typ=typ,subtyp=subtyp)
+		t = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
 	except NoResultFound:
 		t=MIMEtype()
 		t.name = unicode(name)
@@ -46,7 +46,7 @@ def add_mime(name,typ,subtyp,ext):
 		assert name == t.name
 		if ext != t.ext:
 			try:
-				tt = db.get_by(MIMEext,ext=ext)
+				tt = MIMEext.q.get_by(ext=ext)
 			except NoResultFound:
 				tt = MIMEext()
 				tt.mime = t
@@ -57,9 +57,9 @@ def add_mime(name,typ,subtyp,ext):
 
 def mime_ext(ext):
 	try:
-		return db.get_by(MIMEtype,ext=ext)
+		return MIMEtype.q.get_by(ext=ext)
 	except NoResultFound:
-		return db.get_by(MIMEext,ext=ext).mime
+		return MIMEext.q.get_by(ext=ext).mime
 
 @py2_unicode
 class MIMEtype(Base):
@@ -83,7 +83,7 @@ class MIMEtype(Base):
 def find_mimetype(typ,subtyp=None):
 	if subtyp is None:
 		typ,subtyp = typ.split("/")
-	return db.get_by(MIMEtype,typ=typ, subtyp=subtyp)
+	return MIMEtype.q.get_by(typ=typ, subtyp=subtyp)
 
 @py2_unicode
 class MIMEext(Base):

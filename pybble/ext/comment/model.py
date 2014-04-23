@@ -19,7 +19,7 @@ class Comment(renderObject):
 		super(Comment,self).__init__()
 		self.name = name
 		self.data = data
-		self.owner = current_request.user
+		self.owner = request.user
 		self.parent = obj
 		if isinstance(obj,Comment):
 			self.superparent = obj.superparent

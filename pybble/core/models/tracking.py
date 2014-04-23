@@ -21,16 +21,13 @@ from datetime import datetime,timedelta
 from sqlalchemy import Integer, Unicode, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship,backref
 
-from pybble.compat import py2_unicode
-
-from ..db import Base, Column
-
-from pybble.utils import current_request
-
-from pybble.core import config
+from flask import request
 
 from . import Object,ObjectRef
 from ._descr import D
+from ..db import Base, Column
+from ...core import config
+from ...compat import py2_unicode
 
 @py2_unicode
 class Breadcrumb(ObjectRef):
@@ -56,7 +53,7 @@ class Breadcrumb(ObjectRef):
 		self.discr = obj.discriminator
 		self.owner = user
 		self.parent = obj
-		self.superparent = current_request.site
+		self.superparent = request.site
 		#self.seq = 1+(db.store.execute(select(Max(Breadcrumb.seq), And((Breadcrumb.owner==user,Breadcrumb.discr==self.discr))).scalar() or 0)
 
 	def __str__(self):
@@ -201,7 +198,7 @@ class Tracker(ObjectRef):
 		super(Tracker,self).__init__()
 		self.owner = user
 		self.parent = obj
-		self.superparent = site or current_request.site
+		self.superparent = site or request.site
 		session.add(self)
 
 	def __str__(self):
@@ -300,7 +297,7 @@ class WantTracking(ObjectRef):
 		if self._rec_str or not o or not p: return super(WantTracking,self).__str__()
 		try:
 			self._rec_str = True
-			return u'‹%s%s %s: %s in %s for %s %s›' % (d,self.__class__.__name__, self.id, "-" if self.discr is None else db.get_by(Discriminator,id=self.discr).name, unicode(p),unicode(o), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
+			return u'‹%s%s %s: %s in %s for %s %s›' % (d,self.__class__.__name__, self.id, "-" if self.discr is None else Discriminator.q.get_by(id=self.discr).name, unicode(p),unicode(o), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
 		finally:
 			self._rec_str = False
 	__repr__ = __str__
@@ -320,7 +317,7 @@ Email: %s
 
 """ % (unicode(self.parent),self.parent.oid(), \
        unicode(self.owner),self.owner.oid(), \
-	   db.get_by(Discriminator,id=self.discr).name if self.discr is not None else "None",
+	   Discriminator.q.get_by(id=self.discr).name if self.discr is not None else "None",
 	   " ".join(wh) if wh else "-", \
 	   "yes" if self.email else "no")
 

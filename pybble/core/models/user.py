@@ -12,7 +12,7 @@ from __future__ import absolute_import, print_function, division
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
-from flask import current_app,g
+from flask import current_app,g,request
 from flask.ext.security import UserMixin, RoleMixin
 from flask.ext.security.utils import encrypt_password
 
@@ -22,15 +22,15 @@ from sqlalchemy import Integer, Unicode, DateTime, Boolean
 from sqlalchemy.orm import relationship,backref
 from sqlalchemy.orm.exc import NoResultFound
 
+from ... import ANON_USER_NAME
+from ...utils import random_string, AuthError
+from ...core import config
 from ...compat import py2_unicode
 from ..db import Base, Column, db
 from . import DummyUser,Object,ObjectRef, PERM,PERM_NONE
 from .site import DummySite, Site
 from ._descr import D
 
-from pybble.utils import random_string, current_request, AuthError
-
-from pybble.core import config
 import sys
 
 
@@ -154,13 +154,15 @@ class User(ObjectRef):
 	_descr = D.User
 	        
 	username = Column(Unicode(30), nullable=False)
-	first_name = Column(Unicode(50))
-	last_name = Column(Unicode(50))
-	email = Column(Unicode(200))
 	password = Column(Unicode(200), nullable=False)
-	first_login = Column(DateTime, nullable=False)
-	last_login = Column(DateTime)
-	cur_login = Column(DateTime)
+
+	first_name = Column(Unicode(50), nullable=True)
+	last_name = Column(Unicode(50), nullable=True)
+	email = Column(Unicode(200), nullable=True)
+
+	first_login = Column(DateTime, nullable=True)
+	last_login = Column(DateTime, nullable=True)
+	cur_login = Column(DateTime, nullable=True)
 
 	feed_age = Column(Integer, nullable=False, default=10)
 	feed_pass = Column(Unicode(30), nullable=True)
@@ -180,20 +182,23 @@ class User(ObjectRef):
 	def __init__(self, username, password=None):
 		super(User,self).__init__()
 		self.username=username
-		if password is None:
+		if username == ANON_USER_NAME:
+			assert password is None
+			password = ""
+		elif password is None:
 			password = unicode(random_string(9))
 		self.password=password
-		self.first_login = datetime.utcnow()
 		try:
-			db.get_by(User, parent_id=current_request.site.id, username=username)
+			User.q.get_by(parent=request.site, username=username)
 		except (AttributeError,NoResultFound):
 			pass
 		else:
-			raise RuntimeError(u"User '%s' already exists in %s" %
-			(username,current_request.site))
+			raise RuntimeError(u"User '%s' already exists in %s" % (username,request.site))
 
+		db.flush()
+		self.parent = request.site
 		if not self.anon:
-			m = Member(self,current_request.site.anon_user)
+			m = Member(self,request.site.anon_user)
 		db.flush()
 	
 	@property
@@ -206,7 +211,7 @@ class User(ObjectRef):
 
 	@property
 	def anon(self):
-		return self.password == ""
+		return self.username == ANON_USER_NAME
 	@property
 	def name(self):
 		if self.first_name and self.last_name:
@@ -225,7 +230,7 @@ class User(ObjectRef):
 			return # no recursive or similar nonsense, please
 		q = { "owner":self, "discr":obj.discriminator }
 		try:
-			s = db.get_by(Breadcrumb, parent=obj, **q)
+			s = Breadcrumb.q.get_by(parent=obj, **q)
 		except NoResultFound:
 #			for b in db.filter_by(Breadcrumb,**q).order_by(Breadcrumb.visited)[10:]:
 #				db.store.remove(b)
@@ -233,10 +238,10 @@ class User(ObjectRef):
 		else:
 			s.visit()
 			if not s.superparent: # bugfix
-				s.superparent = current_request.site
+				s.superparent = request.site
 	
 	def last_visited(self,cls=None):
-		q = { "owner":self, "superparent":current_request.site }
+		q = { "owner":self, "superparent":request.site }
 		if cls:
 			q["discr"] = cls.cls_discr()
 		try:
@@ -247,16 +252,16 @@ class User(ObjectRef):
 			return r.parent
 	
 	def all_visited(self, cls=None):
-		q = { "owner":self, "superparent":current_request.site }
+		q = { "owner":self, "superparent":request.site }
 		if cls:
 			q["discr"] = cls.cls_discr()
 		return db.filter_by(Breadcrumb, **q).order_by(Desc(Breadcrumb.visited))
 
 	def is_verified(self, site=None):
 		if site is None:
-			site = current_request.site
+			site = request.site
 		try:
-			m = db.get_by(Member,user=self,group=site)
+			m = Member.q.get_by(user=self,group=site)
 		except NoResultFound:
 			return False
 		else:
@@ -264,9 +269,9 @@ class User(ObjectRef):
 
 	def add_verified(self,v,site=None):
 		if site is None:
-			site = current_request.site
+			site = request.site
 		try:
-			m = db.get_by(Member, user_id=self.id,group_id=site.id)
+			m = Member.q.get_by(user_id=self.id,group_id=site.id)
 		except NoResultFound:
 			if v:
 				Member(user=self,group=site)
@@ -308,9 +313,9 @@ class User(ObjectRef):
 	def can_do(user,obj, discr=None, new_discr=None, want=None):
 		"""Recursively get the permission of this user for that (type of) object."""
 
-		ru = getattr(current_request,"user",None)
-		if obj is not current_request.site and \
-		   ru and ru.can_admin(current_request.site, discr=current_request.site.classdiscr):
+		ru = getattr(request,"user",None)
+		if obj is not request.site and \
+		   ru and ru.can_admin(request.site, discr=request.site.classdiscr):
 			if DEBUG_ACCESS:
 				print("ADMIN",obj, file=sys.stderr)
 			return want if want and want < 0 else PERM_ADMIN
@@ -321,7 +326,7 @@ class User(ObjectRef):
 			return want
 
 		if DEBUG_ACCESS:
-			print("PERM", Discriminator.get(discr).name if discr else "-", Discriminator.get(new_discr) if new_discr else "-", (PERM_name(want) if want else "-")+":",obj,"FOR",user,"AT",current_request.site, u"⇒", file=sys.stderr)
+			print("PERM", Discriminator.get(discr).name if discr else "-", Discriminator.get(new_discr) if new_discr else "-", (PERM_name(want) if want else "-")+":",obj,"FOR",user,"AT",request.site, u"⇒", file=sys.stderr)
 
 		pq = []
 		if want is not None:
@@ -457,7 +462,7 @@ class GroupRef(ObjectRef):
 	
 def named_group(owner, name):
 	"""Return the site-specific group with that name."""
-	return db.get_by(Group,name=name, owner=site)
+	return Group.q.get_by(name=name, owner=site)
 
 class Member(ObjectRef):
 	"""\
@@ -546,7 +551,7 @@ class Permission(ObjectRef):
 		if self._rec_str or not o or not p: return super(Permission,self).__str__()
 		try:
 			self._rec_str = False
-			return u'‹%s%s %s: %s can %s %s %s %s %s›' % (d,self.__class__.__name__, self.id, unicode(o),PERM[self.right],db.get_by(Discriminator,id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N", db.get_by(Discriminator,id=self.new_discr).name if self.new_discr is not None else "-")
+			return u'‹%s%s %s: %s can %s %s %s %s %s›' % (d,self.__class__.__name__, self.id, unicode(o),PERM[self.right],Discriminator.q.get_by(id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N", Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-")
 		finally:
 			self._rec_str = False
 	def __repr__(self):
@@ -564,8 +569,8 @@ New Object Type: %s
 Right: %s
 Inherited: %s
 """ % (o, p, \
-		db.get_by(Discriminator,id=self.discr).name, \
-		db.get_by(Discriminator,id=self.new_discr).name if self.new_discr is not None else "-", \
+		Discriminator.q.get_by(id=self.discr).name, \
+		Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-", \
 		self.right, \
 		"*" if self.inherit is None else "Y" if self.inherit else "N")
 

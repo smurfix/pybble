@@ -59,7 +59,7 @@ class VerifierBase(Base):
 	def register(name, cls):
 		name = unicode(name)
 		try:
-			v = db.get_by(VerifierBase,name=name)
+			v = VerifierBase.q.get_by(name=name)
 		except NoResultFound:
 			v=VerifierBase(name=name, cls=cls)
 			db.store.add(v)
@@ -88,7 +88,7 @@ class Verifier(ObjectRef):
 	def __init__(self,base, obj, user=None, code=None, days=None):
 		super(Verifier,self).__init__()
 		if isinstance(base, basestring):
-			base = db.get_by(VerifierBase,name=unicode(base))
+			base = VerifierBase.q.get_by(name=unicode(base))
 		self.base = base
 		self.parent = obj
 		self.owner = user or obj

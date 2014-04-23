@@ -31,4 +31,5 @@ if True:
 ## There should be only one.
 ROOT_SITE_NAME = '_root'
 ROOT_USER_NAME = 'root'
+ANON_USER_NAME = ''
 

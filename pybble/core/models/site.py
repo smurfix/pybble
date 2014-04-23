@@ -19,10 +19,10 @@ from sqlalchemy.orm import relationship,backref
 from sqlalchemy.orm.exc import NoResultFound
 
 from werkzeug import import_string
+from flask import request
 
-from ... import ROOT_SITE_NAME
+from ... import ROOT_SITE_NAME,ANON_USER_NAME
 from ...compat import py2_unicode
-from ...utils import current_request
 from .. import config
 from ..db import Base, Column, db
 from . import DummyObject,Object, ObjectRef, TM_DETAIL_PAGE
@@ -36,7 +36,7 @@ class DummySite(DummyObject):
 		self.domain=unicode(domain)
 		self.name=name
 		try:
-			self.parent = db.get_by(Site,domain=u"")
+			self.parent = Site.q.get_by(domain=u"")
 		except NoResultFound:
 			pass
 		else:
@@ -117,22 +117,23 @@ class Site(ObjectRef):
 		if name == ROOT_SITE_NAME:
 			s = None
 		else:
-			s = Site.get_by(name=ROOT_SITE_NAME)
+			s = Site.q.get_by(name=ROOT_SITE_NAME)
 			self.parent = s
 
 		try:
-			self.owner = current_request.user
+			self.owner = request.user
 		except (AttributeError,RuntimeError):
 			self.owner = None if s is None else s.owner
 
 	@property
 	def anon_user(self):
+		from .user import User
 		while True:
 			try:
-				return db.get_by(User, superparent_id=self.id, username=u"", password=u"")
+				return User.q.get_by(parent=self, username=ANON_USER_NAME)
 			except NoResultFound:
-				if site.parent:
-					site = site.parent
+				if self.parent:
+					self = self.parent
 				else:
 					raise
 

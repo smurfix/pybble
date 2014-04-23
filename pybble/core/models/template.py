@@ -64,7 +64,7 @@ class TemplateMatch(ObjectRef):
 		try:
 			self._rec_str = True
 		finally:
-			return u'‹%s%s %s: %s %s %s %s›' % (d,self.__class__.__name__, self.id, TM_DETAIL[self.detail],db.get_by(Discriminator, id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
+			return u'‹%s%s %s: %s %s %s %s›' % (d,self.__class__.__name__, self.id, TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
 			self._rec_str = False
 	def __repr__(self):
 		if not self.parent: return "'"+super(TemplateMatch,self).__repr__()+"'"

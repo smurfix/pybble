@@ -21,7 +21,7 @@ from pybble.compat import py2_unicode
 
 from ..db import Base, Column
 
-from pybble.utils import current_request
+from flask import request
 
 from pybble.core import config
 import os
@@ -44,7 +44,7 @@ class Storage(ObjectRef):
 		self.name = unicode(name)
 		self.path = unicode(path)
 		self.url = unicode(url)
-		self.superparent = current_request.site
+		self.superparent = request.site
 		try: os.makedirs(path)
 		except OSError: pass
 

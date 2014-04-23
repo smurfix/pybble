@@ -17,6 +17,7 @@ import sys
 import logging
 
 from sqlalchemy.orm.exc import NoResultFound
+from flask import request
 
 from ..utils import random_string
 from ..core.db import db
@@ -50,7 +51,7 @@ class PopulateCommand(Command):
 		from ..core.models.user import User
 		from ..core.models.types import MIMEtype
 		from ..core.models.config import ConfigVar
-		from .. import ROOT_SITE_NAME,ROOT_USER_NAME
+		from .. import ROOT_SITE_NAME,ROOT_USER_NAME, ANON_USER_NAME
 
 		count = added = updated = 0
 
@@ -83,14 +84,32 @@ class PopulateCommand(Command):
 		else:
 			logger.debug("The root site exists. Good.")
 		db.commit()
+		request.site = root
+
+		## anon user
+		try:
+			anon = User.q.get_by(parent=root, username=ANON_USER_NAME)
+		except NoResultFound:
+			anon = User(ANON_USER_NAME)
+			logger.debug("The anon user has been created.")
+		else:
+			logger.debug("The anon user exists. Good.")
+		db.commit()
 
 		## main user
 		superuser = root.owner
 		if superuser is None:
-			password = random_string()
-			superuser = User(ROOT_USER_NAME,password)
+			try:
+				superuser = User.q.get_by(username=ROOT_USER_NAME, parent=root)
+			except NoResultFound:
+				password = random_string()
+				superuser = User(ROOT_USER_NAME,password)
+				db.commit()
+				logger.info(u"The root user has been created. Password: ‘{}’.".format(password))
+			else:
+				logger.warning(u"The root user has been associated. This is strange.")
 			root.owner = superuser
-			logger.info(u"The root user has been created. Password: ‘{}’.".format(password))
+			db.flush()
 		elif superuser.username != ROOT_USER_NAME:
 			logger.warn(u"The root site's owner is ‘{}’, not ‘{}’".format(superuser.username,ROOT_USER_NAME))
 		else:
