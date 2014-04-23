@@ -421,7 +421,7 @@ class FKey(object):
 				return None
 			else:
 				r=""
-				r += "DROP CONSTRAINT `%s`,\n    " % (ok.name,)
+				r += "DROP FOREIGN KEY `%s`,\n    " % (ok.name,)
 				r += "ADD"
 
 		else:
