@@ -15,6 +15,7 @@ from __future__ import absolute_import, print_function, division
 
 ## first thing, for monkeypatching
 import pybble
+from pybble.core.utils import init_logging
 
 import logging
 
@@ -28,4 +29,5 @@ from pybble.manager.main import RootManager
 manager = RootManager()
 
 if __name__ == '__main__':
+	init_logging()
 	manager.run()
