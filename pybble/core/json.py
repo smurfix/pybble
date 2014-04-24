@@ -10,10 +10,23 @@ from . import config
 from .utils import attrdict, TZ,UTC, format_dt
 import datetime as dt
 
-type2cls = {}
+class _NotGiven(object): pass
+class SupD(dict):
+	def get(self,k,default=_NotGiven):
+		if hasattr(k,"__mro__"):
+			for x in k.__mro__:
+				try:
+					return self.__getitem__(x.__module__+"."+x.__name__)
+				except KeyError:
+					pass
+		if default is _NotGiven:
+			raise KeyError(k)
+		return default
+
+type2cls = SupD()
 name2cls = {}
 def register_object(cls):
-	type2cls[cls.cls.__name__] = cls
+	type2cls[cls.cls.__module__+"."+cls.cls.__name__] = cls
 	name2cls[cls.clsname] = cls
 	return cls
 
@@ -92,7 +105,7 @@ class Encoder(JSONEncoder):
 			encoding='utf-8')
 
 	def default(self, data):
-		obj = type2cls.get(data.__class__.__name__,None)
+		obj = type2cls.get(data.__class__,None)
 		if obj is not None:
 			data = obj.encode(data)
 			data["_o"] = obj.clsname
