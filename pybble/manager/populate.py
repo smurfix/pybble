@@ -56,15 +56,18 @@ class PopulateCommand(Command):
 		for id,name in D.items():
 			count += 1
 			doc = D._doc.get(id,None)
+			path = "pybble.core.models."+name
+			name = name.rsplit(".")[-1]
 			try:
 				d = Discriminator.q.get_by(id=id)
 			except NoResultFound:
-				d = Discriminator(id=id,name=name, display_name=name, infotext=doc)
+				d = Discriminator(id=id,name=name, path=path, doc=doc)
 				db.add(d)
 				added += 1
 			else:
-				if (doc and (d.infotext is None or d.infotext != doc)) or force:
-					d.infotext = doc
+				d.path = path
+				if (doc and (d.doc is None or d.doc != doc)) or force:
+					d.doc = doc
 					updated += 1
 		db.commit()
 		if count == added:
