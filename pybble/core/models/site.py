@@ -49,36 +49,39 @@ class DummySite(DummyObject):
 			raise NoResultFound
 		return self.parent.get_template(detail)
 
+class Loadable(object):
+	path = Column(Unicode(100), nullable=False, doc="Python object name")
+	_module = None
+
+	@property
+	def mod(self):
+		"""Load the module"""
+		if self._module is None:
+			self._module = import_string(self.path)
+		return self._module
+
 @py2_unicode
-class App(ObjectRef):
+class App(Loadable,ObjectRef):
 	"""An App known to pybble."""
 	## Part of the object system so that it can be access-controlled if necessary.
 	__tablename__ = "apps"
 	_descr = D.App
-	_module = None
 
-	path = Column(Unicode(1000), nullable=False)
-	name = Column(Unicode(30), nullable=False)
-	doc = Column(Unicode(1000), nullable=True)
+	name = Column(Unicode(30), nullable=False, doc="Human-readable short name")
+	doc = Column(Unicode(1000), nullable=True, doc="Docstring")
 
 	def __str__(self):
 		return u"‹App ‚%s‘ @ %s›" % (self.name, self.path)
 	__repr__ = __str__
 
-	def load(self):
-		"""Load the app's module"""
-		if self._module is None:
-			self._module = import_string(self.name)
-		return self._module
 
 @py2_unicode
-class Blueprint(ObjectRef):
+class Blueprint(Loadable,ObjectRef):
 	"""A Flask blueprint known to pybble. Usually a child of the master site"""
 	## Part of the object system so that it can be access-controlled if necessary.
 	__tablename__ = "blueprints"
 	_descr = D.Blueprint
 
-	path = Column(Unicode(1000), nullable=False)
 	name = Column(Unicode(30), nullable=False)
 	doc = Column(Unicode(1000), nullable=True)
 
@@ -102,10 +105,15 @@ class Site(ObjectRef):
 	superuser = Object._alias("parent")
 	app = Object._alias("superparent")
 
-	## NOT YET WORKING
+	## XXX convert to relationship
 	@property
 	def storages(self):
 		return self.all_children("Storage")
+
+	## XXX convert to relationship
+	@property
+	def blueprints(self):
+		return self.all_children("SiteBlueprint")
 
 	def __init__(self,domain,name=None):
 		super(Site,self).__init__()

@@ -16,7 +16,6 @@ import os
 import sys
 import logging
 from time import time
-from importlib import import_module
 
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -27,6 +26,7 @@ from flask.ext.script import Server
 
 from hamlish_jinja import HamlishExtension
 from jinja2 import Template,ChoiceLoader,PackageLoader
+from werkzeug import import_string
 
 from .. import ROOT_SITE_NAME
 from ..core.db import db

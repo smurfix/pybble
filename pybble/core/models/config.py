@@ -27,7 +27,7 @@ from ..db import db
 
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, DateTime, Boolean
+from sqlalchemy import Integer, Unicode, DateTime, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship,backref
 from sqlalchemy.types import TypeDecorator, VARCHAR
 from sqlalchemy.orm.exc import NoResultFound
@@ -151,10 +151,11 @@ class ConfigVar(ObjectRef, JsonValue):
 	"""Describes one configuration variable."""
 	_descr = D.ConfigVar
 
-	# Parent: the object this setting is mainly applied to
+	# Parent: the object this setting is known at
 
-	name = Column(Unicode(30), unique=True)
+	name = Column(Unicode(30), index=True)
 	info = Column(Unicode(100))
+	# TODO: make sure that (name,parent_id) is unique
 
 	@staticmethod
 	def get(name):

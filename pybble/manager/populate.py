@@ -33,18 +33,15 @@ content_types = [
 	('text','html+haml','haml','HAML template',"HTML template (HAML syntax)"),
 ]
 class PopulateCommand(Command):
-#	def __init__(self):
-#		super(PopulateCommand,self).__init__()
-#		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
-#		self.add_option(Option("name", nargs='?', action="store",help="The blueprint's internal name"))
-#		self.add_option(Option("bp", nargs='?', action="store",help="The Pybble blueprint to install"))
-#		self.add_option(Option("path", nargs='?', action="store",help="The path prefix to attach it to"))
+	def __init__(self):
+		super(PopulateCommand,self).__init__()
+		self.add_option(Option("-f","--force", dest="force",action="store_true",help="Override all database changes"))
 
-	def __call__(self,app):
+	def __call__(self,app, force=False):
 		with app.test_request_context('/'):
-			self.main()
+			self.main(force)
 
-	def main(self):
+	def main(self, force=False):
 		from ..core.models import Discriminator
 		from ..core.models._descr import D
 		from ..core.models.site import Site
@@ -66,7 +63,7 @@ class PopulateCommand(Command):
 				db.add(d)
 				added += 1
 			else:
-				if doc and (d.infotext is None or d.infotext != doc):
+				if (doc and (d.infotext is None or d.infotext != doc)) or force:
 					d.infotext = doc
 					updated += 1
 		db.commit()
@@ -82,7 +79,15 @@ class PopulateCommand(Command):
 			root = Site(domain="localhost", name=ROOT_SITE_NAME)
 			logger.debug("The root site has been created.")
 		else:
-			logger.debug("The root site exists. Good.")
+			if root.parent is not None:
+				if force:
+					root.parent = None
+					logger.warning("The root site is not actually root. This has been corrected.")
+				else:
+					logger.error("The root site is not actually root. This is a problem.")
+
+			else:
+				logger.debug("The root site exists. Good.")
 		db.commit()
 		request.site = root
 
@@ -98,7 +103,7 @@ class PopulateCommand(Command):
 
 		## main user
 		superuser = root.owner
-		if superuser is None:
+		if superuser is None or force:
 			try:
 				superuser = User.q.get_by(username=ROOT_USER_NAME, parent=root)
 			except NoResultFound:
@@ -117,6 +122,7 @@ class PopulateCommand(Command):
 		db.commit()
 
 		## MIME types
+		added=0
 		for type,subtype,ext,name,doc in content_types:
 			try:
 				mt = MIMEtype.q.get_by(typ=type,subtyp=subtype)
@@ -124,19 +130,95 @@ class PopulateCommand(Command):
 				mt = MIMEtype(typ=type, subtyp=subtype, ext=ext, name=name, doc=doc)
 				db.add(mt)
 				logger.info("MIME type '%s/%s' (%s) created." % (type,subtype,name))
+				added += 1
+			else:
+				if mt.doc is None or force:
+					mt.doc = doc
+		if not added:
+			logger.debug("No new MIME types necessary.")
 		db.commit()
 		
-		## default variables
-		from pybble.manager import default_settings as DS
-		for k,v in DS.__dict__.items():
-			if k != k.upper(): continue
-			try:
-				cf = ConfigVar.q.get_by(name=k)
-			except NoResultFound:
-				cf = ConfigVar(parent=root, name=k, value=v)
-				db.flush()
+		def add_vars(gen,parent):
+			"""Add variables. The generator yields (name,value,docstring) triples."""
+			
+			added=[]
+			for k,v,d in gen:
+				try:
+					cf = ConfigVar.q.get_by(name=k, parent=parent)
+				except NoResultFound:
+					cf = ConfigVar(parent=parent, name=k, value=v, info=d)
+					db.flush()
+					added.append(k)
+				else:
+					if not cf.info or force:
+						cf.info = d
+			if added:
+				logger.info("New variables for {}: ".format(name)+",".join(added))
+			else:
+				logger.debug("No new variables for {} necessary.".format(name))
+			db.commit()
 
-			if not cf.info:
-				cf.info = getattr(DS,'d_'+k,None)
-		db.commit()
+		## default variables
+		def gen_vars():
+			from pybble.manager import default_settings as DS
+			for k,v in DS.__dict__.items():
+				if k != k.upper(): continue
+				yield k,v,getattr(DS,'d_'+k,None)
+		add_vars(root,gen_vars())
+
+		## known … whatever
+		def loadables(lister,Obj,path):
+			added=changed=found=0
+			for name in lister():
+				found += 1
+				is_new = False
+				try:
+					obj = Obj.q.get_by(name=name)
+				except NoResultFound:
+					obj = Obj(name=name, path="{}.{}.{}".format(path,name,Obj.__name__))
+					is_new = True
+				db.flush()
+				try:
+					a = obj.mod
+				except Exception as e:
+					logger.warn("{} ‘{}’ ({}) is not usable: {}".format(Obj.__name__,name,obj.path,str(e)))
+					if is_new:
+						db.delete(obj)
+				else:
+					if obj.doc is None or force:
+						try:
+							obj.doc = a.__doc__
+						except AttributeError:
+							pass
+			if not found:
+				logger.warn("{}: None found".format(Obj.__name__))
+			elif not changed and not added:
+				logger.debug("{}: {} found, No changes".format(Obj.__name__,found))
+			else:
+				logger.info("{}: {} new, {} updated".format(Obj.__name__,added,changed))
+			db.commit()
+
+		from ..app import list_apps
+		from ..blueprint import list_blueprints
+		from ..core.models.site import App,Blueprint,SiteBlueprint
+		loadables(list_apps,App,"pybble.app")
+		loadables(list_blueprints,Blueprint,"pybble.blueprint")
+
+		rapp = App.q.get_by(name="_root")
+		if root.app is None or force:
+			if root.app is not rapp:
+				root.app = rapp
+				logger.debug("Root site's app set.")
+				db.commit()
+
+		try:
+			root_bp = Blueprint.q.get_by(name="_root")
+		except NoResultFound:
+			logger.error("The ‘_root’ blueprint is not present. Setup is incomplete!")
+		else:
+			try:
+				rbp = SiteBlueprint.q.get_by(site=root,blueprint=root_bp,path="/")
+			except NoResultFound:
+				rbp = SiteBlueprint(site=root,blueprint=root_bp,path="/")
+				logger.debug("Root site's blueprint created.")
 
