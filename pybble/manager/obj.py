@@ -16,9 +16,11 @@ import os
 import sys
 import logging
 
-from . import Manager,Command,Option
 from ..core.db import db
-from ..core.models import Object
+from ..core.models import Object, Discriminator
+from ..core.json import encode,decode
+from . import Manager,Command,Option
+from .descr import ListDis
 
 class AddObject(Command):
 	"""Add an object type"""
@@ -35,7 +37,7 @@ class AddObject(Command):
 		create_Object(type=type, name=name, doc=doc)
 		
 class DropObject(Command):
-	"""Remove a Object type"""
+	"""Remove an Object type"""
 	def __init__(self):
 		super(DropObject,self).__init__()
 		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
@@ -47,26 +49,37 @@ class DropObject(Command):
 		drop_Object(name)
 		
 class ListObject(Command):
-	"""List known Object types"""
+	"""List an object, or known objects of a type"""
 	def __init__(self):
 		super(ListObject,self).__init__()
 		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
-		self.add_option(Option("oid", nargs='?', action="store",help="The Object type's name"))
-	def __call__(self,app, help=False,name=None):
+		self.add_option(Option("-d","--dump", dest="dump",action="store_true",help="Dump a complete object"))
+		self.add_option(Option("typ", nargs='?', action="store",help="The object type"))
+		self.add_option(Option("oid", nargs='?', action="store",help="The Object ID"))
+		self.add_option(Option("var", nargs='?', action="store",help="The Object's variable"))
+	def __call__(self,app, help=False,typ=None,oid=None,var=None, dump=False):
 		if help:
 			self.parser.print_help()
 			sys.exit(not help)
-		if name is not None:
-			## grab database fields from named object class
-			## list them
-			import pdb;pdb.set_trace()
+		if typ is None:
+			ListDis()(app,dump)
 			return
-		## grab non-abstract polymorphics from Object
-		## list them
-		import pdb;pdb.set_trace()
-		super(ListObject,self).__init__()
-		for ct in Object.objects(**filter):
-			print(ct.type,ct.name,ct.doc)
+		typ = Discriminator.get(typ).mod
+		if oid is None:
+			## list them all
+			for obj in typ.q.all():
+				if dump:
+					print(encode(obj._dump()))
+				else:
+					print(str(obj))
+			return
+		obj = typ.q.get_by(id=oid)
+		if var is not None:
+			obj = getatr(obj,var)
+		if dump:
+			print(encode(obj._dump()))
+		else:
+			print(str(obj))
 		
 class ObjectManager(Manager):
 	"""Object types Pybble knows about"""
