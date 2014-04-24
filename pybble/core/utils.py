@@ -76,29 +76,9 @@ class attrdict(dict):
 			super(attrdict,self).__setattr__(a,b)
 		else:
 			self[a]=b
-	def __setitem__(self,a,b):
-		if a in self:
-			raise DupKeyError(a)
-		super(attrdict,self).__setitem__(a,b)
 	def __delattr__(self,a):
 		del self[a]
 	
-	def grab(self,k):
-		v = self.get(k,None)
-		if v is None:
-			return None
-		assert k not in self._done
-		self._done.add(k)
-		return v
-
-	def open_keys(self):
-		for k in self.keys():
-			if k not in self._done:
-				yield k
-	
-	def _set(self,k,v):
-		super(attrdict,self).__setitem__(k,v)
-
 class Main(object):
 	_plinker = None
 	_sigINT = None

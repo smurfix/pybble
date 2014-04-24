@@ -41,7 +41,7 @@ class SchemaCommand(Command):
 		Base.metadata.create_all(dump_engine)
 
 	def dump_current(self, dest=sys.stdout):
-		engine = db_engine(uri=config.mysql_admin_uri)
+		engine = db_engine()
 		for k in Base.metadata.tables.keys():
 			try:
 				r = engine.execute("show create table `{}`".format(k))
@@ -90,7 +90,7 @@ Else, use SQLAlchemy directly (which does not catch all differences).
 			run_diff(opt,())
 
 		elif exe:
-			engine = db_engine(uri=config.mysql_admin_uri, echo=True)
+			engine = db_engine(echo=True)
 			Base.metadata.create_all(engine)
 		else:
 			self.dump_intended()

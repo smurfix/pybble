@@ -49,25 +49,28 @@ class WrapperApp(object):
 
 		self.read_config(test)
 
-	def make_config(self, testing=None):
-		if self.config is not None:
-			return self.config
+	def make_config(self, instance_relative=None):
+		"""called by Flask"""
+		return self.read_config()
+
+	def read_config(self, testing=None):
+		if self.site is None:
+			from pybble.core import config
+			return config
+			
 		cfg = self.site.config
 
 		# override with ext_config settings, no matter what
-		cfg.disarm()
-		if testing is None:
-			testing = self.testing
-		if not testing:
-			cfg.from_object("local_settings")
-		else:
-			cfg.from_object("pybble.test_settings")
-		cfg.arm()
+		cfg._disarm()
+		from pybble.core import config
+		for k,v in config.items():
+			cfg.setdefault(k,v)
+		if testing is not None:
+			assert testing == cfg['TEST']
+
+		cfg._arm()
 		return cfg
 
-	def read_config(self, testing=None):
-		self.config = None # force re-read
-		self.config = self.make_config(testing)
 
 class BaseApp(WrapperApp,Flask):
 	"""Pybble's basic WSGI application"""
@@ -76,14 +79,16 @@ class BaseApp(WrapperApp,Flask):
 	def __init__(self, site, test=False, **kw):
 		WrapperApp.__init__(self, site, test=test)
 
-		template_folder = self.config.get("TEMPLATE_ROOT",None)
+		template_folder = getattr(self.config,"TEMPLATE_ROOT",None)
 		if template_folder is None:
 			template_folder = os.path.join(os.getcwd(),'templates')
-		static_folder = self.config.get("STATIC_ROOT",None)
+		static_folder = getattr(self.config,"STATIC_ROOT",None)
 		if static_folder is None:
 			static_folder = os.path.join(os.getcwd(),'pybble','static')
 
 		Flask.__init__(self, site.name, template_folder=template_folder, static_folder=static_folder, **kw)
+		if test is not None:
+			assert test == self.config.TEST
 		self.wsgi_app = CustomProxyFix(self.wsgi_app)
 		register_changed(self)
 
@@ -179,12 +184,14 @@ class CustomProxyFix(object):
 # global default config
 cfg_app = None
 
-class _fake_app(Flask):
+class _fake_app(WrapperApp,Flask):
 	"""
 	This class is only used to load the configuration
 	and for initial database access
 	"""
-	pass
+	def __init__(self,*a,**k):
+		WrapperApp.__init__(self,None)
+		Flask.__init__(self,*a,**k)
 
 def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, test=False):
 	"""\
@@ -195,11 +202,10 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, test=Fa
 
 		:param site: The site name. The default is '_root'; there may be
 					more than one one root site
-		:param config: A configuration file to load. Default is
-					`local_settings` in production or `pybble.settings`
-					in test mode.
-		:param init: A flag to initialize a root.
-					Non-roots are created by explicit command.
+		:param config: A configuration file to load. Default: the PYBBLE
+		            environment variable.
+		:param test: Required to be identical to config.TESTING.
+		:param verbose: Turn on logging.
 		"""
 
 	global cfg_app
@@ -208,18 +214,12 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, test=Fa
 
 	if cfg_app is None:
 		cfg_app = _fake_app(os.path.abspath(os.curdir))
-		ext_config = cfg_app.config
-
 		if config:
-			ext_config.from_object(config)
-		else:
-			ext_config.from_object("pybble.core.config")
+			os.environ['PYBBLE'] = config
+		from pybble.core import config as cfg
+		cfg_app.config = cfg
 
-			envvar = "PYBBLE_SETTINGS" if not test else "PYBBLE_TEST_SETTINGS"
-			if envvar in os.environ:
-				ext_config.from_envvar(envvar)
-
-		assert test == ext_config.get('TESTING',False)
+		assert test == cfg.get('TESTING',False)
 	
 	with cfg_app.test_request_context('/'):
 		if site is None:
@@ -239,7 +239,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, test=Fa
 		if site is None or site.app is None:
 			app = cfg_app
 		else:
-			app = site.app.load().App(site, test=test)
+			app = site.app.mod(site, test=test)
 
 		if verbose:
 			logging.basicConfig(

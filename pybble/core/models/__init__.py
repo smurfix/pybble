@@ -242,11 +242,11 @@ class Object(Base):
 
 	def _all_X(self,attr, discr=None, want=PERM_LIST):
 		"""Return all sub-objects of a specific type and permission level"""
-		res = Object.q.filter(**{attr:self})
+		res = Object.q.filter_by(**{attr:self})
 		if discr:
 			discr = Discriminator.num(discr)
-			res = res.filter(discriminator=discr)
-		for o in db.store.find(BaseObject, And(*q)):
+			res = res.filter_by(discriminator=discr)
+		for o in res:
 			if want is None or request.user.can_do(o, discr=discr, want=want):
 				yield o
 	def all_children(self, discr=None, want=PERM_LIST):

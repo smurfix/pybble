@@ -134,6 +134,11 @@ class Site(ObjectRef):
 			self.owner = None if s is None else s.owner
 
 	@property
+	def config(self):
+		from .config import ConfigDict
+		return ConfigDict(self)
+
+	@property
 	def anon_user(self):
 		from .user import User
 		while True:

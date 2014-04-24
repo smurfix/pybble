@@ -13,7 +13,6 @@ from __future__ import absolute_import, print_function, division
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
-from .. import json
 import logging
 import datetime
 import random
@@ -23,7 +22,12 @@ from blinker import NamedSignal
 from flask import url_for, current_app, g
 from flask.config import Config
 
-from ..db import db
+from ...compat import py2_unicode
+from .. import json, config
+from ..utils import attrdict
+from ..db import db, Base, Column
+from . import ObjectRef
+from ._descr import D
 
 from datetime import datetime,timedelta
 
@@ -31,15 +35,6 @@ from sqlalchemy import Integer, Unicode, DateTime, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship,backref
 from sqlalchemy.types import TypeDecorator, VARCHAR
 from sqlalchemy.orm.exc import NoResultFound
-
-from pybble.compat import py2_unicode
-
-from ..db import Base, Column
-
-from pybble.core import config
-
-from . import ObjectRef
-from ._descr import D
 
 #from flask.ext.misaka import markdown
 #
@@ -64,13 +59,15 @@ def register_changed(app):
 	sig = _config_changed_sig(app.site.name)
 	sig.connect(app.read_config)
 
-class ConfigDict(Config):
-	def __init__(self,site=None):
+class ConfigDict(Config,attrdict):
+	_parent = None
+	_set_db = False
+	def __init__(self,parent=None):
 		self.root_path = os.curdir
-		self.site = site
-		self.set_db = bool(site)
+		self._parent = parent
+		self._set_db = bool(parent)
 		
-		s = site
+		s = parent
 		while s:
 			for v in SiteConfigVar.q.filter_by(site=s):
 				self.setdefault(v.var.name, v.value)
@@ -83,21 +80,25 @@ class ConfigDict(Config):
 			self.setdefault(v.name, v.value)
 
 	def __setitem__(self,k,v):
-		try:
-			cfv = ConfigVar.q.get(k)
-		except NoResultFound:
-			if self.set_db:
-				raise NoResultFound(k)
-			cfv = None
-		if self.set_db:
-			assert self.site
-			cf = SiteConfigVar(site=self.site, var=cfv, value=v)
+		s = self._parent
+		cfv = None
+		while s:
 			try:
-				cf.save()
-			except NotUniqueError:
-				cf = SiteConfigVar.q.get(site=self.site, var=cfv)
+				cfv = ConfigVar.q.get_by(name=k,parent=self._parent)
+			except NoResultFound:
+				s = s.parent
+			else:
+				break
+		if not cfv and self._set_db:
+			raise NoResultFound(k)
+		if self._set_db:
+			assert self._parent
+			try:
+				cf = SiteConfigVar.q.get_by(parent=self._parent, var=cfv)
+			except NoResultFound:
+				cf = SiteConfigVar(parent=self._parent, var=cfv, value=v)
+			else:
 				cf.value=v
-				cf.save()
 		super(ConfigDict,self).__setitem__(k,v)
 
 	def __delitem__(self,k):
@@ -106,10 +107,10 @@ class ConfigDict(Config):
 		except NoResultFound:
 			# can't delete values that are only read from settings
 			raise NoResultFound(k)
-		if self.set_db:
+		if self._set_db:
 			assert self.site
 			try:
-				cf = SiteConfigVar.objects.get(site=self.site, var=cfv)
+				cf = SiteConfigVar.objects.get_by(site=self.site, var=cfv)
 			except NoResultFound:
 				pass
 			else:
@@ -119,13 +120,13 @@ class ConfigDict(Config):
 			super(ConfigDict,self).__setitem__(k,self.site.parent.config[k])
 		else:
 			super(ConfigDict,self).__setitem__(k,cfv.default)
-		if self.set_db and self.site is not None:
+		if self._set_db and self.site is not None:
 			self.site.config_changed()
 	
-	def disarm(self):
-		self.set_db = False
-	def arm(self):
-		self.set_db = True
+	def _disarm(self):
+		self._set_db = False
+	def _arm(self):
+		self._set_db = True
 
 
 class JSON(TypeDecorator):
@@ -160,7 +161,7 @@ class ConfigVar(ObjectRef, JsonValue):
 	@staticmethod
 	def get(name):
 		try:
-			return ConfigVar.q.get(name=name)
+			return ConfigVar.q.get_by(name=name)
 		except NoResultFound:
 			raise NoResultFound("ConfigVar:"+name)
 
@@ -179,19 +180,18 @@ class ConfigVar(ObjectRef, JsonValue):
 
 @py2_unicode
 class SiteConfigVar(ObjectRef, JsonValue):
-	"""This is one configuration variable's value for a site."""
+	"""This is one configuration variable's value for a site (or some other object, in fact)."""
 	_descr = D.SiteConfigVar
 
-	site = ObjectRef._alias('parent')
 	var = ObjectRef._alias('superparent')
 	# Owner: the user who last set the variable
 
 	def __str__(self):
-		if self.var is None or self.site is None:
+		if self.var is None or self.parent is None:
 			return super(SiteConfigVar).__str__()
-		return u"‹%s: %s=%s @%s›" % (self.__class__.__name__,self.var.name,repr(self.value),self.site.name)
+		return u"‹%s: %s=%s @%s›" % (self.__class__.__name__,self.var.name,repr(self.value),self.parent.name)
 	def __repr__(self):
-		if self.var is None or self.site is None:
+		if self.var is None or self.parent is None:
 			return super(SiteConfigVar).__repr__()
-		return "%s:%s=%s@%s" % (self.__class__.__name__,self.var.name,repr(self.value),self.site.name)
+		return "%s:%s=%s@%s" % (self.__class__.__name__,self.var.name,repr(self.value),self.parent.name)
 

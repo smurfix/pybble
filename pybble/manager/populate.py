@@ -164,7 +164,7 @@ class PopulateCommand(Command):
 			for k,v in DS.__dict__.items():
 				if k != k.upper(): continue
 				yield k,v,getattr(DS,'d_'+k,None)
-		add_vars(root,gen_vars())
+		add_vars(gen_vars(),root)
 
 		## known … whatever
 		def loadables(lister,Obj,path):
