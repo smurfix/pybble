@@ -60,14 +60,24 @@ for _x,_y in PERM.items():
 def PERM_name(id):
 	return PERM[int(id)]
 
+class Loadable(object):
+	path = Column(Unicode(100), nullable=False, doc="Python object name")
+	_module = None
+
+	@property
+	def mod(self):
+		"""Load the module"""
+		if self._module is None:
+			self._module = import_string(self.path)
+		return self._module
+
 @py2_unicode
-class Discriminator(Base):
+class Discriminator(Loadable, Base):
 	"""Discriminator for Object"""
 	__tablename__ = "discriminator"
 
 	name = Column(Unicode(30), nullable=False)
-	display_name = Column(Unicode(100), nullable=True)
-	infotext = Column(Unicode(250), nullable=True)
+	doc = Column(Unicode(250), nullable=True)
 
 	def __str__(self):
 		return u'‹D:%s=%s›' % (d,self.__class__.__name__, self.id, self.name)

@@ -25,7 +25,7 @@ from ... import ROOT_SITE_NAME,ANON_USER_NAME
 from ...compat import py2_unicode
 from .. import config
 from ..db import Base, Column, db
-from . import DummyObject,Object, ObjectRef, TM_DETAIL_PAGE
+from . import DummyObject,Object, ObjectRef, TM_DETAIL_PAGE, Loadable
 from ._descr import D
 
 class DummySite(DummyObject):
@@ -48,17 +48,6 @@ class DummySite(DummyObject):
 		if not self.parent:
 			raise NoResultFound
 		return self.parent.get_template(detail)
-
-class Loadable(object):
-	path = Column(Unicode(100), nullable=False, doc="Python object name")
-	_module = None
-
-	@property
-	def mod(self):
-		"""Load the module"""
-		if self._module is None:
-			self._module = import_string(self.path)
-		return self._module
 
 @py2_unicode
 class App(Loadable,ObjectRef):
