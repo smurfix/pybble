@@ -60,7 +60,7 @@ class App(Loadable,ObjectRef):
 	doc = Column(Unicode(1000), nullable=True, doc="Docstring")
 
 	def __str__(self):
-		return u"‹App ‚%s‘ @ %s›" % (self.name, self.path)
+		return u"‹App %d:‚%s‘ @ %s›" % (self.id, self.name, self.path)
 	__repr__ = __str__
 
 
@@ -75,7 +75,7 @@ class Blueprint(Loadable,ObjectRef):
 	doc = Column(Unicode(1000), nullable=True)
 
 	def __str__(self):
-		return u"‹Blueprint ‚%s‘ @ %s›" % (self.name, self.path)
+		return u"‹Blueprint %d:‚%s‘ @ %s›" % (self.id, self.name, self.path)
 	__repr__ = __str__
 
 @py2_unicode
@@ -141,7 +141,7 @@ class Site(ObjectRef):
 
 		
 	def __str__(self):
-		return u"‹Site ‚%s‘ @ %s›" % (self.name, self.domain)
+		return u"‹Site %d:‚%s‘ @ %s›" % (self.id, self.name, self.domain)
 	__repr__ = __str__
 
 	@property
