@@ -80,7 +80,7 @@ class Discriminator(Loadable, Base):
 	doc = Column(Unicode(250), nullable=True)
 
 	def __str__(self):
-		return u'‹D:%s=%s›' % (d,self.__class__.__name__, self.id, self.name)
+		return u'‹D:%s=%s›' % (self.id, self.name)
 	__repr__ = __str__
 
 	
