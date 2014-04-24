@@ -17,6 +17,7 @@ from datetime import datetime,timedelta
 from sqlalchemy import Integer, Unicode, ForeignKey
 from sqlalchemy import event
 from sqlalchemy.orm import relationship,backref
+from sqlalchemy.inspection import inspect
 
 from ...compat import py2_unicode
 from ..json import register_object
@@ -71,8 +72,25 @@ class Loadable(object):
 			self._module = import_string(self.path)
 		return self._module
 
+class Dumpable(object):
+	def _dump(self, add_none=False, cols=()):
+		i = inspect(self)
+		res = {}
+		for k,v in i.dict.items():
+			if k.startswith('_'):
+				continue
+			if k.endswith('_id'):
+				k = k[:-3]
+				if k in res:
+					continue
+				v = getattr(self,k)
+			if add_none or v is not None:
+				res[k] = v
+
+		return res
+
 @py2_unicode
-class Discriminator(Loadable, Base):
+class Discriminator(Loadable, Dumpable, Base):
 	"""Discriminator for Object"""
 	__tablename__ = "discriminator"
 
@@ -195,7 +213,7 @@ class DummyUser(DummyObject):
 	def oid(self): return "DummyUser"
 
 @py2_unicode
-class Object(Base):
+class Object(Dumpable, Base):
 	"""The base type of all pointed-to objects."""
 	__tablename__ = "obj"
 	__mapper_args__ = {'polymorphic_on': 'discriminator'}
