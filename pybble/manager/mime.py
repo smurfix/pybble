@@ -66,7 +66,6 @@ class DocMIME(Command):
 				doc = None
 			mtype.doc = doc
 			db.commit()
-		db.commit()
 		
 class DropMIME(Command):
 	def __init__(self):
