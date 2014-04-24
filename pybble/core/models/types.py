@@ -19,14 +19,12 @@ from sqlalchemy.orm import relationship,backref
 from sqlalchemy import event
 from sqlalchemy.orm.exc import NoResultFound
 
-from pybble.compat import py2_unicode
-
-from ..db import Base, Column
-
-from pybble.core import config
-
+from ...compat import py2_unicode
+from .. import config
+from ..db import Base, Column, db
 from . import ObjectRef
 from ._descr import D
+
 
 def add_mime(name,typ,subtyp,ext):
 	ext = unicode(ext)
@@ -39,8 +37,8 @@ def add_mime(name,typ,subtyp,ext):
 		t.typ = typ
 		t.subtyp = subtyp
 		t.ext = ext
-		db.store.add(t)
-		db.store.flush()
+		db.add(t)
+		db.flush()
 		return t
 	else:
 		assert name == t.name
@@ -51,8 +49,8 @@ def add_mime(name,typ,subtyp,ext):
 				tt = MIMEext()
 				tt.mime = t
 				tt.ext = ext
-				db.store.add(tt)
-				db.store.flush()
+				db.add(tt)
+				db.flush()
 		return t
 
 def mime_ext(ext):

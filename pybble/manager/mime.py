@@ -20,6 +20,7 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from . import Manager,Command,Option
 from ..core.models.types import MIMEtype,add_mime
+from ..core.db import db
 from ..blueprint import create_blueprint,drop_blueprint,list_blueprints
 
 def msplit(typ):
@@ -42,6 +43,7 @@ class AddMIME(Command):
 			sys.exit(not help)
 		typ,subtyp = msplit(typ)
 		add_mime(name=name,typ=typ, subtyp=subtyp, ext=ext)
+		db.commit()
 		
 class DocMIME(Command):
 	def __init__(self):
@@ -57,21 +59,28 @@ class DocMIME(Command):
 		typ,subtyp = msplit(typ)
 		mtype = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
 		if doc is None:
-			print(mtype.doc)
+			if mtype.doc is not None:
+				print(mtype.doc)
 		else:
+			if doc == "-":
+				doc = None
 			mtype.doc = doc
 			db.commit()
+		db.commit()
 		
 class DropMIME(Command):
 	def __init__(self):
 		super(DropMIME,self).__init__()
 		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
-		self.add_option(Option("name", nargs='?', action="store",help="The blueprint's internal name"))
-	def __call__(self,app, help=False,name=None):
-		if help or name is None:
+		self.add_option(Option("typ", nargs='?', action="store",help="The MIME type to delete"))
+	def __call__(self,app, help=False,typ=None):
+		if help or typ is None:
 			self.parser.print_help()
 			sys.exit(not help)
-		drop_blueprint(app.site,name)
+		typ,subtyp = msplit(typ)
+		mtype = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
+		db.delete(mtype)
+		db.commit()
 		
 class ListMIME(Command):
 	def __call__(self,app, help=False):
