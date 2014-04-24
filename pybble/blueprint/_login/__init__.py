@@ -12,23 +12,30 @@ from __future__ import absolute_import, print_function, division
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
-## Basic homepage.
+_doc="""
+This module attaches to Flask.login.
+"""
 
 from pybble.blueprint import BaseBlueprint
-from flask import render_template, abort, g
+from flask import render_template, abort
 from jinja2 import TemplateNotFound
-
-_doc="""
-This blueprint is the mains erver for content, as stored in Pybble's MongoDB.
-"""
 
 class Blueprint(BaseBlueprint):
 	def setup(self):
 		super(Blueprint,self).setup()
 
-		@self.route('/')
-		def homepage():
-			page = g.site.homepage
-			if page is None:
-				return render_template('empty.haml')
-			return page.render_as("page")
+		@self.route('/red')
+		def test_red():
+			return "This is Red Color"
+
+		@self.route('/green')
+		def test_green():
+			return render_template('green.haml')
+
+		@self.route('/blue')
+		def test_blue():
+			return render_template('blue.html')
+
+		@self.route('/yellow')
+		def test_yellow():
+			return "This is %s Color"%(self.params['color'],)

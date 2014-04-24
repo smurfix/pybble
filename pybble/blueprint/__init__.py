@@ -33,17 +33,15 @@ class BaseBlueprint(FlaskBlueprint):
 	params = None
 	def register(self, app, options, first_registration=False):
 		self.app = app
-		self.add_routes()
 		@self.record
 		def get_params(state):
 			self.params = state.options
-			self.has_params()
+			self.setup()
 		super(BaseBlueprint,self).register(app, options, first_registration=first_registration)
 		# TODO: templates
 	
-	def add_routes(self):
-		pass
-	def has_params(self):
+	def setup(self):
+		"""Called after data are loaded. Set up routing, attach modules, etc., here."""
 		pass
 
 def load_app_blueprints(app):
@@ -54,12 +52,10 @@ def load_app_blueprints(app):
 			if bp.name in names:
 				continue
 			names.add(bp.name)
-			bp_mod = "pybble.blueprint."+bp.blueprint
-			bp_module = import_module(bp_mod)
-			b = bp_module.Blueprint(bp.name, bp_mod, url_prefix=bp.path, template_folder= os.path.join(os.path.dirname(os.path.abspath(__file__)),bp.blueprint,'templates'))
-			if not bp.path.startswith('/'):
-				bp.path = '/_broken/'+bp.path
-			app.register_blueprint(b, **bp.params._data)
+			params = bp.params
+			bp = bp.mod()
+			bp.setup_app(app)
+			app.register_blueprint(bp, **params._data)
 		site = site.parent
 
 def create_blueprint(site, blueprint, path, name=None):

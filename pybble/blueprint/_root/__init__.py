@@ -18,15 +18,13 @@ from importlib import import_module
 from flask import render_template, abort
 from jinja2 import TemplateNotFound
 
-from flask.ext.admin import AdminIndexView, expose
-from flask.ext.admin import BaseView as AdminBaseView
-
 from .. import BaseBlueprint
 
-_doc="""
-This is the administrative front-end for your site.
+_doc="""\
+This is the standard blueprint for your site root,
+used for global administration and visualization.
 
-You typically add it under /admin.
+It is auto-added to your site root when populated.
 """
 
 class TheView(AdminBaseView):
@@ -48,12 +46,7 @@ class FakeAdmin(object):
 	base_template="admin/base.html"
 
 class Blueprint(BaseBlueprint):
-	"""
-	Admin frontend for a specific document class.
-	Parameters:
-	* model   which model to process
-	* index   whether to generate an index page
-	"""
+	__doc__=_doc
 	def setup(self):
 		super(Blueprint,self).setup()
 		try:

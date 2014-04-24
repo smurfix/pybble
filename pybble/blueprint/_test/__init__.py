@@ -21,11 +21,8 @@ from flask import render_template, abort
 from jinja2 import TemplateNotFound
 
 class Blueprint(BaseBlueprint):
-	def has_params(self):
-		pass
-
-	def add_routes(self):
-		super(Blueprint,self).add_routes()
+	def setup(self):
+		super(Blueprint,self).setup()
 
 		@self.route('/red')
 		def test_red():
