@@ -80,13 +80,12 @@ class RootManager(Manager):
 		from .populate import PopulateCommand
 		from .schema import SchemaCommand
 		from .mime import MIMEManager
-		#from .content import ObjectManager
+		from .obj import ObjectManager
 
 		coremanager = Manager()
 		coremanager.__doc__ = "Examine and change Pybble's internal data"
 		coremanager.command(check)
 		coremanager.command(config)
-		#coremanager.add_command("data",ContentManager())
 		coremanager.add_command("mime",MIMEManager())
 
 		#self.add_command("urls",ShowUrls())
@@ -96,7 +95,7 @@ class RootManager(Manager):
 		self.add_command("schema",SchemaCommand())
 		#self.add_command("app",AppCommand())
 		#self.add_command("blueprint",BlueprintManager())
-		#self.add_command("obj",ObjectManager())
+		self.add_command("obj",ObjectManager())
 		self.add_command("run",SubdomainServer())
 		self.add_command("core",coremanager)
 		self.shell(make_shell_context)

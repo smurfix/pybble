@@ -26,13 +26,13 @@ class AddDis(Command):
 	def __init__(self):
 		super(AddDis,self).__init__()
 		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
-		self.add_option(Option("name", nargs='?', action="store",help="The discriminator's"))
+		self.add_option(Option("name", nargs='?', action="store",help="The discriminator's name"))
 		self.add_option(Option("path", nargs='?', action="store",help="The class path"))
-	def __call__(self,app, help=False,name=None,typ=None,ext=None):
-		if help or typ is None:
+	def __call__(self,app, help=False,name=None,path=None):
+		if help or path is None:
 			self.parser.print_help()
 			sys.exit(not help)
-		d = Dis(name=typ,display_name=name)
+		d = Dis(path=path,name=name)
 		db.add(d)
 		db.commit()
 		
@@ -40,14 +40,14 @@ class DocDis(Command):
 	def __init__(self):
 		super(DocDis,self).__init__()
 		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
-		self.add_option(Option("typ", nargs='?', action="store",help="The discriminator to document"))
+		self.add_option(Option("name", nargs='?', action="store",help="The discriminator to document"))
 		self.add_option(Option("doc", nargs='?', action="store",help="some text"))
-	def __call__(self,app, help=False,typ=None,doc=None):
-		if help or typ is None:
+	def __call__(self,app, help=False,name=None,doc=None):
+		if help or name is None:
 			if help:
 				self.parser.print_help()
 			sys.exit(not help)
-		d = Dis.q.get_by(name=typ)
+		d = Dis.q.get_by(name=name)
 		if doc is None:
 			if d.infotext is not None:
 				print(d.infotext)
@@ -61,12 +61,12 @@ class DropDis(Command):
 	def __init__(self):
 		super(DropDis,self).__init__()
 		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
-		self.add_option(Option("typ", nargs='?', action="store",help="The Discriminator to delete"))
-	def __call__(self,app, help=False,typ=None):
-		if help or typ is None:
+		self.add_option(Option("name", nargs='?', action="store",help="The Discriminator to delete"))
+	def __call__(self,app, help=False,name=None):
+		if help or name is None:
 			self.parser.print_help()
 			sys.exit(not help)
-		d = Dis.q.get_by(name=typ)
+		d = Dis.q.get_by(name=name)
 		db.delete(d)
 		db.commit()
 		
@@ -76,7 +76,7 @@ class ListDis(Command):
 			self.parser.print_help()
 			sys.exit(not help)
 		for d in Dis.q.all():
-			print("{}\t{}\t{}".format(d.id,d.name,d.display_name))
+			print("{}\t{}\t{}".format(d.id,d.name,d.path))
 		
 class DisManager(Manager):
 	"""URLs and their content"""
