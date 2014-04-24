@@ -19,6 +19,7 @@ from importlib import import_module
 from sqlalchemy.orm.exc import NoResultFound
 
 from . import Manager,Command,Option
+from ..core.json import encode
 from ..core.models import Discriminator as Dis
 from ..core.db import db
 
@@ -71,12 +72,19 @@ class DropDis(Command):
 		db.commit()
 		
 class ListDis(Command):
-	def __call__(self,app, help=False):
+	def __init__(self):
+		super(ListDis,self).__init__()
+		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
+		self.add_option(Option("-d","--dump", dest="dump",action="store_true",help="Dump a complete object"))
+	def __call__(self,app, help=False, dump=False):
 		if help:
 			self.parser.print_help()
 			sys.exit(not help)
 		for d in Dis.q.all():
-			print("{}\t{}\t{}".format(d.id,d.name,d.path))
+			if dump:
+				print(encode(d._dump()))
+			else:
+				print("{}\t{}\t{}".format(d.id,d.name,d.path))
 		
 class DisManager(Manager):
 	"""URLs and their content"""
