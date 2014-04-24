@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, print_function, division
+from __future__ import absolute_import, print_function, division, unicode_literals
 ##
 ## This is part of Pybble, a WMS (Whatever Management System) based on
 ## Jinja2/Haml, Werkzeug, Flask, and Optimism.
 ##
-## Pybble is Copyright © 2014 by Matthias Urlichs <matthias@urlichs.de>,
+## Pybble is Copyright © 2009-2014 by Matthias Urlichs <matthias@urlichs.de>,
 ## it is licensed under the GPLv3. See the file `README.md` for details
 ## as well as hopeful statements by the author.
 ##
@@ -25,7 +25,6 @@ from ..db import Base, Column, db
 from ..json import register_object
 from . import ObjectRef
 from ._descr import D
-
 
 def add_mime(name,typ,subtyp,ext):
 	ext = unicode(ext)
@@ -97,7 +96,6 @@ class MIMEext(Base):
 		return u"‹%s %s: %s %s›" % (self.__class__.__name__, self.id,self.ext,unicode(self.mime))
 	__repr__ = __str__
 
-
 @register_object
 class _MIMEtype(object):
 	cls = MIMEtype
@@ -114,5 +112,4 @@ class _MIMEtype(object):
 	@staticmethod
 	def decode(t=None,s=None,x=None,**_):
 		return MIMEtype.q.get_by(typ=t[0],subtyp=t[1])
-
 

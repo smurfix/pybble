@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, print_function, division
+from __future__ import absolute_import, print_function, division, unicode_literals
 ##
 ## This is part of Pybble, a WMS (Whatever Management System) based on
 ## Jinja2/Haml, Werkzeug, Flask, and Optimism.
@@ -12,7 +12,6 @@ from __future__ import absolute_import, print_function, division
 ## This paragraph is auto-generated and may self-destruct at any time.
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
-
 
 """\
 Dieses Modul liest eine Datenbankstruktur auf stdin oder aus einer Tabelle,
@@ -401,7 +400,6 @@ class Key(object):
 		n=self.name
 		if not n: n="PRIMARY"
 		return "<%s %s.%s %s>" % (self.ktype,self.table.name,n,self.fields)
-
 
 class FKey(object):
 	def __init__(self,name,table,fields,rtable,rfields, opt):
@@ -1001,12 +999,10 @@ class Schema:
 			if tn not in self.tables and (not tables or tn in tables):
 				yield "DROP TABLE `%s`" % (tn,)
 
-
 	def update(self, db1,db2, days=None, force=False,force_equal=False, tables=()):
 		if not tables:
 			tables=self.tables.keys()
 			tables.sort()
-
 
 		odb=Db.Db(db1)
 		odbq=Db.Db(db1)
@@ -1045,7 +1041,6 @@ class Schema:
 					if na < nb: return -1
 					if na > nb: return 1
 			return 0
-
 
 		def print_select(fieldpos,ar,br=None):
 			res = ""
@@ -1137,7 +1132,6 @@ class Schema:
 
 			return (res,resl)
 
-
 		def next_row(dbg,table,db):
 			global cnt
 			global cntt
@@ -1157,7 +1151,6 @@ class Schema:
 
 			cnt += 1
 			return fl
-
 
 		def load(fl,dbg,table,db,f,fk):
 			flen = len(f)
@@ -1374,7 +1367,6 @@ class Schema:
 			ndb.commit()
 			ndbq.commit()
 		odbq.commit()
-
 
 def main():
 	global args,verbose,_debug
@@ -1609,7 +1601,6 @@ def run_diff(opts,args, parser=DummyParser):
 
 	print_fkey_check(1)
 	return exitcode
-
 
 ### PARSER ###
 

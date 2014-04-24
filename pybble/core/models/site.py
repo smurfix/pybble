@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, print_function, division
+from __future__ import absolute_import, print_function, division, unicode_literals
 ##
 ## This is part of Pybble, a WMS (Whatever Management System) based on
 ## Jinja2/Haml, Werkzeug, Flask, and Optimism.
 ##
-## Pybble is Copyright © 2014 by Matthias Urlichs <matthias@urlichs.de>,
+## Pybble is Copyright © 2009-2014 by Matthias Urlichs <matthias@urlichs.de>,
 ## it is licensed under the GPLv3. See the file `README.md` for details
 ## as well as hopeful statements by the author.
 ##
@@ -62,7 +62,6 @@ class App(Loadable,ObjectRef):
 	def __str__(self):
 		return u"‹App %d:‚%s‘ @ %s›" % (self.id, self.name, self.path)
 	__repr__ = __str__
-
 
 @py2_unicode
 class Blueprint(Loadable,ObjectRef):

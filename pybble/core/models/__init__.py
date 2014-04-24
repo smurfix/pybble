@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, print_function, division
+from __future__ import absolute_import, print_function, division, unicode_literals
 ##
 ## This is part of Pybble, a WMS (Whatever Management System) based on
 ## Jinja2/Haml, Werkzeug, Flask, and Optimism.
 ##
-## Pybble is Copyright © 2014 by Matthias Urlichs <matthias@urlichs.de>,
+## Pybble is Copyright © 2009-2014 by Matthias Urlichs <matthias@urlichs.de>,
 ## it is licensed under the GPLv3. See the file `README.md` for details
 ## as well as hopeful statements by the author.
 ##
@@ -586,7 +586,6 @@ class ObjectRef(Object):
 	## this would prevent inheritance from working
 	## but fortunately, as the class is otherwise empty, it doesn't matter
 
-
 @register_object
 class _obj(object):
     cls = Object
@@ -600,7 +599,6 @@ class _obj(object):
     @staticmethod
     def decode(i,s=None,**_):
 		return Object.q.get_by(id=i)
-
 
 def obj_class(id):
 	"""Given a discriminator ID, return the referred object's class."""

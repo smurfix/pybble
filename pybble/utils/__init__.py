@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, print_function, division
+from __future__ import absolute_import, print_function, division, unicode_literals
 ##
 ## This is part of Pybble, a WMS (Whatever Management System) based on
 ## Jinja2/Haml, Werkzeug, Flask, and Optimism.
 ##
-## Pybble is Copyright © 2014 by Matthias Urlichs <matthias@urlichs.de>,
+## Pybble is Copyright © 2009-2014 by Matthias Urlichs <matthias@urlichs.de>,
 ## it is licensed under the GPLv3. See the file `README.md` for details
 ## as well as hopeful statements by the author.
 ##
@@ -85,7 +85,6 @@ def random_string(bytes=9, base="23456789abcdefghijkmnpqrstuvwxyz", dash="-",
 			passwd += dash
 	return passwd
 
-
 def make_permanent(request):
 	"""Make this session a permanent one."""
 	request.session['_perm'] = True
@@ -125,7 +124,6 @@ class AuthError(Unauthorized):
 		super(AuthError,self).__init__()
 		self.obj = obj
 		self.perm = perm
-
 
 def all_addons():
 	if not config.addons:
