@@ -81,11 +81,13 @@ class RootManager(Manager):
 		from .schema import SchemaCommand
 		from .mime import MIMEManager
 		from .obj import ObjectManager
+		from .descr import DisManager
 
 		coremanager = Manager()
 		coremanager.__doc__ = "Examine and change Pybble's internal data"
 		coremanager.command(check)
 		coremanager.command(config)
+		coremanager.add_command("descr",DisManager())
 		coremanager.add_command("mime",MIMEManager())
 
 		#self.add_command("urls",ShowUrls())
