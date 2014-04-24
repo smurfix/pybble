@@ -22,6 +22,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from ...compat import py2_unicode
 from .. import config
 from ..db import Base, Column, db
+from ..json import register_object
 from . import ObjectRef
 from ._descr import D
 
@@ -95,3 +96,23 @@ class MIMEext(Base):
 	def __str__(self):
 		return u"‹%s %s: %s %s›" % (self.__class__.__name__, self.id,self.ext,unicode(self.mime))
 	__repr__ = __str__
+
+
+@register_object
+class _MIMEtype(object):
+	cls = MIMEtype
+	clsname = "mime"
+
+	@staticmethod
+	def encode(obj):
+		## the string is purely for human consumption and therefore does not have a time zone
+		res = {"t":(obj.typ,obj.subtyp), "s":str(obj)}
+		if obj.ext is not None:
+			res['x'] = obj.ext
+		return res
+
+	@staticmethod
+	def decode(t=None,s=None,x=None,**_):
+		return MIMEtype.q.get_by(typ=t[0],subtyp=t[1])
+
+
