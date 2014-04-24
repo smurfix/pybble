@@ -21,6 +21,10 @@ import logging
 
 from flask.ext.script import Server
 
+from warnings import filterwarnings
+filterwarnings("error")
+filterwarnings("ignore",category=DeprecationWarning)
+
 #from flask.ext.collect import Collect
 #from quokka.core.db import db
 #from quokka.ext.blueprints import load_blueprint_commands
