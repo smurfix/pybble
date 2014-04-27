@@ -54,7 +54,6 @@ class Breadcrumb(ObjectRef):
 		self.owner = user
 		self.parent = obj
 		self.superparent = request.site
-		#self.seq = 1+(db.store.execute(select(Max(Breadcrumb.seq), And((Breadcrumb.owner==user,Breadcrumb.discr==self.discr))).scalar() or 0)
 
 	def __str__(self):
 		p,s,o,d = self.pso
@@ -161,8 +160,7 @@ class Delete(ObjectRef):
 		self.superparent = obj.parent
 		self.old_superparent = obj.superparent
 
-		session.add(self)
-		session.add(Tracker(user,self))
+		Tracker(user,self)
 
 	def __str__(self):
 		if self._rec_str or not self.owner or not self.parent: return super(Delete,self).__str__()
@@ -184,7 +182,7 @@ class Tracker(ObjectRef):
 		Track any kind of change, for purpose of RSSification, Emails, et al.
 		Owner: the user who did it.
 		Parent: The Change/Delete object, or the new object.
-		Superparent: The site.
+		Superparent: The site. TODO: or the high-level action which triggered this one.
 		"""
 	__tablename__ = "tracking"
 	_descr = D.Tracker
