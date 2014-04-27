@@ -147,3 +147,7 @@ class SiteBlueprint(ObjectRef):
 	site = Object._alias('parent')
 	blueprint = Object._alias('superparent')
 
+	@property
+	def params(self):
+		return {}
+		### TODO get them from variables

@@ -23,11 +23,13 @@ from flask.templating import DispatchingJinjaLoader
 from flask.ext.script import Server
 
 from hamlish_jinja import HamlishExtension
-from jinja2 import Template,ChoiceLoader,PackageLoader
+from jinja2 import Template,BaseLoader, TemplateNotFound
+
 from werkzeug import import_string
 
 from .. import ROOT_SITE_NAME
 from ..core.db import db, NoData
+from ..core.models.template import Template as DBTemplate
 from ..core.models.site import Site
 from ..core.models.config import ConfigVar,register_changed
 from ..manager import Manager,Command
@@ -70,6 +72,27 @@ class WrapperApp(object):
 		cfg._arm()
 		return cfg
 
+class SiteTemplateLoader(BaseLoader):
+	def __init__(self, site):
+		self.site = site
+
+	def get_source(self, environment, template):
+		s = self.site
+		import pdb;pdb.set_trace()
+		while s is not None:
+			try:
+				t = DBTemplate.q.get_by(site=s,name=template)
+			except NoData:
+				pass
+			else:
+				mtime = t.modified
+				def t_is_current():
+					db.refresh(t,('modified',))
+					return mtime == t.modified
+				return t.data, s.name+':'+template, t_is_current
+			s = s.parent
+		raise TemplateNotFound(template)
+
 class BaseApp(WrapperApp,Flask):
 	"""Pybble's basic WSGI application"""
 	config = None
@@ -107,19 +130,8 @@ class BaseApp(WrapperApp,Flask):
 
 		rv.globals['site'] = self.site
 
-		## setup package loaders
-		apps = set()
-		packs = []
-		s = self.site
-		while s:
-			if s.app not in apps:
-				apps.add(s.app)
-				packs.append(PackageLoader('pybble.app.'+s.app))
-				s = s.parent
-		packs.append(DispatchingJinjaLoader(self))
-		packs.append(PackageLoader('pybble'))
-		rv.loader = ChoiceLoader(packs)
-		## TODO: inheritance from overridden templates
+		## setup template loader
+		rv.loader = SiteTemplateLoader(self.site)
 		## TODO: do the same thing with static files
 
 		from pybble.render import add_to_jinja

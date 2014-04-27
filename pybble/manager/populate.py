@@ -357,6 +357,17 @@ class PopulateCommand(Command):
 				logger.debug("Root site's app set.")
 				db.commit()
 
+		aapp = App.q.get_by(name="_alias")
+		import socket
+		hostname = text_type(socket.gethostname())
+		try:
+			asite = Site.q.get_by(domain=hostname)
+		except NoData:
+			asite = Site(name="root alias", domain=hostname)
+			asite.app = aapp
+			logger.info("Root site aliased ‘{}’ created.".format(hostname))
+		db.commit()
+
 		try:
 			root_bp = Blueprint.q.get_by(name="_root")
 		except NoData:
@@ -367,4 +378,6 @@ class PopulateCommand(Command):
 			except NoData:
 				rbp = SiteBlueprint(site=root,blueprint=root_bp,path="/")
 				logger.debug("Root site's blueprint created.")
+		db.commit()
 
+		logger.debug("Setup finished.")

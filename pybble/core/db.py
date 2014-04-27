@@ -54,10 +54,12 @@ class IDrenderer(IntegerFieldRenderer):
 		except Exception as e:
 			return self.value
 
-class LimitQuery(query.Query):
-	"""A query which allows limits on GET"""
-	def get_by(self,**kw):
-		return self.filter_by(**kw).one()
+class GetQuery(query.Query):
+	"""A query which allows .get and .get_by"""
+	def get(self,*a,**k):
+		return self.filter(*a,**k).one()
+	def get_by(self,**k):
+		return self.filter_by(**k).one()
 
 #def limitedQuery(mapper,session):
 #	return session.query(mapper)
@@ -91,7 +93,7 @@ class Base(object):
 	def __html__(self):
 		return '<a href="%s">%s</a>' % (url_for('admin.show', table=self.__class__.__name__.lower(), id=self.id), escape(self._name))
 
-	q = db.query_property(query_cls=LimitQuery)
+	q = db.query_property(query_cls=GetQuery)
 
 Base = declarative_base(cls=Base)
 Base.super_readonly = False

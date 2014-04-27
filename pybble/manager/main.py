@@ -21,12 +21,15 @@ from threading import Lock
 from gevent.wsgi import WSGIServer
 
 from flask import Flask
-from werkzeug.exceptions import NotFound
 from flask.config import Config
 from flask._compat import string_types
 
 from flask.ext.script import Server
 from flask.ext.script.commands import ShowUrls
+
+from werkzeug.exceptions import NotFound
+from werkzeug.wsgi import responder
+
 from . import Manager,Command,Option
 from .. import ROOT_SITE_NAME
 from ..core.db import db
@@ -124,12 +127,14 @@ class SubdomainServer(Server):
 		server.serve_forever()
 		
 class DeadApp(object):
-	def __init__(self, exc):
+	def __init__(self, exc,msg):
 		self.exc = exc()
+		self.msg = msg
+	@responder
 	def __call__(self,environ,start_response):
 		e = self.exc
-		start_response('{} {}'.format(e.code, e.name), [('Content-Type', 'text/plain')])
-		yield e.message or e.name
+		e.description = self.msg
+		return e
 
 class SubdomainDispatcher(object):
 	"""
@@ -160,7 +165,7 @@ class SubdomainDispatcher(object):
 				app = self.instances[host]
 			except KeyError:
 				logger.warn("Unknown site: {}".format(host))
-				return DeadApp(NotFound)
+				return DeadApp(NotFound,'The domain “{}” is unknown here.'.format(host))
 			if isinstance(app,Site):
 				# first request: create an instance and re-save in
 				# `self.instances` for convenience

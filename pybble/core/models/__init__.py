@@ -251,7 +251,7 @@ class Object(Dumpable, Base):
 			discr = Discriminator.num(discr)
 			res = res.filter_by(discriminator=discr)
 		for o in res:
-			if want is None or request.user.can_do(o, discr=discr, want=want):
+			if want is None or not hasattr(request,'user') or request.user.can_do(o, discr=discr, want=want):
 				yield o
 	def all_children(self, discr=None, want=PERM_LIST):
 		return self._all_X("parent",discr,want)

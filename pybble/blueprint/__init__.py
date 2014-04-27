@@ -49,13 +49,13 @@ def load_app_blueprints(app):
 	names = set() 
 	while site is not None:
 		for bp in site.blueprints:
-			if bp.name in names:
+			b = bp.blueprint
+			if b.name in names:
 				continue
-			names.add(bp.name)
+			names.add(b.name)
 			params = bp.params
-			bp = bp.mod()
-			bp.setup_app(app)
-			app.register_blueprint(bp, **params._data)
+			bpm = b.mod(b.name,b.path)
+			app.register_blueprint(bpm, **params)
 		site = site.parent
 
 def create_blueprint(site, blueprint, path, name=None):

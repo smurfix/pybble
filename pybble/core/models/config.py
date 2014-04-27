@@ -79,53 +79,53 @@ class ConfigDict(Config,attrdict):
 				continue
 			self.setdefault(v.name, v.value)
 
-	def __setitem__(self,k,v):
-		s = self._parent
-		if PY2:
-			if isinstance(k,str):
-				k = unicode(k)
-		cfv = None
-		while s:
-			try:
-				cfv = ConfigVar.q.get_by(name=k,parent=self._parent)
-			except NoData:
-				s = s.parent
-			else:
-				break
-		if not cfv and self._set_db:
-			raise NoData(k)
-		if self._set_db:
-			assert self._parent
-			try:
-				cf = SiteConfigVar.q.get_by(parent=self._parent, var=cfv)
-			except NoData:
-				cf = SiteConfigVar(parent=self._parent, var=cfv, value=v)
-			else:
-				cf.value=v
-		super(ConfigDict,self).__setitem__(k,v)
-
-	def __delitem__(self,k):
-		try:
-			cfv = ConfigVar.get(k)
-		except NoData:
-			# can't delete values that are only read from settings
-			raise NoData(k)
-		if self._set_db:
-			assert self.site
-			try:
-				cf = SiteConfigVar.objects.get_by(site=self.site, var=cfv)
-			except NoData:
-				pass
-			else:
-				cf.delete()
-				self[k].pop(0)
-		elif self.site.parent:
-			super(ConfigDict,self).__setitem__(k,self.site.parent.config[k])
-		else:
-			super(ConfigDict,self).__setitem__(k,cfv.default)
-		if self._set_db and self.site is not None:
-			self.site.config_changed()
-	
+#	def __setitem__(self,k,v):
+#		s = self._parent
+#		if PY2:
+#			if isinstance(k,str):
+#				k = unicode(k)
+#		cfv = None
+#		while s:
+#			try:
+#				cfv = ConfigVar.q.get_by(name=k,parent=self._parent)
+#			except NoData:
+#				s = s.parent
+#			else:
+#				break
+#		if not cfv and self._set_db:
+#			raise NoData(k)
+#		if self._set_db:
+#			assert self._parent
+#			try:
+#				cf = SiteConfigVar.q.get_by(parent=self._parent, var=cfv)
+#			except NoData:
+#				cf = SiteConfigVar(parent=self._parent, var=cfv, value=v)
+#			else:
+#				cf.value=v
+#		super(ConfigDict,self).__setitem__(k,v)
+#
+#	def __delitem__(self,k):
+#		try:
+#			cfv = ConfigVar.get(k)
+#		except NoData:
+#			# can't delete values that are only read from settings
+#			raise NoData(k)
+#		if self._set_db:
+#			assert self.site
+#			try:
+#				cf = SiteConfigVar.objects.get_by(site=self.site, var=cfv)
+#			except NoData:
+#				pass
+#			else:
+#				cf.delete()
+#				self[k].pop(0)
+#		elif self.site.parent:
+#			super(ConfigDict,self).__setitem__(k,self.site.parent.config[k])
+#		else:
+#			super(ConfigDict,self).__setitem__(k,cfv.default)
+#		if self._set_db and self.site is not None:
+#			self.site.config_changed()
+#	
 	def _disarm(self):
 		self._set_db = False
 	def _arm(self):
