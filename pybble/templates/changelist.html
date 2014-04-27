@@ -1,0 +1,33 @@
+{% extends 'layout.html' %}
+{% block body %}
+  <h1>Änderungs-Log für {{ USER.name }}</h1>
+  <table><thead>
+    <tr><td>Object</td><td>Change</td><td>User</td><td>Date</td></tr>
+	</thead><tbody>
+  {%- for o in changes %}
+  		{# o: usertracker -#}
+  		{# t: tracker -#}
+  		{# tp: change/delete/new_object -#}
+		{% set t = o.parent -%}
+		{% if t -%}
+		{% set tp = t.parent -%}
+		{% if tp -%}
+    	<tr>
+			<td><a href="{{url_for("pybble.views.view_oid", oid=o.change_obj.oid()) }}">{{ subline(o.change_obj) }}</a></td>
+			<td>
+			{%- if tp.classdiscr == d_change %}
+			<a href="{{url_for("pybble.views.view_oid", oid=t.parent.oid())}}">Details</a>
+			{%- elif tp.classdiscr == d_delete %}
+			gelöscht
+			{%- else %}
+			neu angelegt
+			{%- endif -%}
+			</td>
+			<td><a href="{{url_for("pybble.views.view_oid", oid=t.owner.oid())}}">{{ t.owner }}</a></td>
+			<td>{{ o.parent.timestamp|date }}</td>
+		</tr>
+		{%- endif %}
+		{%- endif %}
+  {% endfor -%}
+    </tbody></table>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends 'layout.html' %}
+{% from 'form.html' import show, showb %}
+
+{% block body %}
+  <h2>Anmeldung</h2>
+    <form method="post" action="{{ action }}">
+    <table>
+	  {{ show(form.username) }}
+	  {{ show(form.password) }}
+	  {{ show(form.password2) }}
+	  {{ show(form.email) }}
+    </table>
+	{{ form.next|safe }}
+    <input type="submit" value="Anmelden" />
+    </form>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'layout.html' %}
+{% from 'form.html' import show %}
+
+{% block body %}
+  {% if obj %}
+  <h2>Datei-Info „{{ name }}“editieren</h2>
+  {% else %}
+  <h2>Neue Datei für „{{ parent.name }}“</h2>
+  {% endif %}
+    <form method="post" action="{{ action }}" enctype="multipart/form-data" encoding="UTF-8">
+    <table>
+	  {{ show(form.name) }}
+	  {{ show(form.mime) }}
+	  {% if not obj %}
+	  <tr><th><label for="bindata">Datei</label>:</th><td><input name="bindata" type="file" class="f_bindata" /></td></tr>
+	  {% endif %}
+    </table>
+    <input type="submit" value="{% if obj %}Ändern{% else %}Hochladen{% endif %}" />
+    </form>
+
+{% endblock %}

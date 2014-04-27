@@ -1,0 +1,20 @@
+{% extends 'layout.html' %}
+{% block body %}
+  <h1>Templates für {{ obj }}</h1>
+  <table><thead>
+    <tr><td>Object</td><td>Type</td><td>Subpages?</td><td>geändert</td><td>Edit?</td></tr>
+	</thead><tbody>
+  {%- for o in obj.uptree() %}
+    {% for t in o.templates %}
+    	<tr><td>{{ subline(o) }}</td><td>{{ name_detail(t.detail) }} / {{ name_discr(t.discr) }}</td>
+			<td>{% if t.inherit is none %}*{%elif t.inherit%}Y{%else%}N{%endif%}</td>
+			<td>{{ t.modified }}</td><td><a href="{{ url_for('pybble.views.edit_oid',oid=t.oid()) }}">Edit</a>
+			| <a href="{{ url_for('pybble.views.copy_oid',oid=t.oid(),parent=obj.oid()) }}">Copy</a>
+			| <a href="{{ url_for('pybble.views.delete_oid',oid=t.oid()) }}">Del</a>
+			</td></tr>
+	{% else %}
+    	<tr><td>{{ subline(o) }}</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
+	{% endfor -%}
+  {% endfor -%}
+    </tbody></table>
+{% endblock %}

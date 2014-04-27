@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	 xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	 version="2.0">
+  <channel>
+    <title>{{SITE.name}}</title>
+    <description>Changes to {{SITE.name}}</description>
+    <link>http://{{SITE.domain}}</link>
+    <language>de-de</language>
+	<pubDate>{{ NOW|date("%a, %d %b %Y %H:%M:%S %z") }}</pubDate>
+    <lastBuildDate>{{ SITE.tracked|date("%a, %d %b %Y %H:%M:%S %z") }}</lastBuildDate>
+    <generator>PyBBle</generator>
+    <ttl>300</ttl>
+    <sy:updatePeriod>hourly</sy:updatePeriod>
+    <sy:updateFrequency>12</sy:updateFrequency>
+ 
+{%- for item in USER.recent_tracks %}
+    <item>
+      <title>{{ subline(item.parent.parent) }}</title>
+      <link>{{ url_for('pybble.views.view_oid',oid=item.oid(),_external=True) }}</link>
+      <pubDate>{{ item.parent.timestamp|date("%a, %d %b %Y %H:%M:%S %z") }}</pubDate>
+      <guid>http://{{SITE.domain}}/rss/id/{{item.oid()}}</guid>
+      <description>{{ subline(item.parent.parent)|cdata }}</description>
+      <content:encoded>{{ subrss(item)|cdata }}</content:encoded>
+	  <author>{{ item.owner.first_name }} {{ item.owner.last_name }} &gt;{{ item.owner.email }}&lt;</author>
+    </item>
+{% endfor %} 
+  </channel>
+</rss>
+
+
+

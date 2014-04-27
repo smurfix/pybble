@@ -1,0 +1,21 @@
+{% extends 'layout.html' %}
+{% from 'form.html' import show %}
+
+{% block body %}
+  {{ subpage(obj,4) }}
+  <h2>Löschen</h2>
+    <form method="post" action="{{ action }}">
+    <table>
+	  <tr><th>Objekt:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid()) }}">{{ obj }}<a></td></tr>
+	  <tr><th>ID:</th><td>{{ obj.oid() }}</td></tr>
+	  {{ show(form.comment) }}
+    </table>
+	{{ form.next|safe }}
+	{% if error %}<div class="error">{{ error }}</div>{% endif -%}
+    <input type="submit" value="Ja, löschen!" />
+    </form>
+
+  <p>
+    Sei dir bitte verdammt sicher, was du hier tust.
+  </p>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends 'layout.html' %}
+{% from 'form.html' import show, showb %}
+
+{% block body %}
+  <h2>{% if not parent %}Edit{% else %}New{% endif %} permissions for {{ name_discr(form.discr.data) }} / {{ name_permission(form.right.data) }}</h2>
+    <form method="post" action="{{ action }}">
+    <table>
+	  {{ show(form.user) }}
+	  {{ show(form.object) }}
+	  {{ show(form.discr) }}
+	  {{ show(form.new_discr) }}
+	  {{ show(form.right) }}
+	  {{ show(form.inherit) }}
+    </table>
+    <input type="submit" value="{% if not parent %}Update{% else %}Store{% endif %}" />
+    </form>
+
+{% endblock %}

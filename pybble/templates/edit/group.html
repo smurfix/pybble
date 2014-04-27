@@ -1,0 +1,13 @@
+{% extends 'layout.html' %}
+{% from 'form.html' import show, showb %}
+
+{% block body %}
+  <h2>{% if not parent %}Edit{% else %}New{% endif %} group</h2>
+    <form method="post" action="{{ action }}">
+    <table>
+	  {{ show(form.name) }}
+    </table>
+    <input type="submit" value="{% if not parent %}Update{% else %}Store{% endif %}" />
+    </form>
+
+{% endblock %}

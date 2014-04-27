@@ -1,0 +1,14 @@
+{% extends 'layout.html' %}
+{% from 'form.html' import show, showb %}
+
+{% block body %}
+  <h2>{% if obj %}Edit{% else %}New{% endif %} Site{% if obj %} {{ obj.name }}{% endif %}</h2>
+    <form method="post" action="{{ action }}">
+    <table>
+	  {{ show(form.name) }}
+	  {{ show(form.domain) }}
+    </table>
+    <input type="submit" value="{% if obj %}Update{% else %}Store{% endif %}" />
+    </form>
+
+{% endblock %}

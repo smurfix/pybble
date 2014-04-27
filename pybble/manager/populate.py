@@ -19,6 +19,7 @@ import logging
 from flask import request
 from flask._compat import text_type
 
+from .. import TEMPLATE_PATH, STATIC_PATH
 from ..utils import random_string
 from ..core import config
 from ..core.db import db, NoData
@@ -41,6 +42,7 @@ content_types = [
     ('image','gif','gif',"GIF image",None),
     ('application','binary','bin',"raw data",None),
     ('application','pdf','pdf',"PDF document",None),
+    ('text','xml','xml',"XML data",None),
 ]
 
 class PopulateCommand(Command):
@@ -60,6 +62,7 @@ class PopulateCommand(Command):
 		from ..core.models.files import BinData,StaticFile
 		from ..core.models.user import User
 		from ..core.models.types import MIMEtype
+		from ..core.models.template import Template
 		from ..core.models.config import ConfigVar
 		from .. import ROOT_SITE_NAME,ROOT_USER_NAME, ANON_USER_NAME
 
@@ -260,8 +263,56 @@ class PopulateCommand(Command):
 								sf = StaticFile(webpath,sb)
 					db.commit()
 			return added
-		added = add_files(os.path.join(u"pybble",u"static"),u"")
-		logger.debug("{} files processed.".format(added))
+		added = add_files(STATIC_PATH, u"")
+		logger.debug("{} files changed.".format(added))
+
+		## templates (not recursive)
+		added = 0
+		def get_template(fn):
+			added = 0
+			with file(os.path.join(TEMPLATE_PATH,fn)) as f:
+				try:
+					data = f.read().decode("utf-8")
+				except Exception:
+					print("While reading",fn,file=sys.stderr)
+					raise
+
+			fn = unicode(fn)
+			try:
+				t = Template.q.get_by(name=fn,parent=root)
+			except NoData:
+				t = Template(name=fn,data=data,parent=root)
+				t.owner = superuser
+				added += 1
+			else:
+				if t.mime is None:
+					dot = fn.rindex(".")
+					try:
+						t.mime = mime_ext(fn[dot+1:])
+					except NoData:
+						raise NoData(fn[dot+1:])
+
+				if t.data != data:
+					print (u"Warning: Template %d '%s' differs." % (t.id,fn)).encode("utf-8")
+					if force:
+						t.data = data
+				if force:
+					t.superparent = root
+					t.owner = superuser
+					added += 1
+			db.commit()
+			return added
+
+		added = 0
+		for fn in os.listdir(TEMPLATE_PATH):
+			if fn.startswith(".") or (not fn.endswith(".haml") and not fn.endswith(".html") and not fn.endswith(".txt") and not fn.endswith(".xml")):
+				continue
+			added += get_template(fn)
+		for fn in os.listdir(os.path.join(TEMPLATE_PATH,"edit")):
+			if fn.startswith(".") or not fn.endswith(".html"):
+				continue
+			added += get_template(os.path.join("edit",fn))
+		logger.debug("{} templates changed.".format(added))
 
 		## Variables.
 		## Generic code because it doesn't hurt and may be used for Blueprint vars later.

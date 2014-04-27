@@ -1,0 +1,8 @@
+<h2>Site Not Found</h2>
+<p>
+There is no content for domain {{ SITE.domain }} here. <br />
+Please tell the administrators.
+{% if SITE.parent and SITE.parent.owner and SITE.parent.owner.email %}
+<br />They're probably reachable <a href="mailto:{{ SITE.parent.owner.email }}">here</a>.
+{% endif %}
+</p>

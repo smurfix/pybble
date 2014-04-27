@@ -1,0 +1,72 @@
+{% extends 'layout.html' %}
+
+{% if can_read(d_comment) or can_add(d_comment) %}
+{%- set styles = ['SubTree.css'] + styles|default([]) -%}
+{%- set scripts = ['jQuery.SubTree.js'] + scripts|default([]) -%}
+{% endif %}
+{% block add_header %}
+{% if obj.has_children(d_comment) %}
+<script type="text/javascript">
+	$(document).ready( function() {
+		$('div.comments ul li').subTree({ script: '/snippet/{{d_comment}}', discr: '{{d_comment}}', cscript: '/snippet/hierarchy'});
+	});
+</script>
+{% endif %}
+{% endblock %}
+
+  {% block body %}
+  <div class="shortcuts_right">
+  {% if obj != SITE and obj.parent%}
+  <div>
+  zurück zu <a href="{{ url_for("pybble.views.view_oid",oid=obj.parent.oid()) }}">{{ subline(obj.parent) }}</a>
+  </div>
+  {% endif %}
+  {% if can_add(d_comment) %}
+  <div>
+  <a href="{{ url_for("pybble.views.new_oid",oid=obj.oid(),discr=d_comment) }}">{% if obj.discriminator == d_comment %}antworten{% else %}Seite kommentieren{% endif %}</a>
+  </div>
+  {%- endif -%}
+  {% if can_add(d_bindata) %}
+  <div><a href="{{ url_for("pybble.views.new_oid",oid=obj.oid(),discr=d_bindata) }}">Datei anhängen</a></div>
+  {% endif %}
+  </div>
+
+<div class="subpage">
+{{ subpage(obj) }}
+</div>
+
+  {% if can_read(d_comment) %}
+    {% set nc = obj.has_superchildren(d_comment) %}
+  {% else %}
+    {% set nc = -1 %}
+  {% endif %}
+  {% if nc > 0 or can_add(d_comment) %}
+  <hr />
+  <h4>Diskussion<a name="comments">:</a></h4>
+  <div class="comments">
+    <ul class="SubTree">
+      {% if not details %}{% set details=() %}{% endif %}
+      {% if not aux %}{% set aux=() %}{% endif %}
+	  <li class="t_Comment {% if aux %}expanded{% elif nc>0 %}collapsed{% else %}terminal{% endif %}" rel="{{ obj.oid() }}">
+		<span class="image"></span>
+		<span href="#nogo" class="contents">
+		  {%- if nc <= 0 -%}
+			Dieser Beitrag wurde noch nicht kommentiert.
+		  {%- elif nc == 1 -%}
+			Dieser Beitrag wurde einmal kommentiert. (<a href="{{ url_for("pybble.views.view_oid_exp",oid=obj.oid(),details="all") }}#comments">alles ausklappen</a>)
+		  {%- else -%}
+			Dieser Beitrag wurde {{ nc }}mal kommentiert. (<a href="{{ url_for("pybble.views.view_oid_exp",oid=obj.oid(),details="all") }}#comments">alles ausklappen</a>)
+		  {%- endif -%}
+		</span>
+		{% if aux %}
+		  <ul>
+			{% for o in obj.all_children(d_comment) %}
+			  {{ subpage(o,tm_snippet) }}
+			{% endfor %}
+		  </ul>
+		{% endif %}
+	  </li>
+	</ul>
+  </div>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,43 @@
+{{- XHTML_DTD }}
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:cc="http://creativecommons.org/ns#"
+      xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+      xmlns:dc="http://purl.org/dc/elements/1.1/" xml:lang="de" lang="de" dir="ltr">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>{{ (title_trace|default([]) + [SITE.name])|join(' › ') }}</title>
+	{%- if USER.feed_pass %}
+	<link href="{{ url_for('pybble.rss.do_rss', feed_pass=USER.feed_pass) }}" rel="alternate" type="application/rss+xml" title="{{ SITE.name }} RSS Feed for {{ USER.name }}" />
+	{%- endif %}
+    {%- set styles = ['style.css','menu.css'] + styles|default([]) -%}
+    {%- for style in styles %}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', file='css/' + style) }}" />
+    {%- endfor %}
+    {%- for script in ['jQuery.js', 'jQuery.Dimensions.js', 'jQuery.extensions.js',
+                       'overall.js'] + scripts|default([]) %}
+    <script type="text/javascript" src="{{ url_for('static', file='js/' + script) }}"></script>
+    {%- endfor %}
+	{%- block add_header %}{% endblock -%}
+</head>
+<body>
+	<div id="menu">
+		{% include "menu_left.html" %}
+		{% include "menu_right.html" %}
+	</div>
+
+  	<h1 id="top">{{ SITE.name }}</h1>
+	<div class="messages">
+	  {%- for message in MESSAGES %}
+		<div class="message{% if message.success == true %} success{% elif message.success == false %} fail{% endif %}">
+			{{ message.text }}
+		</div>
+	  {%- endfor %}
+    </div>
+
+  <div class="body">{% block body %}<code>Your template didn't provide a 'body' block.</code>{% endblock %}</div>
+  <div class="footer">
+    {# <a href="{{ url_for('pybble.views.new') }}">new</a> |
+    <a href="{{ url_for('pybble.views.list') }}">list</a> |
+    #} use pybble freely, but don't abuse it
+  </div>
+</body>
+</html>
