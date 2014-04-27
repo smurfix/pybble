@@ -14,16 +14,17 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, DateTime, Boolean
-from sqlalchemy.orm import relationship,backref
+from sqlalchemy import Integer, Unicode, DateTime, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
 
 from flask import request
 
-from ..core import config
-from ..compat import py2_unicode
+from ...compat import py2_unicode
+from .. import config
 from ..db import Base, Column
 from . import Object,ObjectRef, TM_DETAIL
 from ._descr import D
+from .types import MIMEtype, mime_ext
 
 @py2_unicode
 class Template(ObjectRef):
@@ -38,6 +39,9 @@ class Template(ObjectRef):
 	data = Column(Unicode(100000))
 	modified = Column(DateTime,default=datetime.utcnow)
 
+	mime_id = Column(Integer, ForeignKey(MIMEtype.id), nullable=False, index=True)
+	mime = relationship(MIMEtype, primaryjoin=mime_id==MIMEtype.id)
+
 	site = Object._alias('parent')
 
 	def __storm_pre_flush__(self):
@@ -51,6 +55,9 @@ class Template(ObjectRef):
 		self.owner = request.user
 		self.parent = parent or request.site
 		self.superparent = getattr(parent,"site",None) or request.site
+
+		dot = f.rindex(".")
+		self.mime = mime_ext(f[dot+1:])
 
 	def __str__(self):
 		return "‹%s:%d›" % (self.__class__.__name__,self.id)
