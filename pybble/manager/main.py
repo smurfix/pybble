@@ -21,6 +21,7 @@ from threading import Lock
 from gevent.wsgi import WSGIServer
 
 from flask import Flask
+from werkzeug.exceptions import NotFound
 from flask.config import Config
 from flask._compat import string_types
 
@@ -31,6 +32,8 @@ from .. import ROOT_SITE_NAME
 from ..core.db import db
 from ..core.models.site import Site,Blueprint
 from ..app import create_site, list_apps
+
+logger = logging.getLogger('pybble.manager.main')
 
 def make_shell_context():
 	" Update shell. "
@@ -120,6 +123,14 @@ class SubdomainServer(Server):
 		server = WSGIServer((host,port), dispatch)
 		server.serve_forever()
 		
+class DeadApp(object):
+	def __init__(self, exc):
+		self.exc = exc()
+	def __call__(self,environ,start_response):
+		e = self.exc
+		start_response('{} {}'.format(e.code, e.name), [('Content-Type', 'text/plain')])
+		yield e.message or e.name
+
 class SubdomainDispatcher(object):
 	"""
 	This code creates individual app instances (one per site) and sends
@@ -133,8 +144,8 @@ class SubdomainDispatcher(object):
 		self.root = root
 		self.lock = Lock()
 		self.instances = i = {}
-		for r in root.children_tree:
-			i[r.domain] = r
+		for s in root.all_sites:
+			i[s.domain] = s
 			# This pre-loads the instances with the sites necessary to
 			# later instantiate the apps.
 
@@ -145,7 +156,11 @@ class SubdomainDispatcher(object):
 		else:
 			host = host.split(':')[0]
 		with self.lock:
-			app = self.instances[host]
+			try:
+				app = self.instances[host]
+			except KeyError:
+				logger.warn("Unknown site: {}".format(host))
+				return DeadApp(NotFound)
 			if isinstance(app,Site):
 				# first request: create an instance and re-save in
 				# `self.instances` for convenience
