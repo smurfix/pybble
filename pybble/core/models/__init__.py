@@ -25,6 +25,7 @@ from ..json import register_object
 from ..db import Base, Column, IDrenderer, db, NoData
 
 from flask import request
+from flask._compat import text_type
 from werkzeug import import_string
 from jinja2.utils import Markup
 from pybble.core import config
@@ -130,7 +131,7 @@ class Discriminator(Loadable, Dumpable, Base):
 		if isinstance(discr, Discriminator):
 			return discr.id
 		elif isinstance(discr, basestring):
-			return Discriminator.q.get_by(name=str(discr)).id
+			return Discriminator.q.get_by(name=text_type(discr)).id
 		elif isinstance(discr, (int,long)):
 			return discr
 		else:

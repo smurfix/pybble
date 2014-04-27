@@ -21,6 +21,7 @@ import os
 from blinker import NamedSignal
 from flask import url_for, current_app, g
 from flask.config import Config
+from flask._compat import PY2
 
 from ...compat import py2_unicode
 from .. import json, config
@@ -80,6 +81,9 @@ class ConfigDict(Config,attrdict):
 
 	def __setitem__(self,k,v):
 		s = self._parent
+		if PY2:
+			if isinstance(k,str):
+				k = unicode(k)
 		cfv = None
 		while s:
 			try:
