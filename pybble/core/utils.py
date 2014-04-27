@@ -21,13 +21,13 @@ import gevent
 from gevent.queue import Queue
 from signal import SIGINT
 
-locale.setlocale(locale.LC_ALL, "de_DE.UTF-8")
+locale.setlocale(locale.LC_ALL, str("de_DE.UTF-8"))
 logger = logging.getLogger('zuko.base')
 
 ## time zones
 UTC = pytz.UTC
 with open("/etc/localtime", 'rb') as tzfile:
-	TZ = pytz.tzfile.build_tzinfo('local', tzfile)
+	TZ = pytz.tzfile.build_tzinfo(str('local'), tzfile)
 
 # Default timeout for the cache.
 # An audit watcher auto-clears it aggressively,
