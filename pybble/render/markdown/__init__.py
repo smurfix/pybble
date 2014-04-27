@@ -14,6 +14,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 ## jinja extensions
 try:
+	from flask import request
 	from .. import Renderer as BaseRenderer
 	from markdown import Markdown
 	from .md_quotes import makeExtension as md_quotes
@@ -34,7 +35,7 @@ try:
 	def convert(ctx,s,extern=False):
 		b = ""
 		if extern:
-			b = "http://"+current_request.site.domain
+			b = "http://"+request.site.domain
 		b += "/wiki/"
 		obj = ctx.get("obj",None)
 		if obj and isinstance(obj,WikiPage):

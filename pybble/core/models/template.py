@@ -17,12 +17,11 @@ from datetime import datetime,timedelta
 from sqlalchemy import Integer, Unicode, DateTime, Boolean
 from sqlalchemy.orm import relationship,backref
 
-from pybble.compat import py2_unicode
+from flask import request
 
+from ..core import config
+from ..compat import py2_unicode
 from ..db import Base, Column
-
-from pybble.core import config
-
 from . import Object,ObjectRef, TM_DETAIL
 from ._descr import D
 
@@ -49,9 +48,9 @@ class Template(ObjectRef):
 		super(Template,self).__init__()
 		self.name = name
 		self.data = data
-		self.owner = current_request.user
-		self.parent = parent or current_request.site
-		self.superparent = getattr(parent,"site",None) or current_request.site
+		self.owner = request.user
+		self.parent = parent or request.site
+		self.superparent = getattr(parent,"site",None) or request.site
 
 	def __str__(self):
 		return "‹%s:%d›" % (self.__class__.__name__,self.id)

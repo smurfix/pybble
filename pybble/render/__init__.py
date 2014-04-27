@@ -52,7 +52,7 @@ def valid_access(o):
 		except Exception:
 			return # checked by others
 		else:
-			if not current_request.user.can_do(obj, discr=obj,want=right):
+			if not request.user.can_do(obj, discr=obj,want=right):
 				raise ValidationError(u"Das darfst du selbst nicht.")
 
 	return v_a
@@ -72,7 +72,7 @@ class DatabaseLoader(BaseLoader):
 			t = template
 		else:
 			if isinstance(template,str): template = unicode(template)
-			site = current_request.site
+			site = request.site
 			t = None
 			while site:
 				try: t = Template.q.get_by(name=template,superparent=site)
@@ -83,7 +83,7 @@ class DatabaseLoader(BaseLoader):
 				raise TemplateNotFound(template)
 		mtime = t.modified
 		return (t.data,
-				"//db/%s/%s/%s" % (t.__class__.__name__,(t.superparent or current_request.site).domain,getattr(t,"name",t.oid())),
+				"//db/%s/%s/%s" % (t.__class__.__name__,(t.superparent or request.site).domain,getattr(t,"name",t.oid())),
 				lambda: False ) # t.modified != mtime) 
 	
 def add_to_jinja(jinja_env):
@@ -141,7 +141,7 @@ def add_to_jinja(jinja_env):
 		jinja_env.globals[str("tm_"+name.lower())] = tm
 
 	def addables(obj):
-		u = current_request.user
+		u = request.user
 		if not hasattr(u,"_can_add"):
 			u._can_add = {}
 		u = u._can_add
@@ -152,7 +152,7 @@ def add_to_jinja(jinja_env):
 			for d in db.store.find(Discriminator, ):
 #			if getattr(obj_class(d.id),"_no_crumbs",False):
 #				continue
-				if current_request.user.can_add(obj, discr=obj.discriminator, new_discr=d.id):
+				if request.user.can_add(obj, discr=obj.discriminator, new_discr=d.id):
 					g.append((d.id,d.display_name or d.name, d.infotext))
 			u[obj.id] = g
 		return g
@@ -174,7 +174,7 @@ def add_to_jinja(jinja_env):
 					obj = env.get('obj',None)
 				if isinstance(obj,basestring):
 					obj = obj_get(obj)
-				u = getattr(current_request,"user",None)
+				u = getattr(request,"user",None)
 				if current_app.config.DEBUG_ACCESS:
 					print("can_do_"+b+":", u,obj,discr,a, file=sys.stderr)
 				if not u:
@@ -192,7 +192,7 @@ def add_to_jinja(jinja_env):
 					obj = env.vars['obj']
 				if isinstance(obj,basestring):
 					obj = obj_get(obj)
-				u = getattr(current_request,"user",None)
+				u = getattr(request,"user",None)
 				if current_app.config.DEBUG_ACCESS:
 					print("will_do_"+b+":", u,obj,a, file=sys.stderr)
 				if not u:
@@ -242,14 +242,14 @@ def render_my_template(request, obj, detail=None, mimetype=NotGiven, **context):
 
 def render_template(template, mimetype=NotGiven, **context):
 	if isinstance(template,str): template = unicode(template)
-	if current_request:
+	if request:
 		from pybble.flashing import get_flashed_messages
-		user = getattr(current_request,"user",None)
+		user = getattr(request,"user",None)
 		context.update(
-			# CURRENT_URL=current_request.build_absolute_uri(),
-			USER=getattr(current_request,"user",None),
+			# CURRENT_URL=request.build_absolute_uri(),
+			USER=getattr(request,"user",None),
 			MESSAGES=get_flashed_messages(),
-			SITE=current_request.site,
+			SITE=request.site,
 			CRUMBS=(user.groups+list(p.parent for p in user.all_visited()[0:20])) if user else None,
 			NOW=datetime.utcnow(),
 		)
@@ -274,7 +274,7 @@ def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE, discr=None):
 	ctx["detail"] = detail
 	if discr is not None:
 		ctx["sub"] = db.filter_by(obj_class(discr), parent=obj).count()
-	return render_my_template(current_request, mimetype=None, **ctx)
+	return render_my_template(request, mimetype=None, **ctx)
 
 @contextfunction
 def render_subline(ctx,obj):
@@ -292,7 +292,7 @@ def render_subrss(ctx,obj, detail=TM_DETAIL_RSS, discr=None):
 	ctx["usertracker"] = obj
 	ctx["detail"] = detail
 	try:
-		return render_my_template(current_request, mimetype=None, **ctx)
+		return render_my_template(request, mimetype=None, **ctx)
 	except AuthError:
 		if detail == TM_DETAIL_EMAIL:
 			raise
@@ -313,7 +313,7 @@ def get_dtd():
 		dtd_path = url_for('static', file='xhtml1-strict-pybble.dtd')
 		pybble_dtd = '<!DOCTYPE html SYSTEM "%s">' % dtd_path
 	try:
-		ua = UserAgent(current_request.META['HTTP_USER_AGENT'])
+		ua = UserAgent(request.META['HTTP_USER_AGENT'])
 		if ua.browser == 'msie':
 			return pybble_dtd
 	except Exception:
@@ -326,12 +326,12 @@ import email.Message
 
 def send_mail(to='', template='', server=None, **context):
 	if "site" not in context:
-		context["site"] = current_request.site
+		context["site"] = request.site
 	if "user" not in context:
-		context["user"] = current_request.user
+		context["user"] = request.user
 	rand = random_string(8)
 	for x in range(3):
-		context["id"+str(x)] = "%d.%s%d@%s" % (time(),random_string(10),x,current_request.site.domain)
+		context["id"+str(x)] = "%d.%s%d@%s" % (time(),random_string(10),x,request.site.domain)
 	
 	if server:
 		mailServer = server
@@ -346,7 +346,7 @@ for a,b in PERM.iteritems():
 	def can_do_closure(a,b):
 		def valid_do(form, field):
 			obj = obj_get(field.data)
-			u = getattr(current_request,"user",None)
+			u = getattr(request,"user",None)
 			if not u:
 				raise ValidationError(u"Kein Benutzer")
 			if current_app.config.DEBUG_ACCESS:
@@ -358,7 +358,7 @@ for a,b in PERM.iteritems():
 
 		def valid_do_self(form, field):
 			obj = obj_get(field.data)
-			u = getattr(current_request,"user",None)
+			u = getattr(request,"user",None)
 			if not u:
 				raise ValidationError(u"Kein Benutzer")
 			if current_app.config.DEBUG_ACCESS:
