@@ -13,12 +13,16 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
+from functools import update_wrapper
+
 from sqlalchemy import create_engine, Integer, types, util, exc as sa_exc
 from sqlalchemy.orm import scoped_session, sessionmaker,query
 from sqlalchemy.orm.exc import NoResultFound as NoData, MultipleResultsFound as ManyData
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
+
 from formalchemy import Column, helpers
 from formalchemy.fields import IntegerFieldRenderer
+
 from flask import Markup, url_for, escape, g
 from flask._compat import implements_to_string as py2_unicode
 
@@ -36,8 +40,8 @@ engine = db_engine()
 # don't keep database connections open for more than 5min
 
 db = scoped_session(sessionmaker(autocommit=False,
-                                         #autoflush=False,
-                                         bind=engine))
+                                 #autoflush=False,
+                                 bind=engine))
 
 class IDrenderer(IntegerFieldRenderer):
 	"""An integer which, when readonly, displays the record"""
@@ -101,3 +105,14 @@ def register(app):
 		else:
 			db.commit()
 		db.close()
+
+def no_autoflush(fn):
+	def go(*args, **kw):
+		autoflush = db.autoflush
+		db.autoflush = False
+		try:
+			return fn(*args, **kw)
+		finally:
+			db.autoflush = autoflush
+
+	return update_wrapper(go, fn)
