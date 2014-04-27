@@ -33,3 +33,9 @@ ROOT_SITE_NAME = '_root'
 ROOT_USER_NAME = 'root'
 ANON_USER_NAME = ''
 
+# used for initial import only
+from os import path
+TEMPLATE_PATH = path.join(path.dirname(__file__), 'templates')
+STATIC_PATH = path.join(path.dirname(__file__), 'static')
+del path
+

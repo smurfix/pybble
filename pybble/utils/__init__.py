@@ -12,7 +12,6 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
-from os import path
 from urlparse import urlparse
 from random import sample, randrange
 from jinja2 import Environment, BaseLoader, Markup
@@ -36,10 +35,6 @@ def slugify(text, encoding=None,
         text = text.replace('--', '-')
     return text
 
-TEMPLATE_PATH = path.join(path.dirname(__file__), 'templates')
-# used for initial import only
-
-STATIC_PATH = path.join(path.dirname(__file__), 'static')
 ALLOWED_SCHEMES = frozenset(['http', 'https', 'ftp', 'ftps'])
 URL_CHARS = 'abcdefghijkmpqrstuvwxyzABCDEFGHIJKLMNPQRST23456789'
 
