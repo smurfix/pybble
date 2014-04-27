@@ -134,15 +134,16 @@ class Delete(ObjectRef):
 	__tablename__ = "deleted"
 	_descr = D.Delete
 	_no_crumbs = True
+	@classmethod
+	def __declare_last__(cls):
+		cls.old_parent = cls.superparent
+		cls.old_parent_id = cls.superparent_id
 
 	## The old parent is in self.superparent
 	old_owner_id = Column(Integer, ForeignKey(ObjectRef.id), nullable=True, index=True)
 	old_superparent_id = Column(Integer, ForeignKey(ObjectRef.id), nullable=True, index=True)
-	@property
-	def old_parent_id(self): return self.superparent_id
 
 	old_owner = relationship(Object, primaryjoin=old_owner_id==Object.id)
-	old_parent = Object._alias('superparent')
 	old_superparent = relationship(Object, primaryjoin=old_superparent_id==Object.id)
 
 	timestamp = Column(DateTime,default=datetime.utcnow)
@@ -185,8 +186,9 @@ class Tracker(ObjectRef):
 	__tablename__ = "tracking"
 	_descr = D.Tracker
 	_no_crumbs = True
-
-	site = Object._alias('superparent')
+	@classmethod
+	def __declare_last__(cls):
+		cls.site = cls.superparent
 
 	comment = Column(Unicode(1000), nullable=True)
 	timestamp = Column(DateTime,default=datetime.utcnow)
@@ -234,10 +236,11 @@ class UserTracker(ObjectRef):
 	__tablename__ = "usertracking"
 	_descr = D.UserTracker
 	_no_crumbs = True
-
-	user = ObjectRef._alias('owner')
-	tracker = ObjectRef._alias('parent')
-	want_tracking = ObjectRef._alias('superparent')
+	@classmethod
+	def __declare_last__(cls):
+		cls.user = cls.owner
+		cls.tracker = cls.parent
+		cls.want_tracking = cls.superparent
 
 	def __init__(self, user, tracker, want):
 		super(UserTracker,self).__init__()
@@ -269,9 +272,10 @@ class WantTracking(ObjectRef):
 		"""
 	_descr = D.WantTracking
 	_display_name = "Beobachtungs-Eintrag"
-
-	obj = ObjectRef._alias('parent')
-	user = ObjectRef._alias('owner')
+	@classmethod
+	def __declare_last__(cls):
+		cls.obj = cls.parent
+		cls.user = cls.owner
 
 	discr = Column(Integer, nullable=True)
 	email = Column(Boolean, nullable=False) # send mail, not just RSS/on-site?

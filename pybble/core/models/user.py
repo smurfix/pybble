@@ -492,9 +492,10 @@ class Member(ObjectRef):
 	__tablename__ = "groupmembers"
 	_descr = D.Member
 	_no_crumbs = True
-
-	user = Object._alias('owner')
-	group = Object._alias('parent')
+	@classmethod
+	def __declare_last__(cls):
+		cls.user = cls.owner
+		cls.group = cls.parent
 
 	excluded = Column(Boolean, nullable=False,default=False)
 

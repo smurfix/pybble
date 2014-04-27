@@ -46,8 +46,9 @@ class BinData(ObjectRef):
 		"""
 	_descr = D.BinData
 	_no_crumbs = True
-	
-	storage = Object._alias('superparent')
+	@classmethod
+	def __declare_last__(cls):
+		cls.storage = cls.superparent
 
 	storage_seq = Column(Integer, autoincrement=True, index=True)
 	## The mysql driver ignores autoincrement on non-primary-key columns.
@@ -277,8 +278,9 @@ class StaticFile(ObjectRef):
 	__tablename__ = "staticfile"
 	_descr = D.StaticFile
 	_no_crumbs = True
-
-	bindata = Object._alias('parent')
+	@classmethod
+	def __declare_last__(cls):
+		cls.bindata = cls.parent
 
 	path = Column(Unicode(1000), nullable=False)
 	modified = Column(DateTime,default=datetime.utcnow)

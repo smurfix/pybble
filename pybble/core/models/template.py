@@ -35,14 +35,16 @@ class Template(ObjectRef):
 		"""
 	_descr = D.Template
 
+	@classmethod
+	def __declare_last__(cls):
+		cls.site = cls.parent
+
 	name = Column(Unicode(30), nullable=False)
 	data = Column(Unicode(100000))
 	modified = Column(DateTime,default=datetime.utcnow)
 
 	mime_id = Column(Integer, ForeignKey(MIMEtype.id), nullable=False, index=True)
 	mime = relationship(MIMEtype, primaryjoin=mime_id==MIMEtype.id)
-
-	site = Object._alias('parent')
 
 	def __storm_pre_flush__(self):
 		self.modified = datetime.utcnow()
@@ -72,8 +74,9 @@ class TemplateMatch(ObjectRef):
 		"""
 	__tablename__ = "template_match"
 	_descr = D.TemplateMatch
-
-	obj = Object._alias('parent')
+	@classmethod
+	def __declare_last__(cls):
+		cls.obj = cls.parent
 
 	data = Column(Unicode(100000))
 	modified = Column(DateTime,default=datetime.utcnow)

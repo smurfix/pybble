@@ -62,14 +62,15 @@ class Site(ObjectRef):
 	_descr = D.Site
 	#id = Column(None, ForeignKey(Object.id), primary_key=True)
 	#__mapper_args__ = {'polymorphic_identity':D.Site, 'inherit_condition': id == Object.id}
+	@classmethod
+	def __declare_last__(cls):
+		cls.superuser = cls.parent
+		cls.app = cls.superparent
 
 	domain = Column(Unicode(100), nullable=False)
 	name = Column(Unicode(30), nullable=False)
 	tracked = Column(DateTime,nullable=False, default=datetime.utcnow)
 	## Datestamp of newest fully-processed Tracker object
-
-	superuser = Object._alias("parent")
-	app = Object._alias("superparent")
 
 	## XXX convert to relationship
 	@property
@@ -141,11 +142,12 @@ class SiteBlueprint(ObjectRef):
 	"""A blueprint attached to a site's path"""
 	__tablename__ = "site_blueprint"
 	_descr = D.SiteBlueprint
+	@classmethod
+	def __declare_last__(cls):
+		cls.site = cls.parent
+		cls.blueprint = cls.superparent
 
 	path = Column(Unicode(1000), required=True) ## (, verbose_name="where to attach")
-
-	site = Object._alias('parent')
-	blueprint = Object._alias('superparent')
 
 	@property
 	def params(self):

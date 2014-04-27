@@ -185,7 +185,9 @@ class SiteConfigVar(ObjectRef, JsonValue):
 	"""This is one configuration variable's value for a site (or some other object, in fact)."""
 	_descr = D.SiteConfigVar
 
-	var = ObjectRef._alias('superparent')
+	@classmethod
+	def __declare_last__(cls):
+		cls.var = cls.superparent
 	# Owner: the user who last set the variable
 
 	def __str__(self):

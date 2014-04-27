@@ -214,14 +214,6 @@ class Object(Dumpable, Base):
 	#children = relationship("Object", remote_side=[parent_id], backref=backref('parent', foreign_keys=[parent_id], remote_side=['id']))
 	#superchildren = relationship("Object", remote_side=[superparent_id], backref=backref('superparent', foreign_keys=[superparent_id], remote_side=['id']))
 
-	@staticmethod
-	def _alias(what):
-		def _get(self):
-			return getattr(self,what)
-		def _set(self,data):
-			setattr(self,what,data)
-		return property(_get,_set)
-		
 	discriminator = Column(Integer, ForeignKey(Discriminator.id), nullable=False)
 
 	@property
