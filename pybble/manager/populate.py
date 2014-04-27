@@ -16,11 +16,13 @@ import os
 import sys
 import logging
 
-from sqlalchemy.orm.exc import NoResultFound
 from flask import request
+from flask._compat import text_type
 
 from ..utils import random_string
-from ..core.db import db
+from ..core import config
+from ..core.db import db, NoData
+from ..core.db import db, NoData
 from . import Manager,Command,Option
 
 logger = logging.getLogger('pybble.manager.populate')
@@ -31,7 +33,16 @@ content_types = [
 	('text','plain','txt','Plain text',"raw text, no formatting"),
 	('text','html+obj',None,'HTML content',"one HTML element"),
 	('text','html+haml','haml','HAML template',"HTML template (HAML syntax)"),
+    ('text','javascript','js',"JavaScript",None),
+    ('text','css','css',"CSS",None),
+    ('image','png','png',"PNG image",None),
+    ('image','jpeg','jpg',"JPEG image",None),
+    ('image','jpeg','jpeg',"JPEG image",None),
+    ('image','gif','gif',"GIF image",None),
+    ('application','binary','bin',"raw data",None),
+    ('application','pdf','pdf',"PDF document",None),
 ]
+
 class PopulateCommand(Command):
 	def __init__(self):
 		super(PopulateCommand,self).__init__()
@@ -39,20 +50,60 @@ class PopulateCommand(Command):
 
 	def __call__(self,app, force=False):
 		with app.test_request_context('/'):
-			self.main(force)
+			self.main(app,force)
 
-	def main(self, force=False):
-		from ..core.models import Discriminator
+	def main(self,app, force=False):
+		from ..core.models import Discriminator,Renderer
 		from ..core.models._descr import D
 		from ..core.models.site import Site
+		from ..core.models.storage import Storage
+		from ..core.models.files import BinData,StaticFile
 		from ..core.models.user import User
 		from ..core.models.types import MIMEtype
 		from ..core.models.config import ConfigVar
 		from .. import ROOT_SITE_NAME,ROOT_USER_NAME, ANON_USER_NAME
 
-		count = added = updated = 0
+		if 'MEDIA_PATH' not in config:
+			raise RuntimeError("You have to set MEDIA_PATH so that I can store my files somewhere")
+
+		## helper to load known apps, blueprints, renderers
+		def loadables(lister,Obj,path):
+			added=changed=found=0
+			for name in lister():
+				name = text_type(name)
+				found += 1
+				is_new = False
+				try:
+					obj = Obj.q.get_by(name=name)
+				except NoData:
+					obj = Obj(name=name, path="{}.{}.{}".format(path,name,Obj.__name__))
+					is_new = True
+				db.flush()
+				try:
+					a = obj.mod
+				except Exception as e:
+					logger.warn("{} ‘{}’ ({}) is not usable: {}".format(Obj.__name__,name,obj.path,str(e)))
+					if is_new:
+						# Dance 
+						db.add(obj)
+						db.flush()
+						db.delete(obj)
+				else:
+					if obj.doc is None or force:
+						try:
+							obj.doc = a.__doc__
+						except AttributeError:
+							pass
+			if not found:
+				logger.warn("{}: None found".format(Obj.__name__))
+			elif not changed and not added:
+				logger.debug("{}: {} found, No changes".format(Obj.__name__,found))
+			else:
+				logger.info("{}: {} new, {} updated".format(Obj.__name__,added,changed))
+			db.commit()
 
 		## Object discriminators
+		count = added = updated = 0
 		for id,name in D.items():
 			count += 1
 			doc = D._doc.get(id,None)
@@ -60,7 +111,7 @@ class PopulateCommand(Command):
 			name = name.rsplit(".")[-1]
 			try:
 				d = Discriminator.q.get_by(id=id)
-			except NoResultFound:
+			except NoData:
 				d = Discriminator(id=id,name=name, path=path, doc=doc)
 				db.add(d)
 				added += 1
@@ -78,7 +129,7 @@ class PopulateCommand(Command):
 		## main site
 		try:
 			root = Site.q.get_by(name=ROOT_SITE_NAME)
-		except NoResultFound:
+		except NoData:
 			root = Site(domain="localhost", name=ROOT_SITE_NAME)
 			logger.debug("The root site has been created.")
 		else:
@@ -94,10 +145,22 @@ class PopulateCommand(Command):
 		db.commit()
 		request.site = root
 
+		## storage
+		try:
+			st = Storage.q.get_by(name=u"Pybble")
+		except NoData:
+			try:
+				st = Storage.q.get_by(name=u"Test")
+			except NoData:
+				st = Storage("Test",app.config.MEDIA_PATH,"localhost:5000/static")
+		else:
+			st.superparent = root
+		db.commit()
+
 		## anon user
 		try:
 			anon = User.q.get_by(parent=root, username=ANON_USER_NAME)
-		except NoResultFound:
+		except NoData:
 			anon = User(ANON_USER_NAME)
 			logger.debug("The anon user has been created.")
 		else:
@@ -109,7 +172,7 @@ class PopulateCommand(Command):
 		if superuser is None or force:
 			try:
 				superuser = User.q.get_by(username=ROOT_USER_NAME, parent=root)
-			except NoResultFound:
+			except NoData:
 				password = random_string()
 				superuser = User(ROOT_USER_NAME,password)
 				db.commit()
@@ -123,13 +186,14 @@ class PopulateCommand(Command):
 		else:
 			logger.debug("The root user exists. Good.")
 		db.commit()
+		request.user = superuser
 
 		## MIME types
 		added=0
 		for type,subtype,ext,name,doc in content_types:
 			try:
 				mt = MIMEtype.q.get_by(typ=type,subtyp=subtype)
-			except NoResultFound:
+			except NoData:
 				mt = MIMEtype(typ=type, subtyp=subtype, ext=ext, name=name, doc=doc)
 				db.add(mt)
 				logger.info("MIME type '%s/%s' (%s) created." % (type,subtype,name))
@@ -141,6 +205,66 @@ class PopulateCommand(Command):
 			logger.debug("No new MIME types necessary.")
 		db.commit()
 		
+		## Rendering actual content
+		from ..render import list_renderers
+		from ..core.models.types import mime_ext
+		loadables(list_renderers,Renderer,"pybble.render")
+
+		## static files (recursive)
+		def add_files(dir,path):
+			added=0
+			for f in os.listdir(dir):
+				if f.startswith("."):
+					continue
+				f = f.decode("utf-8")
+				filepath = os.path.join(dir,f)
+				webpath = path+'/'+f
+				if os.path.isdir(filepath):
+					added += add_files(filepath,webpath)
+					continue
+				dot = f.rindex(".")
+				mime = mime_ext(f[dot+1:])
+				with open(filepath,"rb") as fd:
+					content = fd.read()
+					try:
+						sb = BinData.lookup(content)
+					except NoData:
+						sb = BinData(f[:dot],ext=f[dot+1:],content=content, storage=st)
+
+					try:
+						sf = StaticFile.q.get_by(path=webpath,superparent=root)
+					except NoData:
+						sf = StaticFile(webpath,sb)
+					else:
+						try:
+							c = sf.content
+						except EnvironmentError as e:
+							import errno
+							if e.errno != errno.ENOENT:
+								raise
+							logger.error("File ‘{}’ vanished".format(filepath))
+							sf.bindata.hash = None
+							sf.bindata.record_deletion("file vanished")
+							sf.record_deletion("file vanished")
+							db.flush()
+
+							sb = BinData(f[:dot],ext=f[dot+1:],content=content, storage=st)
+							sf = StaticFile(webpath,sb)
+							c = sf.content
+
+						if content != sf.content:
+							logger.warning("StaticFile %d:‘%s’ differs." % (sf.id,webpath))
+							if force:
+								sf.bindata.record_deletion("replaced by update")
+								sf.record_deletion("replaced by update")
+								sf = StaticFile(webpath,sb)
+					db.commit()
+			return added
+		added = add_files(os.path.join(u"pybble",u"static"),u"")
+		logger.debug("{} files processed.".format(added))
+
+		## Variables.
+		## Generic code because it doesn't hurt and may be used for Blueprint vars later.
 		def add_vars(gen,parent):
 			"""Add variables. The generator yields (name,value,docstring) triples."""
 			
@@ -148,7 +272,7 @@ class PopulateCommand(Command):
 			for k,v,d in gen:
 				try:
 					cf = ConfigVar.q.get_by(name=k, parent=parent)
-				except NoResultFound:
+				except NoData:
 					cf = ConfigVar(parent=parent, name=k, value=v, info=d)
 					db.flush()
 					added.append(k)
@@ -156,50 +280,18 @@ class PopulateCommand(Command):
 					if not cf.info or force:
 						cf.info = d
 			if added:
-				logger.info("New variables for {}: ".format(name)+",".join(added))
+				logger.info("New variables for {}: ".format(str(parent))+",".join(added))
 			else:
-				logger.debug("No new variables for {} necessary.".format(name))
+				logger.debug("No new variables for {} necessary.".format(str(parent)))
 			db.commit()
 
-		## default variables
+		## Set default variables
 		def gen_vars():
 			from pybble.manager import default_settings as DS
 			for k,v in DS.__dict__.items():
 				if k != k.upper(): continue
-				yield k,v,getattr(DS,'d_'+k,None)
+				yield text_type(k),v,getattr(DS,'d_'+k,None)
 		add_vars(gen_vars(),root)
-
-		## known … whatever
-		def loadables(lister,Obj,path):
-			added=changed=found=0
-			for name in lister():
-				found += 1
-				is_new = False
-				try:
-					obj = Obj.q.get_by(name=name)
-				except NoResultFound:
-					obj = Obj(name=name, path="{}.{}.{}".format(path,name,Obj.__name__))
-					is_new = True
-				db.flush()
-				try:
-					a = obj.mod
-				except Exception as e:
-					logger.warn("{} ‘{}’ ({}) is not usable: {}".format(Obj.__name__,name,obj.path,str(e)))
-					if is_new:
-						db.delete(obj)
-				else:
-					if obj.doc is None or force:
-						try:
-							obj.doc = a.__doc__
-						except AttributeError:
-							pass
-			if not found:
-				logger.warn("{}: None found".format(Obj.__name__))
-			elif not changed and not added:
-				logger.debug("{}: {} found, No changes".format(Obj.__name__,found))
-			else:
-				logger.info("{}: {} new, {} updated".format(Obj.__name__,added,changed))
-			db.commit()
 
 		from ..app import list_apps
 		from ..blueprint import list_blueprints
@@ -216,12 +308,12 @@ class PopulateCommand(Command):
 
 		try:
 			root_bp = Blueprint.q.get_by(name="_root")
-		except NoResultFound:
+		except NoData:
 			logger.error("The ‘_root’ blueprint is not present. Setup is incomplete!")
 		else:
 			try:
 				rbp = SiteBlueprint.q.get_by(site=root,blueprint=root_bp,path="/")
-			except NoResultFound:
+			except NoData:
 				rbp = SiteBlueprint(site=root,blueprint=root_bp,path="/")
 				logger.debug("Root site's blueprint created.")
 

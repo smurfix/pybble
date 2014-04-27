@@ -135,3 +135,14 @@ def all_addons():
 		else:
 			print("While trying to load %s: no export list ('__ALL__')" % (n,), file=sys.stderr)
 
+def hash_data(content):
+	"""
+	Create an URL-compatible ASCII hash from this content
+	"""
+	from base64 import b64encode
+	try:
+		from hashlib import sha1
+	except ImportError:
+		from sha import sha as sha1
+	return b64encode(sha1(content).digest(),altchars=str("-_")).rstrip("=")
+

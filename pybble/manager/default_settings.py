@@ -12,15 +12,17 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
-## You absolutely _must_ implement these in your local_settings.py file.
+## You need to implement these in your LOCAL.py file.
 #SECRET_KEY="If you do not change this to something random, you deserve to get hacked."
+#MEDIA_PATH="/var/lib/pybble/or/some/other/place/to/store/my/files"
+# You also need to set the "PYBBLE" environment variable to "LOCAL".
 
-## These are a bunch of "required" default settings.
+## These are a bunch of "required" default settings. They can be documented …
 import datetime
 
 APPLICATION_ROOT=None
 DEBUG=False
-d_DEBUG=""
+d_DEBUG="Emit debug information"
 JSON_AS_ASCII=True
 JSONIFY_PRETTYPRINT_REGULAR=False
 JSON_SORT_KEYS=False

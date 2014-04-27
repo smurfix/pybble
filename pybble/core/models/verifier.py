@@ -18,11 +18,10 @@ from datetime import datetime,timedelta
 
 from sqlalchemy import Integer, Unicode, DateTime, ForeignKey
 from sqlalchemy.orm import relationship,backref
-from sqlalchemy.orm.exc import NoResultFound
 
 from pybble.compat import py2_unicode
 
-from ..db import Base, Column
+from ..db import Base, Column, NoData
 
 from pybble.utils import random_string
 
@@ -60,7 +59,7 @@ class VerifierBase(Base):
 		name = unicode(name)
 		try:
 			v = VerifierBase.q.get_by(name=name)
-		except NoResultFound:
+		except NoData:
 			v=VerifierBase(name=name, cls=cls)
 			db.store.add(v)
 		else:

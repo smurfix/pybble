@@ -17,11 +17,10 @@ from datetime import datetime
 from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
 from sqlalchemy.orm import relationship,backref
 from sqlalchemy import event
-from sqlalchemy.orm.exc import NoResultFound
 
 from ...compat import py2_unicode
 from .. import config
-from ..db import Base, Column, db
+from ..db import Base, Column, db, NoData
 from ..json import register_object
 from . import ObjectRef
 from ._descr import D
@@ -31,7 +30,7 @@ def add_mime(name,typ,subtyp,ext):
 
 	try:
 		t = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
-	except NoResultFound:
+	except NoData:
 		t=MIMEtype()
 		t.name = unicode(name)
 		t.typ = typ
@@ -45,7 +44,7 @@ def add_mime(name,typ,subtyp,ext):
 		if ext != t.ext:
 			try:
 				tt = MIMEext.q.get_by(ext=ext)
-			except NoResultFound:
+			except NoData:
 				tt = MIMEext()
 				tt.mime = t
 				tt.ext = ext
@@ -56,7 +55,7 @@ def add_mime(name,typ,subtyp,ext):
 def mime_ext(ext):
 	try:
 		return MIMEtype.q.get_by(ext=ext)
-	except NoResultFound:
+	except NoData:
 		return MIMEext.q.get_by(ext=ext).mime
 
 @py2_unicode

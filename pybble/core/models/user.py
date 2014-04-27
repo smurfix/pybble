@@ -14,21 +14,22 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from flask import current_app,g,request
 from flask.ext.security import UserMixin, RoleMixin
-from flask.ext.security.utils import encrypt_password
+
+from werkzeug import security
 
 from datetime import datetime,timedelta
 
 from sqlalchemy import Integer, Unicode, DateTime, Boolean
 from sqlalchemy.orm import relationship,backref
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.types import TypeDecorator, VARCHAR
 
 from ... import ANON_USER_NAME
 from ...utils import random_string, AuthError
 from ...core import config
 from ...compat import py2_unicode
-from ..db import Base, Column, db
-from . import DummyUser,Object,ObjectRef, PERM,PERM_NONE
-from .site import DummySite, Site
+from ..db import Base, Column, db, NoData
+from . import Object,ObjectRef, PERM,PERM_NONE
+from .site import Site
 from ._descr import D
 
 import sys
@@ -141,6 +142,25 @@ import sys
 #	def user(self):
 #		return User.objects(id=self.user_id).first()
 
+class Password(TypeDecorator):
+	"""Represents any Python object as a json-encoded string.
+	"""
+	impl = VARCHAR(1000)
+
+	def process_bind_param(self, value, dialect):
+		if value is not None:
+			if ':' not in value:
+				value = security.generate_password_hash(value)
+
+		return value
+
+class PasswordValue(object):
+	password = Column(Password)
+	def check_password(self, password):
+		if ':' not in self.password:
+			self.password = security.generate_password_hash(self.password)
+		return security.check_password_hash(self.password,password)
+
 @py2_unicode
 class User(ObjectRef):
 	"""\
@@ -189,7 +209,7 @@ class User(ObjectRef):
 		self.password=password
 		try:
 			User.q.get_by(parent=request.site, username=username)
-		except (AttributeError,NoResultFound):
+		except (AttributeError,NoData):
 			pass
 		else:
 			raise RuntimeError(u"User '%s' already exists in %s" % (username,request.site))
@@ -230,7 +250,7 @@ class User(ObjectRef):
 		q = { "owner":self, "discr":obj.discriminator }
 		try:
 			s = Breadcrumb.q.get_by(parent=obj, **q)
-		except NoResultFound:
+		except NoData:
 #			for b in db.filter_by(Breadcrumb,**q).order_by(Breadcrumb.visited)[10:]:
 #				db.store.remove(b)
 			Breadcrumb(self,obj)
@@ -245,7 +265,7 @@ class User(ObjectRef):
 			q["discr"] = cls.cls_discr()
 		try:
 			r = db.filter_by(Breadcrumb, **q).order_by(Desc(Breadcrumb.visited)).first()
-		except NoResultFound:
+		except NoData:
 			return None
 		if r:
 			return r.parent
@@ -261,7 +281,7 @@ class User(ObjectRef):
 			site = request.site
 		try:
 			m = Member.q.get_by(user=self,group=site)
-		except NoResultFound:
+		except NoData:
 			return False
 		else:
 			return not m.excluded
@@ -271,7 +291,7 @@ class User(ObjectRef):
 			site = request.site
 		try:
 			m = Member.q.get_by(user_id=self.id,group_id=site.id)
-		except NoResultFound:
+		except NoData:
 			if v:
 				Member(user=self,group=site)
 		else:
@@ -590,19 +610,10 @@ for a,b in PERM.iteritems():
 				print("will_"+b+":", self,obj,discr,new_discr, file=sys.stderr)
 			if not can_do(self, obj, discr=discr, new_discr=new_discr):
 				raise AuthError(obj,a)
-		def can_err(self, obj, discr=None, new_discr=None):
-			if isinstance(obj,(DummyUser,DummySite)) and (discr is None or Discriminator.get(discr).id in (D.User,D.Site)) and new_discr is None and a>0 and a<=PERM_READ:
-				return True
-			return False
-		def will_err(self, obj, discr=None, new_discr=None):
-			if not can_err(self, obj, discr=discr, new_discr=new_discr):
-				raise AuthError(obj,a)
 
-		return can_do,will_do,can_err,will_err
+		return can_do,will_do
 	
-	c,d,e,f = can_do_closure(a,b)
+	c,d = can_do_closure(a,b)
 	setattr(Object,'can_'+b.lower(), c)
 	setattr(Object,'will_'+b.lower(), d)
-	setattr(DummyUser,'can_'+b.lower(), e)
-	setattr(DummyUser,'will_'+b.lower(), f)
 

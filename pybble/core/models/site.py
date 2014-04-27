@@ -16,7 +16,6 @@ from datetime import datetime,timedelta
 
 from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
 from sqlalchemy.orm import relationship,backref
-from sqlalchemy.orm.exc import NoResultFound
 
 from werkzeug import import_string
 from flask import request
@@ -24,30 +23,9 @@ from flask import request
 from ... import ROOT_SITE_NAME,ANON_USER_NAME
 from ...compat import py2_unicode
 from .. import config
-from ..db import Base, Column, db
-from . import DummyObject,Object, ObjectRef, TM_DETAIL_PAGE, Loadable
+from ..db import Base, Column, db, NoData
+from . import Object, ObjectRef, TM_DETAIL_PAGE, Loadable
 from ._descr import D
-
-class DummySite(DummyObject):
-	"""A site without content."""
-	def __init__(self,domain,name=None):
-		if name is None:
-			name=u"Here be "+domain
-		self.domain=unicode(domain)
-		self.name=name
-		try:
-			self.parent = Site.q.get_by(domain=u"")
-		except NoResultFound:
-			pass
-		else:
-			self.parent_id = self.parent.id
-	def oid(self): return "DummySite"
-	def get_template(self, detail=TM_DETAIL_PAGE):
-		if isinstance(self,DummySite) and detail == TM_DETAIL_SUBPAGE:
-			raise MissingDummy
-		if not self.parent:
-			raise NoResultFound
-		return self.parent.get_template(detail)
 
 @py2_unicode
 class App(Loadable,ObjectRef):

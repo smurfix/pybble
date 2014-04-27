@@ -17,8 +17,6 @@ import sys
 import logging
 from time import time
 
-from sqlalchemy.orm.exc import NoResultFound
-
 from flask import Flask, request, render_template, g, session, Markup, Response
 from flask.config import Config
 from flask.templating import DispatchingJinjaLoader
@@ -29,11 +27,12 @@ from jinja2 import Template,ChoiceLoader,PackageLoader
 from werkzeug import import_string
 
 from .. import ROOT_SITE_NAME
-from ..core.db import db
+from ..core.db import db, NoData
 from ..core.models.site import Site
 from ..core.models.config import ConfigVar,register_changed
 from ..manager import Manager,Command
 from ..blueprint import load_app_blueprints
+from ..render import load_app_renderer
 
 logger = logging.getLogger('pybble.app')
 
@@ -92,6 +91,7 @@ class BaseApp(WrapperApp,Flask):
 		register_changed(self)
 
 		self.init_routing()
+		load_app_renderer(self)
 		load_app_blueprints(self)
 	
 	def create_jinja_environment(self):
@@ -121,6 +121,9 @@ class BaseApp(WrapperApp,Flask):
 		rv.loader = ChoiceLoader(packs)
 		## TODO: inheritance from overridden templates
 		## TODO: do the same thing with static files
+
+		from pybble.render import add_to_jinja
+		add_to_jinja(rv)
 		return rv
 
 	def select_jinja_autoescape(self, filename):
@@ -226,10 +229,10 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, test=Fa
 		elif not isinstance(site,Site):
 			try:
 				site = Site.q.get_by(domain=site)
-			except NoResultFound:
+			except NoData:
 				try:
 					site = Site.q.get_by(name=site)
-				except NoResultFound:
+				except NoData:
 					if site != ROOT_SITE_NAME:
 						raise RuntimeError("The site '%s' does not exist yet."%(site,))
 					logger.warn("Creating a new root site")

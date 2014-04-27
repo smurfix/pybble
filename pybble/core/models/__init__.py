@@ -22,7 +22,7 @@ from sqlalchemy.inspection import inspect
 from ...compat import py2_unicode
 from ..json import register_object
 
-from ..db import Base, Column, IDrenderer, db
+from ..db import Base, Column, IDrenderer, db, NoData
 
 from flask import request
 from werkzeug import import_string
@@ -187,31 +187,6 @@ class Discriminator(Loadable, Dumpable, Base):
 #					print "Ref",a
 #					
 
-class DummyObject(object):
-	id=0
-	owner=None
-	owner_id=None
-	parent=None
-	parent_id=None
-	superparent=None
-	superparent_id=None
-	@property
-	def anon_user(self):
-		return DummyUser()
-	def has_children(self, discr=None):
-		return False
-	pso = (None,None,None,None)
-
-class DummyUser(DummyObject):
-	cur_login = datetime.utcnow()
-	last_login = datetime.utcnow()
-	first_login = datetime.utcnow()
-	groups = []
-	def all_visited(self, cls=None): return ()
-	def can_do(user,obj, discr=None, new_discr=None, want=None):
-		return False
-	def oid(self): return "DummyUser"
-
 @py2_unicode
 class Object(Dumpable, Base):
 	"""The base type of all pointed-to objects."""
@@ -330,7 +305,7 @@ class Object(Dumpable, Base):
 			if self.deleted:
 				try:
 					d = Delete.q.get_by(parent=self)
-				except NoResultFound:
+				except NoData:
 					return None
 				else:
 					self = d.superparent
@@ -449,7 +424,7 @@ class Object(Dumpable, Base):
 		if self.deleted:
 			try:
 				d = Delete.q.get_by(parent=self)
-			except NoResultFound:
+			except NoData:
 				return (None,None,None,None)
 			else:
 				return (d.superparent, d.old_superparent, d.old_owner,"DEL ")
@@ -507,7 +482,7 @@ class Object(Dumpable, Base):
 
 			no_inherit = False
 
-		raise NoResultFound("Template %d for %s" % (detail,str(self)))
+		raise NoData("Template %d for %s" % (detail,str(self)))
 
 	@property
 	def data(self):
@@ -523,22 +498,20 @@ class Object(Dumpable, Base):
 
 	def record_creation(self):
 		"""Record the fact that a user created this object"""
-		db.store.add(self)
 		Tracker(request.user,self)
 
 	def record_change(self,content=None,comment=None):
 		"""Record the fact that a user changed this object, and why"""
+		from .tracking import Change
+
 		if content is None:
 			content = self.data
 		Change(request.user,self,content,comment)
 
 	def record_deletion(self,comment=None):
 		"""Record the fact that a user killed this object, and why"""
+		from .tracking import Delete
 		Delete(request.user,self,comment)
-
-		self.owner = None
-		self.parent = None
-		self.superparent = None
 
 	@property
 	def default_storage(self):
@@ -622,24 +595,10 @@ def obj_get(oid):
 		raise ValueError("This object does not exist: " % (oid,))
 	return obj
 
-class Renderer(Base):
+class Renderer(Loadable,Base):
 	"""Render method for object content"""
-	__tablename__ = "renderer"
 	name = Column(Unicode(30), nullable=False)
-	cls = Column(Unicode(100), nullable=False)
-	_mod = None
-
-	def __init__(self, name, cls):
-		super(Renderer,self).__init__()
-		self.name = name
-		self.cls = cls
-
-	@property
-	def _module(self):
-		if self._mod is None:
-			self._mod = import_string(self.cls)
-		return self._mod
-	
+	doc = Column(Unicode(250), nullable=True)
 
 class renderObject(Object):
 	"""\
@@ -655,7 +614,7 @@ class renderObject(Object):
 		if renderer is not None:
 			if not isinstance(renderer,Renderer):
 				renderer = Renderer.q.get_by(name=renderer)
-			self.renderer_id = renderer.id
+			self.renderer = renderer
 	
 	@property
 	def render(self):
@@ -667,7 +626,7 @@ class renderObject(Object):
 			return _call
 		try:
 			return _wrap(Renderer.q.get_by(id=self.renderer_id)._module)
-		except NoResultFound:
+		except NoData:
 			def _wr(*a,**k):
 				return "<pre>"+Markup.escape(self.data)+"<pre>\n"
 			return _wr

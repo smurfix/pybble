@@ -15,22 +15,21 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from datetime import datetime
 import logging
 
+from flask import request
+
 from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
 from sqlalchemy.orm import relationship,backref
 from sqlalchemy import event
 
-from pybble.compat import py2_unicode
-
-from ..db import Base, Column
-
-from flask import request
-
-from pybble.core import config
-import os
-
+from ...core import config
+from ...compat import py2_unicode
+from ...utils import hash_data
+from ..db import Base, Column, no_autoflush, db
 from . import Object,ObjectRef, update_modified
 from ._descr import D
-from .types import MIMEtype
+from .types import MIMEtype, mime_ext
+
+import os
 
 logger = logging.getLogger('pybble.core.models.files')
 
@@ -41,6 +40,9 @@ class BinData(ObjectRef):
 		owner: whoever uploaded the thing
 		parent: the object this is attached to
 		superparent: the storage
+
+		This object implements a content-based file system: the hash of the
+		file contents is an index.
 		"""
 	_descr = D.BinData
 	_no_crumbs = True
@@ -54,7 +56,7 @@ class BinData(ObjectRef):
 	mime_id = Column(Integer, ForeignKey(MIMEtype.id), nullable=False, index=True)
 	mime = relationship(MIMEtype, primaryjoin=mime_id==MIMEtype.id)
 	name = Column(Unicode(30), nullable=False)
-	hash = Column(Unicode(33), nullable=False)
+	hash = Column(Unicode(33), nullable=True, unique=True) ## NULL if deleted
 	timestamp = Column(DateTime,default=datetime.utcnow)
 	size = Column(Integer)
 
@@ -62,6 +64,7 @@ class BinData(ObjectRef):
 	def lookup(content):
 		return BinData.q.filter(BinData.hash == hash_data(content), BinData.superparent != None).one()
 			
+	@no_autoflush
 	def __init__(self,name, ext=None,mimetype=None, content=None, parent=None, storage=None):
 		super(BinData,self).__init__()
 		if not parent: parent = request.site
@@ -93,8 +96,13 @@ class BinData(ObjectRef):
 			try:
 				self._content = open(self.path).read()
 			except IOError:
-				self._content = open(self.old_path).read()
-				self._move_old()
+				try:
+					self._content = open(self.old_path_1).read()
+				except IOError:
+					self._content = open(self.old_path_2).read()
+					self._move_old_2()
+				else:
+					self._move_old_1()
 		return self._content
 
 	@property
@@ -111,7 +119,11 @@ class BinData(ObjectRef):
 		except Exception:
 			return "???"
 
-	def _old_get_chars(self):
+	def _old1_get_chars(self):
+		"""
+		Broken: like _old2_get_chars(), and
+		* id-based, thus was very sparse
+		"""
 		if self.id is None:
 			db.flush()
 			if self.id is None:
@@ -134,11 +146,17 @@ class BinData(ObjectRef):
 			fc[-1] += "."+self.mime.ext
 		return fc
 
-	def _get_chars(self):
+	def _old2_get_chars(self):
+		"""
+		Broken:
+		* chars[id % len(midchars)] instead of midchars[id % len(midchars)]
+		* missing "id -= 1" after "while id", so there was never an ‘aa’
+		  (or ‘22’ …) subdirectory
+		"""
 		if self.storage_seq is None:
 			db.flush()
-			if self.storage_seq is None:
-				return "???"
+			db.refresh(self,('storage_seq',))
+			assert self.storage_seq is not None, repr(self)
 		id = self.storage_seq-1
 		chars = "23456789abcdefghjkmnopqrstuvwxyz"
 		midchars = "abcdefghjkmnopq"
@@ -157,8 +175,41 @@ class BinData(ObjectRef):
 			fc[-1] += "."+self.mime.ext
 		return fc
 
-	def _move_old(self):
-		op = self.old_path
+	def _get_chars(self):
+		if self.storage_seq is None:
+			db.flush()
+			db.refresh(self,('storage_seq',))
+		assert self.storage_seq, repr(self)
+		id = self.storage_seq-1
+		chars = "23456789abcdefghjkmnopqrstuvwxyz"
+		midchars = "abcdefghjkmnopq"
+		fc = []
+		flast = chars[id % len(chars)]
+		id = id // len(chars)
+		while id:
+			id -= 1
+			c = midchars[id % len(midchars)]
+			id = id // len(midchars)
+			c = midchars[id % len(midchars)] + c
+			id = id // len(midchars)
+			fc.insert(0,c)
+		fc.append("_")
+		fc.append(self.name+"_"+self.hash[0:10]+flast)
+		if self.mime.ext:
+			fc[-1] += "."+self.mime.ext
+		return fc
+
+	def _move_old_1(self):
+		op = self.old_path_1
+		np = self.path
+		if op != np:
+			try:
+				os.rename(op,np)
+			except OSError:
+				logger.warn(u"Could not rename ‘{}’ to ‘{}’".format(op,np))
+
+	def _move_old_2(self):
+		op = self.old_path_2
 		np = self.path
 		if op != np:
 			try:
@@ -177,9 +228,15 @@ class BinData(ObjectRef):
 		return fn
 
 	@property
-	def old_path(self):
+	def old_path_1(self):
 		fn = self.superparent.path
-		fc = self._old_get_chars()
+		fc = self._old1_get_chars()
+		return os.path.join(fn,*fc)
+
+	@property
+	def old_path_2(self):
+		fn = self.superparent.path
+		fc = self._old2_get_chars()
 		return os.path.join(fn,*fc)
 
 	def get_absolute_url(self):

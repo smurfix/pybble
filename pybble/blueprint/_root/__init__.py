@@ -25,52 +25,78 @@ This is the standard blueprint for your site root,
 used for global administration and visualization.
 
 It is auto-added to your site root when populated.
+
+TODO: replace this with a “real” site root.
+
 """
-
-class TheView(AdminBaseView):
-	@expose('/')
-	def index(self):
-		self._template_args['model'] = self.base.model
-		return self.render(['admin/index.haml','admin/index.html'])
-
-class FakeAdmin(object):
-	def __init__(self,bp):
-		self.url = bp.url_prefix
-	def menu(self):
-		return ()
-	def menu_links(self):
-		return ()
-	subdomain = None
-	static_url_path = "/static"
-	url = None
-	base_template="admin/base.html"
-
 class Blueprint(BaseBlueprint):
-	__doc__=_doc
 	def setup(self):
 		super(Blueprint,self).setup()
-		try:
-			base,model = self.params['model'].rsplit('.',1)
-		except KeyError:
-			pass
-		else:
-			self.model = getattr(import_module(base),model)
 
-		try:
-			base,view = self.params['view'].rsplit('.',1)
-		except KeyError:
-			view = TheView
-		else:
-			view = getattr(import_module(base), view)
+		@self.route('/')
+		def test_root():
+			return """This is the colorful root, having <a href="red">red</a>, <a href="yellow">yellow</a>, <a href="green">green</a>, and <a href="blue">blue</a>."""
 
-		self.view = view(self.name+"_view", endpoint=self.name, url=self.url_prefix)
-		self.view.base = self
-		view_bp = self.view.create_blueprint(FakeAdmin(self))
-		view_bp.name = self.name+"_view"
-		self.app.register_blueprint(view_bp)
+		@self.route('/red')
+		def test_red():
+			return "This is Red Color"
 
-		static_folder=os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__name__))),'static')
-		def send_file(filename):
-			return send_from_directory(static_folder, filename)
-		self.app.add_url_rule(self.url_prefix + '/static/<path:filename>', endpoint='admin.static', view_func=send_file)
+		@self.route('/green')
+		def test_green():
+			return render_template('green.haml')
 
+		@self.route('/blue')
+		def test_blue():
+			return render_template('blue.html')
+
+		@self.route('/yellow')
+		def test_yellow():
+			return "This is %s Color"%(self.params['color'],)
+
+#class TheView(AdminBaseView):
+#	@expose('/')
+#	def index(self):
+#		self._template_args['model'] = self.base.model
+#		return self.render(['admin/index.haml','admin/index.html'])
+#
+#class FakeAdmin(object):
+#	def __init__(self,bp):
+#		self.url = bp.url_prefix
+#	def menu(self):
+#		return ()
+#	def menu_links(self):
+#		return ()
+#	subdomain = None
+#	static_url_path = "/static"
+#	url = None
+#	base_template="admin/base.html"
+#
+#class Blueprint(BaseBlueprint):
+#	__doc__=_doc
+#	def setup(self):
+#		super(Blueprint,self).setup()
+#		try:
+#			base,model = self.params['model'].rsplit('.',1)
+#		except KeyError:
+#			pass
+#		else:
+#			self.model = getattr(import_module(base),model)
+#
+#		try:
+#			base,view = self.params['view'].rsplit('.',1)
+#		except KeyError:
+#			view = TheView
+#		else:
+#			view = getattr(import_module(base), view)
+#
+#		self.view = view(self.name+"_view", endpoint=self.name, url=self.url_prefix)
+#		self.view.base = self
+#		view_bp = self.view.create_blueprint(FakeAdmin(self))
+#		view_bp.name = self.name+"_view"
+#		self.app.register_blueprint(view_bp)
+#
+#		static_folder=os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__name__))),'static')
+#		def send_file(filename):
+#			return send_from_directory(static_folder, filename)
+#		self.app.add_url_rule(self.url_prefix + '/static/<path:filename>', endpoint='admin.static', view_func=send_file)
+#

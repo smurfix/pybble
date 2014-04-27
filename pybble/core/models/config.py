@@ -25,7 +25,7 @@ from flask.config import Config
 from ...compat import py2_unicode
 from .. import json, config
 from ..utils import attrdict
-from ..db import db, Base, Column
+from ..db import db, Base, Column, NoData
 from . import ObjectRef
 from ._descr import D
 
@@ -34,7 +34,6 @@ from datetime import datetime,timedelta
 from sqlalchemy import Integer, Unicode, DateTime, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship,backref
 from sqlalchemy.types import TypeDecorator, VARCHAR
-from sqlalchemy.orm.exc import NoResultFound
 
 #from flask.ext.misaka import markdown
 #
@@ -85,17 +84,17 @@ class ConfigDict(Config,attrdict):
 		while s:
 			try:
 				cfv = ConfigVar.q.get_by(name=k,parent=self._parent)
-			except NoResultFound:
+			except NoData:
 				s = s.parent
 			else:
 				break
 		if not cfv and self._set_db:
-			raise NoResultFound(k)
+			raise NoData(k)
 		if self._set_db:
 			assert self._parent
 			try:
 				cf = SiteConfigVar.q.get_by(parent=self._parent, var=cfv)
-			except NoResultFound:
+			except NoData:
 				cf = SiteConfigVar(parent=self._parent, var=cfv, value=v)
 			else:
 				cf.value=v
@@ -104,14 +103,14 @@ class ConfigDict(Config,attrdict):
 	def __delitem__(self,k):
 		try:
 			cfv = ConfigVar.get(k)
-		except NoResultFound:
+		except NoData:
 			# can't delete values that are only read from settings
-			raise NoResultFound(k)
+			raise NoData(k)
 		if self._set_db:
 			assert self.site
 			try:
 				cf = SiteConfigVar.objects.get_by(site=self.site, var=cfv)
-			except NoResultFound:
+			except NoData:
 				pass
 			else:
 				cf.delete()
@@ -161,8 +160,8 @@ class ConfigVar(ObjectRef, JsonValue):
 	def get(name):
 		try:
 			return ConfigVar.q.get_by(name=name)
-		except NoResultFound:
-			raise NoResultFound("ConfigVar:"+name)
+		except NoData:
+			raise NoData("ConfigVar:"+name)
 
 	@staticmethod
 	def exists(name,info,default=None):

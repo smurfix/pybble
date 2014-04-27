@@ -14,37 +14,24 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from jinja2 import Environment, BaseLoader, Markup, contextfunction, contextfilter
 from werkzeug import cached_property, Response
-from werkzeug.http import parse_etags, remove_entity_headers
+from werkzeug.http import parse_etags, remove_entity_headers, http_date
 from werkzeug.routing import Map, Rule
-from werkzeug.utils import http_date
-from pybble.utils import current_request, local, random_string, AuthError
-from pybble.models import PERM, PERM_NONE, PERM_ADD, Permission, obj_get, TemplateMatch, Template, WikiPage, \
-	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, StaticFile, obj_get, TM_DETAIL, \
+from flask import request
+from ..utils import random_string, AuthError
+from ..core.models import PERM, PERM_NONE, PERM_ADD, obj_get, \
+	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, obj_get, TM_DETAIL, \
 	TM_DETAIL_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name, MissingDummy
-from pybble.database import db,NoResult,database
-from pybble.diff import textDiff,textOnlyDiff
-from storm.locals import Store
+from ..core.models.user import Permission
+from ..core.models.template import TemplateMatch, Template
+from ..core.models.files import StaticFile
+from ..core.db import db,NoData
+from ..utils.diff import textDiff,textOnlyDiff
 from wtforms.validators import ValidationError
 from time import time
 from datetime import datetime,timedelta
-from pybble import _settings as settings
-import sys
-
-DEBUG_ACCESS = getattr(settings,"ACCESS_DEBUG",False)
+import sys,os
 
 url_map = Map([Rule('/static/<file>', endpoint='static', build_only=True)])
-
-store = None
-try:
-	store = Store(database)
-	discr_list = list(store.find(Discriminator))
-	discr_list.sort(cmp=lambda a,b: cmp(a.name,b.name))
-except Exception:
-	raise
-	discr_list = [] # if not set up yet
-finally:
-	store.close()
-	del store
 
 def valid_obj(form, field):
 	"""Field verifier which checks that an object ID is valid"""
@@ -88,8 +75,8 @@ class DatabaseLoader(BaseLoader):
 			site = current_request.site
 			t = None
 			while site:
-				try: t = db.get_by(Template, name=template,superparent=site)
-				except NoResult: pass
+				try: t = Template.q.get_by(name=template,superparent=site)
+				except NoData: pass
 				else: break
 				site = site.parent
 			if t is None:
@@ -99,81 +86,131 @@ class DatabaseLoader(BaseLoader):
 				"//db/%s/%s/%s" % (t.__class__.__name__,(t.superparent or current_request.site).domain,getattr(t,"name",t.oid())),
 				lambda: False ) # t.modified != mtime) 
 	
-jinja_env = Environment(loader=DatabaseLoader(), autoescape=True)
+def add_to_jinja(jinja_env):
 
-expose_map = {}
-def expose(rule, **kw):
-	def decorate(f):
-		name = "%s.%s" % (f.__module__,f.__name__)
-		kw['endpoint'] = name
-		expose_map[name] = f
-		url_map.add(Rule(rule, **kw))
-		return f
-	return decorate
+	expose_map = {}
+	def expose(rule, **kw):
+		def decorate(f):
+			name = "%s.%s" % (f.__module__,f.__name__)
+			kw['endpoint'] = name
+			expose_map[name] = f
+			url_map.add(Rule(rule, **kw))
+			return f
+		return decorate
 
-def render(obj, *a,**kw):
-	if hasattr(obj,"render"):
-		return obj.render(*a,**kw)
-	else:
-		return Markup.escape(unicode(obj))
-jinja_env.filters['render'] = render
+	def render(obj, *a,**kw):
+		if hasattr(obj,"render"):
+			return obj.render(*a,**kw)
+		else:
+			return Markup.escape(unicode(obj))
+	jinja_env.filters['render'] = render
 
-def cdata(data): ## [[[[
-	return Markup("<![CDATA[")+data.replace("]]>","]] >")+Markup("]]>")
-jinja_env.filters['cdata'] = cdata
+	def cdata(data): ## [[[[
+		return Markup("<![CDATA[")+data.replace("]]>","]] >")+Markup("]]>")
+	jinja_env.filters['cdata'] = cdata
 
-def datetimeformat(value, format='%Y-%m-%d %H:%M'):
-	return value.strftime(format)
-jinja_env.filters['date'] = datetimeformat
+	def datetimeformat(value, format='%Y-%m-%d %H:%M'):
+		return value.strftime(format)
+	jinja_env.filters['date'] = datetimeformat
 
-def url_for(endpoint, _external=False, **values):
-	return local.url_adapter.build(endpoint, values, force_external=_external)
-jinja_env.globals['url_for'] = url_for
+	jinja_env.globals['url'] = lambda: request.url
 
-jinja_env.globals['url'] = lambda: current_request.url
+	def name_discr(id):
+		if id is None or id == "None":
+			return "*"
+		return Discriminator.q.get_by(id=int(id)).name
+	jinja_env.globals['name_discr'] = name_discr
 
-def name_discr(id):
-	if id is None or id == "None":
-		return "*"
-	return db.get_by(Discriminator, id=int(id)).name
-jinja_env.globals['name_discr'] = name_discr
+	def name_detail(id):
+		from pybble.models import TM_DETAIL_name
+		return TM_DETAIL_name(id)
+	jinja_env.globals['name_detail'] = name_detail
 
-def name_detail(id):
-	from pybble.models import TM_DETAIL_name
-	return TM_DETAIL_name(id)
-jinja_env.globals['name_detail'] = name_detail
+	def name_permission(id):
+		from pybble.models import PERM_name
+		return PERM_name(id).lower()
+	jinja_env.globals['name_permission'] = name_permission
 
-def name_permission(id):
-	from pybble.models import PERM_name
-	return PERM_name(id).lower()
-jinja_env.globals['name_permission'] = name_permission
+	jinja_env.globals['diff'] = textDiff
+	jinja_env.globals['textdiff'] = textOnlyDiff
 
-jinja_env.globals['diff'] = textDiff
-jinja_env.globals['textdiff'] = textOnlyDiff
+	for d in discr_list:
+		jinja_env.globals[str("d_"+d.name.lower())] = d.id
 
-for d in discr_list:
-	jinja_env.globals[str("d_"+d.name.lower())] = d.id
+	for tm,name in TM_DETAIL.items():
+		jinja_env.globals[str("tm_"+name.lower())] = tm
 
-for tm,name in TM_DETAIL.items():
-	jinja_env.globals[str("tm_"+name.lower())] = tm
+	def addables(obj):
+		u = current_request.user
+		if not hasattr(u,"_can_add"):
+			u._can_add = {}
+		u = u._can_add
 
-def addables(obj):
-	u = current_request.user
-	if not hasattr(u,"_can_add"):
-		u._can_add = {}
-	u = u._can_add
-
-	g = u.get(obj.id,None)
-	if g is None:
-		g = []
-		for d in db.store.find(Discriminator, ):
+		g = u.get(obj.id,None)
+		if g is None:
+			g = []
+			for d in db.store.find(Discriminator, ):
 #			if getattr(obj_class(d.id),"_no_crumbs",False):
 #				continue
-			if current_request.user.can_add(obj, discr=obj.discriminator, new_discr=d.id):
-				g.append((d.id,d.display_name or d.name, d.infotext))
-		u[obj.id] = g
-	return g
-jinja_env.globals['addables'] = addables
+				if current_request.user.can_add(obj, discr=obj.discriminator, new_discr=d.id):
+					g.append((d.id,d.display_name or d.name, d.infotext))
+			u[obj.id] = g
+		return g
+	jinja_env.globals['addables'] = addables
+
+	jinja_env.globals['subpage'] = render_subpage
+	jinja_env.globals['subline'] = render_subline
+	jinja_env.globals['subrss'] = render_subrss
+
+	# Permission checks for templates: {% if can_edit() %} -- menu -- {% endif %}
+	for a,b in PERM.iteritems():
+		def can_do_closure(a,b):
+			def can_do(env, obj=None, discr=None):
+				if discr is None:
+					if isinstance(obj,(int,long)):
+						discr=obj
+						obj=None
+				if obj is None:
+					obj = env.get('obj',None)
+				if isinstance(obj,basestring):
+					obj = obj_get(obj)
+				u = getattr(current_request,"user",None)
+				if current_app.config.DEBUG_ACCESS:
+					print("can_do_"+b+":", u,obj,discr,a, file=sys.stderr)
+				if not u:
+					return False
+				if a > PERM_NONE:
+					return u.can_do(obj, discr=discr) >= a
+				elif a == PERM_ADD:
+					return u.can_do(obj, discr=obj, new_discr=discr, want=a) == a
+				else:
+					return u.can_do(obj, discr=discr, want=a) == a
+			can_do.contextfunction = 1 # Jinja
+
+			def will_do(env, obj=None):
+				if obj is None:
+					obj = env.vars['obj']
+				if isinstance(obj,basestring):
+					obj = obj_get(obj)
+				u = getattr(current_request,"user",None)
+				if current_app.config.DEBUG_ACCESS:
+					print("will_do_"+b+":", u,obj,a, file=sys.stderr)
+				if not u:
+					raise AuthError(obj,a)
+				if a > PERM_NONE:
+					if u.can_do(obj) < a:
+						raise AuthError(obj,a)
+				else:
+					if u.can_do(obj, want=a) != a:
+						raise AuthError(obj,a)
+			will_do.contextfunction = 1 # Jinja
+
+			return can_do,will_do
+		c,d = can_do_closure(a,b)
+		jinja_env.globals['can_' + b.lower()] = c
+		jinja_env.globals['will_' + b.lower()] = d
+
+
 
 class NotGiven: pass
 
@@ -196,7 +233,7 @@ def render_my_template(request, obj, detail=None, mimetype=NotGiven, **context):
 
 	try:
 		t = obj.get_template(detail=detail)
-	except NoResult:
+	except NoData:
 		t = "missing_%d.html" % (detail,)
 	except MissingDummy:
 		t = "missing_0.html"
@@ -216,7 +253,7 @@ def render_template(template, mimetype=NotGiven, **context):
 			CRUMBS=(user.groups+list(p.parent for p in user.all_visited()[0:20])) if user else None,
 			NOW=datetime.utcnow(),
 		)
-	r = jinja_env.get_template(template).render(**context)
+	r = current_app.jinja_env.get_template(template).render(**context)
 	if mimetype:
 		if mimetype is NotGiven:
 			mimetype="text/html"
@@ -262,10 +299,6 @@ def render_subrss(ctx,obj, detail=TM_DETAIL_RSS, discr=None):
 		else:
 			return Markup("<p>'%s' kann nicht dargestellt werden (Zugriffsfehler).</p>" % (obj.oid(),))
 
-jinja_env.globals['subpage'] = render_subpage
-jinja_env.globals['subline'] = render_subline
-jinja_env.globals['subrss'] = render_subrss
-
 
 pybble_dtd = None
 def get_dtd():
@@ -303,12 +336,10 @@ def send_mail(to='', template='', server=None, **context):
 	if server:
 		mailServer = server
 	else:
-		mailServer = smtplib.SMTP(settings.MAILHOST)
-	mailServer.sendmail(context["site"].owner.email, to, jinja_env.get_template(template).render(**context).encode("utf-8"))
+		mailServer = smtplib.SMTP(current_app.config.MAILHOST)
+	mailServer.sendmail(context["site"].owner.email, to, current_app.jinja_env.get_template(template).render(**context).encode("utf-8"))
 	if not server:
 		mailServer.quit()
-
-
 
 # Permission checks for templates: {% if can_edit() %} -- menu -- {% endif %}
 for a,b in PERM.iteritems():
@@ -318,8 +349,8 @@ for a,b in PERM.iteritems():
 			u = getattr(current_request,"user",None)
 			if not u:
 				raise ValidationError(u"Kein Benutzer")
-			if DEBUG_ACCESS:
-				print >>sys.stderr, "valid can_"+b+":", u,obj,a
+			if current_app.config.DEBUG_ACCESS:
+				print("valid can_"+b+":", u,obj,a, file=sys.stderr)
 			if (u.can_do(obj, discr=obj, want=a) < a) \
 				if (a > PERM_NONE) \
 				else (u.can_do(obj, discr=obj, want=a) != a):
@@ -330,8 +361,8 @@ for a,b in PERM.iteritems():
 			u = getattr(current_request,"user",None)
 			if not u:
 				raise ValidationError(u"Kein Benutzer")
-			if DEBUG_ACCESS:
-				print >>sys.stderr, "valid can_self_"+b+":", u,obj,a
+			if current_app.config.DEBUG_ACCESS:
+				print("valid can_self_"+b+":", u,obj,a, file=sys.stderr)
 			if u is obj:
 				return
 			if (u.can_do(obj, discr=obj, want=a) < a) \
@@ -339,50 +370,8 @@ for a,b in PERM.iteritems():
 				else (u.can_do(obj, discr=obj, want=a) != a):
 				raise ValidationError(u"Kein Zugriff auf Objekt '%s' (%s)" % (field.data,b))
 
-		def can_do(env, obj=None, discr=None):
-			if discr is None:
-				if isinstance(obj,(int,long)):
-					discr=obj
-					obj=None
-			if obj is None:
-				obj = env.get('obj',None)
-			if isinstance(obj,basestring):
-				obj = obj_get(obj)
-			u = getattr(current_request,"user",None)
-			if DEBUG_ACCESS:
-				print >>sys.stderr, "can_do_"+b+":", u,obj,discr,a
-			if not u:
-				return False
-			if a > PERM_NONE:
-				return u.can_do(obj, discr=discr) >= a
-			elif a == PERM_ADD:
-				return u.can_do(obj, discr=obj, new_discr=discr, want=a) == a
-			else:
-				return u.can_do(obj, discr=discr, want=a) == a
-		can_do.contextfunction = 1 # Jinja
-
-		def will_do(env, obj=None):
-			if obj is None:
-				obj = env.vars['obj']
-			if isinstance(obj,basestring):
-				obj = obj_get(obj)
-			u = getattr(current_request,"user",None)
-			if DEBUG_ACCESS:
-				print >>sys.stderr, "will_do_"+b+":", u,obj,a
-			if not u:
-				raise AuthError(obj,a)
-			if a > PERM_NONE:
-				if u.can_do(obj) < a:
-					raise AuthError(obj,a)
-			else:
-				if u.can_do(obj, want=a) != a:
-					raise AuthError(obj,a)
-		will_do.contextfunction = 1 # Jinja
-
-		return can_do,will_do,valid_do,valid_do_self
-	c,d,e,f = can_do_closure(a,b)
-	jinja_env.globals['can_' + b.lower()] = c
-	jinja_env.globals['will_' + b.lower()] = d
+		return valid_do,valid_do_self
+	e,f = can_do_closure(a,b)
 	globals()['valid_' + b.lower()] = e
 	globals()['valid_' + b.lower() + '_self'] = f
 
@@ -410,54 +399,55 @@ for a,b in PERM.iteritems():
 #	pages = property(lambda x: max(0, x.count - 1) // x.per_page + 1)
 
 
-@expose("/static/<path:path>")
-def serve_path(request,path):
-	site = request.site
-	while site:
-		try:
-			sf = db.get_by(StaticFile, superparent=site, path=path)
-		except NoResult:
-			site = site.parent
-			if not site:
-				raise
+def add_to_app(app):
+	@app.route("/static/<path:path>")
+	def serve_path(request,path):
+		site = request.site
+		while site:
+			try:
+				sf = StaticFile.q.get_by(superparent=site, path=path)
+			except NoData:
+				site = site.parent
+				if not site:
+					raise
+			else:
+				break
+
+		if parse_etags(request.environ.get('HTTP_IF_NONE_MATCH')).contains(sf.hash):
+			r = Response("", mimetype=sf.mimetype)
+			r.status_code = 304
+			remove_entity_headers(r.headers)
 		else:
-			break
+			r = Response(sf.content, mimetype=sf.mimetype)
+		r.set_etag(sf.hash)
+		r.headers['Cache-Control']='public'
+		r.headers['Expiry']=http_date(datetime.utcnow()+timedelta(0,current_app.config.STATIC_EXPIRE))
+		r.headers['Last-Modified']=http_date(sf.modified)
+		return r
 
-	if parse_etags(request.environ.get('HTTP_IF_NONE_MATCH')).contains(sf.hash):
-		r = Response("", mimetype=sf.mimetype)
-		r.status_code = 304
-		remove_entity_headers(r.headers)
-	else:
-		r = Response(sf.content, mimetype=sf.mimetype)
-	r.set_etag(sf.hash)
-	r.headers['Cache-Control']='public'
-	r.headers['Expiry']=http_date(datetime.utcnow()+timedelta(0,settings.STATIC_EXPIRE))
-	r.headers['Last-Modified']=http_date(sf.modified)
-	return r
-
-@expose("/download/<oid>")
-@expose("/download/<oid>/<name>")
-def download(request,oid,name=None):
-	obj = obj_get(oid)
-	r = Response(obj.content, mimetype=obj.mimetype)
-	if name:
-		n = obj.name
-		if obj.mime.ext:
-			n += "."+obj.mime.ext
-		assert n == name
-
-	if parse_etags(request.environ.get('HTTP_IF_NONE_MATCH')).contains(obj.hash):
-		r = Response("", mimetype=obj.mimetype)
-		r.status_code = 304
-		remove_entity_headers(r.headers)
-	else:
+	@app.route("/download/<oid>")
+	@app.route("/download/<oid>/<name>")
+	def download(request,oid,name=None):
+		obj = obj_get(oid)
 		r = Response(obj.content, mimetype=obj.mimetype)
+		if name:
+			n = obj.name
+			if obj.mime.ext:
+				n += "."+obj.mime.ext
+			assert n == name
 
-	r.set_etag(obj.hash)
-	r.headers['Cache-Control']='public'
-	r.headers['Expiry']=http_date(datetime.utcnow()+timedelta(999))
-	r.headers['Last-Modified']=http_date(obj.timestamp)
-	return r
+		if parse_etags(request.environ.get('HTTP_IF_NONE_MATCH')).contains(obj.hash):
+			r = Response("", mimetype=obj.mimetype)
+			r.status_code = 304
+			remove_entity_headers(r.headers)
+		else:
+			r = Response(obj.content, mimetype=obj.mimetype)
+
+		r.set_etag(obj.hash)
+		r.headers['Cache-Control']='public'
+		r.headers['Expiry']=http_date(datetime.utcnow()+timedelta(999))
+		r.headers['Last-Modified']=http_date(obj.timestamp)
+		return r
 
 def list_renderers():
 	path = os.path.dirname(os.path.abspath(__file__))
@@ -467,3 +457,14 @@ def list_renderers():
 				not os.path.exists(os.path.join(path, fname, 'DISABLED')):
 			yield fname
 
+def load_app_renderer(app):
+	## TODO? if renderers can ever be parameterized per-site, do that here
+	from ..core.models import Renderer
+	for r in Renderer.q.all():
+		r = r.mod()
+		r.setup_app(app)
+
+class Renderer(object):
+	"""Base class for rendering"""
+	def render(self,obj):
+		raise NotImplementedError("You need to implement ‘{}.render()’".format(self.__class__.__name__))

@@ -16,7 +16,6 @@ import os
 import sys
 import logging
 from importlib import import_module
-from sqlalchemy.orm.exc import NoResultFound
 
 from . import Manager,Command,Option
 from ..core.json import encode

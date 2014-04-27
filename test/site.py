@@ -16,10 +16,10 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 import unittest
 import datetime
 import flask
-#from sqlalchemy.orm.exc import NoResultFound
 
 from .base import TC
 from pybble.core.models import Site,ConfigVar,SiteConfigVar,Blueprint
+#from pybble.core.db import NoData
 
 class SiteTestCase(TC):
 
@@ -144,12 +144,12 @@ class SiteTestCase(TC):
 #			self.assertEquals(u1,User.find("U1",site2))
 #			self.assertEquals(u1,User.find("U1",site21))
 #
-#			self.assertRaises(NoResultFound, User.find,"U2",site)
-#			self.assertRaises(NoResultFound, User.find,"U3",site)
+#			self.assertRaises(NoData, User.find,"U2",site)
+#			self.assertRaises(NoData, User.find,"U3",site)
 #
-#			self.assertRaises(NoResultFound, User.find,"U2",site2)
-#			self.assertRaises(NoResultFound, User.find,"U3",site1)
-#			self.assertRaises(NoResultFound, User.find,"U2",site21)
+#			self.assertRaises(NoData, User.find,"U2",site2)
+#			self.assertRaises(NoData, User.find,"U3",site1)
+#			self.assertRaises(NoData, User.find,"U2",site21)
 #
 #			self.assertRaises(NotUniqueError, User.add,"U1",site2)
 #			self.assertRaises(NotUniqueError, User.add,"U1",site21)
