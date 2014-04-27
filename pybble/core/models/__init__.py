@@ -294,6 +294,8 @@ class Object(Dumpable, Base):
 
 	@property
 	def site(self):
+		from .site import Site
+
 		found = set()
 		while self:
 			if isinstance(self,Site):
@@ -310,8 +312,12 @@ class Object(Dumpable, Base):
 					return None
 				else:
 					self = d.superparent
+			elif self.parent and self.parent not in found:
+				self = self.parent
+			elif self.superparent and self.superparent not in found:
+				self = self.superparent
 			else:
-				self = self.parent or self.superparent
+				return None
 
 	@property
 	def templates(self):
