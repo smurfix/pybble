@@ -86,17 +86,14 @@ class Change(ObjectRef):
 
 	timestamp = Column(DateTime,default=datetime.utcnow)
 	data = Column(Unicode(100000))
-	comment = Column(Unicode(1000), nullable=True)
 
-	def __init__(self, user, obj, data, comment = None):
+	def __init__(self, user, obj, data, comment=None):
 		super(Change,self).__init__()
 		self.owner = user
 		self.parent = obj
 		self.data = data
-		self.comment = comment
 
-		session.add(self)
-		session.add(Tracker(user,self))
+		Tracker(user,self, comment=comment)
 
 	def __str__(self):
 		p,s,o,d = self.pso
@@ -138,8 +135,6 @@ class Delete(ObjectRef):
 	_descr = D.Delete
 	_no_crumbs = True
 
-	comment = Column(Unicode(1000), nullable=True)
-
 	## The old parent is in self.superparent
 	old_owner_id = Column(Integer, ForeignKey(ObjectRef.id), nullable=True, index=True)
 	old_superparent_id = Column(Integer, ForeignKey(ObjectRef.id), nullable=True, index=True)
@@ -160,7 +155,10 @@ class Delete(ObjectRef):
 		self.superparent = obj.parent
 		self.old_superparent = obj.superparent
 
-		Tracker(user,self)
+		obj.owner = None
+		obj.parent = None
+		obj.superparent = None
+		Tracker(user,self, comment=comment)
 
 	def __str__(self):
 		if self._rec_str or not self.owner or not self.parent: return super(Delete,self).__str__()
