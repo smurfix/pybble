@@ -27,6 +27,38 @@ from . import Object,ObjectRef, TM_DETAIL
 from ._descr import D
 
 @py2_unicode
+class Template(ObjectRef):
+	"""
+		A template for rendering.
+		parent: Site the template applies to.
+		owner: user who created the template.
+		"""
+	_descr = D.Template
+
+	name = Column(Unicode(30), nullable=False)
+	data = Column(Unicode(100000))
+	modified = Column(DateTime,default=datetime.utcnow)
+
+	site = Object._alias('parent')
+
+	def __storm_pre_flush__(self):
+		self.modified = datetime.utcnow()
+		super(Template,self).__storm_pre_flush__()
+
+	def __init__(self, name, data, parent=None):
+		super(Template,self).__init__()
+		self.name = name
+		self.data = data
+		self.owner = current_request.user
+		self.parent = parent or current_request.site
+		self.superparent = getattr(parent,"site",None) or current_request.site
+
+	def __str__(self):
+		return "‹%s:%d›" % (self.__class__.__name__,self.id)
+	def __repr__(self):
+		return "'<%s:%d>'" % (self.__class__.__name__,self.id)
+
+@py2_unicode
 class TemplateMatch(ObjectRef):
 	"""
 		Associate a template to an object.
