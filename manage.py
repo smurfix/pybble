@@ -24,6 +24,7 @@ from flask.ext.script import Server
 from warnings import filterwarnings
 filterwarnings("error")
 filterwarnings("ignore",category=DeprecationWarning)
+filterwarnings("ignore",category=ImportWarning)
 
 #from flask.ext.collect import Collect
 #from quokka.core.db import db
