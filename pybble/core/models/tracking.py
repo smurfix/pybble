@@ -192,14 +192,15 @@ class Tracker(ObjectRef):
 
 	site = Object._alias('superparent')
 
+	comment = Column(Unicode(1000), nullable=True)
 	timestamp = Column(DateTime,default=datetime.utcnow)
 
-	def __init__(self, user, obj, site = None):
+	def __init__(self, user, obj, site=None, comment=None):
 		super(Tracker,self).__init__()
 		self.owner = user
 		self.parent = obj
 		self.superparent = site or request.site
-		session.add(self)
+		self.comment = comment
 
 	def __str__(self):
 		if self._rec_str or not self.owner or not self.superparent: return super(Tracker,self).__str__()

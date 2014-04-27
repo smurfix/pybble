@@ -1,0 +1,45 @@
+UL.ObjectTree, DIV.body UL.ObjectTree, DIV.body UL.ObjectTree UL {
+	font-family: Verdana, sans-serif;
+	font-size: 11px;
+	line-height: 17px; // images are 16px
+	padding: 0 0;
+	margin: 0 0;
+}
+
+UL.ObjectTree LI {
+	list-style: none;
+	padding: 0px;
+	padding-left: 20px; // separate image element
+	margin: 0px;
+	white-space: nowrap;
+}
+
+UL.ObjectTree A {
+	color: #333;
+	// text-decoration: none;
+	// display: block;
+	padding: 0px 2px;
+}
+
+UL.ObjectTree LI SPAN :hover {
+	background: #BDF;
+}
+
+UL.ObjectTree LI A :hover {
+	background: #BDF;
+}
+
+UL.ObjectTree SPAN.image {
+	height:16px;
+	width:16px;
+	display: block;
+	float: left;
+	cursor: pointer;
+}
+
+/* Core Styles */
+UL.ObjectTree LI.collapsed > SPAN.image { background: url(/static/img/directory.png) left top no-repeat; }
+UL.ObjectTree LI.expanded > SPAN.image { background: url(/static/img/folder_open.png) left top no-repeat; }
+UL.ObjectTree LI.file > SPAN.image { background: url(/static/img/file.png) left top no-repeat; }
+UL.ObjectTree LI.wait > SPAN.image { background: url(/static/img/spinner.gif) left top no-repeat; }
+

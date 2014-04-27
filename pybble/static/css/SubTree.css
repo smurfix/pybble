@@ -1,0 +1,62 @@
+UL.SubTree, DIV.body UL.SubTree, DIV.body UL.SubTree UL {
+	line-height: 17px; // images are 16px
+	padding: 0 0;
+	margin: 0 0;
+}
+
+UL.SubTree UL {
+	padding-left: 1em;
+	padding-right: 0;
+}
+
+UL.SubTree LI {
+	list-style: none;
+	padding: 0px;
+	padding-left: 20px; // separate image element
+	margin: 0px;
+}
+
+UL.SubTree SPAN.contents {
+	font-style: italic;
+}
+
+UL.SubTree A {
+	color: #333;
+	// text-decoration: none;
+	// display: block;
+	padding: 0px 2px;
+}
+
+UL.SubTree LI SPAN :hover {
+	background: #BDF;
+}
+
+UL.SubTree LI A :hover {
+	background: #BDF;
+}
+
+UL.SubTree SPAN.image {
+	height: 16px;
+	width: 16px;
+	display: block;
+	float: left;
+	padding-left: 17px;
+	cursor: pointer;
+}
+
+/* Core Styles */
+UL.SubTree LI.collapsed > SPAN.image { background: url(/static/img/arrow-right.png) left top no-repeat; }
+UL.SubTree LI.mixed > SPAN.image { background: url(/static/img/arrow-right2.png) left top no-repeat; }
+UL.SubTree LI.expanded > SPAN.image { background: url(/static/img/arrow-down.png) left top no-repeat; }
+UL.SubTree LI.terminal > SPAN.image { background: url(/static/img/green.png) left top no-repeat; }
+
+UL.SubTree LI.collapsed > SPAN.image:hover { background: url(/static/img/arrow-right-hl.png) left top no-repeat; }
+UL.SubTree LI.mixed > SPAN.image:hover { background: url(/static/img/arrow-right2-hl.png) left top no-repeat; }
+UL.SubTree LI.expanded > SPAN.image:hover { background: url(/static/img/arrow-down-hl.png) left top no-repeat; }
+
+UL.SubTree LI.collapsed > SPAN.moused:hover { background: url(/static/img/arrow-downright-hl.png) left top no-repeat; }
+UL.SubTree LI.mixed > SPAN.moused:hover { background: url(/static/img/arrow-downright-hl.png) left top no-repeat; }
+UL.SubTree LI.expanded > SPAN.moused:hover { background: url(/static/img/arrow-downright-hl.png) left top no-repeat; }
+
+UL.SubTree LI.wait > SPAN.image { background: url(/static/img/spinner.gif) left top no-repeat; }
+UL.SubTree LI.wait_content > SPAN.image { background: url(/static/img/spinner.gif) left top no-repeat; }

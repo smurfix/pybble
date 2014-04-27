@@ -1,0 +1,18 @@
+<li rel="{{obj.oid()}}" class="{% if obj.id in details %}expanded{% elif obj.id in aux %}mixed{% else %}collapsed{% endif %} t_{{obj.classname}}">
+		<span class="image"></span>
+		<a href="{{ url_for("pybble.views.view_oid",oid=obj.owner.oid()) }}">{{ obj.owner.name }}</a>: <a href="{{ url_for("pybble.views.view_oid",oid=obj.oid()) }}">
+			{{ obj.name }}
+		</a> am {{ obj.added }}
+		<div class="content">
+		  {% if obj.id in details -%}
+		    {{ subpage(obj,tm_hierarchy) }}
+		  {% endif %}
+		</div>
+		{% if obj.id in aux -%}
+		  <ul>
+		  {% for o in obj.all_children(d_comment) %}
+		     {{ subpage(o,tm_snippet) }}
+		  {% endfor %}
+		  </ul>
+		{% endif -%}
+</li>

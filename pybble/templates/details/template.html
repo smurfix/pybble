@@ -1,0 +1,14 @@
+  <h2>Template</h2>
+    <table>
+	  <tbody>
+		<tr><th>Template:</th><td>{{ obj }}</td></tr>
+		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid()) }}">{{ obj.oid() }}</a></td></tr>
+		<tr><th>Name:</th><td>{{ obj.name }}</td></tr>
+		<tr><th>Site:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_superparent.oid()) }}">{{ obj_superparent }}</a> ({{ obj_superparent.oid() }})</td></tr>
+		{%- if obj_owner %}
+		<tr><th>Creator:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_owner.oid()) }}">{{ obj_owner }}</a> ({{ obj_owner.oid() }})</td></tr>
+		{%- endif %}
+		<tr><th>Geändert:</th><td>{{ obj.modified }}</td></tr>
+		<tr><th class="top">Inhalt:</th><td class="code"><code>{{ obj.data }}</code></td></tr>
+	  </tbody>
+    </table>

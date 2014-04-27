@@ -1,0 +1,240 @@
+body {
+    background-color: #333;
+    font-family: 'Lucida Sans', 'Verdana', sans-serif;
+    font-size: 14px;
+    margin: 0 0;
+    padding: 0;
+}
+
+a {
+    color: #145;
+}
+
+a:hover {
+    color: #289;
+}
+
+.message a.hide {
+  float: right;
+  display: block;
+  background-image: url(../img/hide.png);
+  background-position: 0px 5px;
+  background-repeat: no-repeat;
+  width: 24px;
+  height: 21px;
+}
+
+.message a.hide:hover {
+  background-image: url(../img/hide_highlight.png);
+}
+
+code {
+	white-space: pre-wrap;
+}
+
+td.code {
+	border:1px solid #ccc;
+}
+
+code del {
+	color: red;
+}
+
+div.shortcuts_right {
+	float: right;
+	font-size: 0.9em;
+	background-color:#ccc;
+	border-style:solid;
+	border-width:1px;
+	border-color:black;
+	padding: 0.5em;
+}
+
+div.comments div.new {
+	float: right;
+	font-size: 0.8em;
+	margin-top: -1.2em;
+}
+
+div.comments div.content {
+	margin-left: 34px;
+	font-size: 0.9em;
+}
+div.comments div.content {
+	border-bottom-color:#ccc;
+	border-bottom-style:solid;
+	border-bottom-width:1px;
+	margin-bottom:2px;
+}
+
+div.comments {
+	border-top-color:#ccc;
+	border-top-style:solid;
+	border-top-width:1px;
+	margin-top:2px;
+}
+
+code ins {
+	color: green;
+}
+
+th.top {
+	vertical-align: top;
+}
+
+h1#top {
+    // width: 500px;
+    background-color: #814;
+    text-align: center;
+    font-size: 2em;
+	color: #fff;
+    margin: 0 auto 0 auto;
+    display: block;
+    padding: 0.3em;
+
+}
+
+div.body h1 {
+    margin: 0.8em 0 0.5em 0;
+}
+div.body h2 {
+    margin: 0.5em 0 0.2em 0;
+    text-align: center;
+}
+div.body h3 {
+    margin: 0.3em 0 0.1em 0;
+}
+div.body h4 {
+    margin: 0.2em 0 0 0;
+}
+div.body h5 {
+    margin: 0 0 0 0;
+}
+
+tbody tr th {
+	text-align: right;
+}
+
+form {
+	align: center;
+	display: block;
+}
+
+.error {
+	color: #A00;
+}
+
+div.message {
+	// width: 500px;
+	background-color: #FF8;
+	color: #660;
+	text-align: center;
+	font-size: 1.5em;
+    margin: 0 auto 0 auto;
+    padding: 0;
+}
+
+div.message.success {
+	background-color: #8F8;
+	color: #0A0;
+}
+div.message.fail {
+	background-color: #F88;
+	color: #A00;
+}
+
+h1 a:hover {
+    color: #AEF;
+    background-color: #199;
+}
+
+div.footer {
+    margin: 0 auto 0 auto;
+    font-size: 13px;
+    text-align: right;
+    padding: 2px 10px;
+    background-color: #046;
+    color: white;
+}
+
+div.footer a {
+    color: white;
+}
+
+div.body {
+    margin: 0 auto 0 auto;
+    padding: 20px;
+    padding-bottom: 10px;
+    // width: 460px;
+    background-color: #ffc;
+    color: black;
+}
+
+div.body input {
+    margin: 0.2em 0 0.2em 0;
+    font-family: 'Lucida Sans', 'Verdana', sans-serif;
+    font-size: 1.2em;
+    //background-color: #CCEB98;
+    color: black;
+}
+
+div.body #alias {
+    // width: 300px;
+    margin-right: 10px;
+}
+
+div.body p {
+    margin: 0;
+    padding: 0.2em 0 0.2em 0;
+}
+
+div.body ul {
+    margin: 0;
+    padding: 0 1em;
+    list-style: none;
+}
+
+div.body div.subpage ul {
+    list-style: disc;
+}
+
+div.error {
+    margin: 1em 0 1em 0;
+    border: 2px solid #AC0202;
+    background-color: #9E0303;
+    font-weight: bold;
+    color: white;
+}
+
+div.pagination {
+    font-size: 13px;
+}
+
+div.body blockquote {
+	border-left: 2px solid gray;
+	border-style: solid;
+	border-width: 0 0 0 2px;
+	margin: 0 15px;
+	padding: 0 0 0 4px;
+}
+
+div.body blockquote h1 {
+	font-size:1.3em;
+	text-align:left;
+}
+div.body blockquote h2 {
+	font-size:1.2em;
+	text-align:left;
+}
+div.body blockquote h3,
+div.body blockquote h4,
+div.body blockquote h5,
+div.body blockquote h6 {
+	font-size:1.3em;
+	text-align:left;
+}
+
+div.preview {
+	background-color: #ddd;
+	padding: 1em;
+}
