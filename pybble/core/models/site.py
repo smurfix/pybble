@@ -81,6 +81,14 @@ class Site(ObjectRef):
 	def blueprints(self):
 		return self.all_children("SiteBlueprint")
 
+	@property
+	def all_sites(self):
+		yield self
+		for s in self.all_children(D.Site):
+			for ss in s.all_sites:
+				yield ss
+	# we don't have "yield from
+
 	def __init__(self,domain,name=None):
 		super(Site,self).__init__()
 		if name is None:
