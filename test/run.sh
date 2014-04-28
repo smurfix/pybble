@@ -20,7 +20,7 @@ if [ -f $REV ] ; then
 	if [ $rev = $(cat $REV) ] ; then
 		skip=Y
 	else
-		rm -r $D/$(cat $REV)
+		rm -r $D/$(cat $REV).*
 	fi
 fi
 if [ $skip = N ] ; then
