@@ -44,8 +44,8 @@ cp -a $PYBBLE_MEDIA_PATH $DATA
 PYBBLE_SQL_DATABASE=$SQL
 PYBBLE_MEDIA_PATH=$DATA
 
-./manage.py -t check
-./manage.py -t config
+./manage.py -t core check
+./manage.py -t core config
 
 nosetests -x
 
