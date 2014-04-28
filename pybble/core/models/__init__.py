@@ -286,6 +286,8 @@ class Object(Dumpable, Base):
 
 	@property
 	def site(self):
+		raise RuntimeError("This code should no longer be necessary")
+
 		from .site import Site
 
 		found = set()
