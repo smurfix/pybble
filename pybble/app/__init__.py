@@ -21,6 +21,7 @@ from flask import Flask, request, render_template, g, session, Markup, Response
 from flask.config import Config
 from flask.templating import DispatchingJinjaLoader
 from flask.ext.script import Server
+from flask._compat import text_type
 
 from hamlish_jinja import HamlishExtension
 from jinja2 import Template,BaseLoader, TemplateNotFound
@@ -78,7 +79,7 @@ class SiteTemplateLoader(BaseLoader):
 
 	def get_source(self, environment, template):
 		s = self.site
-		import pdb;pdb.set_trace()
+		template = text_type(template)
 		while s is not None:
 			try:
 				t = DBTemplate.q.get_by(site=s,name=template)
@@ -89,7 +90,7 @@ class SiteTemplateLoader(BaseLoader):
 				def t_is_current():
 					db.refresh(t,('modified',))
 					return mtime == t.modified
-				return t.data, s.name+':'+template, t_is_current
+				return t.data, template, t_is_current
 			s = s.parent
 		raise TemplateNotFound(template)
 
@@ -113,7 +114,6 @@ class BaseApp(WrapperApp,Flask):
 		self.wsgi_app = CustomProxyFix(self.wsgi_app)
 		register_changed(self)
 
-		self.init_routing()
 		load_app_renderer(self)
 		load_app_blueprints(self)
 	
@@ -165,12 +165,6 @@ class BaseApp(WrapperApp,Flask):
 	def init_manager(self, mgr):
 		pass
 	
-	def init_routing(self):
-		@self.route('/')
-		def index():
-			"""Just a generic index page to show."""
-			return render_template('index.haml')
-
 	def setup(self):
 		"""
 		Do everything necessary to get the app into a state where it can

@@ -63,21 +63,39 @@ class ConfigDict(Config,attrdict):
 	_parent = None
 	_set_db = False
 	def __init__(self,parent=None):
-		self.root_path = os.curdir
 		self._parent = parent
 		self._set_db = bool(parent)
 		
-		s = parent
-		while s:
-			for v in SiteConfigVar.q.filter_by(site=s):
-				self.setdefault(v.var.name, v.value)
-			s = s.parent
+	def _load(self, parent=None, force=False, recurse=None, vars=None):
+		"""\
+			Load variable data.
 
-		# find defaults
-		for v in ConfigVar.q.all():
-			if v.deleted:
-				continue
-			self.setdefault(v.name, v.value)
+			:param force: Overwrite existing values
+			:param recurse: Recursively check parents (or whatever).
+				Infinite loops are protected against.
+			"""
+		s = parent or self._parent
+		seen = set()
+		if recurse is True:
+			recurse = "parent"
+		while s:
+			if s.id in seen: break
+			seen.add(s.id)
+
+			for v in SiteConfigVar.q.filter_by(parent=s):
+				if force:
+					if v.var.name not in seen:
+						self[v.var.name] = v.value
+						seen.add(v.var.name)
+				else:
+					self.setdefault(v.var.name, v.value)
+			for v in ConfigVar.q.filter_by(parent=(getattr(s,vars) if vars else s)):
+				self.setdefault(v.name, v.value)
+
+			if recurse:
+				s = getattr(s,recurse)
+			else:
+				break
 
 #	def __setitem__(self,k,v):
 #		s = self._parent
@@ -160,6 +178,12 @@ class ConfigVar(ObjectRef, JsonValue):
 	info = Column(Unicode(100))
 	# TODO: make sure that (name,parent_id) is unique
 
+	def __init__(self, parent, name,value, info=None):
+		self.parent = parent
+		self.name = name
+		self.value = value
+		self.info = info
+
 	@staticmethod
 	def get(name):
 		try:
@@ -172,13 +196,13 @@ class ConfigVar(ObjectRef, JsonValue):
 		cf = ConfigVar(name=name,info=info,default=default)
 		cf.save()
 	def __str__(self):
-		if self.var is None or self.site is None:
+		if self.parent is None:
 			return super(ConfigVar).__str__()
-		return u"‹%s: %s=%s @%s›" % (self.__class__.__name__,self.var.name,repr(self.value),self.site.name)
+		return u"‹%s: %s=%s @%s›" % (self.__class__.__name__,self.name,repr(self.value),self.parent.name)
 	def __repr__(self):
-		if self.var is None or self.site is None:
+		if self.parent is None:
 			return super(ConfigVar).__repr__()
-		return "%s:%s=%s@%s" % (self.__class__.__name__,self.var.name,repr(self.value),self.site.name)
+		return "<%s:%s=%s @%s>" % (self.__class__.__name__,self.name,repr(self.value),self.parent.name)
 
 @py2_unicode
 class SiteConfigVar(ObjectRef, JsonValue):

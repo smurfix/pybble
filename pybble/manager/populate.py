@@ -267,33 +267,32 @@ class PopulateCommand(Command):
 		logger.debug("{} files changed.".format(added))
 
 		## templates (not recursive)
-		added = 0
-		def get_template(fn):
+		def get_template(filepath,webpath):
 			added = 0
-			with file(os.path.join(TEMPLATE_PATH,fn)) as f:
+			with file(filepath) as f:
 				try:
 					data = f.read().decode("utf-8")
 				except Exception:
-					print("While reading",fn,file=sys.stderr)
+					print("While reading",filepath,file=sys.stderr)
 					raise
 
-			fn = unicode(fn)
+			webpath = unicode(webpath)
 			try:
-				t = Template.q.get_by(name=fn,parent=root)
+				t = Template.q.get_by(name=webpath,parent=root)
 			except NoData:
-				t = Template(name=fn,data=data,parent=root)
+				t = Template(name=webpath,data=data,parent=root)
 				t.owner = superuser
 				added += 1
 			else:
 				if t.mime is None:
-					dot = fn.rindex(".")
+					dot = filepath.rindex(".")
 					try:
-						t.mime = mime_ext(fn[dot+1:])
+						t.mime = mime_ext(filepath[dot+1:])
 					except NoData:
-						raise NoData(fn[dot+1:])
+						raise NoData(filepath[dot+1:])
 
 				if t.data != data:
-					print (u"Warning: Template %d '%s' differs." % (t.id,fn)).encode("utf-8")
+					print (u"Warning: Template %d '%s' differs." % (t.id,filepath)).encode("utf-8")
 					if force:
 						t.data = data
 				if force:
@@ -303,15 +302,21 @@ class PopulateCommand(Command):
 			db.commit()
 			return added
 
+		def get_templates(dirpath,webpath=""):
+			added = 0
+			for fn in os.listdir(dirpath):
+				if fn.startswith("."):
+					continue
+				newdirpath = os.path.join(dirpath,fn)
+				newwebpath = "{}/{}".format(webpath,fn) if webpath else fn
+				if os.path.isdir(newdirpath):
+					added += get_templates(newdirpath,newwebpath)
+				else:
+					added += get_template(newdirpath,newwebpath)
+			return added
+
 		added = 0
-		for fn in os.listdir(TEMPLATE_PATH):
-			if fn.startswith(".") or (not fn.endswith(".haml") and not fn.endswith(".html") and not fn.endswith(".txt") and not fn.endswith(".xml")):
-				continue
-			added += get_template(fn)
-		for fn in os.listdir(os.path.join(TEMPLATE_PATH,"edit")):
-			if fn.startswith(".") or not fn.endswith(".html"):
-				continue
-			added += get_template(os.path.join("edit",fn))
+		get_templates(TEMPLATE_PATH)
 		logger.debug("{} templates changed.".format(added))
 
 		## Variables.
@@ -350,6 +355,27 @@ class PopulateCommand(Command):
 		loadables(list_apps,App,"pybble.app")
 		loadables(list_blueprints,Blueprint,"pybble.blueprint")
 
+		for bp in Blueprint.q.all():
+			mod = sys.modules[bp.mod.__module__]
+			path = os.path.join(mod.__path__[0], 'templates')
+			added = get_templates(path, bp.name)
+			if added:
+				logger.info("{} templates for {} added/changed.".format(added,bp.name))
+			else:
+				logger.debug("No new/changed templates for {}.".format(bp.name))
+
+			if hasattr(mod,"PARAMS"):
+				## Set default variables
+				def gen_vars():
+					from pybble.manager import default_settings as DS
+					for k,v in DS.__dict__.items():
+						if k != k.upper(): continue
+						yield text_type(k),v,getattr(DS,'d_'+k,None)
+				add_vars(mod.PARAMS,bp)
+
+			else:
+				logger.debug("No parameters in {}.".format(bp.name))
+		
 		rapp = App.q.get_by(name="_root")
 		if root.app is None or force:
 			if root.app is not rapp:

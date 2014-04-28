@@ -111,7 +111,8 @@ class Site(ObjectRef):
 	@property
 	def config(self):
 		from .config import ConfigDict
-		return ConfigDict(self)
+		cf = ConfigDict(self)
+		cf._load(recurse='parent')
 
 	@property
 	def anon_user(self):
@@ -137,6 +138,15 @@ name: %s
 domain: %s
 """ % (self.name,self.domain)
 
+	@property
+	def config(self):
+		from .config import ConfigDict
+		res = ConfigDict(self)
+		for v in self.all_children(D.ConfigVar):
+			res[v.name] = v.value
+
+		return res
+
 @py2_unicode
 class SiteBlueprint(ObjectRef):
 	"""A blueprint attached to a site's path"""
@@ -150,6 +160,9 @@ class SiteBlueprint(ObjectRef):
 	path = Column(Unicode(1000), required=True) ## (, verbose_name="where to attach")
 
 	@property
-	def params(self):
-		return {}
+	def config(self):
+		from .config import ConfigDict
+		res = ConfigDict(self)
+		res._load(vars="superparent")
+		return res
 		### TODO get them from variables

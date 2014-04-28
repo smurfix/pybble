@@ -53,7 +53,7 @@ def load_app_blueprints(app):
 			if b.name in names:
 				continue
 			names.add(b.name)
-			params = bp.params
+			params = bp.config
 			bpm = b.mod(b.name,b.path)
 			app.register_blueprint(bpm, **params)
 		site = site.parent
