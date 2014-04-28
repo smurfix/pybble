@@ -346,6 +346,8 @@ class PopulateCommand(Command):
 			from pybble.core import default_settings as DS
 			for k,v in DS.__dict__.items():
 				if k != k.upper(): continue
+				if k in app.config: # add overrides
+					v = app.config[k]
 				yield text_type(k),v,getattr(DS,'d_'+k,None)
 		add_vars(gen_vars(),root)
 
