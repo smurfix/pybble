@@ -21,7 +21,7 @@ from flask import request
 
 from ...compat import py2_unicode
 from .. import config
-from ..db import Base, Column
+from ..db import Base, Column, no_autoflush
 from . import Object,ObjectRef, TM_DETAIL
 from ._descr import D
 from .types import MIMEtype, mime_ext
@@ -50,6 +50,7 @@ class Template(ObjectRef):
 		self.modified = datetime.utcnow()
 		super(Template,self).__storm_pre_flush__()
 
+	@no_autoflush
 	def __init__(self, name, data, parent=None):
 		super(Template,self).__init__()
 		self.name = name
@@ -58,8 +59,8 @@ class Template(ObjectRef):
 		self.parent = parent or request.site
 		self.superparent = getattr(parent,"site",None) or request.site
 
-		dot = f.rindex(".")
-		self.mime = mime_ext(f[dot+1:])
+		dot = name.rindex(".")
+		self.mime = mime_ext(name[dot+1:])
 
 	def __str__(self):
 		return "‹%s:%d›" % (self.__class__.__name__,self.id)
