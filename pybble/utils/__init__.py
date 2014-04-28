@@ -23,6 +23,16 @@ from markdown import Markdown
 import sys
 from unicodedata import normalize
 
+class NotGiven:
+	"""
+	A keyword value which indicates that there is no value passed.
+	Distinct from None because somwtimes it is known that there is no
+	value.
+
+	TODO: Also used when setting up variables et al. (causing them to be deleted).
+	"""
+	pass
+
 # copied from Quokka
 def slugify(text, encoding=None,
             permitted_chars='abcdefghijklmnopqrstuvwxyz0123456789-'):

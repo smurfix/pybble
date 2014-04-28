@@ -8,18 +8,18 @@ from json.encoder import JSONEncoder
 from json.decoder import JSONDecoder
 from . import config
 from .utils import attrdict, TZ,UTC, format_dt
+from ..utils import NotGiven
 import datetime as dt
 
-class _NotGiven(object): pass
 class SupD(dict):
-	def get(self,k,default=_NotGiven):
+	def get(self,k,default=NotGiven):
 		if hasattr(k,"__mro__"):
 			for x in k.__mro__:
 				try:
 					return self.__getitem__(x.__module__+"."+x.__name__)
 				except KeyError:
 					pass
-		if default is _NotGiven:
+		if default is NotGiven:
 			raise KeyError(k)
 		return default
 

@@ -18,7 +18,7 @@ from werkzeug.http import parse_etags, remove_entity_headers, http_date
 from werkzeug.routing import Map, Rule
 from flask import request
 
-from ..utils import random_string, AuthError
+from ..utils import random_string, AuthError, NotGiven
 from ..core.models import PERM, PERM_NONE, PERM_ADD, obj_get, \
 	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, obj_get, TM_DETAIL, \
 	TM_DETAIL_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name, MissingDummy
@@ -213,9 +213,6 @@ def add_to_jinja(jinja_env):
 		jinja_env.globals['can_' + b.lower()] = c
 		jinja_env.globals['will_' + b.lower()] = d
 
-
-
-class NotGiven: pass
 
 def render_my_template(request, obj, detail=None, mimetype=NotGiven, **context):
 	"""Global render"""
