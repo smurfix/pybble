@@ -182,10 +182,12 @@ class BinData(ObjectRef):
 			db.refresh(self,('storage_seq',))
 		assert self.storage_seq, repr(self)
 		id = self.storage_seq-1
-		chars = "23456789abcdefghjkmnopqrstuvwxyz"
-		midchars = "abcdefghjkmnopq"
+		chars = "abcdefghjk" ## 100 files per end directory (long names)
+		midchars = "abcdefghjkmnopqr" ## 256 subdirectories (short names)
 		fc = []
 		flast = chars[id % len(chars)]
+		id = id // len(chars)
+		flast += chars[id % len(chars)]
 		id = id // len(chars)
 		while id:
 			id -= 1
