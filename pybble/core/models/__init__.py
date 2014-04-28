@@ -298,6 +298,7 @@ class Object(Dumpable, Base):
 			found.add(self)
 
 			if self.deleted:
+				from .tracking import Delete
 				try:
 					d = Delete.q.get_by(parent=self)
 				except NoData:
