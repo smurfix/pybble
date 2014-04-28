@@ -343,7 +343,7 @@ class PopulateCommand(Command):
 
 		## Set default variables
 		def gen_vars():
-			from pybble.manager import default_settings as DS
+			from pybble.core import default_settings as DS
 			for k,v in DS.__dict__.items():
 				if k != k.upper(): continue
 				yield text_type(k),v,getattr(DS,'d_'+k,None)

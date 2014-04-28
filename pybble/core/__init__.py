@@ -15,6 +15,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from .utils import attrdict
 import os
 from flask import Flask
+from flask._compat import text_type
 
 class config(attrdict):
 	_module = None
@@ -51,13 +52,20 @@ class config(attrdict):
 		self._default('TEST',False)
 		self._default('DEBUG',False)
 		self._default('TRACE',False)
-		self._default('mysql_host','localhost')
-		self._default('mysql_port',3306,int)
-		self._default('mysql_user','test')
-		self._default('mysql_pass','test')
-		self._default('mysql_database','pybble')
-		self._default('mysql_uri',None)
+		self._default('sql_driver','mysql')
+		self._default('sql_host','localhost')
+		self._default('sql_port',3306,int)
+		self._default('sql_user','test')
+		self._default('sql_pass','test')
+		self._default('sql_database','pybble')
+
+		self._default('sql_uri',None)
 		self._default('web_port',8080,int)
+
+		from . import default_settings as DS
+		for k,v in DS.__dict__.items():
+			if k != k.upper(): continue
+			self._default(text_type(k),v)
 
 		if 'SECRET_KEY' not in self:
 			if self.TEST:
@@ -65,11 +73,14 @@ class config(attrdict):
 			else:
 				raise RuntimeError("For production use, you need to set SECRET_KEY in config.")
 
-		if self.mysql_uri is None:
-			if self.mysql_pass == "test" and not self.TEST:
+		if self.sql_uri is None:
+			if self.sql_pass == "test" and not self.TEST:
 				raise RuntimeError("For production use, you need to set a database password (or URI).")
 			
-			self.mysql_uri = "mysql://%s:%s@%s:%s/%s" % (self.mysql_user,self.mysql_pass,self.mysql_host,self.mysql_port,self.mysql_database)
+			if self.sql_database.startswith("/"): # it's a file
+				self.sql_uri = "%s:///%s" % (self.sql_driver,self.sql_database)
+			else: # it's a remote connection
+				self.sql_uri = "%s://%s:%s@%s:%s/%s" % (self.sql_driver,self.sql_user,self.sql_pass,self.sql_host,self.sql_port,self.sql_database)
 
 		for k,v in Flask.default_config.items():
 			self.setdefault(k,v)

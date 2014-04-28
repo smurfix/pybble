@@ -72,20 +72,23 @@ $ pip install -r requirements.txt
 ```
 # $EDITOR LOGIN.py
 ===============./LOGIN.py===============
-mysql_user="test"
-mysql_pass=""
-mysql_host="localhost"
-mysql_database="test_pybble"
+sql_user="test"
+sql_pass=""
+sql_host="localhost"
+sql_database="test_pybble"
 
 ####### REPLACE THE SECRET KEY WITH SOMETHING RANDOM #######
 # Do not use the same string in production and testing/staging/debugging.
 # Never check this file into any version control system.
 SECRET_KEY="We hack all your data"
 DEBUG = True
+MEDIA_PATH="/var/tmp/pybble"
 =================================================
 ```
 
-You should
+You should of course create that directory. in a production environment,
+it's a good idea to let your normal web server handle these files.
+They are not access-controlled, but have undiscoverable file names.
 
 3. Populate with initial data
 

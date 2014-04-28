@@ -39,7 +39,7 @@ SESSION_COOKIE_NAME='session'
 SESSION_COOKIE_PATH=None
 SESSION_COOKIE_SECURE=False
 SESSION_REFRESH_EACH_REQUEST=True
-TESTING=False
+TEST=False
 TRAP_BAD_REQUEST_ERRORS=False
 TRAP_HTTP_EXCEPTIONS=False
 USE_X_SENDFILE=False
@@ -49,5 +49,7 @@ LOGGER_NAME='pybble'
 LOGGER_LEVEL="DEBUG"
 LOGGER_FORMAT='%(asctime)s %(name)-12s %%(levelname)-8s %%(message)s'
 LOGGER_DATE_FORMAT='%Y-%m-%d %H:%M:%S'
+
+MEDIA_PATH="/var/www/pybble"
 
 del datetime

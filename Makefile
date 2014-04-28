@@ -4,11 +4,10 @@ all: fetch pybble/utils/sql_diff.py
 
 .PHONY:	test
 test:
-	@nosetests
+	@sh test/run.sh
 	@echo "app.config" | \
 		python manage.py shell --no-ipython | \
 		grep -qs "SESSION_COOKIE_DOMAIN.:.None"
-	@sh test/manager.sh
 
 update:
 	@sh utils/update_boilerplate

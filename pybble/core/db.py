@@ -31,10 +31,13 @@ from . import config
 
 def db_engine(**kw):
 	kw.setdefault('pool_recycle',255)
-	kw.setdefault('uri',config.mysql_uri)
+	kw.setdefault('uri',config.sql_uri)
 	if config.TRACE:
 		kw.setdefault('echo',True)
-	return create_engine(kw.pop('uri')+'?charset=utf8', **kw)
+	uri = kw.pop('uri')
+	if uri.startswith("mysql"):
+		uri += "?charset=utf8"
+	return create_engine(uri, **kw)
 engine = db_engine()
 
 # don't keep database connections open for more than 5min

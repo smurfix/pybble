@@ -186,7 +186,7 @@ class CommandWithCatchAll(Command):
 
 class TestRunCommands(TC):
 
-	TESTING = True
+	TEST = True
 
 	def setup(self):
 
@@ -195,7 +195,7 @@ class TestRunCommands(TC):
 
 class TestScripting:
 
-	TESTING = True
+	TEST = True
 
 	def setup(self):
 
@@ -618,7 +618,7 @@ class TestScripting:
 
 class TestSubScripting:
 
-	TESTING = True
+	TEST = True
 
 	def setup(self):
 

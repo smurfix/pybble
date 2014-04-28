@@ -1,8 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-mysql_user="test"
-mysql_pass="test"
-mysql_database="test"
-SECRET_KEY="Do not even think of not changing this"
+sql_user="test"
+sql_pass="test"
+sql_database="test"
+sql_driver="mysql"
+sql_host="localhost"
+
+SECRET_KEY="Do not even think of NOT changing this"
+
+MEDIA_PATH="/var/www/pybble/files"
+# teach your main webserver to serve this directory statically, at /static/
 

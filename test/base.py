@@ -70,7 +70,7 @@ from pybble.core.models import Site,ConfigVar,SiteConfigVar,Blueprint
 
 class TC(unittest.TestCase):
 	MONGODB_DB = 'pybble_test'
-	TESTING = True
+	TEST = True
 	app_class = flask.Flask
 
 	def clear_db(self):

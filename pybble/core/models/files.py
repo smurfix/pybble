@@ -50,7 +50,7 @@ class BinData(ObjectRef):
 	def __declare_last__(cls):
 		cls.storage = cls.superparent
 
-	storage_seq = Column(Integer, autoincrement=True, index=True)
+	storage_seq = Column(Integer, autoincrement=True, unique=True)
 	## The mysql driver ignores autoincrement on non-primary-key columns.
 	## Workaround: see end of file.
 
@@ -154,10 +154,7 @@ class BinData(ObjectRef):
 		* missing "id -= 1" after "while id", so there was never an ‘aa’
 		  (or ‘22’ …) subdirectory
 		"""
-		if self.storage_seq is None:
-			db.flush()
-			db.refresh(self,('storage_seq',))
-			assert self.storage_seq is not None, repr(self)
+		assert self.storage_seq is not None, repr(self)
 		id = self.storage_seq-1
 		chars = "23456789abcdefghjkmnopqrstuvwxyz"
 		midchars = "abcdefghjkmnopq"
@@ -180,6 +177,10 @@ class BinData(ObjectRef):
 		if self.storage_seq is None:
 			db.flush()
 			db.refresh(self,('storage_seq',))
+			if self.storage_seq is None: ## sqlite, probably
+				from sqlalchemy import func
+				self.storage_seq = (db.query(func.max(BinData.storage_seq)).scalar() or 0) +1
+				db.flush()
 		assert self.storage_seq, repr(self)
 		id = self.storage_seq-1
 		chars = "abcdefghjk" ## 100 files per end directory (long names)
@@ -262,7 +263,7 @@ class BinData(ObjectRef):
 	def _save_content(self):
 		p = self.path
 		if os.path.exists(p):
-			raise RuntimeError("File exists")
+			raise RuntimeError("File exists",p)
 		try:
 			open(p,"w").write(self.content)
 		except BaseException:

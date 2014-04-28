@@ -212,7 +212,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, test=Fa
 					more than one one root site
 		:param config: A configuration file to load. Default: the PYBBLE
 		            environment variable.
-		:param test: Required to be identical to config.TESTING.
+		:param test: Required to be identical to config.TEST.
 		:param verbose: Turn on logging.
 		"""
 
@@ -227,7 +227,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, test=Fa
 		from pybble.core import config as cfg
 		cfg_app.config = cfg
 
-		assert test == cfg.get('TESTING',False)
+		assert test == cfg.get('TEST',False)
 	
 	with cfg_app.test_request_context('/'):
 		if site is None:

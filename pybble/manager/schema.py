@@ -90,7 +90,7 @@ Else, use SQLAlchemy directly (which does not catch all differences).
 			run_diff(opt,())
 
 		elif exe:
-			engine = db_engine(echo=True)
+			engine = db_engine(echo=config.DEBUG)
 			Base.metadata.create_all(engine)
 		else:
 			self.dump_intended()

@@ -284,35 +284,35 @@ class Object(Dumpable, Base):
 	def discr_owned(self):
 		return self._discr_X("owner")
 
-	@property
-	def site(self):
-		raise RuntimeError("This code should no longer be necessary")
-
-		from .site import Site
-
-		found = set()
-		while self:
-			if isinstance(self,Site):
-				return self
-
-			if self in found:
-				return None
-			found.add(self)
-
-			if self.deleted:
-				from .tracking import Delete
-				try:
-					d = Delete.q.get_by(parent=self)
-				except NoData:
-					return None
-				else:
-					self = d.superparent
-			elif self.parent and self.parent not in found:
-				self = self.parent
-			elif self.superparent and self.superparent not in found:
-				self = self.superparent
-			else:
-				return None
+#	@property
+#	def site(self):
+#		raise RuntimeError("This code should no longer be necessary")
+#
+#		from .site import Site
+#
+#		found = set()
+#		while self:
+#			if isinstance(self,Site):
+#				return self
+#
+#			if self in found:
+#				return None
+#			found.add(self)
+#
+#			if self.deleted:
+#				from .tracking import Delete
+#				try:
+#					d = Delete.q.get_by(parent=self)
+#				except NoData:
+#					return None
+#				else:
+#					self = d.superparent
+#			elif self.parent and self.parent not in found:
+#				self = self.parent
+#			elif self.superparent and self.superparent not in found:
+#				self = self.superparent
+#			else:
+#				return None
 
 	@property
 	def templates(self):
