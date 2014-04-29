@@ -83,6 +83,7 @@ class PopulateCommand(Command):
 					obj = Obj(name=name, path="{}.{}.{}".format(path,name,Obj.__name__))
 					is_new = True
 				db.flush()
+				obj.superparent = root
 				try:
 					a = obj.mod
 				except Exception as e:
