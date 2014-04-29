@@ -25,7 +25,7 @@ from ..json import register_object
 from ..db import Base, Column, IDrenderer, db, NoData
 
 from flask import request
-from flask._compat import text_type
+from flask._compat import text_type, string_types
 from werkzeug import import_string
 from jinja2.utils import Markup
 from pybble.core import config
@@ -87,8 +87,11 @@ class Dumpable(object):
 				v = getattr(self,k)
 			if add_none or v is not None:
 				res[k] = v
-
 		return res
+
+	@property
+	def as_dict(self):
+		return self._dump()
 
 @py2_unicode
 class Discriminator(Loadable, Dumpable, Base):
@@ -99,21 +102,22 @@ class Discriminator(Loadable, Dumpable, Base):
 	doc = Column(Unicode(250), nullable=True)
 
 	def __str__(self):
-		return u'‹D:%s=%s›' % (self.id, self.name)
-	__repr__ = __str__
+		return u'‹D:%s %s›' % (self.id, self.name)
+	def __repr__(self):
+		return '<D:%s %s>' % (self.id, self.name)
 
 	
 	@staticmethod
 	def get(discr, obj=None):
 		if discr is None and obj is None:
 			return None
-		if isinstance(discr, basestring):
+		if isinstance(discr, string_types):
 			try: discr = int(discr)
 			except ValueError: pass
 		if isinstance(discr, Discriminator):
 			return discr
-		elif isinstance(discr, basestring):
-			return Discriminator.q.get_by(name=str(discr))
+		elif isinstance(discr, string_types):
+			return Discriminator.q.get_by(name=text_type(discr))
 		elif discr is None and obj is not None:
 			return Discriminator.q.get_by(id=obj.discriminator)
 		elif isinstance(discr, (int,long)):
@@ -125,12 +129,12 @@ class Discriminator(Loadable, Dumpable, Base):
 	def num(discr):
 		if discr is None:
 			return None
-		if isinstance(discr, basestring):
+		if isinstance(discr, string_types):
 			try: discr = int(discr)
 			except ValueError: pass
 		if isinstance(discr, Discriminator):
 			return discr.id
-		elif isinstance(discr, basestring):
+		elif isinstance(discr, string_types):
 			return Discriminator.q.get_by(name=text_type(discr)).id
 		elif isinstance(discr, (int,long)):
 			return discr
@@ -221,14 +225,30 @@ class Object(Dumpable, Base):
 
 	_rec_str = False ## marker for possibly-recursive __str__ calls
 
+	@property
+	def as_str(self):
+		if hasattr(self,"name"):
+			return self.name
+		else:
+			return None
+		
 	def __str__(self):
 		if self.deleted: d = "DEL "
 		else: d = ""
-		if getattr(self,"name",None):
-			return u'‹%s%s %s:%s›' % (d,self.__class__.__name__, self.id, self.name)
+		s = self.as_str
+		if s is None:
+			s = ""
 		else:
-			return u'‹%s%s %s›' % (d,self.__class__.__name__, self.id)
-	__repr__ = __str__
+			s = " "+s
+		return u'‹%s%s:%s%s›' % (d,self.__class__.__name__, self.id, s)
+
+	def __repr__(self):
+		try:
+			return str(self)
+		except Exception as err:
+			if self.deleted: d = "DEL "
+			else: d = ""
+			return '<%s%s: ?? %s>' % (self.__class__.__name__, self.id, str(err))
 
 	@property
 	def deleted(self):

@@ -21,13 +21,11 @@ from werkzeug import import_string
 from flask import request
 
 from ... import ROOT_SITE_NAME,ANON_USER_NAME
-from ...compat import py2_unicode
 from .. import config
 from ..db import Base, Column, db, NoData
 from . import Object, ObjectRef, TM_DETAIL_PAGE, Loadable
 from ._descr import D
 
-@py2_unicode
 class App(Loadable,ObjectRef):
 	"""An App known to pybble."""
 	## Part of the object system so that it can be access-controlled if necessary.
@@ -37,11 +35,10 @@ class App(Loadable,ObjectRef):
 	name = Column(Unicode(30), nullable=False, doc="Human-readable short name")
 	doc = Column(Unicode(1000), nullable=True, doc="Docstring")
 
-	def __str__(self):
-		return u"‹App %d:‚%s‘ @ %s›" % (self.id, self.name, self.path)
-	__repr__ = __str__
+	@property
+	def as_str(self):
+		return u"‘%s’ @ %s" % (self.name, self.path)
 
-@py2_unicode
 class Blueprint(Loadable,ObjectRef):
 	"""A Flask blueprint known to pybble. Usually a child of the master site"""
 	## Part of the object system so that it can be access-controlled if necessary.
@@ -51,11 +48,10 @@ class Blueprint(Loadable,ObjectRef):
 	name = Column(Unicode(30), nullable=False)
 	doc = Column(Unicode(1000), nullable=True)
 
-	def __str__(self):
-		return u"‹Blueprint %d:‚%s‘ @ %s›" % (self.id, self.name, self.path)
-	__repr__ = __str__
+	@property
+	def as_str(self):
+		return u"‘%s’ @ %s" % (self.name, self.path)
 
-@py2_unicode
 class Site(ObjectRef):
 	"""A web domain / app."""
 	__tablename__ = "sites"
@@ -127,9 +123,9 @@ class Site(ObjectRef):
 					raise
 
 		
-	def __str__(self):
-		return u"‹Site %d:‚%s‘ @ %s›" % (self.id, self.name, self.domain)
-	__repr__ = __str__
+	@property
+	def as_str(self):
+		return u"‘%s’ @ %s" % (self.name, self.domain)
 
 	@property
 	def data(self):
@@ -147,7 +143,6 @@ domain: %s
 
 		return res
 
-@py2_unicode
 class SiteBlueprint(ObjectRef):
 	"""A blueprint attached to a site's path"""
 	__tablename__ = "site_blueprint"

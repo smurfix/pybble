@@ -19,14 +19,12 @@ from sqlalchemy.orm import relationship
 
 from flask import request
 
-from ...compat import py2_unicode
 from .. import config
 from ..db import Base, Column, no_autoflush
 from . import Object,ObjectRef, TM_DETAIL
 from ._descr import D
 from .types import MIMEtype, mime_ext
 
-@py2_unicode
 class Template(ObjectRef):
 	"""
 		A template for rendering.
@@ -62,12 +60,6 @@ class Template(ObjectRef):
 		dot = name.rindex(".")
 		self.mime = mime_ext(name[dot+1:])
 
-	def __str__(self):
-		return "‹%s:%d›" % (self.__class__.__name__,self.id)
-	def __repr__(self):
-		return "'<%s:%d>'" % (self.__class__.__name__,self.id)
-
-@py2_unicode
 class TemplateMatch(ObjectRef):
 	"""
 		Associate a template to an object.
@@ -100,15 +92,13 @@ class TemplateMatch(ObjectRef):
 		self.parent = obj
 		db.store.flush()
 	
-	def __str__(self):
+	@property
+	def as_str(self):
 		p,s,o,d = self.pso
-		if self._rec_str or not p: return super(TemplateMatch,self).__str__()
+		if self._rec_str or not p: return "‽"
 		try:
 			self._rec_str = True
 		finally:
-			return u'‹%s%s %s: %s %s %s %s›' % (d,self.__class__.__name__, self.id, TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
+			return u'%s %s %s %s' % (TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
 			self._rec_str = False
-	def __repr__(self):
-		if not self.parent: return "'"+super(TemplateMatch,self).__repr__()+"'"
-		return "'"+self.__str__()+"'"
 

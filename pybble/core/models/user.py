@@ -26,7 +26,6 @@ from sqlalchemy.types import TypeDecorator, VARCHAR
 from ... import ANON_USER_NAME
 from ...utils import random_string, AuthError
 from ...core import config
-from ...compat import py2_unicode
 from ..db import Base, Column, db, NoData
 from . import Object,ObjectRef, PERM,PERM_NONE
 from .site import Site
@@ -161,7 +160,6 @@ class PasswordValue(object):
 			self.password = security.generate_password_hash(self.password)
 		return security.check_password_hash(self.password,password)
 
-@py2_unicode
 class User(ObjectRef):
 	"""\
 		Authorized users.
@@ -299,14 +297,15 @@ class User(ObjectRef):
 				db.store.remove(m)
 	verified = property(is_verified,add_verified)
 				
-	def __str__(self):
-		if self.username != "":
-			return u"‹User %d:%s›" % (self.id,self.username)
+	@property
+	def as_str__(self):
+		if self.username:
+			return self.username
 
 		try:
-			return u"‹User %d:anon @%s›" % (self.id, self.superparent.domain)
+			return u"anon @%s" % (self.superparent.domain)
 		except Exception:
-			return u"‹User %d:anon @ ???›" % (self.id,)
+			return u"anon @ ‽"
 
 	@property
 	def groups(self):
@@ -515,21 +514,18 @@ Group: %s
 Member: %s
 """ % (self.owner, self.parent, "Yes" if not self.excluded else "No")
 
-	def __str__(self):
+	@property
+	def as_str(self):
 		p,s,o,d = self.pso
-		if self._rec_str or not o or not p: return super(Member,self).__str__()
+		if self._rec_str or not o or not p: return "‽"
 		try:
 			self._rec_str = True
-			return u'‹%s%s %s: %s%s in %s›' % (d,self.__class__.__name__, self.id, unicode(o), " NOT" if self.excluded else "", unicode(p))
+			return u'%s%s in %s' % (unicode(o), " NOT" if self.excluded else "", unicode(p))
 		finally:
 			self._rec_str = False
-	def __repr__(self):
-		if not self.owner or not self.parent: return super(Member,self).__repr__()
-		return self.__str__()
 
 Object.new_member_rule(Member, "owner","parent")
 
-@py2_unicode
 class Permission(ObjectRef):
 	"""
 		Permission checks: This user can do that to objects of yonder type.
@@ -566,17 +562,15 @@ class Permission(ObjectRef):
 			try: del user._can_add
 			except AttributeError: pass
 	
-	def __str__(self):
+	@property
+	def as_str(self):
 		p,s,o,d = self.pso
-		if self._rec_str or not o or not p: return super(Permission,self).__str__()
+		if self._rec_str or not o or not p: return "‽"
 		try:
 			self._rec_str = False
-			return u'‹%s%s %s: %s can %s %s %s %s %s›' % (d,self.__class__.__name__, self.id, unicode(o),PERM[self.right],Discriminator.q.get_by(id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N", Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-")
+			return u'%s can %s %s %s %s %s' % (unicode(o),PERM[self.right],Discriminator.q.get_by(id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N", Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-")
 		finally:
 			self._rec_str = False
-	def __repr__(self):
-		if not self.owner or not self.parent: return super(Permission,self).__repr__()
-		return self.__str__()
 
 	@property
 	def data(self):

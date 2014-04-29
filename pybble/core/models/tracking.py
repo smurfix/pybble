@@ -27,9 +27,7 @@ from . import Object,ObjectRef
 from ._descr import D
 from ..db import Base, Column
 from ...core import config
-from ...compat import py2_unicode
 
-@py2_unicode
 class Breadcrumb(ObjectRef):
 	"""\
 		Track page visits.
@@ -55,16 +53,15 @@ class Breadcrumb(ObjectRef):
 		self.parent = obj
 		self.superparent = request.site
 
-	def __str__(self):
+	@property
+	def as_str(self):
 		p,s,o,d = self.pso
-		if self._rec_str or not o or not p: return super(Breadcrumb,self).__str__()
+		if self._rec_str or not o or not p: return "‽"
 		try:
 			self._rec_str = True
-			return u'‹%s%s %s: %s saw %s on %s›' % (d,self.__class__.__name__, self.id, unicode(o), unicode(p), unicode(self.visited))
+			return u'%s saw %s on %s' % (unicode(o), unicode(p), unicode(self.visited))
 		finally:
 			self._rec_str = False
-	def __repr__(self):
-		return self.__str__()
 
 	def visit(self):
 		now = datetime.utcnow()
@@ -73,7 +70,6 @@ class Breadcrumb(ObjectRef):
 			self.visited = now
 		self.cur_visited = now
 
-@py2_unicode	
 class Change(ObjectRef):
 	"""\
 		Track content changes.
@@ -95,16 +91,15 @@ class Change(ObjectRef):
 
 		Tracker(user,self, comment=comment)
 
-	def __str__(self):
+	@property
+	def as_str(self):
 		p,s,o,d = self.pso
-		if self._rec_str or not o or not p: return super(Change,self).__str__()
+		if self._rec_str or not o or not p: return "‽"
 		try:
 			self._rec_str = True
-			return u'‹%s %s: %s changed %s on %s›' % (self.__class__.__name__, self.id, unicode(o), unicode(p), unicode(self.timestamp))
+			return u'%s changed %s on %s' % (unicode(o), unicode(p), unicode(self.timestamp))
 		finally:
 			self._rec_str = False
-	def __repr__(self):
-		return self.__str__()
 
 	@property
 	def change_obj(self):
@@ -123,7 +118,6 @@ class Change(ObjectRef):
                 	.order_by(-Change.timestamp)\
                 	.first()
 
-@py2_unicode
 class Delete(ObjectRef):
 	"""\
 		Track deleted content.
@@ -161,21 +155,19 @@ class Delete(ObjectRef):
 		obj.superparent = None
 		Tracker(user,self, comment=comment)
 
-	def __str__(self):
-		if self._rec_str or not self.owner or not self.parent: return super(Delete,self).__str__()
+	@property
+	def as_str(self):
+		if self._rec_str or not self.owner or not self.parent: return "‽"
 		try:
 			self._rec_str = True
-			return u'‹%s %s: %s deleted %s on %s›' % (self.__class__.__name__, self.id, unicode(self.owner), unicode(self.parent), unicode(self.timestamp))
+			return u'%s deleted %s on %s' % (unicode(self.owner), unicode(self.parent), unicode(self.timestamp))
 		finally:
 			self._rec_str = False
-	def __repr__(self):
-		return self.__str__()
 
 	@property
 	def change_obj(self):
 		return self.parent
 
-@py2_unicode
 class Tracker(ObjectRef):
 	"""\
 		Track any kind of change, for purpose of RSSification, Emails, et al.
@@ -200,17 +192,17 @@ class Tracker(ObjectRef):
 		self.superparent = site or request.site
 		self.comment = comment
 
-	def __str__(self):
-		if self._rec_str or not self.owner or not self.superparent: return super(Tracker,self).__str__()
+	@property
+	def as_str(self):
+		if self._rec_str or not self.owner or not self.superparent: return "‽"
 		try:
 			self._rec_str = True
 			if self.parent:
-				return u'‹%s %s: %s changed %s›' % (self.__class__.__name__, self.id, unicode(self.owner), unicode(self.parent))
+				return u'%s changed %s' % (unicode(self.owner), unicode(self.parent))
 			else:
-				return u'‹%s %s: %s changed %s on %s›' % (self.__class__.__name__, self.id, unicode(self.owner), unicode(self.superparent), unicode(self.timestamp))
+				return u'%s changed %s on %s' % (unicode(self.owner), unicode(self.superparent), unicode(self.timestamp))
 		finally:
 			self._rec_str = False
-	__repr__ = __str__
 
 	@property
 	def change_obj(self):
@@ -228,7 +220,6 @@ class Tracker(ObjectRef):
 	def is_del(self):
 		return isinstance(self.parent, Delete)
 
-@py2_unicode
 class UserTracker(ObjectRef):
 	"""\
 		Record that a change be reported to a user. This will be auto-built from Tracker and WantTracking objects.
@@ -248,20 +239,19 @@ class UserTracker(ObjectRef):
 		self.superparent = want
 		self.parent = tracker
 
-	def __str__(self):
-		if self._rec_str or not self.owner or not self.parent: return super(Tracker,self).__str__()
+	@property
+	def as_str(self):
+		if self._rec_str or not self.owner or not self.parent: return "‽"
 		try:
 			self._rec_str = True
-			return u'‹%s %s: %s for %s›' % (self.__class__.__name__, self.id, unicode(self.parent), unicode(self.owner))
+			return '%s for %s' % (unicode(self.parent), unicode(self.owner))
 		finally:
 			self._rec_str = False
-	__repr__ = __str__
 
 	@property
 	def change_obj(self):
 		return self.parent.change_obj
 
-@py2_unicode
 class WantTracking(ObjectRef):
 	"""
 		Record that a user wants changes reported.
@@ -293,15 +283,15 @@ class WantTracking(ObjectRef):
 		self.track_mod = False
 		self.track_del = False
 	
-	def __str__(self):
+	@property
+	def as_str(self):
 		p,s,o,d = self.pso
-		if self._rec_str or not o or not p: return super(WantTracking,self).__str__()
+		if self._rec_str or not o or not p: return "‽"
 		try:
 			self._rec_str = True
-			return u'‹%s%s %s: %s in %s for %s %s›' % (d,self.__class__.__name__, self.id, "-" if self.discr is None else Discriminator.q.get_by(id=self.discr).name, unicode(p),unicode(o), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
+			return u'%s in %s for %s %s' % ("-" if self.discr is None else Discriminator.q.get_by(id=self.discr).name, unicode(p),unicode(o), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
 		finally:
 			self._rec_str = False
-	__repr__ = __str__
 
 	@property
 	def data(self):

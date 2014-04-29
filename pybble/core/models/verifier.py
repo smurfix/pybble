@@ -14,20 +14,16 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from flask import current_app,g
 
+from werkzeug import import_string
+
 from datetime import datetime,timedelta
 
 from sqlalchemy import Integer, Unicode, DateTime, ForeignKey
 from sqlalchemy.orm import relationship,backref
 
-from pybble.compat import py2_unicode
-
+from ...utils import random_string
+from .. import config
 from ..db import Base, Column, NoData
-
-from pybble.utils import random_string
-
-from werkzeug import import_string
-from pybble.core import config
-
 from . import ObjectRef
 from ._descr import D
 
@@ -65,7 +61,6 @@ class VerifierBase(Base):
 		else:
 			assert v.cls == cls
 
-@py2_unicode
 class Verifier(ObjectRef):
 	"""
 		Verification emails (or similar).
@@ -94,17 +89,15 @@ class Verifier(ObjectRef):
 		self.code = code or random_string(20,dash="-",dash_step=5)
 		self.timeout = datetime.utcnow() + timedelta((days or 10),0) ## ten days
 
-	def __str__(self):
+	@property
+	def as_str(self):
 		p,s,o,d = self.pso
-		if self._rec_str or not p: return super(Verifier,self).__str__()
+		if self._rec_str or not p: return "‽"
 		try:
 			self._rec_str = True
-			return u'‹%s%s %s: %s for %s›' % (d,self.__class__.__name__, self.id, self.base.name, unicode(p))
+			return u'%s for %s' % (self.base.name, unicode(p))
 		finally:
 			self._rec_str = False
-	def __repr__(self):
-		if not self.parent: return super(Verifier,self).__repr__()
-		return self.__str__()
 
 	@property
 	def expired(self):

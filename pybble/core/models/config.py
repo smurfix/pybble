@@ -23,7 +23,6 @@ from flask import url_for, current_app, g
 from flask.config import Config
 from flask._compat import PY2
 
-from ...compat import py2_unicode
 from .. import json, config
 from ..utils import attrdict
 from ..db import db, Base, Column, NoData
@@ -167,7 +166,6 @@ class JSON(TypeDecorator):
 class JsonValue(object):
 	value = Column(JSON)
 
-@py2_unicode
 class ConfigVar(ObjectRef, JsonValue):
 	"""Describes one configuration variable."""
 	_descr = D.ConfigVar
@@ -195,16 +193,11 @@ class ConfigVar(ObjectRef, JsonValue):
 	def exists(name,info,default=None):
 		cf = ConfigVar(name=name,info=info,default=default)
 		cf.save()
-	def __str__(self):
-		if self.parent is None:
-			return super(ConfigVar).__str__()
-		return u"‹%s: %s=%s @%s›" % (self.__class__.__name__,self.name,repr(self.value),self.parent.name)
-	def __repr__(self):
-		if self.parent is None:
-			return super(ConfigVar).__repr__()
-		return "<%s:%s=%s @%s>" % (self.__class__.__name__,self.name,repr(self.value),self.parent.name)
 
-@py2_unicode
+	@property
+	def as_str(self):
+		return u"%s=%s @%s" % (self.name,repr(self.value),self.parent.name)
+
 class SiteConfigVar(ObjectRef, JsonValue):
 	"""This is one configuration variable's value for a site (or some other object, in fact)."""
 	_descr = D.SiteConfigVar
@@ -214,12 +207,9 @@ class SiteConfigVar(ObjectRef, JsonValue):
 		cls.var = cls.superparent
 	# Owner: the user who last set the variable
 
-	def __str__(self):
+	@property
+	def as_str(self):
 		if self.var is None or self.parent is None:
-			return super(SiteConfigVar).__str__()
-		return u"‹%s: %s=%s @%s›" % (self.__class__.__name__,self.var.name,repr(self.value),self.parent.name)
-	def __repr__(self):
-		if self.var is None or self.parent is None:
-			return super(SiteConfigVar).__repr__()
-		return "%s:%s=%s@%s" % (self.__class__.__name__,self.var.name,repr(self.value),self.parent.name)
+			return "‽"
+		return u"%s=%s @%s" % (self.var.name,repr(self.value),self.parent.name)
 

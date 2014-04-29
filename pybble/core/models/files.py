@@ -22,7 +22,6 @@ from sqlalchemy.orm import relationship,backref
 from sqlalchemy import event
 
 from ...core import config
-from ...compat import py2_unicode
 from ...utils import hash_data
 from ..db import Base, Column, no_autoflush, db
 from . import Object,ObjectRef, update_modified
@@ -33,7 +32,6 @@ import os
 
 logger = logging.getLogger('pybble.core.models.files')
 
-@py2_unicode
 class BinData(ObjectRef):
 	"""
 		Stores (a reference to) one data file
@@ -87,9 +85,12 @@ class BinData(ObjectRef):
 		self.superparent = storage
 		self._save_content()
 
-	def __str__(self):
-		return u"‹%s %s: %s %s›" % (self.__class__.__name__, self.id,self.name+"."+self.ext,self.mimetype)
-	__repr__ = __str__
+	@property
+	def as_str(self):
+		n = self.name
+		if self.ext:
+			n += "."+self.ext
+		return u"%s %s" % (n,self.mimetype.as_str)
 
 	@property
 	def content(self):
@@ -271,7 +272,6 @@ class BinData(ObjectRef):
 				os.remove(p)
 			raise
 
-@py2_unicode
 class StaticFile(ObjectRef):
 	"""\
 		Record that a static file belongs to a specific site.
@@ -294,14 +294,14 @@ class StaticFile(ObjectRef):
 		self.superparent = request.site
 		self.parent = bin
 		
-	def __str__(self):
-		if self._rec_str or not self.superparent or not self.parent: return super(StaticFile,self).__str__()
+	@property
+	def as_str(self):
+		if self._rec_str or not self.superparent or not self.parent: return "‽"
 		try:
 			self._rec_str = True
-			return u'‹%s %s: %s in %s›' % (self.__class__.__name__, self.id, self.path, unicode(self.superparent))
+			return u'%s in %s' % (self.path, self.superparent.as_str)
 		finally:
 			self._rec_str = False
-	__repr__ = __str__
 
 	@property
 	def hash(self):

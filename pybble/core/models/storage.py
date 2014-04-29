@@ -17,8 +17,6 @@ from datetime import datetime,timedelta
 from sqlalchemy import Integer, Unicode, DateTime
 from sqlalchemy.orm import relationship,backref
 
-from pybble.compat import py2_unicode
-
 from ..db import Base, Column
 
 from flask import request
@@ -29,7 +27,6 @@ import os
 from . import ObjectRef
 from ._descr import D
 
-@py2_unicode
 class Storage(ObjectRef):
 	"""A box for binary data files"""
 	_descr = D.Storage
@@ -48,7 +45,7 @@ class Storage(ObjectRef):
 		try: os.makedirs(path)
 		except OSError: pass
 
-	def __str__(self):
-		return u"‹%s %s: %s %s›" % (self.__class__.__name__, self.id,self.name,unicode(self.path))
-	__repr__ = __str__
+	@property
+	def as_str(self):
+		return u"%s at %s" % (self.name,unicode(self.path))
 
