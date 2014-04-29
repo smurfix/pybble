@@ -86,9 +86,8 @@ class RootManager(Manager):
 		from .populate import PopulateCommand
 		from .schema import SchemaCommand
 		from .mime import MIMEManager
-		from .obj import ObjectManager
 		from .descr import DisManager
-		from .rest import RESTManager
+		from .obj import RESTManager
 
 		coremanager = Manager()
 		coremanager.__doc__ = "Examine and change Pybble's internal data"
@@ -104,10 +103,9 @@ class RootManager(Manager):
 		self.add_command("schema",SchemaCommand())
 		#self.add_command("app",AppCommand())
 		#self.add_command("blueprint",BlueprintManager())
-		self.add_command("obj",ObjectManager())
+		self.add_command("obj",RESTManager())
 		self.add_command("run",SubdomainServer())
 		self.add_command("core",coremanager)
-		self.add_command("rest",RESTManager)
 		self.shell(make_shell_context)
 
 	def __call__(self, app=None, **kw):

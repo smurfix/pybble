@@ -15,80 +15,194 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 import os
 import sys
 import logging
+from importlib import import_module
 
-from ..core.db import db
-from ..core.models import Object, Discriminator
-from ..core.json import encode,decode
 from . import Manager,Command,Option
-from .descr import ListDis
+from ..core.rest import RESTend
+from ..core.db import db
+from ..core.models import Discriminator
+from ..blueprint import create_blueprint,drop_blueprint,list_blueprints
+from ..core.json import encode,decode
+from ..utils.show import show
 
-class AddObject(Command):
-	"""Add an object type"""
+def _parse(args):
+	"""
+	Translate a list of foo=bar strings to a dict.
+
+	Special cases:
+		* foo=- ⇒ None
+		* foo=123 ⇒ converted to integer
+		* foo==Bar:123 ⇒ reference to this database entry
+	"""
+	data = {}
+	for k in args:
+		k,v = args.split('=',1)
+		if v == "":
+			pass
+		elif v == "-":
+			v = None
+		elif v.startswith("="):
+			descr,oid = v.split(":")
+			v = Discriminator.get(descr).map.q.get_by(id=int(oid))
+		else:
+			try:
+				v = int(v)
+			except ValueError:
+				pass
+		data[k] = v
+	return data
+
+class CmdGET(Command):
+	"""Retrieve a record (or a list of them (or a list of record types))"""
+	## TODO: allow expansion for JSON
 	def __init__(self):
-		super(AddObject,self).__init__()
-		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
-		self.add_option(Option("name", nargs='?', action="store",help="The Object type's name"))
-		self.add_option(Option("data", nargs='*', action="append",help="name=value pairs for insertion"))
-	def __call__(self,app, help=False,name=None,data=None):
-		if help or type is None:
+		super(CmdGET,self).__init__()
+		self.add_option(Option("-x","--expand",action="append", dest="exp", help="additional detail to print"))
+		self.add_option(Option("typ", nargs='?', action="store",help="The item's type; if missing: list types"))
+		self.add_option(Option("id", type=int, nargs='?', action="store",help="The item's ID; if missing: list entries of that type"))
+	def __call__(self,app, help=False, id=None,typ=None, exp=None):
+		json = app.json
+		if help or exp and json:
 			self.parser.print_help()
-			print("Available Object handlers: "+" ".join(list_Objects()),file=sys.stderr)
 			sys.exit(not help)
-		create_Object(type=type, name=name, doc=doc)
+		if exp:
+			exp = ",".join(exp)
+
+		if typ is None:
+			data = RESTend(json).types()
+			if not exp: exp = "*"
+		elif id is None:
+			data = RESTend(json).list(typ)
+			if not exp: exp = "*"
+		else:
+			data = RESTend(json).get(int(id),typ)
+			if not exp: exp = "-"
+			
+		if json:
+			print(encode(data))
+		else:
+			show(data, expand=exp)
+		db.commit()
 		
-class DropObject(Command):
-	"""Remove an Object type"""
+class CmdDELETE(Command):
+	"""Delete a record"""
 	def __init__(self):
-		super(DropObject,self).__init__()
-		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
-		self.add_option(Option("id", nargs='?', action="store",help="The Object ID to mark-as-deleted"))
-	def __call__(self,app, help=False,name=None):
-		if help or name is None:
+		super(CmdDELETE,self).__init__()
+		self.add_option(Option("typ", nargs='?', action="store",help="The item's type; if missing: list types"))
+		self.add_option(Option("id", type=int, nargs='?', action="store",help="The item's ID; if missing: list entries of that type"))
+	def __call__(self,app, help=False, id=None,typ=None):
+		if help or not id:
 			self.parser.print_help()
 			sys.exit(not help)
-		drop_Object(name)
+		res = RESTend().delete(int(id),typ)
+		show(res)
+		db.commit()
 		
-class ListObject(Command):
-	"""List an object, or known objects of a type"""
+class CmdPOST(Command):
+	"""Add a record"""
+	capture_all_args = True
 	def __init__(self):
-		super(ListObject,self).__init__()
+		super(CmdPOST,self).__init__()
+		self.add_option(Option("typ", nargs='?', action="store",help="The item's type"))
+	def __call__(self,app, args, typ=None,help=False):
+		if help or not args:
+			self.parser.print_help()
+			sys.exit(not help)
+		data = _parse(args)
+		res = RESTend().post(descr=typ, **data)
+		show(res)
+		
+class CmdPUT(Command):
+	"""Change a record (clear not-mentioned data)"""
+	capture_all_args = True
+	def __init__(self):
+		super(CmdPUT,self).__init__()
+		self.add_option(Option("typ", nargs='?', action="store",help="The item's type"))
+		self.add_option(Option("id", type=int, nargs='?', action="store",help="The item's ID"))
+	def __call__(self,app, args, typ=None,id=None,help=False):
+		if help or not args or not id:
+			self.parser.print_help()
+			sys.exit(not help)
+		data = _parse(args)
+		res = RESTend().put(id=id, descr=typ, **data)
+		show(res)
+		
+class CmdPATCH(Command):
+	"""Change a record (don't touch not-mentioned data)"""
+	capture_all_args = True
+	def __init__(self):
+		super(CmdPATCH,self).__init__()
+		self.add_option(Option("typ", nargs='?', action="store",help="The item's type"))
+		self.add_option(Option("id", nargs='?', action="store",help="The item's ID"))
+	def __call__(self,app, args, typ=None,id=None,help=False):
+		if help or not args or not id:
+			self.parser.print_help()
+			sys.exit(not help)
+		data = _parse(args)
+		res = RESTend().patch(descr=typ, **data)
+		show(res)
+		
+class DocREST(Command):
+	def __init__(self):
+		super(DocREST,self).__init__()
 		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
-		self.add_option(Option("-d","--dump", dest="dump",action="store_true",help="Dump a complete object"))
-		self.add_option(Option("typ", nargs='?', action="store",help="The object type"))
-		self.add_option(Option("oid", nargs='?', action="store",help="The Object ID"))
-		self.add_option(Option("var", nargs='?', action="store",help="The Object's variable"))
-	def __call__(self,app, help=False,typ=None,oid=None,var=None, dump=False):
+		self.add_option(Option("typ", nargs='?', action="store",help="The REST type to document"))
+		self.add_option(Option("doc", nargs='?', action="store",help="some text"))
+	def __call__(self,app, help=False,typ=None,doc=None):
+		if help or typ is None:
+			if help:
+				self.parser.print_help()
+			sys.exit(not help)
+		typ,subtyp = msplit(typ)
+		mtype = RESTtype.q.get_by(typ=typ,subtyp=subtyp)
+		if doc is None:
+			if mtype.doc is not None:
+				print(mtype.doc)
+		else:
+			if doc == "-":
+				doc = None
+			mtype.doc = doc
+			db.commit()
+		
+class DropREST(Command):
+	def __init__(self):
+		super(DropREST,self).__init__()
+		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
+		self.add_option(Option("typ", nargs='?', action="store",help="The REST type to delete"))
+	def __call__(self,app, help=False,typ=None):
+		if help or typ is None:
+			self.parser.print_help()
+			sys.exit(not help)
+		typ,subtyp = msplit(typ)
+		mtype = RESTtype.q.get_by(typ=typ,subtyp=subtyp)
+		db.delete(mtype)
+		db.commit()
+		
+class CmdDIR(Command):
+	"""List all items of a type"""
+	def __call__(self,app, help=False):
 		if help:
 			self.parser.print_help()
 			sys.exit(not help)
-		if typ is None:
-			ListDis()(app,dump)
-			return
-		typ = Discriminator.get(typ).mod
-		if oid is None:
-			## list them all
-			for obj in typ.q.all():
-				if dump:
-					print(encode(obj._dump()))
-				else:
-					print(str(obj))
-			return
-		obj = typ.q.get_by(id=oid)
-		if var is not None:
-			obj = getatr(obj,var)
-		if dump:
-			print(encode(obj._dump()))
-		else:
-			print(str(obj))
+		res = []
+		for mtype in RESTtype.q.all():
+			print("{}/{}\t{}\t{}".format(mtype.typ,mtype.subtyp,mtype.ext if mtype.ext is not None else "-", mtype.name))
 		
-class ObjectManager(Manager):
-	"""Object types Pybble knows about"""
+class RESTManager(Manager):
+	"""Directly manipulate the database"""
+	json = None ## TODO
 	def __init__(self):
-		super(ObjectManager,self).__init__()
-		self.add_command("add", AddObject())
-		self.add_command("delete", DropObject())
-		self.add_command("list", ListObject())
+		super(RESTManager,self).__init__()
+		self.add_option("-j", "--json", dest="json", action="store_true", required=False, help="Accept/send JSON")
 
-	def create_app(self, app):
+		self.add_command("get", CmdGET())
+		self.add_command("put", CmdPUT())
+		self.add_command("post", CmdPOST())
+		self.add_command("patch", CmdPATCH())
+		self.add_command("delete", CmdDELETE())
+		self.add_command("list", CmdDIR())
+
+	def __call__(self, app, json=False):
+		app.json = json
 		return app
 	
