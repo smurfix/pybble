@@ -25,6 +25,7 @@ from sqlalchemy.exc import ProgrammingError
 from ..core.models import _all
 
 class SchemaCommand(Command):
+	"""Create (a delta of) the database structure"""
 	def __call__(self,app):
 		with app.test_request_context('/'):
 			self.main()

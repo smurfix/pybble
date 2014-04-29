@@ -46,6 +46,7 @@ content_types = [
 ]
 
 class PopulateCommand(Command):
+	"""Add minimal basic data to the database"""
 	def __init__(self):
 		super(PopulateCommand,self).__init__()
 		self.add_option(Option("-f","--force", dest="force",action="store_true",help="Override all database changes"))

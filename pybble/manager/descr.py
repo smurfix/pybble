@@ -86,7 +86,7 @@ class ListDis(Command):
 				print("{}\t{}\t{}".format(d.id,d.name,d.path))
 		
 class DisManager(Manager):
-	"""URLs and their content"""
+	"""Types of databse entries"""
 	def __init__(self):
 		super(DisManager,self).__init__()
 		self.add_command("add", AddDis())
