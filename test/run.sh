@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+test -n "$*" || set -ex
 
 test -d test || cd ..
 test -d test
@@ -44,7 +44,11 @@ cp -a $PYBBLE_MEDIA_PATH $DATA
 PYBBLE_SQL_DATABASE=$SQL
 PYBBLE_MEDIA_PATH=$DATA
 
-./manage.py -t core check
-./manage.py -t core config
-PYTHONPATH=$(pwd) test/run.py -x
+if [ "$*" = "" ] ; then
+	./manage.py -t core check
+	./manage.py -t core config
+	PYTHONPATH=$(pwd) test/run.py -x
+else
+	PYTHONPATH=$(pwd) ./manage.py -t "$@"
+fi
 

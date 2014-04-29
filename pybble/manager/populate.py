@@ -305,6 +305,8 @@ class PopulateCommand(Command):
 
 		def get_templates(dirpath,webpath=""):
 			added = 0
+			if os.path.isdir(dirpath):
+				return added
 			for fn in os.listdir(dirpath):
 				if fn.startswith("."):
 					continue

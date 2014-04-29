@@ -227,7 +227,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, test=Fa
 		from pybble.core import config as cfg
 		cfg_app.config = cfg
 
-		assert test == cfg.get('TEST',False)
+		assert test == cfg.get('TEST',False), (test,cfg.get('TEST',False))
 	
 	with cfg_app.test_request_context('/'):
 		if site is None:

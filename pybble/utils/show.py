@@ -78,7 +78,6 @@ def show_(k,v,expand=None,cache=None):
 				print(k+"*** NoData ***",v._id)
 			return
 
-	if expand is not None:
 		if isinstance(v,(list,tuple)):
 			i = 0
 			for vx in sorted(v):
@@ -88,7 +87,6 @@ def show_(k,v,expand=None,cache=None):
 				k = " "*len(unicode(k))
 			return
 		
-	if expand is not None:
 		if isinstance(v,dict):
 			for kk in sorted(v.keys()):
 				vv = v[kk]

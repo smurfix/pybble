@@ -18,15 +18,18 @@ from .json import encode
 
 class RESTend(object):
 	"""This implements a generic front-end to the database object system"""
+	def __init__(self, json=True):
+		self.json = json
 
 	## TODO: permissions
-
 	def get(self,id,descr=None):
 		obj = Object.q.get_by(id=id)
 		if descr is not None:
 			D = Discriminator.get(descr).mod
 			assert type(obj) is D, "{} is not a {}".format(str(obj),str(D))
-		return obj.as_dict
+		if self.json:
+			obj = obj.as_dict
+		return obj
 
 	def put(self,id,descr=None, comment=None,**data):
 		obj = Object.q.get_by(id=id)
@@ -46,12 +49,16 @@ class RESTend(object):
 				changed[data] = (ov,None)
 		if changed:
 			Change(request.user,obj, data=encode(changed), comment=comment)
+		if self.json:
+			obj = obj.as_dict
 		return { "obj":obj, "changed":changed }
 	
 	def post(self,descr, comment=None,**data):
 		D = Discriminator.get(descr).mod
 		obj = D(**data)
 		Tracker(request.user,obj, comment=comment)
+		if self.json:
+			obj = obj.as_dict
 		return obj
 
 	def patch(self,id,descr=None, comment=None,**data):
@@ -68,6 +75,8 @@ class RESTend(object):
 				changed[data] = (ov,v)
 		if changed:
 			Change(request.user,obj, data=encode(changed), comment=comment)
+		if self.json:
+			obj = obj.as_dict
 		return { "obj":obj, "changed":changed }
 	
 	def delete(self,id,descr=None):
@@ -76,6 +85,8 @@ class RESTend(object):
 			D = Discriminator.get(descr).mod
 			assert D is type(Object), "{} is not a {}".format(str(obj),str(D))
 		Delete(request.user, obj, comment=comment)
+		if self.json:
+			obj = obj.as_dict
 		return { "obj":obj, "deleted":True }
 
 	def list(self,descr=None):
@@ -85,12 +96,16 @@ class RESTend(object):
 
 		res = []
 		for obj in D.q.all():
-			res.append(obj.as_dict)
+			if self.json:
+				obj = obj.as_dict
+			res.append(obj)
 		return res
 		
 	def types(self):
 		res = []
 		for descr in Discriminator.q.all():
+			if self.json:
+				descr = descr.as_dict
 			res.append(descr.as_dict)
 		return res
 
