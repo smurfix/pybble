@@ -46,6 +46,5 @@ PYBBLE_MEDIA_PATH=$DATA
 
 ./manage.py -t core check
 ./manage.py -t core config
-
-nosetests -x
+PYTHONPATH=$(pwd) test/run.py -x
 

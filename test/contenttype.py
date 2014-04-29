@@ -33,26 +33,16 @@ class ContentTestCase(ManagerTC,WebTC,WebTestCase):
 		self.run_manager("mgr -t content add TextContent unfug 'Dies ist Unfug'")
 		self.run_manager("mgr -t content set unfug text u'Dies ist kompletter Unfug'")
 
-	def clear_db(self):
-		Site.objects.update(homepage=None)
-		Content.objects.delete()
-		ContentType.objects.delete()
-		super(ContentTestCase,self).clear_db()
-
 	def test_one(self):
-		with self.app.test_request_context():
-			g.site.homepage = None
-			g.site.save()
-			self.assertContent("http://test/blue/red","Red Color")
+		g.site.homepage = None
+		g.site.save()
+		self.assertContent("http://test/blue/red","Red Color")
 			
 	def test_two(self):
-		with self.app.test_request_context():
-			self.assertContent("http://test/blue/green","Green Color")
+		self.assertContent("http://test/blue/green","Green Color")
 
 	def test_three(self):
-		with self.app.test_request_context():
-			self.assertContent("http://test/blue/blue","Blue Color")
+		self.assertContent("http://test/blue/blue","Blue Color")
 
 	def test_four(self):
-		with self.app.test_request_context():
-			self.assertContent("http://test/blue/yellow","Yellow Color")
+		self.assertContent("http://test/blue/yellow","Yellow Color")

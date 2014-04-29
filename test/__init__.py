@@ -12,6 +12,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
+import pybble
 from .site import *
 from .admin import *
 from .script import *

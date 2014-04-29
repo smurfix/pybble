@@ -16,6 +16,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 import sys,os
 sys.path.insert(0,os.pardir)
 
+from pybble import ROOT_SITE_NAME
 import unittest
 import datetime
 import flask
@@ -66,46 +67,48 @@ else:
 	urllib_intercept.HTTPSInterceptorMixin = Fake_HTTPSConnection
 
 from pybble.core.db import db
-from pybble.core.models import Site,ConfigVar,SiteConfigVar,Blueprint
+from pybble.core.models.site import Site,Blueprint
+from pybble.core.models.config import ConfigVar,SiteConfigVar
 
 class TC(unittest.TestCase):
-	MONGODB_DB = 'pybble_test'
 	TEST = True
 	app_class = flask.Flask
+	testsite=None
 
 	def clear_db(self):
-		with self.app.test_request_context():
-			Blueprint.objects.delete()
-			SiteConfigVar.objects.delete()
-			Site.objects.delete()
-			ConfigVar.objects.delete()
+		pass
 
 	def setUp(self):
 		super(TC,self).setUp()
 		app = self.app_class(__name__)
 		app.config.from_object(self)
 
-		db.init_app(app)
-
 		self.app = app
-		self.db = db
-		with self.app.test_request_context():
-			self.cleanData()
-			self.setupData()
-			self.setupRest()
+		self.ctx = app.test_request_context()
+		self.ctx.push()
+		self.cleanData()
+		if self.testsite:
+			try:
+				s = Site.q.get_by(name=self.testsite)
+			except NoData:
+				s = Site(name=self.testsite, domain=self.testsite)
+				db.flush()
+			flask.request.site = s
+		else:
+			flask.request.site = Site.q.get_by(name=ROOT_SITE_NAME)
+		self.setupData()
+		self.setupRest()
 
 	def cleanData(self):
-		with self.app.test_request_context():
-			Blueprint.objects.delete()
-			SiteConfigVar.objects.delete()
-			Site.objects.delete()
-			ConfigVar.objects.delete()
-
+		pass
 	def setupData(self):
 		pass
 	def setupRest(self):
 		pass
 	
+	def tearDown(self):
+		self.ctx.pop()
+		super(TC,self).tearDown()
 
 class WebTC(TC):
 	def setupRest(self):

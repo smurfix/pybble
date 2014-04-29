@@ -18,7 +18,8 @@ import datetime
 import flask
 
 from .base import TC
-from pybble.core.models import Site,ConfigVar,SiteConfigVar
+from pybble.core.models.site import Site
+from pybble.core.models.config import ConfigVar,SiteConfigVar
 from pybble.app import create_app
 
 class AppConfigTestCase(TC):
@@ -26,7 +27,7 @@ class AppConfigTestCase(TC):
 	def setup_sites(self):
 		self.clear_db()
 
-		self.assertEqual(Site.objects.count(), 0)
+		self.assertEqual(Site.q.count(), 0)
 		site = Site(name='root', domain='test.example.com')
 		site.save()
 		site2 = Site(name='foo', domain='foo.example.com', parent=site)
@@ -50,24 +51,23 @@ class AppConfigTestCase(TC):
 		return (app,app1,app2,app11)
 
 	def test_config(self):
-		with self.app.test_request_context():
-			(app,app1,app2,app11) = self.setup_sites()
+		(app,app1,app2,app11) = self.setup_sites()
 
-			app.config["test1"] = 0
-			self.assertEqual(app.config["test1"],0)
-			self.assertEqual(app1.config["test1"],0)
-			self.assertEqual(app11.config["test1"],0)
-			self.assertEqual(app2.config["test1"],0)
+		app.config["test1"] = 0
+		self.assertEqual(app.config["test1"],0)
+		self.assertEqual(app1.config["test1"],0)
+		self.assertEqual(app11.config["test1"],0)
+		self.assertEqual(app2.config["test1"],0)
 
-			app1.config["test2"] = 2
-			self.assertEqual(app.config["test2"],-2)
-			self.assertEqual(app1.config["test2"],2)
-			self.assertEqual(app11.config["test2"],2)
-			self.assertEqual(app2.config["test2"],-2)
+		app1.config["test2"] = 2
+		self.assertEqual(app.config["test2"],-2)
+		self.assertEqual(app1.config["test2"],2)
+		self.assertEqual(app11.config["test2"],2)
+		self.assertEqual(app2.config["test2"],-2)
 
-			app.config["test2"] = 3
-			self.assertEqual(app.config["test2"],3)
-			self.assertEqual(app1.config["test2"],2)
-			self.assertEqual(app11.config["test2"],2)
-			self.assertEqual(app2.config["test2"],3)
+		app.config["test2"] = 3
+		self.assertEqual(app.config["test2"],3)
+		self.assertEqual(app1.config["test2"],2)
+		self.assertEqual(app11.config["test2"],2)
+		self.assertEqual(app2.config["test2"],3)
 

@@ -22,24 +22,19 @@ from .manager import ManagerTC
 from .base import WebTC
 from webunit.webunittest import WebTestCase
 
-class TheData(db.Document):
-	foo = db.StringField(unique=True, required=True)
-	bar = db.IntField(default=123)
+#class TheData(db.Document):
+#	foo = db.StringField(unique=True, required=True)
+#	bar = db.IntField(default=123)
 
 class AdminTestCase(ManagerTC,WebTC,WebTestCase):
-	def cleanData(self):
-		TheData.objects.delete()
-		super(AdminTestCase,self).cleanData()
-
 	def setupData(self):
 		super(AdminTestCase,self).setupData()
 		self.run_manager("mgr -t new test _test test")
 		self.run_manager("mgr -t -s test blueprint add AdminTest _admin /doc")
 		self.run_manager("mgr -t -s test blueprint param AdminTest model test.admin.TheData")
 
-		d = TheData(foo="Test Me Hard")
-		d.save()
+#		d = TheData(foo="Test Me Hard")
+#		d.save()
 
 	def test_index_present(self):
-		with self.app.test_request_context():
-			self.assertContent("http://test/doc/","Test Me Hard")
+		self.assertContent("http://test/doc/","Test Me Hard")

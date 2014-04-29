@@ -27,14 +27,11 @@ class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 		self.run_manager("mgr -t new AppTest _test test")
 
 	def test_one(self):
-		with self.app.test_request_context():
-			self.assertContent("http://test/one","Number One")
+		self.assertContent("http://test/one","Number One")
 			
 	def test_two(self):
-		with self.app.test_request_context():
-			self.assertContent("http://test/two","Number Two")
+		self.assertContent("http://test/two","Number Two")
 
 	def test_three(self):
-		with self.app.test_request_context():
-			self.assertContent("http://test/three","Number Three")
+		self.assertContent("http://test/three","Number Three")
 
