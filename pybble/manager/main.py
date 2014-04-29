@@ -108,7 +108,7 @@ class RootManager(Manager):
 		self.add_command("core",coremanager)
 		self.shell(make_shell_context)
 
-	def create_app(self, app=None, **kw):
+	def __call__(self, app=None, **kw):
 		if self.app is not None:
 			# this can't happen in production
 			assert self.app.testing, self.app
