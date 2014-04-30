@@ -15,7 +15,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from datetime import datetime,timedelta
 
 from sqlalchemy import Integer, Unicode, ForeignKey
-from sqlalchemy import event
+from sqlalchemy import event, select, func, and_
 from sqlalchemy.orm import relationship,backref
 from sqlalchemy.inspection import inspect
 
@@ -35,7 +35,7 @@ from copy import copy
 MAX_BUILTIN = 42
 
 try:
-    from hashlib import md5
+	from hashlib import md5
 except ImportError:
 	from md5 import md5
 
@@ -74,24 +74,44 @@ class Loadable(object):
 		return self._module
 
 class Dumpable(object):
-	def _dump(self, add_none=False, cols=()):
+	"""\
+		A mix-in which declares a dict-like property that contains the
+		actual object data.
+		"""
+	def _dump(self, add_none=False, cols=None):
+		"""\
+			Override with read-only one-to-many links
+			"""
+		return self._as_dict(add_none,cols)
+
+	def _dump_attrs(self):
 		i = inspect(self)
-		res = {}
-		for k,v in i.dict.items():
+		res = set()
+		for k in i.dict.keys():
 			if k.startswith('_'):
 				continue
 			if k.endswith('_id'):
 				k = k[:-3]
-				if k in res:
-					continue
-				v = getattr(self,k)
+			res.add(k)
+		return res
+		
+	def _as_dict(self, add_none=False, cols=None):
+		"""\
+			Override with extra settable properties
+			"""
+		if cols is None:
+			cols = self._dump_attrs()
+		res = {}
+		for k in cols:
+			v = getattr(self,k)
 			if add_none or v is not None:
 				res[k] = v
 		return res
 
 	@property
 	def as_dict(self):
-		return self._dump()
+		return self._as_dict()
+
 
 @py2_unicode
 class Discriminator(Loadable, Dumpable, Base):
@@ -111,6 +131,10 @@ class Discriminator(Loadable, Dumpable, Base):
 	def get(discr, obj=None):
 		if discr is None and obj is None:
 			return None
+		if discr is not None and obj is not None:
+			discr = Discriminator.get(discr)
+			assert obj.discr is discr, (obj.discr,discr)
+			return discr
 		if isinstance(discr, string_types):
 			try: discr = int(discr)
 			except ValueError: pass
@@ -118,8 +142,6 @@ class Discriminator(Loadable, Dumpable, Base):
 			return discr
 		elif isinstance(discr, string_types):
 			return Discriminator.q.get_by(name=text_type(discr))
-		elif discr is None and obj is not None:
-			return Discriminator.q.get_by(id=obj.discriminator)
 		elif isinstance(discr, (int,long)):
 			return Discriminator.q.get_by(id=discr)
 		else:
@@ -141,62 +163,11 @@ class Discriminator(Loadable, Dumpable, Base):
 		else:
 			return discr._discriminator
 
-#_discr2cls = {}
-#class RegistryMeta(PropertyPublisherMeta):
-#	def __init__(self, name, bases, dict):
-#		if "_obj" in dict: return
-#		self.id = Column(Integer)primary_key=True)
-#		self._obj = Reference(self.id, BaseObject.id)
-#
-#		self.owner_id = Proxy(self._obj, BaseObject.owner_id)
-#		self.parent_id = Proxy(self._obj, BaseObject.parent_id)
-#		self.superparent_id = Proxy(self._obj, BaseObject.superparent_id)
-#
-#		for k,v in dict.get("_proxy",{}).iteritems():
-#			setattr(self,k+"_id", Proxy(self._obj, getattr(BaseObject,v+"_id")))
-#			setattr(self,k,property(_get_ref(v),_set_ref(v)))
-#
-#		#self.owner = Reference(self.owner_id, BaseObject.id)
-#		#self.parent = Reference(self.parent_id, BaseObject.id)
-#		#self.superparent = Reference(self.superparent_id, BaseObject.id)
-#
-#		super(RegistryMeta,self).__init__(name, bases, dict)
-#
-#		id = getattr(self, "_discriminator", None)
-#		if id:
-#			_discr2cls[id] = self
-#
-#		return
-#
-#		print "*",name
-#		try:
-#			o = Object
-#		except NameError:
-#			pass
-#		else:
-#			relmap = {}
-#			for a,b in Object.__dict__.items():
-#				if isinstance(b,Proxy):
-#					b = copy(b)
-#					#b._cls = self
-#					setattr(self,a,b)
-#					print "Proxy",a
-#				elif isinstance(b,Reference):
-#					b = copy(b)
-#					#b._cls = self
-#					setattr(self,a,b)
-#					print "Ref",a
-#				elif b is Object.id:
-#					b = copy(b)
-#					setattr(self,a,b)
-#					print "Ref",a
-#					
-
 @py2_unicode
 class Object(Dumpable, Base):
 	"""The base type of all pointed-to objects."""
 	__tablename__ = "obj"
-	__mapper_args__ = {'polymorphic_on': 'discriminator'}
+	__mapper_args__ = {'polymorphic_on': 'discr_id'}
 	#__abstract__ = True
 
 	id = Column(Integer, primary_key=True, label="ID", renderer=IDrenderer)
@@ -210,18 +181,8 @@ class Object(Dumpable, Base):
 	superchildren = relationship("Object", backref=backref('superparent', remote_side=[id]), foreign_keys=(superparent_id,))
 	owned = relationship("Object", backref=backref('owner', remote_side=[id]), foreign_keys=(owner_id,))
 
-	#owner = relationship("Object", foreign_keys=(owner_id,))
-	#parent = relationship("Object", foreign_keys=(parent_id,))
-	#superparent = relationship("Object", foreign_keys=(superparent_id,))
-
-	#owned = relationship("Object", remote_side=[owner_id], backref=backref('owner', foreign_keys=[owner_id], remote_side=['id']))
-	#children = relationship("Object", remote_side=[parent_id], backref=backref('parent', foreign_keys=[parent_id], remote_side=['id']))
-	#superchildren = relationship("Object", remote_side=[superparent_id], backref=backref('superparent', foreign_keys=[superparent_id], remote_side=['id']))
-
-	discriminator = Column(Integer, ForeignKey(Discriminator.id), nullable=False)
-
-	@property
-	def discr(self): return Discriminator.get(self.discriminator)
+	discr_id = Column("discriminator", Integer, ForeignKey(Discriminator.id), nullable=False)
+	discr = relationship(Discriminator, primaryjoin=discr_id==Discriminator.id)
 
 	_rec_str = False ## marker for possibly-recursive __str__ calls
 
@@ -249,6 +210,21 @@ class Object(Dumpable, Base):
 			if self.deleted: d = "DEL "
 			else: d = ""
 			return '<%s%s: ?? %s>' % (self.__class__.__name__, self.id, str(err))
+	
+	def _dump(self):
+		"""\
+			Fetch the referring objects. This can be a whole lot!
+			TODO: limit by only fetching when requested
+		"""
+		res = super(Object,self)._dump()
+
+		for d in ('children','superchildren','owned'):
+			got = {}
+			for discr,filter,num in getattr(self,'discr_'+d):
+				got[discr.name] = filter.all()
+			if got:
+				res[d] = got
+		return res
 
 	@property
 	def deleted(self):
@@ -261,7 +237,7 @@ class Object(Dumpable, Base):
 		res = Object.q.filter_by(**{attr:self})
 		if discr:
 			discr = Discriminator.num(discr)
-			res = res.filter_by(discriminator=discr)
+			res = res.filter_by(discr_id=discr)
 		for o in res:
 			if want is None or not hasattr(request,'user') or request.user.can_do(o, discr=discr, want=want):
 				yield o
@@ -288,12 +264,11 @@ class Object(Dumpable, Base):
 					yield d,o # or whatever
 
 			"""
-		raise NotImplementedError
-		s = Select((BaseObject.discriminator, Count()), where=BaseObject.parent_id==self.id, \
-		    group_by=BaseObject.discriminator, order_by=BaseObject.discriminator)
-		for discr,num in db.store.execute(s):
-			c = obj_class(discr)
-			yield c, db.filter_by(c,parent=self), num
+		s = select((Object.discr_id, func.count()),
+			whereclause=getattr(Object,attr)==self, 
+		    group_by=Object.discr_id, order_by=Object.discr_id)
+		for discr,num in db.execute(s).fetchall():
+			yield Discriminator.get(discr), Object.q.filter(and_(Object.discr_id==discr, getattr(Object,attr)==self)).order_by(Object.id), num
 	@property
 	def discr_children(self):
 		return self._discr_X("parent")
@@ -418,7 +393,7 @@ class Object(Dumpable, Base):
 
 	@property
 	def classdiscr(self):
-		return self.discriminator
+		return self.discr
 
 	@classmethod
 	def cls_name(cls):
@@ -458,8 +433,8 @@ class Object(Dumpable, Base):
 			This is done so that simply enumerating object IDs off the web pages wont work.
 			"""
 		if self.id is None:
-			db.store.flush()
-		return "%d.%d.%s" % (self.discriminator, self.id, 
+			db.flush()
+		return "%d.%d.%s" % (self.discr_id, self.id, 
 		                        md5(self.__class__.__name__ + str(self.id) + config.SECRET_KEY)\
 		                            .digest().encode('base64').strip('\n =')[:10].replace("+","/-").replace("/","_"))
 
@@ -471,7 +446,7 @@ class Object(Dumpable, Base):
 			deleted pages (get "before" data) or nested sites (use them
 			if seen on standard parent/child path).
 			"""
-		discr = self.discriminator
+		discr = self.discr
 
 		no_inherit = True
 		obj = self
@@ -481,8 +456,8 @@ class Object(Dumpable, Base):
 		while obj:
 			p,s,o,d = obj.pso
 			seen.add(obj)
-			t = db.store.find(TemplateMatch, And(Or(TemplateMatch.inherit != no_inherit, TemplateMatch.inherit == None), \
-									TemplateMatch.obj_id == obj.id, TemplateMatch.discr == discr, TemplateMatch.detail == detail)).one()
+			t = TemplateMatch.q.get(and_(or_(TemplateMatch.inherit != no_inherit, TemplateMatch.inherit == None),
+									TemplateMatch.obj == obj, TemplateMatch.discr == discr, TemplateMatch.detail == detail))
 			if t is not None:
 				return t
 
@@ -583,27 +558,27 @@ class ObjectRef(Object):
 
 @register_object
 class _obj(object):
-    cls = Object
-    clsname = "obj"
+	"""
+	Encode+decode objects in JSON.
 
-    @staticmethod
-    def encode(obj):
-        ## the string is purely for human consumption and therefore does not have a time zone
-        return {"i":obj.id,"s":str(obj)}
+	TODO: For external consumption, mangle the OID one-way
+	(i.e. just drop the hash part) if the current user cannot
+	read the object.
+	"""
+	cls = Object
+	clsname = "obj"
 
-    @staticmethod
-    def decode(i,s=None,**_):
-		return Object.q.get_by(id=i)
+	@staticmethod
+	def encode(obj):
+		return {"i":obj.oid(),"s":str(obj)}
+
+	@staticmethod
+	def decode(i,s=None,**_):
+		return obj_get(id=i)
 
 def obj_class(id):
 	"""Given a discriminator ID, return the referred object's class."""
-	try:
-		return _discr2cls[int(id)]
-	except ValueError:
-		for f in _discr2cls.values():
-			if f.__name__ == id:
-				return f
-		raise KeyError(id)
+	return Discriminator.get(id).mod
 
 def obj_get(oid):
 	"""Given an object ID, return the object"""
@@ -611,7 +586,7 @@ def obj_get(oid):
 		cid,id,hash = oid.split(".")
 	except ValueError:
 		raise ValueError("bad OID: '%s'" % (oid,))
-	cls = obj_class(int(cid))
+	cls = Discriminator.get(cid).mod
 	obj = cls.q.get_by(id=int(id))
 	if oid != obj.oid():
 		raise ValueError("This object does not exist: " % (oid,))
