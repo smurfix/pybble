@@ -12,6 +12,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
+from flask import request
 from .models import Object,Discriminator
 from .models.tracking import Tracker,Change,Delete
 from .json import encode
@@ -55,7 +56,10 @@ class RESTend(object):
 	
 	def post(self,descr, comment=None,**data):
 		D = Discriminator.get(descr).mod
-		obj = D(**data)
+		try:
+			obj = D(**data)
+		except TypeError as e:
+			raise TypeError("{}: {}".format(D,e)) ## SIGH
 		Tracker(request.user,obj, comment=comment)
 		if self.json:
 			obj = obj.as_dict
