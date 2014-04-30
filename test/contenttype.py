@@ -19,11 +19,12 @@ import flask
 
 from .manager import ManagerTC
 from .base import WebTC
-from pybble.core.models import Site
-from pybble.core.models.doc import ContentType,Content
+#from pybble.core.models import Site
+#from pybble.core.models.doc import ContentType,Content
 from webunit.webunittest import WebTestCase
 
-class ContentTestCase(ManagerTC,WebTC,WebTestCase):
+if 0:
+  class ContentTestCase(ManagerTC,WebTC,WebTestCase):
 	def setupData(self):
 		super(AppRunTestCase,self).setupData()
 		self.run_manager("mgr -t new ContentTest _test test")
