@@ -176,11 +176,11 @@ class ConfigVar(ObjectRef, JsonValue):
 	info = Column(Unicode(100))
 	# TODO: make sure that (name,parent_id) is unique
 
-	def __init__(self, parent, name,value, info=None):
+	def __init__(self, parent, name,value, **kw):
+		super(ConfigVar,self).__init__(**kw)
 		self.parent = parent
 		self.name = name
 		self.value = value
-		self.info = info
 
 	@staticmethod
 	def get(name):

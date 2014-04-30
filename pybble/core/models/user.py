@@ -196,8 +196,8 @@ class User(ObjectRef):
 		res += "First login: %s\nLast login: %s\n" % (self.first_login,self.last_login)
 		return res
 
-	def __init__(self, username, password=None):
-		super(User,self).__init__()
+	def __init__(self, username, password=None, **kw):
+		super(User,self).__init__(**kw)
 		self.username=username
 		if username == ANON_USER_NAME:
 			assert password is None
@@ -213,7 +213,8 @@ class User(ObjectRef):
 			raise RuntimeError(u"User '%s' already exists in %s" % (username,request.site))
 
 		db.flush()
-		self.parent = request.site
+		if self.parent is None:
+			self.parent = request.site
 		if not self.anon:
 			m = Member(self,request.site.anon_user)
 		db.flush()
@@ -472,9 +473,10 @@ class GroupRef(ObjectRef):
 	        
 	name = Column(Unicode(30))
 
-	def __init__(self,name,owner,site=None):
-		super(Group,self).__init__()
-		self.superparent = site or owner
+	def __init__(self,name,owner,site=None, **kw):
+		super(Group,self).__init__(**kw)
+		if self.superparent is None:
+			self.superparent = site or owner
 		self.owner = owner
 		self.name = name
 	
@@ -498,10 +500,18 @@ class Member(ObjectRef):
 
 	excluded = Column(Boolean, nullable=False,default=False)
 
-	def __init__(self,user,group):
-		super(Member,self).__init__()
-		self.owner = user
-		self.parent = group
+	def __init__(self,user=None,group=None, **kw):
+		super(Member,self).__init__(**kw)
+		if self.owner is None:
+			self.owner = user
+		else:
+			assert user is None
+		if self.parent is None:
+			self.parent = group
+		else:
+			assert group is None
+		assert self.owner and self.parent
+
 		self.excluded = False
 		try: del self._memberships
 		except AttributeError: pass
@@ -553,14 +563,23 @@ class Permission(ObjectRef):
 	new_discr_id = Column("new_discr", Integer, ForeignKey(Discriminator.id), nullable=True)
 	new_discr = relationship(Discriminator, primaryjoin=new_discr_id==Discriminator.id)
 
-	def __init__(self, user, obj, discr, right, inherit=None, new_discr=None):
+	def __init__(self, user=None, obj=None, discr=None, right=None, inherit=None, new_discr=None, **kw):
+		assert discr is not None
+		assert right is not None
 		discr = Discriminator.get(discr,obj)
-		super(Permission,self).__init__()
+		super(Permission,self).__init__(**kw)
 		self.for_discr = discr
 		self.right = right
 		self.inherit = inherit
-		self.owner = user
-		self.parent = obj
+		if self.owner is None:
+			self.owner = user
+		else:
+			assert user is None
+		if self.parent is None:
+			self.parent = obj
+		else:
+			assert obj is None
+		assert self.owner and self.parent
 
 		if right == PERM_ADD:
 			try: del user._can_add

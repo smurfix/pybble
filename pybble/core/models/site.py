@@ -86,8 +86,8 @@ class Site(ObjectRef):
 				yield ss
 	# we don't have "yield from
 
-	def __init__(self,domain,name=None):
-		super(Site,self).__init__()
+	def __init__(self,domain, name=None, **kw):
+		super(Site,self).__init__(**kw)
 		if name is None:
 			name=u"Here be "+domain
 		self.domain=unicode(domain)
@@ -95,14 +95,15 @@ class Site(ObjectRef):
 
 		if name == ROOT_SITE_NAME:
 			s = None
-		else:
+		elif self.parent is None:
 			s = Site.q.get_by(name=ROOT_SITE_NAME)
 			self.parent = s
 
-		try:
-			self.owner = request.user
-		except (AttributeError,RuntimeError):
-			self.owner = None if s is None else s.owner
+		if self.owner is None:
+			try:
+				self.owner = request.user
+			except (AttributeError,RuntimeError):
+				self.owner = None if self.parent is None else self.parent.owner
 
 	@property
 	def config(self):

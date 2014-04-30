@@ -64,8 +64,8 @@ class BinData(ObjectRef):
 		return BinData.q.filter(BinData.hash == hash_data(content), BinData.superparent != None).one()
 			
 	@no_autoflush
-	def __init__(self,name, ext=None,mimetype=None, content=None, parent=None, storage=None):
-		super(BinData,self).__init__()
+	def __init__(self,name, ext=None,mimetype=None, content=None, parent=None, storage=None, **kw):
+		super(BinData,self).__init__(**kw)
 		if not parent: parent = request.site
 		if not storage: storage = parent.default_storage
 		if mimetype:
@@ -288,8 +288,8 @@ class StaticFile(ObjectRef):
 	path = Column(Unicode(1000), nullable=False)
 	modified = Column(DateTime,default=datetime.utcnow)
 
-	def __init__(self, path, bin):
-		super(StaticFile,self).__init__()
+	def __init__(self, path, bin, **kw):
+		super(StaticFile,self).__init__(**kw)
 		self.path = path
 		self.superparent = request.site
 		self.parent = bin

@@ -36,8 +36,8 @@ class Storage(ObjectRef):
 	path = Column(Unicode(1000), nullable=False)
 	url = Column(Unicode(200), nullable=False)
 
-	def __init__(self, name,path,url):
-		super(Storage,self).__init__()
+	def __init__(self, name,path,url, **kw):
+		super(Storage,self).__init__(**kw)
 		self.name = unicode(name)
 		self.path = unicode(path)
 		self.url = unicode(url)

@@ -45,8 +45,8 @@ class Template(ObjectRef):
 	mime = relationship(MIMEtype, primaryjoin=mime_id==MIMEtype.id)
 
 	@no_autoflush
-	def __init__(self, name, data, parent=None):
-		super(Template,self).__init__()
+	def __init__(self, name, data, parent=None, **kw):
+		super(Template,self).__init__(**kw)
 		self.name = name
 		self.data = data
 		self.owner = request.user
@@ -76,9 +76,9 @@ class TemplateMatch(ObjectRef):
 	detail = Column(Integer, nullable=False)
 	inherit = Column(Boolean, nullable=True)
 
-	def __init__(self, obj,discr,detail, data):
+	def __init__(self, obj,discr,detail, data, **kw):
 		discr = Discriminator.get(discr,obj)
-		super(TemplateMatch,self).__init__()
+		super(TemplateMatch,self).__init__(**kw)
 		self.for_discr = discr
 		self.detail = detail
 		self.data = data

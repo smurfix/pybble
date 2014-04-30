@@ -21,7 +21,7 @@ from datetime import datetime,timedelta
 from sqlalchemy import Integer, Unicode, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship,backref
 
-from flask import request
+from flask import request, current_app
 
 from . import Object,ObjectRef, Discriminator
 from ._descr import D
@@ -190,7 +190,7 @@ class Tracker(ObjectRef):
 		super(Tracker,self).__init__()
 		self.owner = user
 		self.parent = obj
-		self.superparent = site or request.site
+		self.superparent = site or current_app.site
 		self.comment = comment
 
 	@property

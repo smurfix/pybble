@@ -46,9 +46,10 @@ class Verifier(ObjectRef):
 		"""
 	__tablename__ = "verifiers"
 	_descr = D.Verifier
+	@classmethod
+	def __declare_last__(cls):
+		cls.base = cls.superparent
 
-	base_id = Column(Integer, ForeignKey(VerifierBase.id), index=True)
-	base = relationship(VerifierBase, primaryjoin=base_id==VerifierBase.id)
 
 	code = Column(Unicode(30), nullable=False)
 
@@ -56,13 +57,23 @@ class Verifier(ObjectRef):
 	repeated = Column(DateTime,nullable=True)
 	timeout = Column(DateTime,nullable=False)
 
-	def __init__(self,base, obj, user=None, code=None, days=None):
-		super(Verifier,self).__init__()
+	def __init__(self,base=None, obj=None, user=None, code=None, days=None, **kw):
+		super(Verifier,self).__init__(**kw)
 		if isinstance(base, basestring):
 			base = VerifierBase.q.get_by(name=unicode(base))
-		self.base = base
-		self.parent = obj
-		self.owner = user or obj
+		if self.superparent is None:
+			self.superparent = base
+		else:
+			assert base is None
+		if self.parent is None:
+			self.parent = obj
+		else:
+			assert obj is None
+		if self.owner is None:
+			self.owner = user or obj
+		else:
+			assert user is None
+		assert self.owner and self.parent and self.superparent
 		self.code = code or random_string(20,dash="-",dash_step=5)
 		self.timeout = datetime.utcnow() + timedelta((days or 10),0) ## ten days
 
