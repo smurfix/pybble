@@ -84,6 +84,8 @@ class CmdGET(Command):
 		else:
 			data = RESTend(json).get(int(id),typ)
 			data = [getsubattr(data,a) for a in args]
+			if exp is None and len(args) == 1:
+				exp = "-"
 			
 		for d in data:
 			if json:

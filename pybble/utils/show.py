@@ -117,6 +117,9 @@ class ddict(dict):
 		return r
 
 def show(obj, expand="*",cache=None):
+	if isinstance(obj,string_types) and expand == '-':
+		print(obj)
+		return
 	if expand:
 		r = ddict()
 		for a in expand.split(","):
