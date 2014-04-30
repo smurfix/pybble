@@ -151,3 +151,16 @@ def hash_data(content):
 		from sha import sha as sha1
 	return b64encode(sha1(content).digest(),altchars=str("-_")).rstrip("=")
 
+def getsubattr(data,key):
+	"""
+	Split `key` by dots, access data.key.parts by attribute or index as
+	appropriate
+	"""
+	for k in key.split('.'):
+		if isinstance(data,(list,tuple)):
+			data = data[int(k)]
+		elif isinstance(data,dict):
+			data = data[k]
+		else:
+			data = getattr(data,k)
+	return data
