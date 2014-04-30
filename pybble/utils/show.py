@@ -8,9 +8,8 @@ import datetime as dt
 
 from ..core.utils import format_dt
 from ..core.db import NoData
-from ..core.models import Object
 
-from flask._compat import text_type
+from flask._compat import text_type,string_types
 
 __all__ = ("show","Cache")
 
@@ -19,6 +18,10 @@ def pr(v):
 		v = time.strftime("%Y-%m-%d %H:%M:%S",v)
 	elif isinstance(v,dt.datetime):
 		v = format_dt(v)
+	elif isinstance(v,string_types):
+		v = repr(v)
+		if v[0] == 'u':
+			v = v[1:]
 	else:
 		v = text_type(v)
 	return v
@@ -52,7 +55,7 @@ class Cache(object):
 		return hash(str(a))
 	
 def qref(k,v,t=None,seen=False):
-	print(k+text_type(v))
+	print(k+pr(v))
 
 def show_(k,v,expand=None,cache=None):
 	if k != "":
@@ -64,13 +67,15 @@ def show_(k,v,expand=None,cache=None):
 		expand=None
 
 	if expand is not None:
-		if isinstance(v,Object):
+		if hasattr(v,'_dump'):
 			qref(k,v, seen)
 			k = " "*len(unicode(k))
 			cache.add(v)
 			try:
-				v = v.as_dict
+				v = v._dump()
 				for kk in sorted(v.keys()):
+					if kk in ('id','discr'):
+						continue # included in str(), don't clutter the output
 					vv = v[kk]
 					ned = expand[kk] if expand else None
 					show_(k+kk,vv,ned,cache)
@@ -97,10 +102,11 @@ def show_(k,v,expand=None,cache=None):
 
 	if isinstance(v,(list,tuple)):
 		v = "[%d items]" % len(v)
-	if isinstance(v,dict):
+	elif isinstance(v,dict):
 		v = "{%d entries}" % len(v)
-	if v is not None:
-		print(k+pr(v))
+	elif v is not None:
+		v = pr(v)
+	print(k,v, sep="")
 
 class ddict(dict):
 	"""a dictionary with default=None instead of KeyError"""
