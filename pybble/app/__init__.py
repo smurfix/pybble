@@ -31,7 +31,7 @@ from werkzeug import import_string
 from .. import ROOT_SITE_NAME
 from ..core.db import db, NoData
 from ..core.models.template import Template as DBTemplate
-from ..core.models.site import Site
+from ..core.models.site import Site,App
 from ..core.models.config import ConfigVar,register_changed
 from ..core.models.user import User
 from ..manager import Manager,Command
@@ -268,10 +268,9 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, test=Fa
 	return app
 
 def create_site(parent,domain,app,name):
-	app_module = import_module("pybble.app."+app)
-	assert app_module.App is not None, "App '%s' does not exist"%(app,)
+	app = App.q.get_by(name=app)
 	site = Site(parent=parent, name=name, domain=domain, app=app)
-	site.save()
+	db.flush()
 	return site
 
 def list_apps():
