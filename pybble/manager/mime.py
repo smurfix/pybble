@@ -20,7 +20,6 @@ from importlib import import_module
 from . import Manager,Command,Option
 from ..core.models.types import MIMEtype,add_mime
 from ..core.db import db
-from ..blueprint import create_blueprint,drop_blueprint,list_blueprints
 
 def msplit(typ):
 	try:

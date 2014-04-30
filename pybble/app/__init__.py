@@ -17,7 +17,7 @@ import sys
 import logging
 from time import time
 
-from flask import Flask, request, render_template, g, session, Markup, Response
+from flask import Flask, request, render_template, g, session, Markup, Response, current_app
 from flask.config import Config
 from flask.templating import DispatchingJinjaLoader
 from flask.ext.script import Server

@@ -23,8 +23,7 @@ from . import Manager,Command,Option,PrepCommand
 from ..core.rest import RESTend
 from ..core.db import db, NoData
 from ..core.models import Discriminator
-from ..blueprint import create_blueprint,drop_blueprint,list_blueprints
-from ..core.json import encode,decode
+from ..core.json import encode
 from ..utils import getsubattr
 from ..utils.show import show
 
