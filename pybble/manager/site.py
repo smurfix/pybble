@@ -26,9 +26,9 @@ def list_sites(site,level=0):
 	else:
 		prefix=""
 	
-	print(prefix+site.domain,site.app,site.name)
+	print(prefix+site.domain,site.app.name if site.app else "-",site.name)
 	level += 1
-	for s in site.children:
+	for s in site.all_children("Site"):
 		list_sites(s,level)
 
 class AddSiteCommand(Command):
