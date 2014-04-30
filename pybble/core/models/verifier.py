@@ -23,43 +23,20 @@ from sqlalchemy.orm import relationship,backref
 
 from ...utils import random_string
 from .. import config
-from ..db import Base, Column, NoData
-from . import ObjectRef
+from ..db import Column, NoData
+from . import Loadable, ObjectRef
 from ._descr import D
 
 VerifierBases = {}
-class VerifierBase(Base):
+class VerifierBase(Loadable, ObjectRef):
 	"""
 		Class for verification subsystems.
 		"""
 
 	__tablename__ = "verifierbase"
+	_descr = D.VerifierBase
 	name = Column(Unicode(30), nullable=False)
-	cls = Column(Unicode(100), nullable=False)
 	doc = Column(Unicode(1000), nullable=True)
-	_mod = None
-
-	def __init__(self, name, cls):
-		super(VerifierBase,self).__init__()
-		self.name = unicode(name)
-		self.cls = cls
-
-	@property
-	def _module(self):
-		if self._mod is None:
-			self._mod = import_string(str(self.cls))
-		return self._mod
-
-	@staticmethod
-	def register(name, cls):
-		name = unicode(name)
-		try:
-			v = VerifierBase.q.get_by(name=name)
-		except NoData:
-			v=VerifierBase(name=name, cls=cls)
-			db.store.add(v)
-		else:
-			assert v.cls == cls
 
 class Verifier(ObjectRef):
 	"""
