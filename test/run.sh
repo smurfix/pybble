@@ -17,10 +17,10 @@ skip=N
 rev=$(git rev-parse --short=9 HEAD)
 REV=$D/tag
 if [ -f $REV ] ; then
-	if [ $rev = $(cat $REV) ] ; then
+	if [ $rev = $(cat $REV) -a -f $D/$rev.db ] ; then
 		skip=Y
 	else
-		rm -r $D/$(cat $REV).*
+		rm -rf $D/$(cat $REV).*
 	fi
 fi
 if [ $skip = N ] ; then
