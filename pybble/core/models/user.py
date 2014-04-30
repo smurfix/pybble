@@ -19,7 +19,7 @@ from werkzeug import security
 
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, DateTime, Boolean
+from sqlalchemy import Integer, Unicode, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship,backref
 from sqlalchemy.types import TypeDecorator, VARCHAR
 
@@ -27,7 +27,7 @@ from ... import ANON_USER_NAME
 from ...utils import random_string, AuthError
 from ...core import config
 from ..db import Base, Column, db, NoData
-from . import Object,ObjectRef, PERM,PERM_NONE
+from . import Object,ObjectRef, PERM,PERM_NONE, Discriminator
 from .site import Site
 from ._descr import D
 
@@ -366,7 +366,7 @@ class User(ObjectRef):
 				discr = discr.classdiscr
 			else:
 				discr = Discriminator.get(discr).id
-			pq.append(Permission.discr == discr)
+			pq.append(Permission.for_discr == discr)
 
 		if new_discr is not None:
 			if isinstance(new_discr,Discriminator):
@@ -409,7 +409,7 @@ class User(ObjectRef):
 
 	def permit(user,obj, right, discr=None, inherit=None):
 		discr = Discriminator.get(discr,obj).id
-		p = list(db.store.find(Permission, And(Permission.owner==u, Permission.parent==obj, Permission.discr==discr)))
+		p = list(db.store.find(Permission, And(Permission.owner==u, Permission.parent==obj, Permission.for_discr==discr)))
 		
 		if len(p) > 0:
 			if inherit is None:
@@ -433,7 +433,7 @@ class User(ObjectRef):
 
 	def forbid(user,obj, discr=None, inherit=None):
 		discr = Discriminator.get(discr,obj).id
-		p = list(db.store_find(Permission, And(Permission.owner==u,Permission.parent==obj,Permission.discr==discr)))
+		p = list(db.store_find(Permission, And(Permission.owner==u,Permission.parent==obj,Permission.for_discr==discr)))
 		
 		if p:
 			if inherit is None:
@@ -546,13 +546,17 @@ class Permission(ObjectRef):
 
 	right = Column(Integer, nullable=False)
 	inherit = Column(Boolean, nullable=True)
-	discr = Column(Integer, nullable=False)
-	new_discr = Column(Integer, nullable=True)
+
+	for_discr_id = Column("discr", Integer, ForeignKey(Discriminator.id), nullable=False)
+	for_discr = relationship(Discriminator, primaryjoin=for_discr_id==Discriminator.id)
+
+	new_discr_id = Column("new_discr", Integer, ForeignKey(Discriminator.id), nullable=True)
+	new_discr = relationship(Discriminator, primaryjoin=new_discr_id==Discriminator.id)
 
 	def __init__(self, user, obj, discr, right, inherit=None, new_discr=None):
-		discr = Discriminator.get(discr,obj).id
+		discr = Discriminator.get(discr,obj)
 		super(Permission,self).__init__()
-		self.discr = discr
+		self.for_discr = discr
 		self.right = right
 		self.inherit = inherit
 		self.owner = user
@@ -568,7 +572,7 @@ class Permission(ObjectRef):
 		if self._rec_str or not o or not p: return "‽"
 		try:
 			self._rec_str = False
-			return u'%s can %s %s %s %s %s' % (unicode(o),PERM[self.right],Discriminator.q.get_by(id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N", Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-")
+			return u'%s can %s %s %s %s %s' % (unicode(o),PERM[self.right],self.for_discr.name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N", Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-")
 		finally:
 			self._rec_str = False
 
@@ -583,8 +587,8 @@ New Object Type: %s
 Right: %s
 Inherited: %s
 """ % (o, p, \
-		Discriminator.q.get_by(id=self.discr).name, \
-		Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-", \
+		self.for_discr.name, \
+		self.new_discr.name if self.new_discr is not None else "-", \
 		self.right, \
 		"*" if self.inherit is None else "Y" if self.inherit else "N")
 

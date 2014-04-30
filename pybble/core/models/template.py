@@ -21,7 +21,7 @@ from flask import request
 
 from .. import config
 from ..db import Base, Column, no_autoflush
-from . import Object,ObjectRef, TM_DETAIL
+from . import Object,ObjectRef, TM_DETAIL, Discriminator
 from ._descr import D
 from .types import MIMEtype, mime_ext
 
@@ -70,14 +70,16 @@ class TemplateMatch(ObjectRef):
 	data = Column(Unicode(100000))
 	modified = Column(DateTime,default=datetime.utcnow)
 
-	discr = Column(Integer, nullable=False)
+	for_discr_id = Column('discr',Integer, ForeignKey(Discriminator.id), nullable=False)
+	for_discr = relationship(Discriminator, primaryjoin=for_discr_id==Discriminator.id)
+
 	detail = Column(Integer, nullable=False)
 	inherit = Column(Boolean, nullable=True)
 
 	def __init__(self, obj,discr,detail, data):
-		discr = Discriminator.get(discr,obj).id
+		discr = Discriminator.get(discr,obj)
 		super(TemplateMatch,self).__init__()
-		self.discr = discr
+		self.for_discr = discr
 		self.detail = detail
 		self.data = data
 		db.store.add(self)
@@ -91,6 +93,6 @@ class TemplateMatch(ObjectRef):
 		try:
 			self._rec_str = True
 		finally:
-			return u'%s %s %s %s' % (TM_DETAIL[self.detail],Discriminator.q.get_by(id=self.discr).name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
+			return u'%s %s %s %s' % (TM_DETAIL[self.detail],self.for_discr.name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
 			self._rec_str = False
 

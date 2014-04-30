@@ -23,7 +23,7 @@ from sqlalchemy.orm import relationship,backref
 
 from flask import request
 
-from . import Object,ObjectRef
+from . import Object,ObjectRef, Discriminator
 from ._descr import D
 from ..db import Base, Column
 from ...core import config
@@ -40,7 +40,8 @@ class Breadcrumb(ObjectRef):
 	_descr = D.Breadcrumb
 	_no_crumbs = True
 
-	discr = Column(Integer, nullable=False)
+	for_discr_id = Column("discr", Integer, ForeignKey(Discriminator.id), nullable=False)
+	for_discr = relationship(Discriminator, primaryjoin=for_discr_id==Discriminator.id)
 	#seq = Column(Integer)
 	visited = Column(DateTime,default=datetime.utcnow)
 	last_visited = Column(DateTime,nullable=True)
@@ -48,7 +49,7 @@ class Breadcrumb(ObjectRef):
 
 	def __init__(self, user, obj):
 		super(Breadcrumb,self).__init__()
-		self.discr = obj.discriminator
+		self.for_discr = obj.discriminator
 		self.owner = user
 		self.parent = obj
 		self.superparent = request.site
@@ -267,7 +268,9 @@ class WantTracking(ObjectRef):
 		cls.obj = cls.parent
 		cls.user = cls.owner
 
-	discr = Column(Integer, nullable=True)
+	for_discr_id = Column("discr", Integer, ForeignKey(Discriminator.id), nullable=True)
+	for_discr = relationship(Discriminator, primaryjoin=for_discr_id==Discriminator.id)
+
 	email = Column(Boolean, nullable=False) # send mail, not just RSS/on-site?
 	track_new = Column(Boolean, nullable=False) # alert for new data?
 	track_mod = Column(Boolean, nullable=False) # alert for modifications?
@@ -277,7 +280,7 @@ class WantTracking(ObjectRef):
 		super(WantTracking,self).__init__()
 		self.parent = obj
 		self.owner = user
-		self.discr = Discriminator.get(discr,obj).id if discr else None
+		self.for_discr = discr
 		self.email = False
 		self.track_new = False
 		self.track_mod = False
@@ -289,7 +292,7 @@ class WantTracking(ObjectRef):
 		if self._rec_str or not o or not p: return "‽"
 		try:
 			self._rec_str = True
-			return u'%s in %s for %s %s' % ("-" if self.discr is None else Discriminator.q.get_by(id=self.discr).name, unicode(p),unicode(o), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
+			return u'%s in %s for %s %s' % ("-" if self.for_discr is None else self.for_discr.name, unicode(p),unicode(o), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
 		finally:
 			self._rec_str = False
 
@@ -308,7 +311,7 @@ Email: %s
 
 """ % (unicode(self.parent),self.parent.oid(), \
        unicode(self.owner),self.owner.oid(), \
-	   Discriminator.q.get_by(id=self.discr).name if self.discr is not None else "None",
+	   self.for_discr.name if self.for_discr is not None else "None",
 	   " ".join(wh) if wh else "-", \
 	   "yes" if self.email else "no")
 
