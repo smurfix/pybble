@@ -14,6 +14,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ##BP
 
 import unittest
+import pytest
 import datetime
 import flask
 
@@ -23,8 +24,9 @@ from .base import WebTC
 #from pybble.core.models.doc import ContentType,Content
 from webunit.webunittest import WebTestCase
 
-if 0:
-  class ContentTestCase(ManagerTC,WebTC,WebTestCase):
+pytestmark = pytest.mark.skipif(True, reason="We don't actually have contenttypes yet, if ever")
+
+class ContentTestCase(ManagerTC,WebTC,WebTestCase):
 	def setupData(self):
 		super(AppRunTestCase,self).setupData()
 		self.run_manager("mgr -t new ContentTest _test test")
