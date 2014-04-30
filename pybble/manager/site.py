@@ -16,7 +16,9 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 import os
 import sys
 
-from . import Command,Option
+from flask import current_app
+
+from . import PrepCommand,Option, Manager
 from ..core.models.site import Site
 from ..app import create_site, list_apps
 
@@ -31,27 +33,38 @@ def list_sites(site,level=0):
 	for s in site.all_children("Site"):
 		list_sites(s,level)
 
-class AddSiteCommand(Command):
-	"""Add a new sub-app"""
+
+class AddSite(PrepCommand):
+	"""Add a new sub-site"""
 	add_help = False
 
 	def __init__(self):
-		super(AddSiteCommand,self).__init__()
-		self.add_option(Option("name", nargs='?', action="store",help="The new site's name"))
-		self.add_option(Option("app", nargs='?', action="store",help="The Pybble app module to install"))
+		super(AddSite,self).__init__()
+		self.add_option(Option("site_name", nargs='?', action="store",help="The new site's name"))
+		self.add_option(Option("app_name", nargs='?', action="store",help="The Pybble app module to install"))
 		self.add_option(Option("domain", nargs='?', action="store",help="The domain to listen to"))
 
-	def run(self, args=(), domain=None,app=None,name=None, help=False):
+	def run(self, args=(), domain=None,app_name=None,site_name=None, help=False):
 		if help or domain is None:
 			self.parser.print_help()
 			print("Available apps: "+" ".join(list_apps()),file=sys.stderr)
 			sys.exit(not help)
-		create_site(current_app.site, domain,app,name)
+		create_site(current_app.site, domain,app_name,site_name)
 		
-class SitesCommand(Command):
-	"""Show a list of known sites"""
+class ListSites(PrepCommand):
+	"""Show the list of known sites"""
 	add_help = False
 
-	def __call__(self,app):
-		list_sites(app.site)
+	def run(self):
+		list_sites(current_app.site)
 		
+class SiteManager(Manager):
+	"""URLs and their content"""
+	def __init__(self):
+		super(SiteManager,self).__init__()
+		self.add_command("add", AddSite())
+		self.add_command("list", ListSites())
+
+	def create_app(self, app):
+		return app
+	

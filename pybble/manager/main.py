@@ -82,12 +82,12 @@ class RootManager(Manager):
 	def add_root_commands(self):
 		from .blueprint import BlueprintManager
 		from .app import AppCommand
-		from .site import AddSiteCommand,SitesCommand
 		from .populate import PopulateCommand
 		from .schema import SchemaCommand
 		from .mime import MIMEManager
 		from .descr import DisManager
 		from .obj import RESTManager
+		from .site import SiteManager
 
 		coremanager = Manager()
 		coremanager.__doc__ = "Examine and change Pybble's internal data"
@@ -97,12 +97,11 @@ class RootManager(Manager):
 		coremanager.add_command("mime",MIMEManager())
 
 		#self.add_command("urls",ShowUrls())
-		self.add_command("new",AddSiteCommand())
-		self.add_command("sites",SitesCommand())
+		self.add_command("site",SiteManager())
 		self.add_command("populate",PopulateCommand())
 		self.add_command("schema",SchemaCommand())
 		#self.add_command("app",AppCommand())
-		#self.add_command("blueprint",BlueprintManager())
+		self.add_command("blueprint",BlueprintManager())
 		self.add_command("obj",RESTManager())
 		self.add_command("run",SubdomainServer())
 		self.add_command("core",coremanager)
