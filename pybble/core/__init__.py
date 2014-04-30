@@ -49,7 +49,7 @@ class config(attrdict):
 			if not k.startswith('_'):
 				self[k]=v
 
-		self._default('TEST',False)
+		self._default('TESTING',False)
 		self._default('DEBUG',False)
 		self._default('TRACE',False)
 		self._default('sql_driver','mysql')
@@ -68,13 +68,13 @@ class config(attrdict):
 			self._default(text_type(k),v)
 
 		if 'SECRET_KEY' not in self:
-			if self.TEST:
+			if self.TESTING:
 				self.SECRET_KEY = 'If you use this in production, you deserve to lose.'
 			else:
 				raise RuntimeError("For production use, you need to set SECRET_KEY in config.")
 
 		if self.sql_uri is None:
-			if self.sql_pass == "test" and not self.TEST:
+			if self.sql_pass == "test" and not self.TESTING:
 				raise RuntimeError("For production use, you need to set a database password (or URI).")
 			
 			if self.sql_database.startswith("/"): # it's a file

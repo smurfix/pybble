@@ -2,7 +2,7 @@
 
 ## This is a minimal config file for testing.
 
-TEST=True # this file only works in test mode
+TESTING=True # this file only works in test mode
 
 sql_driver="sqlite"
 ## 

@@ -71,7 +71,7 @@ from pybble.core.models.site import Site,Blueprint
 from pybble.core.models.config import ConfigVar,SiteConfigVar
 
 class TC(unittest.TestCase):
-	TEST = True
+	TESTING = True
 	app_class = flask.Flask
 	testsite=None
 

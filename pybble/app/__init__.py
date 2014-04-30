@@ -69,7 +69,7 @@ class WrapperApp(object):
 		for k,v in config.items():
 			cfg.setdefault(k,v)
 		if testing is not None:
-			assert testing == cfg['TEST']
+			assert testing == cfg['TESTING']
 
 		cfg._arm()
 		return cfg
@@ -111,7 +111,7 @@ class BaseApp(WrapperApp,Flask):
 
 		Flask.__init__(self, site.name, template_folder=template_folder, static_folder=static_folder, **kw)
 		if test is not None:
-			assert test == self.config.TEST
+			assert test == self.config.TESTING
 		self.wsgi_app = CustomProxyFix(self.wsgi_app)
 		register_changed(self)
 
@@ -121,10 +121,13 @@ class BaseApp(WrapperApp,Flask):
 		self.before_request(self._setup_user)
 	
 	def _setup_user(self, **kw):
-		if 'user' in session:
-			request.user = User.q.get(session.user)
+		## TODO convert to Flask.login
+		if current_app.config.TESTING:
+			request.user = current_app.site.owner
+		elif 'user' in session:
+			request.user = User.q.get_by(id=session.user)
 		else:
-			request.user = None
+			request.user = User.q.get_by(name="",site=current_app.site)
 	
 	def create_jinja_environment(self):
 		"""Add support for .haml templates."""
@@ -221,7 +224,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, test=Fa
 					more than one one root site
 		:param config: A configuration file to load. Default: the PYBBLE
 		            environment variable.
-		:param test: Required to be identical to config.TEST.
+		:param test: Required to be identical to config.TESTING.
 		:param verbose: Turn on logging.
 		"""
 
@@ -236,7 +239,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, test=Fa
 		from pybble.core import config as cfg
 		cfg_app.config = cfg
 
-		assert test == cfg.get('TEST',False), (test,cfg.get('TEST',False))
+		assert test == cfg.get('TESTING',False), (test,cfg.get('TESTING',False))
 	
 	with cfg_app.test_request_context('/'):
 		if site is None:
