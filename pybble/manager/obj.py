@@ -23,6 +23,7 @@ from ..core.db import db
 from ..core.models import Discriminator
 from ..blueprint import create_blueprint,drop_blueprint,list_blueprints
 from ..core.json import encode,decode
+from ..utils import getsubattr
 from ..utils.show import show
 
 def _parse(args):
@@ -53,14 +54,16 @@ def _parse(args):
 	return data
 
 class CmdGET(Command):
-	"""Retrieve a record (or a list of them (or a list of record types))"""
+	"""Retrieve part of of a record (or a (or a list of them (or a list of record types)))"""
 	## TODO: allow expansion for JSON
+	capture_all_args = True
+
 	def __init__(self):
 		super(CmdGET,self).__init__()
 		self.add_option(Option("-x","--expand",action="append", dest="exp", help="additional detail to print"))
 		self.add_option(Option("typ", nargs='?', action="store",help="The item's type; if missing: list types"))
 		self.add_option(Option("id", type=int, nargs='?', action="store",help="The item's ID; if missing: list entries of that type"))
-	def __call__(self,app, help=False, id=None,typ=None, exp=None):
+	def __call__(self,app, args, help=False, id=None,typ=None, exp=None):
 		json = app.json
 		if help or exp and json:
 			self.parser.print_help()
@@ -74,14 +77,19 @@ class CmdGET(Command):
 		elif id is None:
 			data = RESTend(json).list(typ)
 			if not exp: exp = "*"
-		else:
+		elif not args:
 			data = RESTend(json).get(int(id),typ)
 			if not exp: exp = "-"
-			
-		if json:
-			print(encode(data))
+			data = [data]
 		else:
-			show(data, expand=exp)
+			data = RESTend(json).get(int(id),typ)
+			data = [getsubattr(data,a) for a in args]
+			
+		for d in data:
+			if json:
+				print(encode(d))
+			else:
+				show(d, expand=exp)
 		db.commit()
 		
 class CmdDELETE(Command):
