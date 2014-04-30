@@ -22,3 +22,8 @@ class Manager(BaseManager):
 		"""NO we do NOT want the default stuff!"""
 		pass
 
+class PrepCommand(Command):
+	def __call__(self,app,*a,**k):
+		with app.test_request_context():
+			app.preprocess_request()
+			return self.run(*a,**k)
