@@ -37,17 +37,16 @@ class AddSiteCommand(Command):
 
 	def __init__(self):
 		super(AddSiteCommand,self).__init__()
-		self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
 		self.add_option(Option("name", nargs='?', action="store",help="The new site's name"))
 		self.add_option(Option("app", nargs='?', action="store",help="The Pybble app module to install"))
 		self.add_option(Option("domain", nargs='?', action="store",help="The domain to listen to"))
 
-	def __call__(self,app_, args=(), domain=None,app=None,name=None, help=False):
+	def run(self, args=(), domain=None,app=None,name=None, help=False):
 		if help or domain is None:
 			self.parser.print_help()
 			print("Available apps: "+" ".join(list_apps()),file=sys.stderr)
 			sys.exit(not help)
-		create_site(app_.site,domain,app,name)
+		create_site(current_app.site, domain,app,name)
 		
 class SitesCommand(Command):
 	"""Show a list of known sites"""
