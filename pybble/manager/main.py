@@ -97,7 +97,7 @@ class RootManager(Manager):
 		coremanager.add_command("mime",MIMEManager())
 
 		#self.add_command("urls",ShowUrls())
-		#self.add_command("new",AddSiteCommand())
+		self.add_command("new",AddSiteCommand())
 		self.add_command("sites",SitesCommand())
 		self.add_command("populate",PopulateCommand())
 		self.add_command("schema",SchemaCommand())
