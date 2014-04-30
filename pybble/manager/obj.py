@@ -17,9 +17,11 @@ import sys
 import logging
 from importlib import import_module
 
-from . import Manager,Command,Option
+from flask import current_app
+
+from . import Manager,Command,Option,PrepCommand
 from ..core.rest import RESTend
-from ..core.db import db
+from ..core.db import db, NoData
 from ..core.models import Discriminator
 from ..blueprint import create_blueprint,drop_blueprint,list_blueprints
 from ..core.json import encode,decode
@@ -37,14 +39,22 @@ def _parse(args):
 	"""
 	data = {}
 	for k in args:
-		k,v = args.split('=',1)
+		k,v = k.split('=',1)
 		if v == "":
 			pass
 		elif v == "-":
 			v = None
 		elif v.startswith("="):
-			descr,oid = v.split(":")
-			v = Discriminator.get(descr).map.q.get_by(id=int(oid))
+			descr,oid = v[1:].split(":")
+			try:
+				v = Discriminator.get(descr)
+			except NoData:
+				raise RuntimeError("I do not know the type ‘{}’".format(descr))
+			try:
+				v = v.mod.q.get_by(id=int(oid))
+			except NoData:
+				raise RuntimeError("I do not know the item ‘{}:{}’".format(descr,oid))
+
 		else:
 			try:
 				v = int(v)
@@ -53,7 +63,7 @@ def _parse(args):
 		data[k] = v
 	return data
 
-class CmdGET(Command):
+class CmdGET(PrepCommand):
 	"""Retrieve part of of a record (or a (or a list of them (or a list of record types)))"""
 	## TODO: allow expansion for JSON
 	capture_all_args = True
@@ -63,8 +73,8 @@ class CmdGET(Command):
 		self.add_option(Option("-x","--expand",action="append", dest="exp", help="additional detail to print"))
 		self.add_option(Option("typ", nargs='?', action="store",help="The item's type; if missing: list types"))
 		self.add_option(Option("id", type=int, nargs='?', action="store",help="The item's ID; if missing: list entries of that type"))
-	def __call__(self,app, args, help=False, id=None,typ=None, exp=None):
-		json = app.json
+	def run(self,args, help=False, id=None,typ=None, exp=None):
+		json = current_app.json
 		if help or exp and json:
 			self.parser.print_help()
 			sys.exit(not help)
@@ -96,13 +106,39 @@ class CmdGET(Command):
 				show(d, expand=exp)
 		db.commit()
 		
-class CmdDELETE(Command):
+class CmdDIR(PrepCommand):
+	"""Retrieve a list of records (or a list of record types)"""
+	## TODO: allow expansion for JSON
+	capture_all_args = True
+
+	def __init__(self):
+		super(CmdDIR,self).__init__()
+		self.add_option(Option("typ", nargs='?', action="store",help="The item's type; if missing: list types"))
+	def run(self, args, help=False, typ=None, exp=None):
+		json = current_app.json
+		if help:
+			self.parser.print_help()
+			sys.exit(not help)
+
+		if typ is None:
+			data = RESTend(json).types()
+		else:
+			data = RESTend(json).list(typ)
+
+		for d in data:
+			if json:
+				print(encode(d))
+			else:
+				show(d)
+		db.commit()
+		
+class CmdDELETE(PrepCommand):
 	"""Delete a record"""
 	def __init__(self):
 		super(CmdDELETE,self).__init__()
 		self.add_option(Option("typ", nargs='?', action="store",help="The item's type; if missing: list types"))
 		self.add_option(Option("id", type=int, nargs='?', action="store",help="The item's ID; if missing: list entries of that type"))
-	def __call__(self,app, help=False, id=None,typ=None):
+	def run(self, help=False, id=None,typ=None):
 		if help or not id:
 			self.parser.print_help()
 			sys.exit(not help)
@@ -110,13 +146,13 @@ class CmdDELETE(Command):
 		show(res)
 		db.commit()
 		
-class CmdPOST(Command):
+class CmdPOST(PrepCommand):
 	"""Add a record"""
 	capture_all_args = True
 	def __init__(self):
 		super(CmdPOST,self).__init__()
 		self.add_option(Option("typ", nargs='?', action="store",help="The item's type"))
-	def __call__(self,app, args, typ=None,help=False):
+	def run(self, args, typ=None,help=False):
 		if help or not args:
 			self.parser.print_help()
 			sys.exit(not help)
@@ -124,14 +160,14 @@ class CmdPOST(Command):
 		res = RESTend().post(descr=typ, **data)
 		show(res)
 		
-class CmdPUT(Command):
+class CmdPUT(PrepCommand):
 	"""Change a record (clear not-mentioned data)"""
 	capture_all_args = True
 	def __init__(self):
 		super(CmdPUT,self).__init__()
 		self.add_option(Option("typ", nargs='?', action="store",help="The item's type"))
 		self.add_option(Option("id", type=int, nargs='?', action="store",help="The item's ID"))
-	def __call__(self,app, args, typ=None,id=None,help=False):
+	def run(self, args, typ=None,id=None,help=False):
 		if help or not args or not id:
 			self.parser.print_help()
 			sys.exit(not help)
@@ -139,66 +175,20 @@ class CmdPUT(Command):
 		res = RESTend().put(id=id, descr=typ, **data)
 		show(res)
 		
-class CmdPATCH(Command):
+class CmdPATCH(PrepCommand):
 	"""Change a record (don't touch not-mentioned data)"""
 	capture_all_args = True
 	def __init__(self):
 		super(CmdPATCH,self).__init__()
 		self.add_option(Option("typ", nargs='?', action="store",help="The item's type"))
 		self.add_option(Option("id", nargs='?', action="store",help="The item's ID"))
-	def __call__(self,app, args, typ=None,id=None,help=False):
+	def run(self, args, typ=None,id=None,help=False):
 		if help or not args or not id:
 			self.parser.print_help()
 			sys.exit(not help)
 		data = _parse(args)
 		res = RESTend().patch(descr=typ, **data)
 		show(res)
-		
-class DocREST(Command):
-	def __init__(self):
-		super(DocREST,self).__init__()
-		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
-		self.add_option(Option("typ", nargs='?', action="store",help="The REST type to document"))
-		self.add_option(Option("doc", nargs='?', action="store",help="some text"))
-	def __call__(self,app, help=False,typ=None,doc=None):
-		if help or typ is None:
-			if help:
-				self.parser.print_help()
-			sys.exit(not help)
-		typ,subtyp = msplit(typ)
-		mtype = RESTtype.q.get_by(typ=typ,subtyp=subtyp)
-		if doc is None:
-			if mtype.doc is not None:
-				print(mtype.doc)
-		else:
-			if doc == "-":
-				doc = None
-			mtype.doc = doc
-			db.commit()
-		
-class DropREST(Command):
-	def __init__(self):
-		super(DropREST,self).__init__()
-		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
-		self.add_option(Option("typ", nargs='?', action="store",help="The REST type to delete"))
-	def __call__(self,app, help=False,typ=None):
-		if help or typ is None:
-			self.parser.print_help()
-			sys.exit(not help)
-		typ,subtyp = msplit(typ)
-		mtype = RESTtype.q.get_by(typ=typ,subtyp=subtyp)
-		db.delete(mtype)
-		db.commit()
-		
-class CmdDIR(Command):
-	"""List all items of a type"""
-	def __call__(self,app, help=False):
-		if help:
-			self.parser.print_help()
-			sys.exit(not help)
-		res = []
-		for mtype in RESTtype.q.all():
-			print("{}/{}\t{}\t{}".format(mtype.typ,mtype.subtyp,mtype.ext if mtype.ext is not None else "-", mtype.name))
 		
 class RESTManager(Manager):
 	"""Directly manipulate the database"""
@@ -208,9 +198,9 @@ class RESTManager(Manager):
 		self.add_option("-j", "--json", dest="json", action="store_true", required=False, help="Accept/send JSON")
 
 		self.add_command("get", CmdGET())
-		self.add_command("put", CmdPUT())
-		self.add_command("post", CmdPOST())
-		self.add_command("patch", CmdPATCH())
+		self.add_command("replace", CmdPUT())
+		self.add_command("add", CmdPOST())
+		self.add_command("update", CmdPATCH())
 		self.add_command("delete", CmdDELETE())
 		self.add_command("list", CmdDIR())
 
