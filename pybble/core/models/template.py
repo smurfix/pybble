@@ -44,10 +44,6 @@ class Template(ObjectRef):
 	mime_id = Column(Integer, ForeignKey(MIMEtype.id), nullable=False, index=True)
 	mime = relationship(MIMEtype, primaryjoin=mime_id==MIMEtype.id)
 
-	def __storm_pre_flush__(self):
-		self.modified = datetime.utcnow()
-		super(Template,self).__storm_pre_flush__()
-
 	@no_autoflush
 	def __init__(self, name, data, parent=None):
 		super(Template,self).__init__()
@@ -73,10 +69,6 @@ class TemplateMatch(ObjectRef):
 
 	data = Column(Unicode(100000))
 	modified = Column(DateTime,default=datetime.utcnow)
-
-	def __storm_pre_flush__(self):
-		self.modified = datetime.utcnow()
-		super(TemplateMatch,self).__storm_pre_flush__()
 
 	discr = Column(Integer, nullable=False)
 	detail = Column(Integer, nullable=False)

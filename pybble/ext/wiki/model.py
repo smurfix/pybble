@@ -16,10 +16,6 @@ class WikiPage(Object):
 	mainpage = Column(Boolean, default=True, nullable=False) # main-linked page?
 	modified = DateTime(default_factory=datetime.utcnow)
 
-	def __storm_pre_flush__(self):
-		self.modified = datetime.utcnow()
-		super(WikiPage,self).__storm_pre_flush__()
-
 	def __init__(self, name, data):
 		super(WikiPage,self).__init__()
 		self.name = name
