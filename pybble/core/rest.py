@@ -106,6 +106,6 @@ class RESTend(object):
 		for descr in Discriminator.q.all():
 			if self.json:
 				descr = descr.as_dict
-			res.append(descr.as_dict)
+			res.append(descr)
 		return res
 
