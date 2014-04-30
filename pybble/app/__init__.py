@@ -33,6 +33,7 @@ from ..core.db import db, NoData
 from ..core.models.template import Template as DBTemplate
 from ..core.models.site import Site
 from ..core.models.config import ConfigVar,register_changed
+from ..core.models.user import User
 from ..manager import Manager,Command
 from ..blueprint import load_app_blueprints
 from ..render import load_app_renderer
@@ -116,6 +117,14 @@ class BaseApp(WrapperApp,Flask):
 
 		load_app_renderer(self)
 		load_app_blueprints(self)
+
+		self.before_request(self._setup_user)
+	
+	def _setup_user(self, **kw):
+		if 'user' in session:
+			request.user = User.q.get(session.user)
+		else:
+			request.user = None
 	
 	def create_jinja_environment(self):
 		"""Add support for .haml templates."""
