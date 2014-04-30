@@ -73,10 +73,8 @@ class CmdGET(Command):
 
 		if typ is None:
 			data = RESTend(json).types()
-			if not exp: exp = "*"
 		elif id is None:
 			data = RESTend(json).list(typ)
-			if not exp: exp = "*"
 		elif not args:
 			data = RESTend(json).get(int(id),typ)
 			if not exp: exp = "-"
