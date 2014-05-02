@@ -22,7 +22,7 @@ from flask._compat import text_type
 
 from . import Manager,Option
 from . import PrepCommand as Command
-from ..core.models.site import Blueprint
+from ..core.models.site import Blueprint,SiteBlueprint
 from ..core.db import NoData
 from ..blueprint import create_blueprint,drop_blueprint
 
