@@ -92,25 +92,24 @@ class ParamBlueprint(Command):
 			self.parser.print_help()
 			sys.exit(not help)
 		try:
-			bp = SiteBlueprint.objects.get(name=name, site=current_app.site)
+			bp = SiteBlueprint.q.get_by(name=name, site=current_app.site)
 		except NoData:
 			raise NoData("Blueprint site=%s name=%s" % (current_app.site.name,name))
 		if key is None:
-			for k,v in bp.params._data.items():
+			for k,v in bp.config.items():
 				print(k,v)
 			return
 		if value is None:
-			print(getattr(bp.params,key))
+			print(getattr(bp.config,key))
 			return
 		if value == "-":
-			delattr(bp.params,key)
+			delattr(bp.config,key)
 		else:
 			try:
 				value = eval(value)
 			except (SyntaxError,NameError):
 				pass
-			setattr(bp.params,key,value)
-		bp.save()
+			setattr(bp.config,key,value)
 		
 class DropBlueprint(Command):
 	def __init__(self):
