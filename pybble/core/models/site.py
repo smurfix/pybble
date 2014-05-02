@@ -77,7 +77,7 @@ class Site(ObjectRef):
 	## XXX convert to relationship
 	@property
 	def blueprints(self):
-		return self.all_children("SiteBlueprint")
+		return self.all_children("SiteBlueprint", want=None)
 
 	@property
 	def all_sites(self):
