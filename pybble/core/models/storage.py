@@ -19,7 +19,7 @@ from sqlalchemy.orm import relationship,backref
 
 from ..db import Base, Column
 
-from flask import request
+from flask import request,current_app
 
 from pybble.core import config
 import os
@@ -41,7 +41,7 @@ class Storage(ObjectRef):
 		self.name = unicode(name)
 		self.path = unicode(path)
 		self.url = unicode(url)
-		self.superparent = request.site
+		self.superparent = current_app.site
 		try: os.makedirs(path)
 		except OSError: pass
 

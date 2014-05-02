@@ -52,7 +52,7 @@ class Breadcrumb(ObjectRef):
 		self.for_discr = obj.discriminator
 		self.owner = user
 		self.parent = obj
-		self.superparent = request.site
+		self.superparent = current_app.site
 
 	@property
 	def as_str(self):

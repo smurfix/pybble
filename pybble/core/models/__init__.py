@@ -24,7 +24,7 @@ from ..json import register_object
 
 from ..db import Base, Column, IDrenderer, db, NoData
 
-from flask import request
+from flask import request,current_app
 from flask._compat import text_type, string_types
 from werkzeug import import_string
 from jinja2.utils import Markup
@@ -472,8 +472,8 @@ class Object(Dumpable, Base):
 				obj = s
 			elif got_site:
 				break
-			elif request.site not in seen:
-				obj = request.site # last resort
+			elif current_app.site not in seen:
+				obj = current_app.site # last resort
 			else:
 				break
 

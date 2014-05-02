@@ -209,17 +209,17 @@ class User(ObjectRef):
 			password = unicode(random_string(9))
 		self.password=password
 		try:
-			User.q.get_by(parent=request.site, username=username)
+			User.q.get_by(parent=current_app.site, username=username)
 		except (AttributeError,NoData):
 			pass
 		else:
-			raise RuntimeError(u"User '%s' already exists in %s" % (username,request.site))
+			raise RuntimeError(u"User '%s' already exists in %s" % (username,current_app.site))
 
 		db.flush()
 		if self.parent is None:
-			self.parent = request.site
+			self.parent = current_app.site
 		if not self.anon:
-			m = Member(self,request.site.anon_user)
+			m = Member(self,current_app.site.anon_user)
 		db.flush()
 	
 	@property
@@ -259,10 +259,10 @@ class User(ObjectRef):
 		else:
 			s.visit()
 			if not s.superparent: # bugfix
-				s.superparent = request.site
+				s.superparent = current_app.site
 	
 	def last_visited(self,cls=None):
-		q = { "owner":self, "superparent":request.site }
+		q = { "owner":self, "superparent":current_app.site }
 		if cls:
 			q["discr"] = cls.cls_discr()
 		try:
@@ -273,14 +273,14 @@ class User(ObjectRef):
 			return r.parent
 	
 	def all_visited(self, cls=None):
-		q = { "owner":self, "superparent":request.site }
+		q = { "owner":self, "superparent":current_app.site }
 		if cls:
 			q["discr"] = cls.cls_discr()
 		return db.filter_by(Breadcrumb, **q).order_by(Desc(Breadcrumb.visited))
 
 	def is_verified(self, site=None):
 		if site is None:
-			site = request.site
+			site = current_app.site
 		try:
 			m = Member.q.get_by(user=self,group=site)
 		except NoData:
@@ -290,7 +290,7 @@ class User(ObjectRef):
 
 	def add_verified(self,v,site=None):
 		if site is None:
-			site = request.site
+			site = current_app.site
 		try:
 			m = Member.q.get_by(user_id=self.id,group_id=site.id)
 		except NoData:
@@ -336,8 +336,8 @@ class User(ObjectRef):
 		"""Recursively get the permission of this user for that (type of) object."""
 
 		ru = getattr(request,"user",None)
-		if obj is not request.site and \
-		   ru and ru.can_admin(request.site, discr=request.site.classdiscr):
+		if obj is not current_app.site and \
+		   ru and ru.can_admin(current_app.site, discr=current_app.site.classdiscr):
 			if DEBUG_ACCESS:
 				print("ADMIN",obj, file=sys.stderr)
 			return want if want and want < 0 else PERM_ADMIN
@@ -348,7 +348,7 @@ class User(ObjectRef):
 			return want
 
 		if DEBUG_ACCESS:
-			print("PERM", Discriminator.get(discr).name if discr else "-", Discriminator.get(new_discr) if new_discr else "-", (PERM_name(want) if want else "-")+":",obj,"FOR",user,"AT",request.site, u"⇒", file=sys.stderr)
+			print("PERM", Discriminator.get(discr).name if discr else "-", Discriminator.get(new_discr) if new_discr else "-", (PERM_name(want) if want else "-")+":",obj,"FOR",user,"AT",current_app.site, u"⇒", file=sys.stderr)
 
 		pq = []
 		if want is not None:

@@ -17,7 +17,7 @@ from datetime import datetime,timedelta
 from sqlalchemy import Integer, Unicode, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 
-from flask import request
+from flask import request,current_app
 
 from .. import config
 from ..db import Base, Column, no_autoflush
@@ -50,8 +50,8 @@ class Template(ObjectRef):
 		self.name = name
 		self.data = data
 		self.owner = request.user
-		self.parent = parent or request.site
-		self.superparent = getattr(parent,"site",None) or request.site
+		self.parent = parent or current_app.site
+		self.superparent = getattr(parent,"site",None) or current_app.site
 
 		dot = name.rindex(".")
 		self.mime = mime_ext(name[dot+1:])

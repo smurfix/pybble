@@ -15,7 +15,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from datetime import datetime
 import logging
 
-from flask import request
+from flask import request,current_app
 
 from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
 from sqlalchemy.orm import relationship,backref
@@ -66,7 +66,7 @@ class BinData(ObjectRef):
 	@no_autoflush
 	def __init__(self,name, ext=None,mimetype=None, content=None, parent=None, storage=None, **kw):
 		super(BinData,self).__init__(**kw)
-		if not parent: parent = request.site
+		if not parent: parent = current_app.site
 		if not storage: storage = parent.default_storage
 		if mimetype:
 			self.mime = mimetype
@@ -291,7 +291,7 @@ class StaticFile(ObjectRef):
 	def __init__(self, path, bin, **kw):
 		super(StaticFile,self).__init__(**kw)
 		self.path = path
-		self.superparent = request.site
+		self.superparent = current_app.site
 		self.parent = bin
 		
 	@property

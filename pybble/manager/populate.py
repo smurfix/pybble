@@ -16,7 +16,7 @@ import os
 import sys
 import logging
 
-from flask import request
+from flask import request,current_app
 from flask._compat import text_type
 
 from .. import TEMPLATE_PATH, STATIC_PATH
@@ -148,7 +148,7 @@ class PopulateCommand(Command):
 			else:
 				logger.debug("The root site exists. Good.")
 		db.commit()
-		request.site = root
+		current_app.site = root
 
 		## storage
 		try:

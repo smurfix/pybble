@@ -93,9 +93,9 @@ class TC(unittest.TestCase):
 			except NoData:
 				s = Site(name=self.testsite, domain=self.testsite)
 				db.flush()
-			flask.request.site = s
+			flask.current_app.site = s
 		else:
-			flask.request.site = Site.q.get_by(name=ROOT_SITE_NAME)
+			flask.current_app.site = Site.q.get_by(name=ROOT_SITE_NAME)
 		self.setupData()
 		self.setupRest()
 
