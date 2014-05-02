@@ -90,6 +90,34 @@ class DirSites(Command):
 		if not has_params:
 			print("This app cannot be configured individually.")
 		
+class ParamSite(Command):
+	"""Set a blueprint's parameter"""
+	def __init__(self):
+		super(ParamSite,self).__init__()
+		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
+		self.add_option(Option("key", nargs='?', action="store",help="The parameter name"))
+		self.add_option(Option("value", nargs='?', action="store",help="The value"))
+	def run(self, help=False,name=None,key=None,value=None):
+		if help:
+			self.parser.print_help()
+			sys.exit(0)
+		site = current_app.site
+		if key is None:
+			for k,v in site.config.items():
+				print(k,v)
+			return
+		if value is None:
+			print(getattr(site.config,key))
+			return
+		if value == "-":
+			delattr(site.config,key)
+		else:
+			try:
+				value = eval(value)
+			except (SyntaxError,NameError):
+				pass
+			setattr(site.config,key,value)
+		
 class SiteManager(Manager):
 	"""Manage web domains (a 'site') and their primary content (the 'app')."""
 	def __init__(self):
@@ -97,6 +125,7 @@ class SiteManager(Manager):
 		self.add_command("add", AddSite())
 		self.add_command("dir", DirSites())
 		self.add_command("list", ListSites())
+		self.add_command("param", ParamSite())
 
 	def create_app(self, app):
 		return app
