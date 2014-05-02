@@ -1,6 +1,7 @@
 #!/bin/bash
 
-test -n "$*" || set -ex
+test -n "$*" || set -x
+set -e
 
 test -d test || cd ..
 test -d test
@@ -35,18 +36,26 @@ else
 	PYBBLE_SQL_DATABASE=$D/$rev.db
 fi
 
-SQL=$(tempfile)
 DATA=$(tempfile)
+SQL=$DATA.db
 rm $DATA
-trap 'rm -r $DATA $SQL' 0 1 2 15
 cp -a $PYBBLE_SQL_DATABASE $SQL
 cp -a $PYBBLE_MEDIA_PATH $DATA
 PYBBLE_SQL_DATABASE=$SQL
 PYBBLE_MEDIA_PATH=$DATA
 
+SHELL=
+if [ "$1" = "-k" ] ; then
+	shift
+	trap 'echo rm -r $DATA $SQL' 0 1 2 15
+else
+	trap 'rm -r $DATA $SQL' 0 1 2 15
+fi
+
 if [ "$*" = "" ] ; then
 	./manage.py -t core check
 	./manage.py -t core config
+
 	#PYTHONPATH=$(pwd) test/run.py -x
 	PYTHONPATH=$(pwd) py.test -x test/*.py
 else
