@@ -17,9 +17,11 @@ import os
 import sys
 
 from flask import current_app
+from flask._compat import text_type
 
-from . import PrepCommand,Option, Manager
-from ..core.models.site import Site
+from . import PrepCommand as Command
+from . import Option, Manager
+from ..core.models.site import Site,App
 from ..app import create_site, list_apps
 
 def list_sites(site,level=0):
@@ -34,7 +36,7 @@ def list_sites(site,level=0):
 		list_sites(s,level)
 
 
-class AddSite(PrepCommand):
+class AddSite(Command):
 	"""Add a new sub-site"""
 	add_help = False
 
@@ -51,18 +53,50 @@ class AddSite(PrepCommand):
 			sys.exit(not help)
 		create_site(current_app.site, domain,app_name,site_name)
 		
-class ListSites(PrepCommand):
+class ListSites(Command):
 	"""Show the list of known sites"""
 	add_help = False
 
 	def run(self):
 		list_sites(current_app.site)
 		
+class DirSites(Command):
+	"""List available apps, or app details."""
+	def __init__(self):
+		super(DirSites,self).__init__()
+		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
+		self.add_option(Option("name", nargs='?', action="store",help="An apps's name, for displaying details"))
+	def run(self, help=False,name=None):
+		if help:
+			self.parser.print_help()
+			sys.exit(not help)
+		if name is None:
+			print("Available apps:")
+			for app in App.q.all():
+				print(app.name,app.path, sep="\t")
+			return
+		app = App.q.get_by(name=text_type(name))
+		if name is None:
+			name = app.name
+		if app.doc:
+			print(app.doc)
+		else:
+			print("This app does not have individual configuration.")
+		has_params = False
+		for var in app.all_children("ConfigVar"):
+			if not has_params:
+				print("Name","Default","Usage", sep="\t")
+				has_params = True
+			print(var.name,var.value,var.doc, sep="\t")
+		if not has_params:
+			print("This app cannot be configured individually.")
+		
 class SiteManager(Manager):
-	"""URLs and their content"""
+	"""Manage web domains (a 'site') and their primary content (the 'app')."""
 	def __init__(self):
 		super(SiteManager,self).__init__()
 		self.add_command("add", AddSite())
+		self.add_command("dir", DirSites())
 		self.add_command("list", ListSites())
 
 	def create_app(self, app):

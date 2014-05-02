@@ -18,6 +18,7 @@ import logging
 from importlib import import_module
 
 from flask import current_app
+from flask._compat import text_type
 
 from . import Manager,Option
 from . import PrepCommand as Command
@@ -32,12 +33,10 @@ class AddBlueprint(Command):
 		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
 		self.add_option(Option("bp", nargs='?', action="store",help="The Pybble blueprint to install"))
 		self.add_option(Option("path", nargs='?', action="store",help="The URL prefix to attach it to"))
-		self.add_option(Option("name", nargs='?', action="store",help="The blueprint's name, for templates et al."))
+		self.add_option(Option("name", nargs='?', action="store",help="The blueprint's name, used for templates et al."))
 	def run(self, help=False,bp=None,name=None,path=None):
 		if help or path is None:
 			self.parser.print_help()
-			print("Available blueprints: "+" ".join(list_blueprints()),file=sys.stderr)
-			sys.exit(not help)
 		if path == "/":
 			path = None
 		elif not path.startswith('/'):
@@ -47,6 +46,37 @@ class AddBlueprint(Command):
 		if name is None:
 			name = bp.name
 		create_blueprint(site=current_app.site, path=path, blueprint=bp, name=name)
+		
+class DirBlueprint(Command):
+	"""List available blueprints, or blueprint details."""
+	def __init__(self):
+		super(DirBlueprint,self).__init__()
+		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
+		self.add_option(Option("name", nargs='?', action="store",help="A blueprint's name, for displaying details"))
+	def run(self, help=False,name=None):
+		if help:
+			self.parser.print_help()
+			sys.exit(not help)
+		if name is None:
+			print("Available blueprints:")
+			for bp in Blueprint.q.all():
+				print(bp.name,bp.path, sep="\t")
+			return
+		bp = Blueprint.q.get_by(name=text_type(name))
+		if name is None:
+			name = bp.name
+		if bp.doc:
+			print(bp.doc)
+		else:
+			print("This blueprint is undocumented.")
+		has_params = False
+		for var in bp.all_children("ConfigVar"):
+			if not has_params:
+				print("Name","Default","Usage", sep="\t")
+				has_params = True
+			print(var.name,var.value,var.doc, sep="\t")
+		if not has_params:
+			print("This blueprint cannot be configured individually.")
 		
 class ParamBlueprint(Command):
 	"""Set a blueprint's parameter"""
@@ -101,10 +131,11 @@ class ListBlueprint(Command):
 			print(bp.name,bp.blueprint,bp.path)
 		
 class BlueprintManager(Manager):
-	"""URLs and their content"""
+	"""Manage blueprints (they control what site content is shown at which URL)"""
 	def __init__(self):
 		super(BlueprintManager,self).__init__()
 		self.add_command("add", AddBlueprint())
+		self.add_command("dir", DirBlueprint())
 		self.add_command("delete", DropBlueprint())
 		self.add_command("list", ListBlueprint())
 		self.add_command("param", ParamBlueprint())
