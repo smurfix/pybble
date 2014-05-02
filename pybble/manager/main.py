@@ -22,7 +22,7 @@ from gevent.wsgi import WSGIServer
 
 from flask import Flask
 from flask.config import Config
-from flask._compat import string_types
+from flask._compat import string_types,text_type
 
 from flask.ext.script import Server
 from flask.ext.script.commands import ShowUrls
@@ -144,7 +144,7 @@ class SubdomainDispatcher(object):
 	"""
 	def __init__(self, root=ROOT_SITE_NAME):
 		if isinstance(root,string_types):
-			root = Site.objects.get(name=root)
+			root = Site.q.get_by(name=text_type(root))
 		self.root = root
 		self.lock = Lock()
 		self.instances = i = {}
@@ -153,7 +153,7 @@ class SubdomainDispatcher(object):
 			# This pre-loads the instances with the sites necessary to
 			# later instantiate the apps.
 
-	def get_application(self, host=None, site=None):
+	def get_application(self, host=None, site=None, testing=None):
 		if site:
 			assert host is None
 			host = site.domain
@@ -169,12 +169,12 @@ class SubdomainDispatcher(object):
 				# first request: create an instance and re-save in
 				# `self.instances` for convenience
 				from ..app import create_app
-				self.instances[host] = app = create_app(site=app)
+				self.instances[host] = app = create_app(site=app, testing=testing)
 			app.pybble_dispatcher = self
 			return app
 
 	def __call__(self, environ, start_response):
 		"""Standard WSGI"""
-		app = self.get_application(environ['HTTP_HOST'])
+		app = self.get_application(environ['HTTP_HOST'], testing=environ.get('testing ,False))
 		return app(environ, start_response)
 
