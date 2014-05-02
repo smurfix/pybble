@@ -37,5 +37,10 @@ ANON_USER_NAME = ''
 from os import path
 TEMPLATE_PATH = path.join(path.dirname(__file__), 'templates')
 STATIC_PATH = path.join(path.dirname(__file__), 'static')
+
+# if you start something from the script, the default user is the site root.
+# This is set in manager.py and checked in pybble.app.BaseApp._setup_user().
+FROM_SCRIPT = False
+
 del path
 
