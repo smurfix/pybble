@@ -155,7 +155,7 @@ class SiteBlueprint(ObjectRef):
 		cls.blueprint = cls.superparent
 
 	name = Column(Unicode(30), required=True) ## (, verbose_name="blueprint's name, for url_for() et al.")
-	path = Column(Unicode(1000), required=True) ## (, verbose_name="URL path where to attach this ")
+	path = Column(Unicode(1000), nullable=False, default="") ## (, verbose_name="URL path where to attach this ")
 
 	def __init__(self,site=None,blueprint=None,**kw):
 		super(SiteBlueprint,self).__init__(**kw)
