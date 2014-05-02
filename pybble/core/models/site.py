@@ -19,6 +19,7 @@ from sqlalchemy.orm import relationship,backref
 
 from werkzeug import import_string
 from flask import request
+from flask._compat import string_types
 
 from ... import ROOT_SITE_NAME,ANON_USER_NAME
 from .. import config
@@ -153,7 +154,31 @@ class SiteBlueprint(ObjectRef):
 		cls.site = cls.parent
 		cls.blueprint = cls.superparent
 
-	path = Column(Unicode(1000), required=True) ## (, verbose_name="where to attach")
+	name = Column(Unicode(30), required=True) ## (, verbose_name="blueprint's name, for url_for() et al.")
+	path = Column(Unicode(1000), required=True) ## (, verbose_name="URL path where to attach this ")
+
+	def __init__(self,site=None,blueprint=None,**kw):
+		super(SiteBlueprint,self).__init__(**kw)
+
+		if self.superparent is not None:
+			assert blueprint is None
+		else:
+			assert blueprint is not None
+			if isinstance(blueprint,string_types):
+				blueprint = Blueprint.q.get_by(name=text_type(blueprint))
+			self.blueprint = blueprint
+
+		if self.parent is not None:
+			assert site is None
+		elif site is None:
+			self.parent = current_app.site
+		else:
+			if isinstance(site,string_types):
+				try:
+					site = Site.q.get_by(name=text_type(site))
+				except NoData:
+					site = Site.q.get_by(domain=text_type(site))
+			self.parent = site
 
 	@property
 	def config(self):

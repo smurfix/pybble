@@ -22,9 +22,11 @@ from flask import Flask, render_template
 from flask import Blueprint as FlaskBlueprint
 from flask.config import Config
 from flask.ext.script import Server
+from flask._compat import string_types
 
 from ..core.db import db
-from ..core.models.site import Site,Blueprint
+from ..core.models.site import Site,Blueprint,SiteBlueprint
+from ..core.models.tracking import Delete
 from ..manager import Manager,Command
 
 logger = logging.getLogger('pybble.blueprint')
@@ -58,7 +60,7 @@ def load_app_blueprints(app):
 			app.register_blueprint(bpm, **params)
 		site = site.parent
 
-def create_blueprint(site, blueprint, path, name=None):
+def create_blueprint(site, blueprint, path):
 	"""\
 		Attach a blueprint.
 
@@ -73,13 +75,19 @@ def create_blueprint(site, blueprint, path, name=None):
 	assert bp_module.Blueprint is not None, "App '%s' does not exist"%(app,)
 	if name is None:
 		name = blueprint
-	bp = Blueprint(site=site, name=name, path=path, blueprint=blueprint)
+	bp = SiteBlueprint(site=site, path=path, blueprint=blueprint)
 	bp.save()
 	return bp
 
-def drop_blueprint(site,name):
-	bp = Blueprint.objects.get(parent=site, name=name)
-	bp.delete()
+def drop_blueprint(blueprint,site=None):
+	if site is None:
+		site = current_app.site
+
+	if isinstance(blueprint,string_types):
+		blueprint = Blueprint.q.get_by(name=blueprint)
+	
+	bp = SiteBlueprint.q.get_by(site=site, name=name)
+	Delete(bp)
 
 def list_blueprints():
 	path = os.path.dirname(os.path.abspath(__file__))

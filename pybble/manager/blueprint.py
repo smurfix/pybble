@@ -17,19 +17,23 @@ import sys
 import logging
 from importlib import import_module
 
-from . import Manager,Command,Option
+from flask import current_app
+
+from . import Manager,Option
+from . import PrepCommand as Command
 from ..core.models.site import Blueprint
 from ..core.db import NoData
 from ..blueprint import create_blueprint,drop_blueprint,list_blueprints
 
 class AddBlueprint(Command):
+	"""Attach a blueprint to a site."""
 	def __init__(self):
 		super(AddBlueprint,self).__init__()
 		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
-		self.add_option(Option("name", nargs='?', action="store",help="The blueprint's internal name"))
 		self.add_option(Option("bp", nargs='?', action="store",help="The Pybble blueprint to install"))
-		self.add_option(Option("path", nargs='?', action="store",help="The path prefix to attach it to"))
-	def __call__(self,app, help=False,bp=None,path=None,name=None):
+		self.add_option(Option("path", nargs='?', action="store",help="The URL prefix to attach it to"))
+		self.add_option(Option("name", nargs='?', action="store",help="The blueprint's name, for templates et al."))
+	def run(self, help=False,bp=None,name=None,path=None):
 		if help or path is None:
 			self.parser.print_help()
 			print("Available blueprints: "+" ".join(list_blueprints()),file=sys.stderr)
@@ -39,41 +43,27 @@ class AddBlueprint(Command):
 		elif not path.startswith('/'):
 			print("This does not work -- paths must start with a slash.", file=sys.stderr)
 			sys.exit(1)
-		create_blueprint(site=app.site, path=path, blueprint=bp, name=name)
-		
-class DocBlueprint(Command):
-	def __init__(self):
-		super(DocBlueprint,self).__init__()
-		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
-		self.add_option(Option("name", nargs='?', action="store",help="The blueprint's internal name"))
-	def __call__(self,app, help=False,name=None):
-		if help or name is None:
-			if help:
-				self.parser.print_help()
-			print("Available blueprints: "+" ".join(list_blueprints()),file=sys.stderr)
-			return
-		bp_module = import_module("pybble.blueprint."+name)
-		doc = getattr(bp_module,'_doc', bp_module.__doc__)
-		if not doc:
-			print("Sorry, but the blueprint '%s' does not seem to have documentation" % (name,))
-			return
-		print(doc)
+		bp = Blueprint.q.get_by(name=name)
+		if name is None:
+			name = bp.name
+		create_blueprint(site=current_app.site, path=path, blueprint=bp, name=name)
 		
 class ParamBlueprint(Command):
+	"""Set a blueprint's parameter"""
 	def __init__(self):
 		super(ParamBlueprint,self).__init__()
 		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
-		self.add_option(Option("name", nargs='?', action="store",help="The blueprint's internal name"))
+		self.add_option(Option("name", nargs='?', action="store",help="The attached blueprint's name"))
 		self.add_option(Option("key", nargs='?', action="store",help="The parameter name"))
 		self.add_option(Option("value", nargs='?', action="store",help="The value"))
-	def __call__(self,app, help=False,name=None,key=None,value=None):
+	def run(self, help=False,name=None,key=None,value=None):
 		if help or name is None:
 			self.parser.print_help()
 			sys.exit(not help)
 		try:
-			bp = Blueprint.objects.get(name=name, site=app.site)
+			bp = SiteBlueprint.objects.get(name=name, site=current_app.site)
 		except NoData:
-			raise NoData("Blueprint site=%s name=%s" % (app.site.name,name))
+			raise NoData("Blueprint site=%s name=%s" % (current_app.site.name,name))
 		if key is None:
 			for k,v in bp.params._data.items():
 				print(k,v)
@@ -96,18 +86,18 @@ class DropBlueprint(Command):
 		super(DropBlueprint,self).__init__()
 		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
 		self.add_option(Option("name", nargs='?', action="store",help="The blueprint's internal name"))
-	def __call__(self,app, help=False,name=None):
+	def run(self, help=False,name=None):
 		if help or name is None:
 			self.parser.print_help()
 			sys.exit(not help)
-		drop_blueprint(app.site,name)
+		drop_blueprint(name)
 		
 class ListBlueprint(Command):
-	def __call__(self,app, help=False):
+	def run(self, help=False):
 		if help:
 			self.parser.print_help()
 			sys.exit(not help)
-		for bp in app.site.blueprints:
+		for bp in current_app.site.blueprints:
 			print(bp.name,bp.blueprint,bp.path)
 		
 class BlueprintManager(Manager):
@@ -118,8 +108,4 @@ class BlueprintManager(Manager):
 		self.add_command("delete", DropBlueprint())
 		self.add_command("list", ListBlueprint())
 		self.add_command("param", ParamBlueprint())
-		self.add_command("doc", DocBlueprint())
 
-	def create_app(self, app):
-		return app
-	
