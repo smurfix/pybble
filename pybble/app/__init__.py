@@ -253,10 +253,10 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, test=Fa
 			pass
 		elif not isinstance(site,Site):
 			try:
-				site = Site.q.get_by(domain=site)
+				site = Site.q.get_by(domain=text_type(site))
 			except NoData:
 				try:
-					site = Site.q.get_by(name=site)
+					site = Site.q.get_by(name=text_type(site))
 				except NoData:
 					if site != ROOT_SITE_NAME:
 						raise RuntimeError("The site '%s' does not exist yet."%(site,))
@@ -282,6 +282,16 @@ def create_site(parent,domain,app,name):
 	site = Site(parent=parent, name=name, domain=domain, app=app)
 	db.flush()
 	return site
+
+def drop_site(site=None):
+	if site is None:
+		site = current_app.site
+	elif isinstance(site,string_types):
+		try:
+			site = Site.q.get_by(name=text_type(site),parent=current_app.site)
+		except NoData:
+			site = Site.q.get_by(domain=text_type(site))
+	Delete(site)
 
 def list_apps():
 	path = os.path.dirname(os.path.abspath(__file__))

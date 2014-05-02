@@ -30,7 +30,7 @@ class AdminTestCase(ManagerTC,WebTC,WebTestCase):
 	def setupData(self):
 		super(AdminTestCase,self).setupData()
 		self.run_manager("mgr -t site add test _test test")
-		self.run_manager("mgr -t -s test blueprint add AdminTest _admin /doc")
+		self.run_manager("mgr -t -s test blueprint add _admin /doc AdminTest")
 		self.run_manager("mgr -t -s test blueprint param AdminTest model test.admin.TheData")
 
 #		d = TheData(foo="Test Me Hard")

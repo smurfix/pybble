@@ -22,7 +22,7 @@ from flask._compat import text_type
 from . import PrepCommand as Command
 from . import Option, Manager
 from ..core.models.site import Site,App
-from ..app import create_site, list_apps
+from ..app import create_site
 
 def list_sites(site,level=0):
 	if level:
@@ -49,7 +49,6 @@ class AddSite(Command):
 	def run(self, args=(), domain=None,app_name=None,site_name=None, help=False):
 		if help or domain is None:
 			self.parser.print_help()
-			print("Available apps: "+" ".join(list_apps()),file=sys.stderr)
 			sys.exit(not help)
 		create_site(current_app.site, domain,app_name,site_name)
 		

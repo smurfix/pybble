@@ -24,7 +24,7 @@ from . import Manager,Option
 from . import PrepCommand as Command
 from ..core.models.site import Blueprint
 from ..core.db import NoData
-from ..blueprint import create_blueprint,drop_blueprint,list_blueprints
+from ..blueprint import create_blueprint,drop_blueprint
 
 class AddBlueprint(Command):
 	"""Attach a blueprint to a site."""
@@ -37,12 +37,13 @@ class AddBlueprint(Command):
 	def run(self, help=False,bp=None,name=None,path=None):
 		if help or path is None:
 			self.parser.print_help()
+			sys.exit(not help)
 		if path == "/":
 			path = None
 		elif not path.startswith('/'):
 			print("This does not work -- paths must start with a slash.", file=sys.stderr)
 			sys.exit(1)
-		bp = Blueprint.q.get_by(name=name)
+		bp = Blueprint.q.get_by(name=bp)
 		if name is None:
 			name = bp.name
 		create_blueprint(site=current_app.site, path=path, blueprint=bp, name=name)

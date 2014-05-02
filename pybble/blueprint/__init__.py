@@ -22,7 +22,7 @@ from flask import Flask, render_template
 from flask import Blueprint as FlaskBlueprint
 from flask.config import Config
 from flask.ext.script import Server
-from flask._compat import string_types
+from flask._compat import string_types,text_type
 
 from ..core.db import db
 from ..core.models.site import Site,Blueprint,SiteBlueprint
@@ -60,9 +60,9 @@ def load_app_blueprints(app):
 			app.register_blueprint(bpm, **params)
 		site = site.parent
 
-def create_blueprint(site, blueprint, path):
+def create_blueprint(site, blueprint, path, name=None):
 	"""\
-		Attach a blueprint.
+		Attach a blueprint to a site.
 
 		:param site: The site to attach to.
 		:param blueprint: The name of the blueprint in the `pybble.blueprint`
@@ -71,12 +71,13 @@ def create_blueprint(site, blueprint, path):
 		:param name: A human-readable name for this attachment.
 		"""
 
-	bp_module = import_module("pybble.blueprint."+blueprint)
-	assert bp_module.Blueprint is not None, "App '%s' does not exist"%(app,)
+	if isinstance(blueprint,string_types):
+		blueprint = Blueprint.q.get_by(name=text_type(blueprint))
+	
 	if name is None:
-		name = blueprint
-	bp = SiteBlueprint(site=site, path=path, blueprint=blueprint)
-	bp.save()
+		name = blueprint.name
+	bp = SiteBlueprint(site=site, path=path, blueprint=blueprint, name=name)
+	db.flush()
 	return bp
 
 def drop_blueprint(blueprint,site=None):
@@ -84,9 +85,9 @@ def drop_blueprint(blueprint,site=None):
 		site = current_app.site
 
 	if isinstance(blueprint,string_types):
-		blueprint = Blueprint.q.get_by(name=blueprint)
+		blueprint = Blueprint.q.get_by(name=text_type(blueprint))
 	
-	bp = SiteBlueprint.q.get_by(site=site, name=name)
+	bp = SiteBlueprint.q.get_by(site=site, name=text_type(name))
 	Delete(bp)
 
 def list_blueprints():
