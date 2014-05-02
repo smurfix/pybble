@@ -169,6 +169,9 @@ class User(ObjectRef):
 		"""
 	__tablename__ = "users"
 	_descr = D.User
+	@classmethod
+	def __declare_last__(cls):
+		cls.site = cls.parent
 	        
 	username = Column(Unicode(30), nullable=False)
 	password = Column(Unicode(200), nullable=False)
