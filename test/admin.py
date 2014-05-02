@@ -30,11 +30,40 @@ class AdminTestCase(ManagerTC,WebTC,WebTestCase):
 	def setupData(self):
 		super(AdminTestCase,self).setupData()
 		self.run_manager("mgr -t site add test _test test")
+		self.run_manager("mgr -t -s test site param appity dudu")
 		self.run_manager("mgr -t -s test blueprint add _admin /doc AdminTest")
-		self.run_manager("mgr -t -s test blueprint param AdminTest model test.admin.TheData")
 
 #		d = TheData(foo="Test Me Hard")
 #		d.save()
 
 	def test_index_present(self):
 		self.assertContent("http://test/doc/","Test Me Hard")
+		## TODO do a lookup involving the parameter
+	
+	def test_vars(self):
+		from pybble.core.models.site import Site, SiteBlueprint
+		s = Site.q.get_by(name=u"test")
+		b = SiteBlueprint.q.get_by(name=u"AdminTest",parent=s)
+		assert b.path=="/doc"
+
+		assert s.config.appity == "pappity"
+		self.run_manager("mgr -t -s test site param appity foo")
+		assert s.config.appity == "foo"
+		self.run_manager("mgr -t -s test site param appity bar")
+		assert s.config.appity == "bar"
+		self.run_manager("mgr -t -s test site param appity -")
+		assert s.config.appity == "pappity"
+		with pytest.raises(RuntimeError):
+			self.run_manager("mgr -t -s test site param nuppi foo") # does not exist
+
+		assert b.config.color == "yellow"
+		self.run_manager("mgr -t -s test blueprint param AdminTest color green")
+		assert b.config.color == "green"
+		self.run_manager("mgr -t -s test blueprint param AdminTest color foo")
+		assert b.config.color == "foo"
+		self.run_manager("mgr -t -s test blueprint param AdminTest color -")
+		assert b.config.color == "yellow"
+		with pytest.raises(RuntimeError):
+			self.run_manager("mgr -t -s test blueprint param AdminTest nuppsi fu") # does not exist
+
+		
