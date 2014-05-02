@@ -19,6 +19,11 @@ from flask import render_template
 from .. import BaseApp
 
 class App(BaseApp):
+	PARAMS = (
+	        ("appiti","pappiti", "Test for passing a parameter into a site"),
+		)
+
+
 	def init_routing(self):
 		@self.route('/one')
 		def get_one():
