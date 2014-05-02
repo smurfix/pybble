@@ -28,7 +28,7 @@ from jinja2 import Template,BaseLoader, TemplateNotFound
 
 from werkzeug import import_string
 
-from .. import ROOT_SITE_NAME
+from pybble import FROM_SCRIPT,ROOT_SITE_NAME,ROOT_USER_NAME
 from ..core.db import db, NoData
 from ..core.models.template import Template as DBTemplate
 from ..core.models.site import Site,App
@@ -126,6 +126,13 @@ class BaseApp(WrapperApp,Flask):
 			request.user = current_app.site.owner
 		elif 'user' in session:
 			request.user = User.q.get_by(id=session.user)
+		elif FROM_SCRIPT:
+			try:
+				root = Site.q.get_by(name=ROOT_SITE_NAME)
+				request.user = User.q.get(User.site == root, User.username==ROOT_USER_NAME)
+			except NoData:
+				logger.warn("No root user was found.")
+				request.user = None
 		else:
 			request.user = User.q.get_by(name="",site=current_app.site)
 	
