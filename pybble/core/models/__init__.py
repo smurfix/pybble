@@ -320,7 +320,7 @@ class Object(Dumpable, Base):
 		for t in self._member_rules:
 			q = dict(t.args)
 			q[t.src] = self
-			for m in db.filter_by(t.table, **q):
+			for m in t.table.q.filter_by(**q):
 				mm = getattr(m,t.dst)
 				if discr is None or mm._discriminator == discr:
 					yield m,mm

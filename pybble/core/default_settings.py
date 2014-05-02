@@ -23,6 +23,8 @@ import datetime
 APPLICATION_ROOT=None
 DEBUG=False
 d_DEBUG="Emit debug information"
+DEBUG_ACCESS=False
+d_DEBUG_ACCESS="Trace access control tests"
 JSON_AS_ASCII=True
 JSONIFY_PRETTYPRINT_REGULAR=False
 JSON_SORT_KEYS=False

@@ -19,7 +19,7 @@ from werkzeug import security
 
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, DateTime, Boolean, ForeignKey
+from sqlalchemy import Integer, Unicode, DateTime, Boolean, ForeignKey, and_,or_
 from sqlalchemy.orm import relationship,backref
 from sqlalchemy.types import TypeDecorator, VARCHAR
 
@@ -27,11 +27,14 @@ from ... import ANON_USER_NAME
 from ...utils import random_string, AuthError
 from ...core import config
 from ..db import Base, Column, db, NoData
-from . import Object,ObjectRef, PERM,PERM_NONE, Discriminator
+from . import Object,ObjectRef, PERM,PERM_NONE,PERM_READ, Discriminator
 from .site import Site
 from ._descr import D
 
 import sys
+
+import logging
+log_access = logging.getLogger('pybble.access').debug
 
 ## Auth
 #class Role(ObjectRef, RoleMixin):
@@ -224,11 +227,11 @@ class User(ObjectRef):
 	
 	@property
 	def tracks(self):
-		return db.store.find(Tracker, Tracker.owner_id==self.id).order_by(Desc(Tracker.timestamp))
+		return Tracker.q.filter_by(owner=self).order_by(Desc(Tracker.timestamp))
 
 	@property
 	def trackers(self):
-		return db.store.find(WantTracking, WantTracking.owner_id==self.id)
+		return WantTracking.q.filter_by(owner=self)
 
 	@property
 	def anon(self):
@@ -253,8 +256,6 @@ class User(ObjectRef):
 		try:
 			s = Breadcrumb.q.get_by(parent=obj, **q)
 		except NoData:
-#			for b in db.filter_by(Breadcrumb,**q).order_by(Breadcrumb.visited)[10:]:
-#				db.store.remove(b)
 			Breadcrumb(self,obj)
 		else:
 			s.visit()
@@ -266,7 +267,7 @@ class User(ObjectRef):
 		if cls:
 			q["discr"] = cls.cls_discr()
 		try:
-			r = db.filter_by(Breadcrumb, **q).order_by(Desc(Breadcrumb.visited)).first()
+			r = Breadcrumb.q.filter_by(**q).order_by(Breadcrumb.visited.desc()).first()
 		except NoData:
 			return None
 		if r:
@@ -276,7 +277,7 @@ class User(ObjectRef):
 		q = { "owner":self, "superparent":current_app.site }
 		if cls:
 			q["discr"] = cls.cls_discr()
-		return db.filter_by(Breadcrumb, **q).order_by(Desc(Breadcrumb.visited))
+		return Breadcrumb.q.filter_by(**q).order_by(Breadcrumb.visited.desc())
 
 	def is_verified(self, site=None):
 		if site is None:
@@ -298,7 +299,7 @@ class User(ObjectRef):
 				Member(user=self,group=site)
 		else:
 			if not v:
-				db.store.remove(m)
+				db.delete(m)
 	verified = property(is_verified,add_verified)
 				
 	@property
@@ -338,17 +339,17 @@ class User(ObjectRef):
 		ru = getattr(request,"user",None)
 		if obj is not current_app.site and \
 		   ru and ru.can_admin(current_app.site, discr=current_app.site.classdiscr):
-			if DEBUG_ACCESS:
-				print("ADMIN",obj, file=sys.stderr)
+			if current_app.config.DEBUG_ACCESS:
+				log_access("ADMIN",obj)
 			return want if want and want < 0 else PERM_ADMIN
 
 		if want>0 and want<=PERM_READ and obj.owner==user:
-			if DEBUG_ACCESS:
-				print("OWN",obj, file=sys.stderr)
+			if current_app.config.DEBUG_ACCESS:
+				log_access("OWN",obj)
 			return want
 
-		if DEBUG_ACCESS:
-			print("PERM", Discriminator.get(discr).name if discr else "-", Discriminator.get(new_discr) if new_discr else "-", (PERM_name(want) if want else "-")+":",obj,"FOR",user,"AT",current_app.site, u"⇒", file=sys.stderr)
+		if current_app.config.DEBUG_ACCESS:
+			log_access("PERM", Discriminator.get(discr).name if discr else "-", Discriminator.get(new_discr) if new_discr else "-", (PERM_name(want) if want else "-")+":",obj,"FOR",user,"AT",current_app.site, u"⇒")
 
 		pq = []
 		if want is not None:
@@ -362,25 +363,11 @@ class User(ObjectRef):
 			discr = obj.discriminator
 
 		if discr is not None:
-			if isinstance(discr,Discriminator):
-				discr = discr.id
-			elif isinstance(discr,type) and issubclass(discr,Object):
-				discr = discr.cls_discr()
-			elif isinstance(discr,Object):
-				discr = discr.classdiscr
-			else:
-				discr = Discriminator.get(discr).id
+			discr = Discriminator.get(discr)
 			pq.append(Permission.for_discr == discr)
 
 		if new_discr is not None:
-			if isinstance(new_discr,Discriminator):
-				new_discr = new_discr.id
-			elif isinstance(new_discr,type) and issubclass(new_discr,Object):
-				new_discr = new_discr.cls_discr()
-			elif isinstance(new_discr,Object):
-				discr = new_discr.classdiscr
-			else:
-				new_discr = Discriminator.get(new_discr).id
+			new_discr = Discriminator.get(new_discr)
 			pq.append(Permission.new_discr == new_discr)
 
 		no_inh = True
@@ -390,21 +377,21 @@ class User(ObjectRef):
 				raise ValueError("Parent recursion on "+repr(obj))
 			done.add(obj)
 
-			p = db.store.find(Permission, And(Or(Permission.inherit != no_inh, Permission.inherit == None), Or(*(Permission.owner_id == u.id for u in user.groups)), Permission.parent_id == obj.id, *pq)).order_by(Desc(Permission.right))
-			if DEBUG_ACCESS:
-				print("Checking",obj, file=sys.stderr)
+			p = Permission.q.filter(and_(or_(Permission.inherit != no_inh, Permission.inherit == None), or_(*(Permission.owner == u for u in user.groups)), Permission.parent == obj, *pq)).order_by(Permission.right.desc())
+			if current_app.config.DEBUG_ACCESS:
+				log_access("Checking",obj)
 			p = p.first()
 			if p is not None:
-				if DEBUG_ACCESS:
-					print(p, file=sys.stderr)
+				if current_app.config.DEBUG_ACCESS:
+					log_access(p)
 				p = p.right
 				return p
 
 			no_inh = False
 			obj = obj.parent
 
-		if DEBUG_ACCESS:
-			print("NONE", file=sys.stderr)
+		if current_app.config.DEBUG_ACCESS:
+			log_access("NONE")
 		return PERM_NONE
 
 	def will_do(user,obj,discr=None, perm=PERM_NONE):
@@ -413,7 +400,7 @@ class User(ObjectRef):
 
 	def permit(user,obj, right, discr=None, inherit=None):
 		discr = Discriminator.get(discr,obj).id
-		p = list(db.store.find(Permission, And(Permission.owner==u, Permission.parent==obj, Permission.for_discr==discr)))
+		p = list(Permission.q.filter(Permission.owner==u, Permission.parent==obj, Permission.for_discr==discr))
 		
 		if len(p) > 0:
 			if inherit is None:
@@ -437,33 +424,34 @@ class User(ObjectRef):
 
 	def forbid(user,obj, discr=None, inherit=None):
 		discr = Discriminator.get(discr,obj).id
-		p = list(db.store_find(Permission, And(Permission.owner==u,Permission.parent==obj,Permission.for_discr==discr)))
+		p = list(Permission.q.filter_by(owner=u, parent=obj, for_discr=discr))
 		
-		if p:
-			if inherit is None:
-				while p:
-					db.store.remove(p.pop())
-				return
-			elif len(p) > 1 and p[1].inherit == inherit:
-				p = p[1]
-			else:
-				p = p[0]
-			p.delete()
+		if not p:
+			return
+		if inherit is None:
+			while p:
+				db.delete(p.pop())
+			return
+		elif len(p) > 1 and p[1].inherit == inherit:
+			p = p[1]
+		else:
+			p = p[0]
 
 	@property
 	def recent_tracks(self):
 		latest = datetime.utcnow() - timedelta(self.feed_age,0)
-#		return db.filter_by(UserTracker,owner=self)\
-#		                    .filter(UserTracker.tracker.timestamp > datetime.utcnow() - timedelta(self.feed_age,0))\
+### TODO test if that works with sqlalchemy
+#		return UserTracker.q.filter(UserTracker.owner == self,
+#		                            UserTracker.tracker.timestamp > datetime.utcnow() - timedelta(self.feed_age,0))\
 #		                    .order_by(UserTracker.id.desc())
-		for obj in db.store.find(UserTracker, UserTracker.owner_id == self.id).order_by(Desc(UserTracker.id)):
+		for obj in UserTracker.q.filter_by(owner=self).order_by(UserTracker.id.desc()):
 			if obj.parent.timestamp < latest:
 				return
 			yield obj
 
 	@property
 	def has_trackers(self):
-		return db.store.find(WantTracking, WantTracking.owner == self).count()
+		return WantTracking.q.filter_by(owner=self).count()
 
 class GroupRef(ObjectRef):
 	"""
@@ -617,8 +605,8 @@ Inherited: %s
 for a,b in PERM.iteritems():
 	def can_do_closure(a,b):
 		def can_do(self, obj, discr=None, new_discr=None):
-			if DEBUG_ACCESS:
-				print("can_"+b+":", self,obj,discr,new_discr, file=sys.stderr)
+			if current_app.config.DEBUG_ACCESS:
+				log_access("can_"+b+":", self,obj,discr,new_discr)
 			if a > PERM_NONE:
 				return self.can_do(obj, discr=discr, new_discr=new_discr, want=a) >= a
 			else:
@@ -627,8 +615,8 @@ for a,b in PERM.iteritems():
 			(b.lower() if a > PERM_NONE else "do nothing with",)
 
 		def will_do(self, obj, discr=None, new_discr=None):
-			if DEBUG_ACCESS:
-				print("will_"+b+":", self,obj,discr,new_discr, file=sys.stderr)
+			if current_app.config.DEBUG_ACCESS:
+				log_access("will_"+b+":", self,obj,discr,new_discr)
 			if not can_do(self, obj, discr=discr, new_discr=new_discr):
 				raise AuthError(obj,a)
 
