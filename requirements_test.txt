@@ -1,2 +1,3 @@
 https://github.com/smurfix/wsgi-intercept/tarball/master
 https://github.com/smurfix/webunit/tarball/master
+pytest>=2.3
