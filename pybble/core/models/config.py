@@ -173,22 +173,31 @@ class ConfigVar(ObjectRef, JsonValue):
 	# TODO: make sure that (name,parent_id) is unique
 
 	def __init__(self, parent, name,value, **kw):
+		## cannot have a uniqueness constraint across inherited tables
+		try:
+			ConfigVar.q.get_by(name=name,parent=parent)
+		except NoData:
+			pass
+		else:
+			raise ManyData("Variable {} exists in {}".format(name,parent))
 		super(ConfigVar,self).__init__(**kw)
 		self.parent = parent
 		self.name = name
 		self.value = value
 
 	@staticmethod
-	def get(name):
+	def get(parent,name):
 		try:
-			return ConfigVar.q.get_by(name=name)
+			return ConfigVar.q.get_by(parent=parent, name=name)
 		except NoData:
 			raise NoData("ConfigVar:"+name)
 
 	@staticmethod
 	def exists(parent,name,doc=None,default=None):
-		cf = ConfigVar(parent=parent, name=name,doc=doc,default=default)
-		return cf
+		try:
+			return ConfigVar.get(parent,name)
+		except NoData:
+			return ConfigVar(parent=parent, name=name,doc=doc,value=default)
 
 	@property
 	def as_str(self):
@@ -202,6 +211,22 @@ class SiteConfigVar(ObjectRef, JsonValue):
 	def __declare_last__(cls):
 		cls.var = cls.superparent
 	# Owner: the user who last set the variable
+
+	def __init__(self,parent,var=None,superparent=None,**kw):
+		# assert that exactly one of var or superparent is set
+		if var is None:
+			var = superparent
+		else:
+			assert superparent is None
+		assert var is not None
+
+		try:
+			SiteConfigVar.q.get_by(var=var,parent=parent)
+		except NoData:
+			pass
+		else:
+			raise ManyData("A value for {} already exists in {}".format(var,parent))
+		super(SiteConfigVar,self).__init__(var=var,parent=parent,**kw)
 
 	@property
 	def as_str(self):
