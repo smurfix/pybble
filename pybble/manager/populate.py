@@ -342,12 +342,12 @@ class PopulateCommand(Command):
 				try:
 					cf = ConfigVar.q.get_by(name=k, parent=parent)
 				except NoData:
-					cf = ConfigVar(parent=parent, name=k, value=v, info=d)
+					cf = ConfigVar(parent=parent, name=k, value=v, doc=d)
 					db.flush()
 					added.append(k)
 				else:
-					if not cf.info or force:
-						cf.info = d
+					if not cf.doc or force:
+						cf.doc = d
 			if added:
 				logger.info("New variables for {}: ".format(str(parent))+",".join(added))
 			else:
