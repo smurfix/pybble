@@ -65,8 +65,8 @@ class Site(ObjectRef):
 		cls.superuser = cls.parent
 		cls.app = cls.superparent
 
-	domain = Column(Unicode(100), nullable=False)
-	name = Column(Unicode(30), nullable=False)
+	domain = Column(Unicode(100), nullable=False, unique=True)
+	name = Column(Unicode(30), nullable=False, unique=True)
 	tracked = Column(DateTime,nullable=False, default=datetime.utcnow)
 	## Datestamp of newest fully-processed Tracker object
 
