@@ -45,12 +45,12 @@ logger = logging.getLogger('pybble.app')
 
 class WrapperApp(object):
 	"""A dummy app class, used to implement low-weight redirectors"""
-	def __init__(self, site, test=None):
+	def __init__(self, site, testing=None):
 		self.site = site
 		if not isinstance(self,Flask):
-			self.testing = test
+			self.testing = testing
 
-		self.read_config(test)
+		self.read_config(testing)
 
 	def make_config(self, instance_relative=None):
 		"""called by Flask"""
@@ -99,8 +99,8 @@ class BaseApp(WrapperApp,Flask):
 	"""Pybble's basic WSGI application"""
 	config = None
 
-	def __init__(self, site, test=False, **kw):
-		WrapperApp.__init__(self, site, test=test)
+	def __init__(self, site, testing=False, **kw):
+		WrapperApp.__init__(self, site, testing=testing)
 
 		template_folder = getattr(self.config,"TEMPLATE_ROOT",None)
 		if template_folder is None:
@@ -110,8 +110,8 @@ class BaseApp(WrapperApp,Flask):
 			static_folder = os.path.join(os.getcwd(),'pybble','static')
 
 		Flask.__init__(self, site.name, template_folder=template_folder, static_folder=static_folder, **kw)
-		if test is not None:
-			assert test == self.config.TESTING
+		if testing is not None:
+			assert testing == self.config.TESTING
 		self.wsgi_app = CustomProxyFix(self.wsgi_app)
 		register_changed(self)
 
@@ -220,7 +220,7 @@ class _fake_app(WrapperApp,Flask):
 		WrapperApp.__init__(self,None)
 		Flask.__init__(self,*a,**k)
 
-def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, test=False):
+def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing=False):
 	"""\
 		Setup an app instance. Configuration is loded from
 		* local_settings
@@ -231,7 +231,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, test=Fa
 					more than one one root site
 		:param config: A configuration file to load. Default: the PYBBLE
 		            environment variable.
-		:param test: Required to be identical to config.TESTING.
+		:param testing: Required to be identical to config.TESTING.
 		:param verbose: Turn on logging.
 		"""
 
@@ -246,7 +246,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, test=Fa
 		from pybble.core import config as cfg
 		cfg_app.config = cfg
 
-		assert test == cfg.get('TESTING',False), (test,cfg.get('TESTING',False))
+		assert testing == cfg.get('TESTING',False), (testing,cfg.get('TESTING',False))
 	
 	with cfg_app.test_request_context('/'):
 		if site is None:
@@ -266,7 +266,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, test=Fa
 		if site is None or site.app is None:
 			app = cfg_app
 		else:
-			app = site.app.mod(site, test=test)
+			app = site.app.mod(site, testing=testing)
 
 		if verbose:
 			logging.basicConfig(

@@ -77,7 +77,7 @@ class RootManager(Manager):
 		self.add_option("-s", "--site", dest="site", required=False, default=ROOT_SITE_NAME, help="which Site to run on")
 		self.add_option("-S", "--no-site", dest="site", action="store_const", const=None, required=False, help="Do not choose a site")
 		self.add_option("-v", "--verbose", dest="verbose", action="count", default=0, required=False, help="Enable verbose logging")
-		self.add_option("-t", "--test", dest="test", action="store_true", required=False, default=False, help="Use the test database")
+		self.add_option("-t", "--test", dest="testing", action="store_true", required=False, default=False, help="Use the test database")
 
 	def add_root_commands(self):
 		from .blueprint import BlueprintManager
@@ -175,6 +175,6 @@ class SubdomainDispatcher(object):
 
 	def __call__(self, environ, start_response):
 		"""Standard WSGI"""
-		app = self.get_application(environ['HTTP_HOST'], testing=environ.get('testing ,False))
+		app = self.get_application(environ['HTTP_HOST'], testing=environ.get('testing' ,False))
 		return app(environ, start_response)
 
