@@ -21,7 +21,7 @@ import os
 from blinker import NamedSignal
 from flask import url_for, current_app, g
 from flask.config import Config
-from flask._compat import PY2
+from flask._compat import string_types,text_type
 
 from .. import json, config
 from ..utils import attrdict
@@ -60,19 +60,22 @@ def register_changed(app):
 
 class ConfigDict(Config,attrdict):
 	_parent = None
-	_set_db = False
+	_set_db = None
+	_defaults = None
 	def __init__(self,parent=None):
 		self._parent = parent
-		self._set_db = bool(parent)
+		self._vars = {}
 		
-	def _load(self, parent=None, force=False, recurse=None, vars=None):
+	def _load(self, parent=None, force=False, recurse=None, vars=None, name=None):
 		"""\
 			Load variable data.
 
 			:param force: Overwrite existing values
 			:param recurse: Recursively check parents (or whatever).
 				Infinite loops are protected against.
+			:param name: (re)load only this variable
 			"""
+
 		s = parent or self._parent
 		seen = set()
 		if recurse is True:
@@ -90,59 +93,52 @@ class ConfigDict(Config,attrdict):
 					self.setdefault(v.var.name, v.value)
 			for v in ConfigVar.q.filter_by(parent=(getattr(s,vars) if vars else s)):
 				self.setdefault(v.name, v.value)
+				self._vars.setdefault(v.name,v)
 
 			if recurse:
 				s = getattr(s,recurse)
 			else:
 				break
+		if self._parent:
+			self._set_db = True
 
-#	def __setitem__(self,k,v):
-#		s = self._parent
-#		if PY2:
-#			if isinstance(k,str):
-#				k = unicode(k)
-#		cfv = None
-#		while s:
-#			try:
-#				cfv = ConfigVar.q.get_by(name=k,parent=self._parent)
-#			except NoData:
-#				s = s.parent
-#			else:
-#				break
-#		if not cfv and self._set_db:
-#			raise NoData(k)
-#		if self._set_db:
-#			assert self._parent
-#			try:
-#				cf = SiteConfigVar.q.get_by(parent=self._parent, var=cfv)
-#			except NoData:
-#				cf = SiteConfigVar(parent=self._parent, var=cfv, value=v)
-#			else:
-#				cf.value=v
-#		super(ConfigDict,self).__setitem__(k,v)
-#
-#	def __delitem__(self,k):
-#		try:
-#			cfv = ConfigVar.get(k)
-#		except NoData:
-#			# can't delete values that are only read from settings
-#			raise NoData(k)
-#		if self._set_db:
-#			assert self.site
-#			try:
-#				cf = SiteConfigVar.objects.get_by(site=self.site, var=cfv)
-#			except NoData:
-#				pass
-#			else:
-#				cf.delete()
-#				self[k].pop(0)
-#		elif self.site.parent:
-#			super(ConfigDict,self).__setitem__(k,self.site.parent.config[k])
-#		else:
-#			super(ConfigDict,self).__setitem__(k,cfv.default)
-#		if self._set_db and self.site is not None:
-#			self.site.config_changed()
-#	
+	def __setitem__(self,k,v):
+		s = self._parent
+		if isinstance(k,string_types):
+			k = text_type(k)
+		if self._set_db:
+			cfv = self._vars[k]
+			assert self._parent
+			try:
+				cf = SiteConfigVar.q.get_by(parent=self._parent, var=cfv)
+			except NoData:
+				cf = SiteConfigVar(parent=self._parent, var=cfv, value=v)
+			else:
+				cf.value=v
+		super(ConfigDict,self).__setitem__(k,v)
+		db.flush()
+		if self._set_db and self._parent is not None:
+			self._parent.config_changed()
+
+	def __delitem__(self,k):
+		cfv = self._vars.get(k,None)
+		if self._set_db:
+			assert self._parent and cfv
+			try:
+				cf = SiteConfigVar.q.get_by(parent=self._parent, var=cfv)
+			except NoData:
+				pass
+			else:
+				db.delete(cf)
+		if cfv is not None:
+			super(ConfigDict,self).__setitem__(k,cfv.value)
+		else:
+			super(ConfigDict,self).__delitem__(k)
+		db.flush()
+
+		if self._set_db and self._parent is not None:
+			self._parent.config_changed()
+	
 	def _disarm(self):
 		self._set_db = False
 	def _arm(self):
@@ -173,7 +169,7 @@ class ConfigVar(ObjectRef, JsonValue):
 	# Parent: the object this setting is known at
 
 	name = Column(Unicode(30), index=True)
-	info = Column(Unicode(100))
+	doc = Column(Unicode(1000))
 	# TODO: make sure that (name,parent_id) is unique
 
 	def __init__(self, parent, name,value, **kw):
@@ -190,9 +186,9 @@ class ConfigVar(ObjectRef, JsonValue):
 			raise NoData("ConfigVar:"+name)
 
 	@staticmethod
-	def exists(name,info,default=None):
-		cf = ConfigVar(name=name,info=info,default=default)
-		cf.save()
+	def exists(parent,name,doc=None,default=None):
+		cf = ConfigVar(parent=parent, name=name,doc=doc,default=default)
+		return cf
 
 	@property
 	def as_str(self):
