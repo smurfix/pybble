@@ -14,7 +14,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 import pybble
 from .site import *
-from .admin import *
+from .vars import *
 from .script import *
 from .manager import *
 from .app_config import *

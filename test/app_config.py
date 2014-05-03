@@ -27,18 +27,14 @@ class AppConfigTestCase(TC):
 	def setup_sites(self):
 		self.clear_db()
 
-		self.assertEqual(Site.q.count(), 0)
+		self.assertEqual(Site.q.count(), 2)
 		site = Site(name='root', domain='test.example.com')
-		site.save()
 		site2 = Site(name='foo', domain='foo.example.com', parent=site)
-		site2.save()
 		site3 = Site(name='bar', domain='bar.example.com', parent=site)
-		site3.save()
 		site21 = Site(name='foofoo', domain='foo.foo.example.com', parent=site2)
-		site21.save()
 
-		ConfigVar.exists("test1","Test One",-1)
-		ConfigVar.exists("test2","Test Two",-2)
+		ConfigVar.exists(site,"test1","Test One",-1)
+		ConfigVar.exists(site,"test2","Test Two",-2)
 
 		app = create_app(site="root", test=True)
 		app1 = create_app(site="foo", test=True)

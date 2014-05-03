@@ -45,11 +45,19 @@ PYBBLE_SQL_DATABASE=$SQL
 PYBBLE_MEDIA_PATH=$DATA
 
 SHELL=
+PY=python
 if [ "$1" = "-k" ] ; then
 	shift
 	trap 'echo rm -r $DATA $SQL' 0 1 2 15
 else
 	trap 'rm -r $DATA $SQL' 0 1 2 15
+    if [ "$1" = "-p" ] ; then
+		shift
+		ASS=--assert=plain
+    elif [ "$1" = "-d" ] ; then
+		PY=pdb
+		shift
+	fi
 fi
 
 if [ "$*" = "" ] ; then
@@ -57,8 +65,8 @@ if [ "$*" = "" ] ; then
 	./manage.py -t core config
 
 	#PYTHONPATH=$(pwd) test/run.py -x
-	PYTHONPATH=$(pwd) py.test -x test/*.py
+	PYTHONPATH=$(pwd) py.test $ASS -x test/*.py
 else
-	PYTHONPATH=$(pwd) ./manage.py -t "$@"
+	PYTHONPATH=$(pwd) $PY ./manage.py -t "$@"
 fi
 
