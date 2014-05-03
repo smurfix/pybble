@@ -175,6 +175,6 @@ class SubdomainDispatcher(object):
 
 	def __call__(self, environ, start_response):
 		"""Standard WSGI"""
-		app = self.get_application(environ['HTTP_HOST'], testing=environ.get('testing' ,False))
+		app = self.get_application(environ['HTTP_HOST'], testing=environ.get('testing', None))
 		return app(environ, start_response)
 
