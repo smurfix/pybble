@@ -18,6 +18,7 @@ from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
 from sqlalchemy.orm import relationship,backref
 
 from werkzeug import import_string
+from werkzeug.utils import cached_property
 from flask import request
 from flask._compat import string_types
 
@@ -107,12 +108,6 @@ class Site(ObjectRef):
 				self.owner = None if self.parent is None else self.parent.owner
 
 	@property
-	def config(self):
-		from .config import ConfigDict
-		cf = ConfigDict(self)
-		cf._load(recurse='parent')
-
-	@property
 	def anon_user(self):
 		from .user import User
 		while True:
@@ -136,12 +131,18 @@ name: %s
 domain: %s
 """ % (self.name,self.domain)
 
-	@property
+	@cached_property
 	def config(self):
 		from .config import ConfigDict
 		res = ConfigDict(self)
+		res._load(recurse="parent")
 		res._load(recurse="parent",vars="superparent")
 		return res
+	
+	def config_changed(self):
+		## TODO: invalidate a bunch of caches, as soon as we have any
+		pass
+
 
 class SiteBlueprint(ObjectRef):
 	"""A blueprint attached to a site's path"""
@@ -178,7 +179,7 @@ class SiteBlueprint(ObjectRef):
 					site = Site.q.get_by(domain=text_type(site))
 			self.parent = site
 
-	@property
+	@cached_property
 	def config(self):
 		from .config import ConfigDict
 		res = ConfigDict(self)
