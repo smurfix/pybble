@@ -20,10 +20,10 @@ from pybble.blueprint import BaseBlueprint
 from flask import render_template, abort
 from jinja2 import TemplateNotFound
 
-PARAMS = (
-	("color","yellow", "Test for passing a parameter into a blueprint"),
-)
 class Blueprint(BaseBlueprint):
+	PARAMS = (
+		("color","yellow", "Test for passing a parameter into a blueprint"),
+	)
 	def setup(self):
 		super(Blueprint,self).setup()
 

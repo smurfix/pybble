@@ -100,6 +100,14 @@ class PopulateCommand(Command):
 							obj.doc = a.__doc__
 						except AttributeError:
 							pass
+
+					if hasattr(a,"PARAMS"):
+						## Set default variables
+						add_vars(a.PARAMS,obj)
+
+					else:
+						logger.debug("No parameters in {}.".format(obj.path))
+				
 			if not found:
 				logger.warn("{}: None found".format(Obj.__name__))
 			elif not changed and not added:
@@ -371,18 +379,6 @@ class PopulateCommand(Command):
 			else:
 				logger.debug("No new/changed templates for {}.".format(bp.name))
 
-			if hasattr(mod,"PARAMS"):
-				## Set default variables
-				def gen_vars():
-					from pybble.manager import default_settings as DS
-					for k,v in DS.__dict__.items():
-						if k != k.upper(): continue
-						yield text_type(k),v,getattr(DS,'d_'+k,None)
-				add_vars(mod.PARAMS,bp)
-
-			else:
-				logger.debug("No parameters in {}.".format(bp.name))
-		
 		rapp = App.q.get_by(name="_root")
 		if root.app is None or force:
 			if root.app is not rapp:

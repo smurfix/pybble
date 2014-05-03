@@ -140,9 +140,7 @@ domain: %s
 	def config(self):
 		from .config import ConfigDict
 		res = ConfigDict(self)
-		for v in self.all_children(D.ConfigVar):
-			res[v.name] = v.value
-
+		res._load(recurse="parent",vars="superparent")
 		return res
 
 class SiteBlueprint(ObjectRef):
