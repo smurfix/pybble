@@ -107,16 +107,16 @@ class ParamSite(Command):
 				print(k,v)
 			return
 		if value is None:
-			print(getattr(site.config,key))
+			print(site.config[key])
 			return
 		if value == "-":
-			delattr(site.config,key)
+			del site.config[key]
 		else:
 			try:
 				value = eval(value)
 			except (SyntaxError,NameError):
 				pass
-			setattr(site.config,key,value)
+			site.config[key] = value
 		
 class SiteManager(Manager):
 	"""Manage web domains (a 'site') and their primary content (the 'app')."""

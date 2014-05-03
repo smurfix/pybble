@@ -100,16 +100,17 @@ class ParamBlueprint(Command):
 				print(k,v)
 			return
 		if value is None:
-			print(getattr(bp.config,key))
+			print(bp.config[key])
 			return
+		import pdb;pdb.set_trace()
 		if value == "-":
-			delattr(bp.config,key)
+			del bp.config[key]
 		else:
 			try:
 				value = eval(value)
-			except (SyntaxError,NameError):
+			except StandardError:
 				pass
-			setattr(bp.config,key,value)
+			bp.config[key]=value
 		
 class DropBlueprint(Command):
 	def __init__(self):
