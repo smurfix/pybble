@@ -19,24 +19,29 @@ import flask
 
 from .manager import ManagerTC
 from .base import WebTC
+from pybble.core.db import NoData
+from pybble.core.models.site import Site
 from webunit.webunittest import WebTestCase
 
 class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 	def setupData(self):
 		super(AppRunTestCase,self).setupData()
-		self.run_manager("mgr -t site add BlueTest _test btest")
+		try:
+			Site.q.get_by(domain="btest")
+		except NoData:
+			self.run_manager("mgr -t site add BlueTest _test btest")
 
-		self.run_manager("mgr -t -s btest blueprint add _test /blue BlueTest")
-		self.run_manager("mgr -t -s btest blueprint param BlueTest color Yellow")
+			self.run_manager("mgr -t -s btest blueprint add _test /blue BlueTest")
+			self.run_manager("mgr -t -s btest blueprint param BlueTest color Yellow")
 
 	def test_one(self):
-		self.assertContent("http://test/blue/red","Red Color")
+		self.assertContent("http://btest/blue/red","Red Color")
 			
 	def test_two(self):
-		self.assertContent("http://test/blue/green","Green Color")
+		self.assertContent("http://btest/blue/green","Green Color")
 
 	def test_three(self):
-		self.assertContent("http://test/blue/blue","Blue Color")
+		self.assertContent("http://btest/blue/blue","Blue Color")
 
 	def test_four(self):
-		self.assertContent("http://test/blue/yellow","Yellow Color")
+		self.assertContent("http://btest/blue/yellow","Yellow Color")
