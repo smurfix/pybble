@@ -5,7 +5,10 @@ import pybble # for monkeypatching
 import sys
 from pkg_resources import load_entry_point
 
+from pybble.core.utils import init_logging
+
 if __name__ == '__main__':
-    sys.exit(
-        load_entry_point('nose', 'console_scripts', 'nosetests')()
-    )
+	init_logging()
+	sys.exit(
+		load_entry_point('nose', 'console_scripts', 'nosetests')()
+	)
