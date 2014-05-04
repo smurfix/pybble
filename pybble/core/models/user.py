@@ -16,6 +16,7 @@ from flask import current_app,g,request
 from flask.ext.security import UserMixin, RoleMixin
 
 from werkzeug import security
+from werkzeug.utils import cached_property
 
 from datetime import datetime,timedelta
 
@@ -178,8 +179,14 @@ class User(ObjectRef):
 	def __declare_last__(cls):
 		cls.site = cls.parent
 	        
-	username = Column(Unicode(30), nullable=False)
+	# A simple way to make 'username' read-only
+	_username = Column('username'Unicode(30), nullable=False)
+	@cached_property
+	def username(self):
+		return self._username
+
 	password = Column(Unicode(200), nullable=True)
+	## empty: cannot be used.  None: not known.
 
 	first_name = Column(Unicode(50), nullable=True)
 	last_name = Column(Unicode(50), nullable=True)
@@ -204,21 +211,22 @@ class User(ObjectRef):
 		res += "First login: %s\nLast login: %s\n" % (self.first_login,self.last_login)
 		return res
 
-	def __init__(self, username, password=None, **kw):
+	def __init__(self, username=ANON_USER_NAME, password=None, **kw):
 		super(User,self).__init__(**kw)
-		self.username=username
 		if username == ANON_USER_NAME:
-			assert password is None
-			password = ""
-		elif password is None:
-			password = unicode(random_string(9))
-		self.password=password
-		try:
-			User.q.get_by(parent=current_app.site, username=username)
-		except (AttributeError,NoData):
-			pass
+			if password is None:
+				password = ""
+			assert password == ""
 		else:
-			raise RuntimeError(u"User '%s' already exists in %s" % (username,current_app.site))
+			## there may be more than one anon user
+			try:
+				User.q.get_by(parent=current_app.site, username=username)
+			except (AttributeError,NoData):
+				pass
+			else:
+				raise RuntimeError(u"User '%s' already exists in %s" % (username,current_app.site))
+		self._username=username
+		self.password=password
 
 		db.flush()
 		if self.parent is None:
