@@ -150,7 +150,7 @@ class Password(TypeDecorator):
 	impl = VARCHAR(1000)
 
 	def process_bind_param(self, value, dialect):
-		if value is not None:
+		if value: # covers both "" and None
 			if ':' not in value:
 				value = security.generate_password_hash(value)
 
@@ -159,6 +159,8 @@ class Password(TypeDecorator):
 class PasswordValue(object):
 	password = Column(Password)
 	def check_password(self, password):
+		if not self.password:
+			return False
 		if ':' not in self.password:
 			self.password = security.generate_password_hash(self.password)
 		return security.check_password_hash(self.password,password)
@@ -177,7 +179,7 @@ class User(ObjectRef):
 		cls.site = cls.parent
 	        
 	username = Column(Unicode(30), nullable=False)
-	password = Column(Unicode(200), nullable=False)
+	password = Column(Unicode(200), nullable=True)
 
 	first_name = Column(Unicode(50), nullable=True)
 	last_name = Column(Unicode(50), nullable=True)
