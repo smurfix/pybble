@@ -65,7 +65,7 @@ if [ "$*" = "" ] ; then
 	./manage.py -t core config
 
 	#PYTHONPATH=$(pwd) test/run.py -x
-	PYTHONPATH=$(pwd) py.test $ASS -x test/*.py
+	PYTHONPATH=$(pwd) py.test $ASS -x
 else
 	PYTHONPATH=$(pwd) $PY ./manage.py -t "$@"
 fi
