@@ -22,7 +22,7 @@ from flask._compat import text_type
 from . import PrepCommand as Command
 from . import Option, Manager
 from ..core.models.user import User
-from ..core.users import create_user,list_users,drop_user
+from ..core.users import create_user,drop_user
 from ..utils import random_string
 
 class AddUser(Command):
