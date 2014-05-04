@@ -74,5 +74,5 @@ def list_users(site=None, show_site=False):
 	for user in q.all():
 		if show_site:
 			print(user.site.name, end="\t")
-		print(user.username or '-anon-', user.email, user.name, sep="\t")
+		print(user.id, user.username or '-anon-', user.email, user.name, sep="\t")
 
