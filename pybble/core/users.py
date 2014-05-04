@@ -67,12 +67,3 @@ def drop_user(name):
 		user=name
 	Delete(user)
 
-def list_users(site=None, show_site=False):
-	q = User.q
-	if site:
-		q = q.filter_by(parent=site)
-	for user in q.all():
-		if show_site:
-			print(user.site.name, end="\t")
-		print(user.id, user.username or '-anon-', user.email, user.name, sep="\t")
-

@@ -42,7 +42,9 @@ class ListUsers(Command):
 	add_help = False
 
 	def run(self):
-		list_users(current_app.site)
+		for user in User.q.filter_by(parent=current_app.site).all():
+			print(user.id, user.username or '-anon-', user.email, user.name, sep="\t")
+
 		
 class DropUser(Command):
 	def __init__(self):
