@@ -110,14 +110,9 @@ class Site(ObjectRef):
 	@property
 	def anon_user(self):
 		from .user import User
-		while True:
-			try:
-				return User.q.get_by(parent=self, username=ANON_USER_NAME)
-			except NoResultFound:
-				if self.parent:
-					self = self.parent
-				else:
-					raise
+		## create a new anon user.
+		raise RuntimeError
+		return User(site=self,username=ANON_USER_NAME)
 
 		
 	@property

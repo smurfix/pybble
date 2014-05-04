@@ -232,8 +232,6 @@ class User(ObjectRef):
 		db.flush()
 		if self.parent is None:
 			self.parent = current_app.site
-		if not self.anon:
-			m = Member(self,current_app.site.anon_user)
 		db.flush()
 	
 	@property
