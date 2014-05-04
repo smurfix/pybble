@@ -30,7 +30,7 @@ from flask._compat import implements_to_string as py2_unicode
 class ManyDataExc(IntegrityError,MultipleResultsFound):
 	"""Class for tests of unique constraint violations"""
 	pass
-ManyData = ManyDataExc.__bases__
+ManyData = (ManyDataExc,)+ManyDataExc.__bases__
 
 from . import config
 #from zuko.db.logger import logged_session
