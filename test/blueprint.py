@@ -24,9 +24,10 @@ from webunit.webunittest import WebTestCase
 class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 	def setupData(self):
 		super(AppRunTestCase,self).setupData()
-		self.run_manager("mgr -t new BlueTest _test test")
-		self.run_manager("mgr -t -s test blueprint add BlueTest _test /blue")
-		self.run_manager("mgr -t -s test blueprint param BlueTest color Yellow")
+		self.run_manager("mgr -t site add BlueTest _test btest")
+
+		self.run_manager("mgr -t -s btest blueprint add _test /blue BlueTest")
+		self.run_manager("mgr -t -s btest blueprint param BlueTest color Yellow")
 
 	def test_one(self):
 		self.assertContent("http://test/blue/red","Red Color")
