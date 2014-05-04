@@ -32,7 +32,8 @@ You typically add it under /admin.
 class TheView(AdminBaseView):
 	@expose('/')
 	def index(self):
-		self._template_args['model'] = self.base.model
+		import pdb;pdb.set_trace()
+		#self._template_args['model'] = self.base.model
 		return self.render(['admin/index.haml','admin/index.html'])
 
 class FakeAdmin(object):
@@ -59,7 +60,7 @@ class Blueprint(BaseBlueprint):
 		try:
 			base,model = self.params['model'].rsplit('.',1)
 		except KeyError:
-			pass
+			self.model = None
 		else:
 			self.model = getattr(import_module(base),model)
 

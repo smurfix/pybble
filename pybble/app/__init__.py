@@ -28,7 +28,7 @@ from jinja2 import Template,BaseLoader, TemplateNotFound
 
 from werkzeug import import_string
 
-from pybble import FROM_SCRIPT,ROOT_SITE_NAME,ROOT_USER_NAME
+from .. import FROM_SCRIPT,ROOT_SITE_NAME,ROOT_USER_NAME
 from ..core.db import db, NoData
 from ..core.models.template import Template as DBTemplate
 from ..core.models.site import Site,App
@@ -43,8 +43,23 @@ logger = logging.getLogger('pybble.app')
 ###################################################
 # web server setup
 
+class _missing: pass
+class cached_config(object):
+	def __get__(self, obj, type=None):
+		if obj is None:
+			return self
+		value = obj.__dict__.get('config', _missing)
+		if value is _missing:
+			if obj.site is None:
+				return None
+			value = obj.site.config
+			obj.__dict__['config'] = value
+		return value
+
 class WrapperApp(object):
 	"""A dummy app class, used to implement low-weight redirectors"""
+	config = cached_config()
+
 	def __init__(self, site, testing=None):
 		self.site = site
 		if not isinstance(self,Flask):
@@ -62,18 +77,10 @@ class WrapperApp(object):
 			return config
 			
 		cfg = self.site.config
-
-		# override with ext_config settings, no matter what
-		cfg._disarm()
-		from pybble.core import config
-		for k,v in config.items():
-			cfg.setdefault(k,v)
 		if testing is not None:
 			assert testing == cfg['TESTING']
-
-		cfg._arm()
 		return cfg
-
+	
 class SiteTemplateLoader(BaseLoader):
 	def __init__(self, site):
 		self.site = site

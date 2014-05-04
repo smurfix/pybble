@@ -13,12 +13,13 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
-import unittest
+import pytest
 import datetime
 import flask
 
 from .base import TC
-from pybble.core.models.site import Site
+from pybble.core.db import db,NoData,ManyData
+from pybble.core.models.site import Site,App
 from pybble.core.models.config import ConfigVar,SiteConfigVar
 from pybble.app import create_app
 
@@ -27,19 +28,38 @@ class AppConfigTestCase(TC):
 	def setup_sites(self):
 		self.clear_db()
 
-		self.assertEqual(Site.q.count(), 2)
-		site = Site(name='root', domain='test.example.com')
-		site2 = Site(name='foo', domain='foo.example.com', parent=site)
-		site3 = Site(name='bar', domain='bar.example.com', parent=site)
-		site21 = Site(name='foofoo', domain='foo.foo.example.com', parent=site2)
+		app = App.q.get_by(name="_test")
+		try: site = Site.q.get_by(domain='test.example.com')
+		except NoData: site = Site(name='root', domain='test.example.com', app=app)
+		try: site2 = Site.q.get_by(domain='foo.example.com')
+		except NoData: site2 = Site(name='foo', domain='foo.example.com', parent=site, app=app)
+		try: site3 = Site.q.get_by(domain='bar.example.com')
+		except NoData: site3 = Site(name='bar', domain='bar.example.com', parent=site, app=app)
+		try: site21 = Site.q.get_by(domain='foo.foo.example.com')
+		except NoData: site21 = Site(name='foofoo', domain='foo.foo.example.com', parent=site2, app=app)
+		db.commit()
+
+		with pytest.raises(ManyData):
+			site21a = Site(name='foofoo', domain='foo2.foo.example.com', parent=site2)
+			db.flush()
+		db.rollback()
+		with pytest.raises(ManyData):
+			site21a = Site(name='foofoo3', domain='foo.foo.example.com', parent=site2)
+			db.flush()
+		db.rollback()
 
 		ConfigVar.exists(site,"test1","Test One",-1)
 		ConfigVar.exists(site,"test2","Test Two",-2)
 
-		app = create_app(site="root", test=True)
-		app1 = create_app(site="foo", test=True)
-		app2 = create_app(site="bar", test=True)
-		app11 = create_app(site="foofoo", test=True)
+		app = create_app(site="root", testing=True)
+		app1 = create_app(site="foo", testing=True)
+		app2 = create_app(site="bar", testing=True)
+		app11 = create_app(site="foofoo", testing=True)
+
+		app.config._reload()
+		app1.config._reload()
+		app2.config._reload()
+		app11.config._reload()
 
 		self.assertEqual(app11.config["test1"],-1)
 		self.assertEqual(app11.config["test2"],-2)

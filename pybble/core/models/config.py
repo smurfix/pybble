@@ -65,18 +65,49 @@ class ConfigDict(Config,attrdict):
 	def __init__(self,parent=None):
 		self._parent = parent
 		self._vars = {}
+		self._loads = []
 		
 	def _load(self, parent=None, force=False, recurse=None, vars=None, name=None):
 		"""\
 			Load variable data.
 
 			:param force: Overwrite existing values
-			:param recurse: Recursively check parents (or whatever).
+			:param recurse: Recursively check parent objects.
 				Infinite loops are protected against.
+			:param vars: If the variable definitions are the children of
+			    self.superparent instead of self, set this to "superparent".
+				TODO: use an attrgetter function instead.
 			:param name: (re)load only this variable
+
+			This code remembers what you load, so that a .reload() will
+			pull the same (kind of) data.
 			"""
 
-		s = parent or self._parent
+		self._loads.append(dict(recurse=recurse,vars=vars))
+		if self._parent is not None:
+			assert parent is None or parent is self._parent
+		else:
+			self._parent = parent
+		self._load1(recurse=recurse,vars=vars, name=name)
+
+	def _reload(self,name=None):
+		"""\
+			Reload variable data from the database, after something
+			was changed.
+			"""
+		for k in list(self.keys()) if name is None else (name,):
+			super(ConfigDict,self).__delitem__(k)
+		for kw in self._loads:
+			self._load1(name=name, **kw)
+
+	def _load1(self, force=False, recurse=None, vars=None, name=None):
+		if vars is not None and vars == "GLOBALS":
+			# Special hack to include the globals, esp. when reloading
+			for k,v in config.items():
+				super(ConfigDict,self).__setitem__(k,v)
+			return
+
+		s = self._parent
 		seen = set()
 		if recurse is True:
 			recurse = "parent"
@@ -84,14 +115,20 @@ class ConfigDict(Config,attrdict):
 			if s.id in seen: break
 			seen.add(s.id)
 
-			for v in SiteConfigVar.q.filter_by(parent=s):
+			vf = SiteConfigVar.q.filter_by(parent=s)
+			if name is not None:
+				vf = vf.filter(SiteConfigVar.var.name==name)
+			for v in vf:
 				if force:
 					if v.var.name not in seen:
 						self[v.var.name] = v.value
 						seen.add(v.var.name)
 				else:
 					self.setdefault(v.var.name, v.value)
-			for v in ConfigVar.q.filter_by(parent=(getattr(s,vars) if vars else s)):
+			vf = ConfigVar.q.filter_by(parent=(getattr(s,vars) if vars else s))
+			if name is not None:
+				vf = vf.filter_by(name=name)
+			for v in vf:
 				self.setdefault(v.name, v.value)
 				self._vars.setdefault(v.name,v)
 
@@ -101,7 +138,7 @@ class ConfigDict(Config,attrdict):
 				break
 		if self._parent:
 			self._set_db = True
-
+	
 	def __setitem__(self,k,v):
 		s = self._parent
 		if isinstance(k,string_types):

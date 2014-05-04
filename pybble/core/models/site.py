@@ -135,13 +135,16 @@ domain: %s
 	def config(self):
 		from .config import ConfigDict
 		res = ConfigDict(self)
+		res._load(vars="GLOBALS")
 		res._load(recurse="parent")
 		res._load(recurse="parent",vars="superparent")
 		return res
 	
 	def config_changed(self):
 		## TODO: invalidate a bunch of caches, as soon as we have any
-		pass
+		for s in self.all_children("Site",None):
+			s.config._reload()
+			s.config_changed()
 
 
 class SiteBlueprint(ObjectRef):
@@ -185,4 +188,4 @@ class SiteBlueprint(ObjectRef):
 		res = ConfigDict(self)
 		res._load(vars="superparent")
 		return res
-		### TODO get them from variables
+

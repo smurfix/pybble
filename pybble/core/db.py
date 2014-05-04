@@ -17,7 +17,8 @@ from functools import update_wrapper
 
 from sqlalchemy import create_engine, Integer, types, util, exc as sa_exc
 from sqlalchemy.orm import scoped_session, sessionmaker,query
-from sqlalchemy.orm.exc import NoResultFound as NoData, MultipleResultsFound as ManyData
+from sqlalchemy.orm.exc import NoResultFound as NoData, MultipleResultsFound
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 
 from formalchemy import Column, helpers
@@ -25,6 +26,11 @@ from formalchemy.fields import IntegerFieldRenderer
 
 from flask import Markup, url_for, escape, g
 from flask._compat import implements_to_string as py2_unicode
+
+class ManyDataExc(IntegrityError,MultipleResultsFound):
+	"""Class for tests of unique constraint violations"""
+	pass
+ManyData = ManyDataExc.__bases__
 
 from . import config
 #from zuko.db.logger import logged_session
