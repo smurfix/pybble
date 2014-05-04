@@ -314,9 +314,10 @@ class PopulateCommand(Command):
 			return added
 
 		def get_templates(dirpath,webpath=""):
+			if not os.path.isdir(dirpath):
+				return 0
+
 			added = 0
-			if os.path.isdir(dirpath):
-				return added
 			for fn in os.listdir(dirpath):
 				if fn.startswith("."):
 					continue
