@@ -25,6 +25,7 @@ from flask._compat import string_types
 from ... import ROOT_SITE_NAME,ANON_USER_NAME
 from .. import config
 from ..db import Base, Column, db, NoData
+from ..signal import app_list
 from . import Object, ObjectRef, TM_DETAIL_PAGE, Loadable
 from ._descr import D
 
@@ -86,7 +87,7 @@ class Site(ObjectRef):
 		for s in self.all_children(D.Site):
 			for ss in s.all_sites:
 				yield ss
-	# we don't have "yield from
+	# we don't have "yield from" in PY2
 
 	def __init__(self,domain, name=None, **kw):
 		super(Site,self).__init__(**kw)
@@ -106,6 +107,8 @@ class Site(ObjectRef):
 				self.owner = request.user
 			except (AttributeError,RuntimeError):
 				self.owner = None if self.parent is None else self.parent.owner
+		db.flush()
+		app_list.send(self)
 
 	@property
 	def anon_user(self):
@@ -184,3 +187,5 @@ class SiteBlueprint(ObjectRef):
 		res._load(vars="superparent")
 		return res
 
+	def config_changed(self):
+		pass

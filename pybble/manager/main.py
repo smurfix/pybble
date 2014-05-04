@@ -34,6 +34,7 @@ from . import Manager,Command,Option
 from .. import ROOT_SITE_NAME
 from ..core.db import db
 from ..core.models.site import Site,Blueprint
+from ..core.signal import all_apps,app_list
 from ..app import create_site, list_apps
 
 logger = logging.getLogger('pybble.manager.main')
@@ -150,10 +151,22 @@ class SubdomainDispatcher(object):
 		self.root = root
 		self.lock = Lock()
 		self.instances = i = {}
-		for s in root.all_sites:
-			i[s.domain] = s
-			# This pre-loads the instances with the sites necessary to
-			# later instantiate the apps.
+		all_apps.connect(self._reload)
+		app_list.connect(self._reload)
+		self._reload(sender=self)
+
+	def _reload(self,sender):
+		# This pre-loads the instances with the sites necessary to
+		# later instantiate the apps.
+		i = self.instances
+		seen = set()
+		for s in self.root.all_sites:
+			if s.domain not in i:
+				i[s.domain] = s
+			seen.add(s.domain)
+		for s in i.keys():
+			if s not in seen:
+				del i[s]
 
 	def get_application(self, host=None, site=None, testing=None):
 		if site:
@@ -172,7 +185,10 @@ class SubdomainDispatcher(object):
 				# `self.instances` for convenience
 				from ..app import create_app
 				self.instances[host] = app = create_app(site=app, testing=testing)
-			app.pybble_dispatcher = self
+				app.pybble_dispatcher = self
+				# Note that this assumes that a site's app cannot change
+				# TODO: this is not actually enforced anywhere
+
 			return app
 
 	def __call__(self, environ, start_response):

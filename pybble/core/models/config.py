@@ -18,7 +18,6 @@ import datetime
 import random
 import os
 
-from blinker import NamedSignal
 from flask import url_for, current_app, g
 from flask.config import Config
 from flask._compat import string_types,text_type
@@ -46,17 +45,6 @@ from sqlalchemy.types import TypeDecorator, VARCHAR
 #from .admin.utils import _l
 
 logger = logging.getLogger()
-
-## a list of config-change signals, per site name.
-_config_changed = {}
-def _config_changed_sig(name):
-	sig = _config_changed.get(name)
-	if sig is None:
-		_config_changed[name] = sig = NamedSignal(name)
-	return sig
-def register_changed(app):
-	sig = _config_changed_sig(app.site.name)
-	sig.connect(app.read_config)
 
 class ConfigDict(Config,attrdict):
 	_parent = None

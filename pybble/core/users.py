@@ -32,7 +32,7 @@ from .. import FROM_SCRIPT,ROOT_SITE_NAME,ROOT_USER_NAME
 from ..core.db import db, NoData, ManyDataExc
 from ..core.models.template import Template as DBTemplate
 from ..core.models.site import Site,App
-from ..core.models.config import ConfigVar,register_changed
+from ..core.models.config import ConfigVar
 from ..core.models.user import User
 from ..manager import Manager,Command
 from ..blueprint import load_app_blueprints

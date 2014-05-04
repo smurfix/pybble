@@ -25,14 +25,15 @@ from flask._compat import text_type
 
 from hamlish_jinja import HamlishExtension
 from jinja2 import Template,BaseLoader, TemplateNotFound
-
 from werkzeug import import_string
+from blinker import Signal
 
 from .. import FROM_SCRIPT,ROOT_SITE_NAME,ROOT_USER_NAME
 from ..core.db import db, NoData
+from ..core.signal import all_apps
 from ..core.models.template import Template as DBTemplate
 from ..core.models.site import Site,App
-from ..core.models.config import ConfigVar,register_changed
+from ..core.models.config import ConfigVar
 from ..core.models.user import User
 from ..manager import Manager,Command
 from ..blueprint import load_app_blueprints
@@ -57,7 +58,8 @@ class cached_config(object):
 		return value
 
 class WrapperApp(object):
-	"""A dummy app class, used to implement low-weight redirectors"""
+	"""A dummy app class, used to implement low-weight redirectors;
+		also holds the app's configuration"""
 	config = cached_config()
 
 	def __init__(self, site, testing=None):
@@ -80,6 +82,10 @@ class WrapperApp(object):
 		if testing is not None:
 			assert testing == cfg['TESTING']
 		return cfg
+	
+	def _reload(self,sender,**kw):
+		"""Blinker signal processor to reload my configuration"""
+		self.config._reload(name=kw.get('name',None))
 	
 class SiteTemplateLoader(BaseLoader):
 	def __init__(self, site):
@@ -120,7 +126,10 @@ class BaseApp(WrapperApp,Flask):
 		if testing is not None:
 			assert testing == self.config.TESTING
 		self.wsgi_app = CustomProxyFix(self.wsgi_app)
-		register_changed(self)
+
+		self.signal = Signal()
+		self.signal.connect(self._reload)
+		all_apps.connect(self._reload)
 
 		load_app_renderer(self)
 		load_app_blueprints(self)
