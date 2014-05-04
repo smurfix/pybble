@@ -180,7 +180,7 @@ class User(ObjectRef):
 		cls.site = cls.parent
 	        
 	# A simple way to make 'username' read-only
-	_username = Column('username'Unicode(30), nullable=False)
+	_username = Column('username', Unicode(30), nullable=False)
 	@cached_property
 	def username(self):
 		return self._username
