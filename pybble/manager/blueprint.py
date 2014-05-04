@@ -102,7 +102,6 @@ class ParamBlueprint(Command):
 		if value is None:
 			print(bp.config[key])
 			return
-		import pdb;pdb.set_trace()
 		if value == "-":
 			del bp.config[key]
 		else:
