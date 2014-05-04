@@ -30,6 +30,10 @@ set their owner/parent/superparent to something that makes semantic sense
 and/or doesn't crash the web app. In practice, well, none of that is
 implemented yet.
 
+An object's superparent is supposed to be immutable. This is not enforced
+anywhere (yet), but Pybble require a restart if you ever change e.g. a 
+site's app (pointed to as the site's superparent).
+
 Websites
 --------
 
