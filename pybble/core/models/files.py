@@ -91,7 +91,7 @@ class BinData(ObjectRef):
 		n = self.name
 		if self.ext:
 			n += "."+self.ext
-		return u"%s %s" % (n,self.mimetype.as_str)
+		return u"%s %s" % (n,self.mimetype)
 
 	@property
 	def content(self):
