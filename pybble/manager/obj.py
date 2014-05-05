@@ -25,7 +25,7 @@ from ..core.db import db, NoData
 from ..core.models import Discriminator
 from ..core.json import encode
 from ..utils import getsubattr
-from ..utils.show import show
+from ..utils.show import show,Cache
 
 def _parse(args):
 	"""
@@ -98,11 +98,12 @@ class CmdGET(PrepCommand):
 			if exp is None and len(args) == 1:
 				exp = "-"
 			
+		cache=Cache()
 		for d in data:
 			if json:
 				print(encode(d))
 			else:
-				show(d, expand=exp)
+				show(d, expand=exp, cache=cache)
 		db.commit()
 		
 class CmdDIR(PrepCommand):
