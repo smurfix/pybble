@@ -1746,7 +1746,7 @@ parser SQL:
 		REFERENCES qname {{ rtable=qname }}
 		"\(" qname {{ fl2.append(qname) }}
 			( "," qname {{ fl2.append(qname) }} )* "\)"
-		{{ opt={"update":"cascade","delete":"restrict"} }}
+		{{ opt={"update":"restrict","delete":"restrict"} }}
 		( 
 		  ON ( UPDATE ref_opt {{ opt["update"]=ref_opt.lower() }} 
 		     | DELETE ref_opt {{ opt["delete"]=ref_opt.lower() }}
