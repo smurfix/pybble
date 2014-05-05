@@ -129,7 +129,7 @@ class CmdDIR(PrepCommand):
 			if json:
 				print(encode(d))
 			else:
-				show(d)
+				show(d, expand=None)
 		db.commit()
 		
 class CmdDELETE(PrepCommand):
