@@ -183,7 +183,7 @@ class User(ObjectRef):
 	        
 	# A simple way to make 'username' read-only
 	username = Column(Unicode(30), nullable=False)
-	password = Column(Unicode(200), nullable=True)
+	password = Column(Password(), nullable=True)
 	## empty: cannot be used.  None: not known.
 
 	first_name = Column(Unicode(50), nullable=True)
