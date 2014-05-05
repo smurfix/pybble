@@ -32,14 +32,12 @@ def u_test():
 class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 	def test_added(self):
 		self.once(u_test)
-		u = User.q.get_by(name="Joe")
-		assert u.site.name == "utest"
+		u = User.q.get_by(username="Joe")
+		assert u.site.name == "UserTest"
 			
 	def test_password(self):
 		self.once(u_test)
-		u = User.q.get_by(name="Joe")
+		u = User.q.get_by(username="Joe")
 		assert u.password is None
-		self.run_manager("mgr -t -s obj update User {} passwort blafasel".format(u.id))
-		assert u.password
-		assert u.password != "blafasel"
-		assert ":" in u.password
+		self.run_manager("mgr -t -s UserTest obj update User {} password=blafasel".format(u.id))
+		assert ":" in u.password # make sure it's hashed
