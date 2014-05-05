@@ -68,7 +68,6 @@ class VarsTestCase(ManagerTC,WebTC,WebTestCase):
 		b = SiteBlueprint.q.get_by(name=u"VarsTest",parent=s)
 		assert b.path=="/doc"
 
-		import pdb;pdb.set_trace()
 		assert b.config.color == "yellow"
 		self.run_manager("mgr -t -s test blueprint param VarsTest color green")
 		assert b.config.color == "green"

@@ -18,7 +18,7 @@ import unittest
 from functools import wraps
 import logging
 
-from flask import Flask
+from flask import Flask,current_app
 from flask.ext.script._compat import StringIO, text_type
 from flask.ext.script import Command, Option, prompt, prompt_bool
 from werkzeug.utils import cached_property
@@ -64,4 +64,11 @@ class TestManager(ManagerTC):
 		code = self.run_manager('manage.py -t app hello --foo=fubar', app=self.app)
 		out, err = capsys.readouterr()
 		assert 'Oh hello' in out
+
+def run(*args):
+	mgr = RootManager()
+	if len(args) == 1:
+		args = args[0].split(" ")
+	mgr.handle(args[0],args[1:])
+
 

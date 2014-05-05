@@ -13,18 +13,23 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
-import unittest
-import datetime
-import flask
+import pytest
 
-from .manager import ManagerTC
+from pybble.manager.main import RootManager
 from .base import WebTC
 from webunit.webunittest import WebTestCase
+from .manager import run
 
-class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
-	def setupData(self):
-		super(AppRunTestCase,self).setupData()
-		self.run_manager("mgr -t new AppTest _test test")
+@pytest.fixture(scope="class")
+def ap_test(request):
+    # set a class attribute on the invoking test context
+	run("mgr -t site add AppTest _test atest")
+
+@pytest.mark.usefixtures(ap_test)
+class AppRunTestCase(WebTC,WebTestCase):
+#	def setupData(self):
+#		super(AppRunTestCase,self).setupData()
+#		self.run_manager("mgr -t site new AppTest _test atest")
 
 	def test_one(self):
 		self.assertContent("http://test/one","Number One")

@@ -103,7 +103,7 @@ class CommandWithCatchAll(Command):
 					   action='store_true'),)
 
 	def run(self, remaining_args, foo):
-		print(remaining_args)
+		print(*(("",)+tuple(remaining_args)+("",)), sep="|")
 
 class TestRunCommands(TC):
 
@@ -410,7 +410,7 @@ class TestScripting:
 		code = run('manage.py catch pos1 --foo pos2 --bar', manager.run)
 		out, err = capsys.readouterr()
 		assert code == 0
-		assert "['pos1', 'pos2', '--bar']" in out
+		assert "|pos1|pos2|--bar|" == out.strip()
 
 	@capture
 	def test_run_bad_options(self, capsys):

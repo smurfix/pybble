@@ -13,29 +13,32 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Please do not remove the next line, or insert any blank lines before it.
 ##BP
 
-import unittest
+import pytest
 import datetime
 import flask
 
-from .manager import ManagerTC
+from .manager import ManagerTC, run
 from .base import WebTC
 from webunit.webunittest import WebTestCase
 
 from pybble.core.models.user import User
 
-class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
-	def setupData(self):
-		super(AppRunTestCase,self).setupData()
-		self.run_manager("mgr -t site add UserTest _test utest")
-		self.run_manager("mgr -t -s utest user add Joe")
+@pytest.fixture(scope="class")
+def u_test(request):
+	# set a class attribute on the invoking test context
+	run("mgr -t site add UserTest _test utest")
+	run("mgr -t -s utest user add Joe")
 
+@pytest.mark.usefixtures(u_test)
+class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 	def test_added(self):
-		u = User.q.get_by(name=Joe)
-		assert u.site.name == utest
+		u = User.q.get_by(name="Joe")
+		assert u.site.name == "utest"
 			
 	def test_password(self):
-		u = User.q.get_by(name=Joe)
+		u = User.q.get_by(name="Joe")
 		assert u.password is None
 		self.run_manager("mgr -t -s obj User {} passwort blafasel")
 		assert u.password
 		assert u.password != "blafasel"
+		assert ":" in u.password
