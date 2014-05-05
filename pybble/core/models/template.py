@@ -36,7 +36,8 @@ class Template(ObjectRef):
 
 	@classmethod
 	def __declare_last__(cls):
-		cls.site = cls.parent
+		if not hasattr(cls,'site'):
+			cls.site = cls.parent
 
 	name = Column(Unicode(30), nullable=False)
 	data = Column(Unicode(100000))
@@ -66,7 +67,8 @@ class TemplateMatch(ObjectRef):
 	_descr = D.TemplateMatch
 	@classmethod
 	def __declare_last__(cls):
-		cls.obj = cls.parent
+		if not hasattr(cls,'obj'):
+			cls.obj = cls.parent
 
 	data = Column(Unicode(100000))
 	modified = Column(DateTime,default=datetime.utcnow)

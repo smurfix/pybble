@@ -179,7 +179,8 @@ class User(ObjectRef):
 	_descr = D.User
 	@classmethod
 	def __declare_last__(cls):
-		cls.site = cls.parent
+		if not hasattr(cls,'site'):
+			cls.site = cls.parent
 	        
 	# A simple way to make 'username' read-only
 	username = Column(Unicode(30), nullable=False)
@@ -498,8 +499,10 @@ class Member(ObjectRef):
 	_no_crumbs = True
 	@classmethod
 	def __declare_last__(cls):
-		cls.user = cls.owner
-		cls.group = cls.parent
+		if not hasattr(cls,'user'):
+			cls.user = cls.owner
+		if not hasattr(cls,'group'):
+			cls.group = cls.parent
 
 	excluded = Column(Boolean, nullable=False,default=False)
 

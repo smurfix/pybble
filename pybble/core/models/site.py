@@ -64,8 +64,10 @@ class Site(ObjectRef):
 	#__mapper_args__ = {'polymorphic_identity':D.Site, 'inherit_condition': id == Object.id}
 	@classmethod
 	def __declare_last__(cls):
-		cls.superuser = cls.parent
-		cls.app = cls.superparent
+		if not hasattr(cls,'superuser'):
+			cls.superuser = cls.parent
+		if not hasattr(cls,'app'):
+			cls.app = cls.superparent
 
 	domain = Column(Unicode(100), nullable=False, unique=True)
 	name = Column(Unicode(30), nullable=False, unique=True)
@@ -151,8 +153,10 @@ class SiteBlueprint(ObjectRef):
 	_descr = D.SiteBlueprint
 	@classmethod
 	def __declare_last__(cls):
-		cls.site = cls.parent
-		cls.blueprint = cls.superparent
+		if not hasattr(cls,'site'):
+			cls.site = cls.parent
+		if not hasattr(cls,'blueprint'):
+			cls.blueprint = cls.superparent
 
 	name = Column(Unicode(30), required=True, nullable=False) ## (, verbose_name="blueprint's name, for url_for() et al.")
 	path = Column(Unicode(1000), nullable=False, default="") ## (, verbose_name="URL path where to attach this ")

@@ -47,7 +47,8 @@ class BinData(ObjectRef):
 	_no_crumbs = True
 	@classmethod
 	def __declare_last__(cls):
-		cls.storage = cls.superparent
+		if not hasattr(cls,'storage'):
+			cls.storage = cls.superparent
 
 	storage_seq = Column(Integer, autoincrement=True, unique=True)
 	## The mysql driver ignores autoincrement on non-primary-key columns.
@@ -284,7 +285,8 @@ class StaticFile(ObjectRef):
 	_no_crumbs = True
 	@classmethod
 	def __declare_last__(cls):
-		cls.bindata = cls.parent
+		if not hasattr(cls,'bindata'):
+			cls.bindata = cls.parent
 
 	path = Column(Unicode(1000), nullable=False)
 	modified = Column(DateTime,default=datetime.utcnow)

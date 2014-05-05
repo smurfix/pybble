@@ -132,8 +132,10 @@ class Delete(ObjectRef):
 	_no_crumbs = True
 	@classmethod
 	def __declare_last__(cls):
-		cls.old_parent = cls.superparent
-		cls.old_parent_id = cls.superparent_id
+		if not hasattr(cls,'old_parent'):
+			cls.old_parent = cls.superparent
+		if not hasattr(cls,'old_parent_id'):
+			cls.old_parent_id = cls.superparent_id
 
 	## The old parent is in self.superparent
 	old_owner_id = Column(Integer, ForeignKey(ObjectRef.id), nullable=True, index=True)
@@ -182,7 +184,8 @@ class Tracker(ObjectRef):
 	_no_crumbs = True
 	@classmethod
 	def __declare_last__(cls):
-		cls.site = cls.superparent
+		if not hasattr(cls,'site'):
+			cls.site = cls.superparent
 
 	comment = Column(Unicode(1000), nullable=True)
 	timestamp = Column(DateTime,default=datetime.utcnow)
@@ -231,9 +234,12 @@ class UserTracker(ObjectRef):
 	_no_crumbs = True
 	@classmethod
 	def __declare_last__(cls):
-		cls.user = cls.owner
-		cls.tracker = cls.parent
-		cls.want_tracking = cls.superparent
+		if not hasattr(cls,'user'):
+			cls.user = cls.owner
+		if not hasattr(cls,'tracker'):
+			cls.tracker = cls.parent
+		if not hasattr(cls,'want_tracking'):
+			cls.want_tracking = cls.superparent
 
 	def __init__(self, user, tracker, want):
 		super(UserTracker,self).__init__()
@@ -266,8 +272,10 @@ class WantTracking(ObjectRef):
 	_display_name = "Beobachtungs-Eintrag"
 	@classmethod
 	def __declare_last__(cls):
-		cls.obj = cls.parent
-		cls.user = cls.owner
+		if not hasattr(cls,'obj'):
+			cls.obj = cls.parent
+		if not hasattr(cls,'user'):
+			cls.user = cls.owner
 
 	for_discr_id = Column("discr", Integer, ForeignKey(Discriminator.id), nullable=True)
 	for_discr = relationship(Discriminator, primaryjoin=for_discr_id==Discriminator.id)

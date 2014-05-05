@@ -49,7 +49,8 @@ class Verifier(ObjectRef):
 	_descr = D.Verifier
 	@classmethod
 	def __declare_last__(cls):
-		cls.base = cls.superparent
+		if not hasattr(cls,'base'):
+			cls.base = cls.superparent
 
 	code = Column(Unicode(30), nullable=False)
 

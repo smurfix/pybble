@@ -235,7 +235,8 @@ class SiteConfigVar(ObjectRef, JsonValue):
 
 	@classmethod
 	def __declare_last__(cls):
-		cls.var = cls.superparent
+		if not hasattr(cls,'var'):
+			cls.var = cls.superparent
 	# Owner: the user who last set the variable
 
 	def __init__(self,parent,var=None,superparent=None,**kw):
