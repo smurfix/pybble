@@ -29,7 +29,6 @@ from flask import request,current_app
 from flask._compat import text_type, string_types
 from werkzeug import import_string
 from jinja2.utils import Markup
-from pybble.core import config
 from copy import copy
 
 """Max ID of built-in tables; the rest are extensions"""
@@ -438,7 +437,7 @@ class Object(Dumpable, Base):
 		if self.id is None:
 			db.flush()
 		return "%d.%d.%s" % (self.discr_id, self.id, 
-		                        md5(self.__class__.__name__ + str(self.id) + config.SECRET_KEY)\
+		                        md5(self.__class__.__name__ + str(self.id) + current_app.config.SECRET_KEY)\
 		                            .digest().encode('base64').strip('\n =')[:10].replace("+","/-").replace("/","_"))
 
 	def get_template(self, detail=TM_DETAIL_PAGE):
