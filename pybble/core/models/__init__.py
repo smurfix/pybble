@@ -162,6 +162,26 @@ class Discriminator(Loadable, Dumpable, Base):
 		else:
 			return discr._discriminator
 
+@register_object
+class _obj(object):
+	"""
+	Encode+decode objects in JSON.
+
+	TODO: For external consumption, mangle the OID one-way
+	(i.e. just drop the hash part) if the current user cannot
+	read the object.
+	"""
+	cls = Discriminator
+	clsname = "discr"
+
+	@staticmethod
+	def encode(obj):
+		return {"d":obj.id,"s":str(obj)}
+
+	@staticmethod
+	def decode(d,s=None,**_):
+		return Discriminator.q.get_by(id=d)
+
 @py2_unicode
 class Object(Dumpable, Base):
 	"""The base type of all pointed-to objects."""
