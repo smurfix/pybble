@@ -279,7 +279,7 @@ class PopulateCommand(Command):
 		logger.debug("{} files changed.".format(added))
 
 		## templates (not recursive)
-		def get_template(filepath,webpath):
+		def read_template(parent, filepath,webpath):
 			added = 0
 			with file(filepath) as f:
 				try:
@@ -290,31 +290,36 @@ class PopulateCommand(Command):
 
 			webpath = unicode(webpath)
 			try:
-				t = Template.q.get_by(name=webpath,parent=root)
+				dot = filepath.rindex(".")
+				mime = mime_ext(filepath[dot+1:])
+			except (ValueError,NoData):
+				logger.warn("Template ‘{}’ not loaded: unknown MIME type".format(filepath))
+				return
+			try:
+				t = Template.q.get_by(name=webpath,parent=parent)
 			except NoData:
-				t = Template(name=webpath,data=data,parent=root)
+				t = Template(name=webpath,data=data,parent=parent, mime=mime)
 				t.owner = superuser
 				added += 1
 			else:
-				if t.mime is None:
-					dot = filepath.rindex(".")
-					try:
-						t.mime = mime_ext(filepath[dot+1:])
-					except NoData:
-						raise NoData(filepath[dot+1:])
+				if t.mime is not mime:
+					logger.warn("Template ‘{}’: changed MIME type from {} to {}".format(filepath, t.mime.mimetype if t.mime else '?', mime.mimetype))
+					if force:
+						t.mime = mime
 
 				if t.data != data:
-					print (u"Warning: Template %d '%s' differs." % (t.id,filepath)).encode("utf-8")
+					logger.warn(u"Template {} ‘{}’ differs.".format(t.id,filepath))
 					if force:
 						t.data = data
+
 				if force:
-					t.superparent = root
+					t.superparent = parent
 					t.owner = superuser
 					added += 1
 			db.commit()
 			return added
 
-		def get_templates(dirpath,webpath=""):
+		def find_templates(parent, dirpath,webpath=""):
 			if not os.path.isdir(dirpath):
 				return 0
 
@@ -325,13 +330,12 @@ class PopulateCommand(Command):
 				newdirpath = os.path.join(dirpath,fn)
 				newwebpath = "{}/{}".format(webpath,fn) if webpath else fn
 				if os.path.isdir(newdirpath):
-					added += get_templates(newdirpath,newwebpath)
+					added += find_templates(parent, newdirpath,newwebpath)
 				else:
-					added += get_template(newdirpath,newwebpath)
+					added += read_template(parent, newdirpath,newwebpath)
 			return added
 
-		added = 0
-		get_templates(TEMPLATE_PATH)
+		added = find_templates(root, TEMPLATE_PATH)
 		logger.debug("{} templates changed.".format(added))
 
 		## Variables.
@@ -369,17 +373,26 @@ class PopulateCommand(Command):
 		from ..app import list_apps
 		from ..blueprint import list_blueprints
 		from ..core.models.site import App,Blueprint,SiteBlueprint
-		loadables(list_apps,App,"pybble.app")
-		loadables(list_blueprints,Blueprint,"pybble.blueprint")
 
+		loadables(list_apps,App,"pybble.app")
+		for app in App.q.all():
+			mod = sys.modules[app.mod.__module__]
+			path = os.path.join(mod.__path__[0], 'templates')
+			added = find_templates(app, path, app.name)
+			if added:
+				logger.info("{} templates for app {} added/changed.".format(added,app.name))
+			else:
+				logger.debug("No new/changed templates for app {}.".format(app.name))
+
+		loadables(list_blueprints,Blueprint,"pybble.blueprint")
 		for bp in Blueprint.q.all():
 			mod = sys.modules[bp.mod.__module__]
 			path = os.path.join(mod.__path__[0], 'templates')
-			added = get_templates(path, bp.name)
+			added = find_templates(bp, path, bp.name)
 			if added:
-				logger.info("{} templates for {} added/changed.".format(added,bp.name))
+				logger.info("{} templates for blueprint {} added/changed.".format(added,bp.name))
 			else:
-				logger.debug("No new/changed templates for {}.".format(bp.name))
+				logger.debug("No new/changed templates for blueprint {}.".format(bp.name))
 
 		rapp = App.q.get_by(name="_root")
 		if root.app is None or force:
