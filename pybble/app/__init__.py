@@ -134,6 +134,7 @@ class BaseApp(WrapperApp,Flask):
 
 		load_app_renderer(self)
 		load_app_blueprints(self)
+		self.setup()
 
 		self.before_request(self._setup_user)
 	

@@ -24,7 +24,7 @@ class App(BaseApp):
 	        ("appiti","pappiti", "Test for passing a parameter into a site"),
 		)
 
-	def init_routing(self):
+	def setup(self):
 		@self.route('/one')
 		def get_one():
 			return "This is Number One"
