@@ -41,8 +41,18 @@ class ListUsers(Command):
 	"""Show the list of known sites"""
 	add_help = False
 
-	def run(self):
-		for user in User.q.filter_by(parent=current_app.site).all():
+	def __init__(self):
+		super(ListUsers,self).__init__()
+		self.add_option(Option("name", nargs='?', action="store",help="The new user's name"))
+
+	def run(self,name=None,help=False):
+		if help:
+			self.parser.print_help()
+			sys.exit(0)
+		u = User.q.filter_by(parent=current_app.site)
+		if name is not None:
+			u = u.filter_by(username=name)
+		for user in u:
 			print(user.id, user.username or '-anon-', user.email, user.name, sep="\t")
 
 		
