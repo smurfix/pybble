@@ -20,8 +20,8 @@ Note that I would have liked to publish this code under the AGPL instead
 (so that everybody will _have to_ share their extensions and other
 interesting pybble-related code), but life is not perfect, so I'll merely
 state my wish here that you in fact _do_ share your work. Whether you
-ultimately do, or not, is up to you. Just don't forget not to send your
-``localsettings.py`` file …
+ultimately do, or not, is up to you. Just don't forget to _not_ send the
+file which contains your site secret …
 
 
 Rationale
@@ -70,12 +70,14 @@ $ pip install -r requirements.txt
 2. Define your SQL settings
 
 ```
-# $EDITOR LOGIN.py
-===============./LOGIN.py===============
+# $EDITOR SETUP.py
+===============./SETUP.py===============
 sql_user="test"
-sql_pass=""
+sql_pass="test"
 sql_host="localhost"
 sql_database="test_pybble"
+sql_driver="mysql"
+#sql_database="/path/to/the/database.db" ## for sql_driver="sqlite"
 
 ####### REPLACE THE SECRET KEY WITH SOMETHING RANDOM #######
 # Do not use the same string in production and testing/staging/debugging.
@@ -86,19 +88,27 @@ MEDIA_PATH="/var/tmp/pybble"
 =================================================
 ```
 
-You should of course create that directory. in a production environment,
-it's a good idea to let your normal web server handle these files.
-They are not access-controlled, but have undiscoverable file names.
+You should of course create that MEDIA_PATH directory. In a production
+environment, it's a good idea to let your normal web server handle these
+files. They are not access-controlled, but have undiscoverable file names.
 
 3. Populate with initial data
 
 ```bash
-$ python manage.py setupdb
-$ python manage.py populate 
-
+$ export PYBBLE=SETUP
+$ python manage.py -S setupdb
+$ python manage.py -S populate 
 ```
 
 4. Create a superuser
+
+Actually, `populate` does that for you. Just remember to write down the
+pasword. And clear your screen.
+
+If you only did the second part, you can set a new root password with
+```bash
+$ python manage.py user list root
+```
 
 ```bash
 $ python manage.py createsuperuser
