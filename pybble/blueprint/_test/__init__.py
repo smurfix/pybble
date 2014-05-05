@@ -34,11 +34,13 @@ class Blueprint(BaseBlueprint):
 
 		@self.route('/green')
 		def test_green():
+			"""Fetch template by blueprint name"""
 			return render_template('_test/green.haml')
 
 		@self.route('/blue')
 		def test_blue():
-			return render_template('_test/blue.html')
+			"""Fetch template by SiteBlueprint name"""
+			return render_template('BlueTest/blue.html')
 
 		@self.route('/yellow')
 		def test_yellow():

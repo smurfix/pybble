@@ -31,11 +31,11 @@ class App(BaseApp):
 
 		@self.route('/two')
 		def get_two():
-			return render_template('two.haml')
+			return render_template('_test/two.haml')
 
 		@self.route('/three')
 		def get_three():
-			return render_template('three.html')
+			return render_template('_test/three.html')
 
 	pass
 

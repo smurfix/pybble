@@ -33,7 +33,7 @@ from .. import FROM_SCRIPT,ROOT_SITE_NAME,ROOT_USER_NAME
 from ..core.db import db, NoData
 from ..core.signal import all_apps
 from ..core.models.template import Template as DBTemplate
-from ..core.models.site import Site,App
+from ..core.models.site import Site,App,SiteBlueprint,Blueprint
 from ..core.models.config import ConfigVar
 from ..core.models.user import User
 from ..manager import Manager,Command
@@ -93,20 +93,64 @@ class SiteTemplateLoader(BaseLoader):
 		self.site = site
 
 	def get_source(self, environment, template):
+		"""\
+			Find a template.
+
+			* attached to "self"
+			* if this is a site:
+			  * if the template name contains a slash,
+			    * attached to the SiteBlueprint
+			    * attached to the Blueprint
+			  * attached to the app
+			* recurse to my parent
+			"""
+		seen = set()
 		s = self.site
 		template = text_type(template)
 		while s is not None:
-			try:
-				t = DBTemplate.q.get_by(site=s,name=template)
+			if s in seen:
+				break
+			seen.add(s)
+			t = None
+			try: t = DBTemplate.q.get_by(site=s,name=template)
 			except NoData:
-				pass
-			else:
+				if isinstance(s,Site):
+					i = template.find('/')
+					if i >0:
+						try: # the name might refer to a SiteBlueprint
+							sbp = SiteBlueprint.q.get_by(parent=s,name=template[:i])
+						except NoData: # or to the Blueprint it points to
+							try:
+								bp = db.query(SiteBlueprint).filter(SiteBlueprint.parent==s).join(Blueprint, SiteBlueprint.superparent).filter(Blueprint.name==template[:i]).limit(1).one().blueprint
+							except NoData:
+								bp = None
+						else:
+							# we get here if the prefix refers to a SiteBlueprint entity
+							try:
+								t = DBTemplate.q.get_by(parent=sbp, name=template[i+1:])
+							except NoData:
+								# not found, so check the blueprint
+								bp = sbp.blueprint
+						if t is None and bp is not None:
+							try: t = DBTemplate.q.get_by(parent=bp, name=template[i+1:])
+							except NoData: pass
+					if t is None and i>0 and s.app.name == template[:i]:
+						try: t = DBTemplate.q.get_by(parent=s.app, name=template[i+1:])
+						except NoData: pass
+
+			if t is not None:
 				mtime = t.modified
 				def t_is_current():
 					db.refresh(t,('modified',))
 					return mtime == t.modified
 				return t.data, template, t_is_current
-			s = s.parent
+
+			if not s.parent:
+				break
+			if s.parent in seen:
+				s = s.superparent or s.parent.superparent
+			else:
+				s = s.parent
 		raise TemplateNotFound(template)
 
 class BaseApp(WrapperApp,Flask):
