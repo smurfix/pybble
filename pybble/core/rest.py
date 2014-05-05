@@ -37,7 +37,7 @@ class RESTend(object):
 		changed = {}
 		if descr is not None:
 			D = Discriminator.get(descr).mod
-			assert D is type(Object), "{} is not a {}".format(str(obj),str(D))
+			assert D is type(obj), "{} is not a {}".format(str(obj),str(D))
 		old = obj.as_dict
 		for k,v in data.items():
 			ov = getattr(obj,k,None)
@@ -70,7 +70,7 @@ class RESTend(object):
 		changed = {}
 		if descr is not None:
 			D = Discriminator.get(descr).mod
-			assert D is type(Object), "{} is not a {}".format(str(obj),str(D))
+			assert D is type(obj), "{} is not a {}".format(str(obj),str(D))
 		old = obj.as_dict
 		for k,v in data.items():
 			ov = getattr(obj,k,None)
@@ -87,7 +87,7 @@ class RESTend(object):
 		obj = Object.q.get_by(id=id)
 		if descr is not None:
 			D = Discriminator.get(descr).mod
-			assert D is type(Object), "{} is not a {}".format(str(obj),str(D))
+			assert D is type(obj), "{} is not a {}".format(str(obj),str(D))
 		Delete(request.user, obj, comment=comment)
 		if self.json:
 			obj = obj.as_dict
