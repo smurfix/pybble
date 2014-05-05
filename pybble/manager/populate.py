@@ -278,7 +278,7 @@ class PopulateCommand(Command):
 		added = add_files(STATIC_PATH, u"")
 		logger.debug("{} files changed.".format(added))
 
-		## templates (not recursive)
+		## templates
 		def read_template(parent, filepath,webpath):
 			added = 0
 			with file(filepath) as f:
@@ -378,7 +378,7 @@ class PopulateCommand(Command):
 		for app in App.q.all():
 			mod = sys.modules[app.mod.__module__]
 			path = os.path.join(mod.__path__[0], 'templates')
-			added = find_templates(app, path, app.name)
+			added = find_templates(app, path)
 			if added:
 				logger.info("{} templates for app {} added/changed.".format(added,app.name))
 			else:
@@ -388,7 +388,7 @@ class PopulateCommand(Command):
 		for bp in Blueprint.q.all():
 			mod = sys.modules[bp.mod.__module__]
 			path = os.path.join(mod.__path__[0], 'templates')
-			added = find_templates(bp, path, bp.name)
+			added = find_templates(bp, path)
 			if added:
 				logger.info("{} templates for blueprint {} added/changed.".format(added,bp.name))
 			else:
