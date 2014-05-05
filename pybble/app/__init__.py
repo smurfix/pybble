@@ -145,10 +145,15 @@ class BaseApp(WrapperApp,Flask):
 		elif FROM_SCRIPT:
 			try:
 				root = Site.q.get_by(name=ROOT_SITE_NAME)
-				request.user = User.q.get(User.site == root, User.username==ROOT_USER_NAME)
 			except NoData:
-				logger.warn("No root user was found.")
+				logger.warn("No root site was found.")
 				request.user = None
+			else:
+				try:
+					request.user = User.q.get(User.site == root, User.username==ROOT_USER_NAME)
+				except NoData:
+					logger.warn("No root user was found.")
+					request.user = None
 		else:
 			request.user = User.q.get_by(name="",site=current_app.site)
 	
