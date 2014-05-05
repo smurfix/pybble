@@ -18,6 +18,7 @@ from datetime import datetime,timedelta
 from sqlalchemy import Integer, Unicode, ForeignKey
 from sqlalchemy import event, select, func, and_
 from sqlalchemy.orm import relationship,backref
+from sqlalchemy.orm.base import NO_VALUE,NEVER_SET
 from sqlalchemy.inspection import inspect
 
 from ...compat import py2_unicode
@@ -163,7 +164,7 @@ class Discriminator(Loadable, Dumpable, Base):
 			return discr._discriminator
 
 @register_object
-class _obj(object):
+class _discr(object):
 	"""
 	Encode+decode objects in JSON.
 
@@ -204,6 +205,14 @@ class Object(Dumpable, Base):
 	discr = relationship(Discriminator, primaryjoin=discr_id==Discriminator.id)
 
 	_rec_str = False ## marker for possibly-recursive __str__ calls
+
+## causes a sqlalchemy warning. TODO: create a testcase and submit a bug report
+#	@classmethod
+#	def __declare_last__(cls):
+#		@event.listens_for(Object.superparent, 'set')
+#		def block_super_updates(target, value, oldvalue, initiator):
+#			if oldvalue not in (NO_VALUE,NEVER_SET):
+#				raise RuntimeError("You cannot change an object's ID".format(target,oldvalue))
 
 	@property
 	def as_str(self):
@@ -541,6 +550,22 @@ class Object(Dumpable, Base):
 		if self.parent is None:
 			return None
 		return self.parent.default_storage
+
+## TODO: does not work yet
+@event.listens_for(Object.id, 'set')
+def block_id_updates(target, value, oldvalue, initiator):
+	if oldvalue not in (NO_VALUE,NEVER_SET):
+		raise RuntimeError("You cannot change an object's ID".format(target,oldvalue))
+
+@event.listens_for(Object.superparent_id, 'set')
+def block_super_updates(target, value, oldvalue, initiator):
+	if oldvalue not in (NO_VALUE,NEVER_SET):
+		raise RuntimeError("You cannot change an object's ID".format(target,oldvalue))
+
+#@event.listens_for(Object.superparent, 'set')
+#def block_super_updates(target, value, oldvalue, initiator):
+#	if oldvalue not in (NO_VALUE,NEVER_SET):
+#		raise RuntimeError("You cannot change an object's ID".format(target,oldvalue))
 
 class ObjectMeta(type(Object)):
 	def __init__(cls, name, bases, dct):
