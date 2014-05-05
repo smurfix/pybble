@@ -17,6 +17,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 import pytest
 
 from pybble.manager.main import RootManager
+from pybble.core.models.site import Site
 from .base import WebTC
 from webunit.webunittest import WebTestCase
 from .manager import run
@@ -32,6 +33,7 @@ class AppRunTestCase(WebTC,WebTestCase):
 
 	def test_one(self):
 		self.once(ap_test)
+		assert Site.q.get_by(name="AppTest").domain == "atest"
 		self.assertContent("http://atest/one","Number One")
 			
 	def test_two(self):
