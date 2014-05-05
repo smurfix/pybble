@@ -228,6 +228,8 @@ class Object(Dumpable, Base):
 
 	@property
 	def deleted(self):
+		if self.id is None:
+			db.flush()
 		return self.parent_id is None and self.superparent_id is None and self.owner_id is None
 	
 	#all_children = relation('Object', backref=backref("superparent", remote_side=Object.id)) 
@@ -419,6 +421,7 @@ class Object(Dumpable, Base):
 	@property
 	def pso(self): # parent/super/owner/deletedFlag
 		if self.deleted:
+			from .tracking import Delete
 			try:
 				d = Delete.q.get_by(parent=self)
 			except NoData:
