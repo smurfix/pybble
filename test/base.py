@@ -71,20 +71,16 @@ from pybble.core.db import db
 from pybble.core.models.site import Site,Blueprint
 from pybble.core.models.config import ConfigVar,SiteConfigVar
 
+did_once=set()
 class TC(unittest.TestCase):
 	TESTING = True
 	app_class = flask.Flask
 	testsite=None
-	did_once=None
 
-	def __init__(self,*a,**k):
-		self.did_once = set()
-		super(TC,self).__init__(*a,**k)
-	
 	def once(self,proc):
-		if proc in self.did_once:
+		if proc in did_once:
 			return
-		self.did_once.add(proc)
+		did_once.add(proc)
 		return proc()
 
 	def clear_db(self):
