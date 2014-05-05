@@ -187,7 +187,7 @@ class CmdPATCH(PrepCommand):
 			self.parser.print_help()
 			sys.exit(not help)
 		data = _parse(args)
-		res = RESTend().patch(descr=typ, **data)
+		res = RESTend().patch(id=id, descr=typ, **data)
 		show(res)
 		
 class RESTManager(Manager):
