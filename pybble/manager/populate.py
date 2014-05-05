@@ -420,7 +420,7 @@ class PopulateCommand(Command):
 			try:
 				rbp = SiteBlueprint.q.get_by(site=root,blueprint=root_bp,path="/")
 			except NoData:
-				rbp = SiteBlueprint(site=root,blueprint=root_bp,path="/")
+				rbp = SiteBlueprint(site=root,blueprint=root_bp,path="/",name="root")
 				logger.debug("Root site's blueprint created.")
 		db.commit()
 
