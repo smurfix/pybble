@@ -20,8 +20,9 @@ from werkzeug.utils import cached_property
 
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, DateTime, Boolean, ForeignKey, and_,or_
+from sqlalchemy import Integer, Unicode, DateTime, Boolean, ForeignKey, and_,or_, event
 from sqlalchemy.orm import relationship,backref
+from sqlalchemy.orm.base import NO_VALUE,NEVER_SET
 from sqlalchemy.types import TypeDecorator, VARCHAR
 
 from ... import ANON_USER_NAME
@@ -180,11 +181,7 @@ class User(ObjectRef):
 		cls.site = cls.parent
 	        
 	# A simple way to make 'username' read-only
-	_username = Column('username', Unicode(30), nullable=False)
-	@cached_property
-	def username(self):
-		return self._username
-
+	username = Column(Unicode(30), nullable=False)
 	password = Column(Unicode(200), nullable=True)
 	## empty: cannot be used.  None: not known.
 
@@ -226,7 +223,7 @@ class User(ObjectRef):
 				pass
 			else:
 				raise RuntimeError(u"User '%s' already exists in %s" % (username,current_app.site))
-		self._username=username
+		self.username=username
 		self.password=password
 
 		db.flush()
@@ -461,6 +458,11 @@ class User(ObjectRef):
 	@property
 	def has_trackers(self):
 		return WantTracking.q.filter_by(owner=self).count()
+
+@event.listens_for(User.username, 'set')
+def block_updates(target, value, oldvalue, initiator):
+	if oldvalue not in (NO_VALUE,NEVER_SET):
+		raise RuntimeError("You cannot change {} (old value: ‘{}’)".format(target,oldvalue))
 
 class GroupRef(ObjectRef):
 	"""
