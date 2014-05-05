@@ -15,7 +15,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
+from sqlalchemy import Integer, Unicode, ForeignKey, DateTime, event
 from sqlalchemy.orm import relationship,backref
 
 from werkzeug import import_string
@@ -25,7 +25,7 @@ from flask._compat import string_types
 
 from ... import ROOT_SITE_NAME,ANON_USER_NAME
 from .. import config
-from ..db import Base, Column, db, NoData
+from ..db import Base, Column, db, NoData, no_autoflush
 from ..signal import app_list
 from . import Object, ObjectRef, TM_DETAIL_PAGE, Loadable
 from ._descr import D
@@ -154,9 +154,10 @@ class SiteBlueprint(ObjectRef):
 		cls.site = cls.parent
 		cls.blueprint = cls.superparent
 
-	name = Column(Unicode(30), required=True) ## (, verbose_name="blueprint's name, for url_for() et al.")
+	name = Column(Unicode(30), required=True, nullable=False) ## (, verbose_name="blueprint's name, for url_for() et al.")
 	path = Column(Unicode(1000), nullable=False, default="") ## (, verbose_name="URL path where to attach this ")
 
+	@no_autoflush
 	def __init__(self,site=None,blueprint=None,**kw):
 		super(SiteBlueprint,self).__init__(**kw)
 
@@ -189,3 +190,28 @@ class SiteBlueprint(ObjectRef):
 
 	def config_changed(self):
 		pass
+
+	@property
+	def as_str(self):
+		return u"‘%s’: %s @ %s%s" % (self.name, self.blueprint.name, self.site.domain, self.path)
+
+
+@event.listens_for(SiteBlueprint.path, 'set')
+def block_bad_path(target, value, oldvalue, initiator):
+	if value == "":
+		return
+	if value[0] != '/' or value[-1] == '/' or "//" in value:
+		raise RuntimeError("You cannot set a blueprint path to ‘{}’)".format(value))
+
+@event.listens_for(SiteBlueprint.name, 'set')
+@no_autoflush
+def block_dup_name(target, value, oldvalue, initiator):
+	if isinstance(oldvalue,string_types) and value == oldvalue:
+		return
+	try:
+		SiteBlueprint.q.get_by(site=target.site, name=value)
+	except NoData:
+		pass
+	else:
+		raise RuntimeError("A blueprint ‘{}’ already exists at ‘{}’".format(value, self.site.domain))
+
