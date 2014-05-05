@@ -5,11 +5,12 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Jinja2/Haml, Werkzeug, Flask, and Optimism.
 ##
 ## Pybble is Copyright © 2009-2014 by Matthias Urlichs <matthias@urlichs.de>,
-## it is licensed under the GPLv3. See the file `README.md` for details
-## as well as hopeful statements by the author.
+## it is licensed under the GPLv3. See the file `README.md` for details,
+## including an optimistic statements by the author.
 ##
-## This paragraph is auto-generated and may self-destruct at any time.
-## Please do not remove the next line, or insert any blank lines before it.
+## This paragraph is auto-generated and may self-destruct at any time,
+## courtesy of "make update". The original is in ‘utils/_boilerplate.py’.
+## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
 import re
@@ -23,7 +24,6 @@ from flask.ext.script import Command, Manager, Option, prompt, prompt_bool
 from pytest import raises
 from .base import TC
 from .script import Catcher,capture,run
-
 
 class SimpleCommand(Command):
 	'simple command'

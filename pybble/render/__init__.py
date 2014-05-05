@@ -5,11 +5,12 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Jinja2/Haml, Werkzeug, Flask, and Optimism.
 ##
 ## Pybble is Copyright © 2009-2014 by Matthias Urlichs <matthias@urlichs.de>,
-## it is licensed under the GPLv3. See the file `README.md` for details
-## as well as hopeful statements by the author.
+## it is licensed under the GPLv3. See the file `README.md` for details,
+## including an optimistic statements by the author.
 ##
-## This paragraph is auto-generated and may self-destruct at any time.
-## Please do not remove the next line, or insert any blank lines before it.
+## This paragraph is auto-generated and may self-destruct at any time,
+## courtesy of "make update". The original is in ‘utils/_boilerplate.py’.
+## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
 from jinja2 import Environment, BaseLoader, Markup, contextfunction, contextfilter
@@ -213,7 +214,6 @@ def add_to_jinja(jinja_env):
 		jinja_env.globals['can_' + b.lower()] = c
 		jinja_env.globals['will_' + b.lower()] = d
 
-
 def render_my_template(request, obj, detail=None, mimetype=NotGiven, **context):
 	"""Global render"""
 
@@ -299,7 +299,6 @@ def render_subrss(ctx,obj, detail=TM_DETAIL_RSS, discr=None):
 		else:
 			return Markup("<p>'%s' kann nicht dargestellt werden (Zugriffsfehler).</p>" % (obj.oid(),))
 
-
 pybble_dtd = None
 def get_dtd():
 	"""
@@ -319,7 +318,6 @@ def get_dtd():
 	except Exception:
 		pass
 	return '<?xml version="1.0" encoding="utf-8"?>\n' + pybble_dtd
-
 
 import smtplib
 import email.Message
@@ -375,7 +373,6 @@ for a,b in PERM.iteritems():
 	globals()['valid_' + b.lower()] = e
 	globals()['valid_' + b.lower() + '_self'] = f
 
-
 #class Pagination(object):
 #	def __init__(self, query, per_page, page, endpoint):
 #		self.query = query
@@ -397,7 +394,6 @@ for a,b in PERM.iteritems():
 #	previous = property(lambda x: url_for(x.endpoint, page=x.page - 1))
 #	next = property(lambda x: url_for(x.endpoint, page=x.page + 1))
 #	pages = property(lambda x: max(0, x.count - 1) // x.per_page + 1)
-
 
 def add_to_app(app):
 	@app.route("/static/<path:path>")
