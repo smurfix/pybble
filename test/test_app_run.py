@@ -21,23 +21,24 @@ from .base import WebTC
 from webunit.webunittest import WebTestCase
 from .manager import run
 
-@pytest.fixture(scope="class")
-def ap_test(request):
+def ap_test():
     # set a class attribute on the invoking test context
 	run("mgr -t site add AppTest _test atest")
 
-@pytest.mark.usefixtures(ap_test)
 class AppRunTestCase(WebTC,WebTestCase):
 #	def setupData(self):
 #		super(AppRunTestCase,self).setupData()
 #		self.run_manager("mgr -t site new AppTest _test atest")
 
 	def test_one(self):
-		self.assertContent("http://test/one","Number One")
+		self.once(ap_test)
+		self.assertContent("http://atest/one","Number One")
 			
 	def test_two(self):
-		self.assertContent("http://test/two","Number Two")
+		self.once(ap_test)
+		self.assertContent("http://atest/two","Number Two")
 
 	def test_three(self):
-		self.assertContent("http://test/three","Number Three")
+		self.once(ap_test)
+		self.assertContent("http://atest/three","Number Three")
 

@@ -75,6 +75,17 @@ class TC(unittest.TestCase):
 	TESTING = True
 	app_class = flask.Flask
 	testsite=None
+	did_once=None
+
+	def __init__(self,*a,**k):
+		self.did_once = set()
+		super(TC,self).__init__(*a,**k)
+	
+	def once(self,proc):
+		if proc in self.did_once:
+			return
+		self.did_once.add(proc)
+		return proc()
 
 	def clear_db(self):
 		pass

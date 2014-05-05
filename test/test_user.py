@@ -24,22 +24,22 @@ from webunit.webunittest import WebTestCase
 
 from pybble.core.models.user import User
 
-@pytest.fixture(scope="class")
-def u_test(request):
+def u_test():
 	# set a class attribute on the invoking test context
 	run("mgr -t site add UserTest _test utest")
 	run("mgr -t -s utest user add Joe")
 
-@pytest.mark.usefixtures(u_test)
 class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 	def test_added(self):
+		self.once(u_test)
 		u = User.q.get_by(name="Joe")
 		assert u.site.name == "utest"
 			
 	def test_password(self):
+		self.once(u_test)
 		u = User.q.get_by(name="Joe")
 		assert u.password is None
-		self.run_manager("mgr -t -s obj User {} passwort blafasel")
+		self.run_manager("mgr -t -s obj update User {} passwort blafasel".format(u.id))
 		assert u.password
 		assert u.password != "blafasel"
 		assert ":" in u.password
