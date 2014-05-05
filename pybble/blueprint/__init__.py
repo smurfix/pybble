@@ -57,7 +57,9 @@ def load_app_blueprints(app):
 				continue
 			names.add(bp.name)
 			params = bp.config
-			bpm = b.mod(bp.name, b.path, url_prefix=bp.path)
+			path = bp.path
+			if path == "/": path = ""
+			bpm = b.mod(bp.name, b.path, url_prefix=path)
 			app.register_blueprint(bpm, **params)
 		site = site.parent
 

@@ -202,9 +202,9 @@ class SiteBlueprint(ObjectRef):
 
 @event.listens_for(SiteBlueprint.path, 'set')
 def block_bad_path(target, value, oldvalue, initiator):
-	if value == "":
+	if value == "/":
 		return
-	if value[0] != '/' or value[-1] == '/' or "//" in value:
+	if value == "" or value[0] != '/' or value[-1] == '/' or "//" in value or "/../" in value:
 		raise RuntimeError("You cannot set a blueprint path to ‘{}’)".format(value))
 
 @event.listens_for(SiteBlueprint.name, 'set')
