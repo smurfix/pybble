@@ -28,6 +28,8 @@ from ..core.json import encode
 from ..utils import getsubattr
 from ..utils.show import show,Cache
 
+class NotGiven: pass
+
 def _parse(args):
 	"""
 	Translate a list of foo=bar strings to a dict.
@@ -70,16 +72,14 @@ class CmdGET(PrepCommand):
 
 	def __init__(self):
 		super(CmdGET,self).__init__()
-		self.add_option(Option("-x","--expand",action="append", dest="exp", help="additional detail to print"))
 		self.add_option(Option("typ", nargs='?', action="store",help="The item's type; if missing: list types"))
 		self.add_option(Option("id", type=int, nargs='?', action="store",help="The item's ID; if missing: list entries of that type"))
-	def run(self,args, help=False, id=None,typ=None, exp=None):
-		json = current_app.json
+	def run(self,args, help=False, id=None,typ=None):
+		json = current_app._manager_json
+		exp = current_app._manager_expand
 		if help or exp and json:
 			self.parser.print_help()
 			sys.exit(not help)
-		if exp:
-			exp = ",".join(exp)
 
 		if typ is None:
 			data = RESTend(json).types()
@@ -115,8 +115,9 @@ class CmdDIR(PrepCommand):
 	def __init__(self):
 		super(CmdDIR,self).__init__()
 		self.add_option(Option("typ", nargs='?', action="store",help="The item's type; if missing: list types"))
-	def run(self, args, help=False, typ=None, exp=None):
-		json = current_app.json
+	def run(self, args, help=False, typ=None):
+		json = current_app._manager_json
+		exp = current_app._manager_expand
 		if help:
 			self.parser.print_help()
 			sys.exit(not help)
@@ -130,7 +131,7 @@ class CmdDIR(PrepCommand):
 			if json:
 				print(encode(d))
 			else:
-				show(d, expand=None)
+				show(d, expand=exp)
 		db.commit()
 		
 class CmdDELETE(PrepCommand):
@@ -140,11 +141,16 @@ class CmdDELETE(PrepCommand):
 		self.add_option(Option("typ", nargs='?', action="store",help="The item's type; if missing: list types"))
 		self.add_option(Option("id", type=int, nargs='?', action="store",help="The item's ID; if missing: list entries of that type"))
 	def run(self, help=False, id=None,typ=None):
+		json = current_app._manager_json
+		exp = current_app._manager_expand
 		if help or not id:
 			self.parser.print_help()
 			sys.exit(not help)
-		res = RESTend().delete(int(id),typ)
-		show(res)
+		res = RESTend(json).delete(int(id),typ)
+		if json:
+			print(encode(res))
+		else:
+			show(res, expand=exp)
 		db.commit()
 		
 class CmdPOST(PrepCommand):
@@ -154,12 +160,18 @@ class CmdPOST(PrepCommand):
 		super(CmdPOST,self).__init__()
 		self.add_option(Option("typ", nargs='?', action="store",help="The item's type"))
 	def run(self, args, typ=None,help=False):
+		json = current_app._manager_json
+		exp = current_app._manager_expand
 		if help or not args:
 			self.parser.print_help()
 			sys.exit(not help)
 		data = _parse(args)
-		res = RESTend().post(descr=typ, **data)
-		show(res)
+		res = RESTend(json).post(descr=typ, **data)
+		if json:
+			print(encode(res))
+		else:
+			show(res, expand=exp)
+		db.commit()
 		
 class CmdPUT(PrepCommand):
 	"""Change a record (clear not-mentioned data)"""
@@ -169,12 +181,18 @@ class CmdPUT(PrepCommand):
 		self.add_option(Option("typ", nargs='?', action="store",help="The item's type"))
 		self.add_option(Option("id", type=int, nargs='?', action="store",help="The item's ID"))
 	def run(self, args, typ=None,id=None,help=False):
+		json = current_app._manager_json
+		exp = current_app._manager_expand
 		if help or not args or not id:
 			self.parser.print_help()
 			sys.exit(not help)
 		data = _parse(args)
-		res = RESTend().put(id=id, descr=typ, **data)
-		show(res)
+		res = RESTend(json).put(id=id, descr=typ, **data)
+		if json:
+			print(encode(res))
+		else:
+			show(res, expand=exp)
+		db.commit()
 		
 class CmdPATCH(PrepCommand):
 	"""Change a record (don't touch not-mentioned data)"""
@@ -184,19 +202,25 @@ class CmdPATCH(PrepCommand):
 		self.add_option(Option("typ", nargs='?', action="store",help="The item's type"))
 		self.add_option(Option("id", nargs='?', action="store",help="The item's ID"))
 	def run(self, args, typ=None,id=None,help=False):
+		json = current_app._manager_json
+		exp = current_app._manager_expand
 		if help or not args or not id:
 			self.parser.print_help()
 			sys.exit(not help)
 		data = _parse(args)
-		res = RESTend().patch(id=id, descr=typ, **data)
-		show(res)
+		res = RESTend(json).patch(id=id, descr=typ, **data)
+		if json:
+			print(encode(res))
+		else:
+			show(res, expand=exp)
+		db.commit()
 		
 class RESTManager(Manager):
 	"""Directly manipulate the database"""
-	json = None ## TODO
 	def __init__(self):
 		super(RESTManager,self).__init__()
 		self.add_option("-j", "--json", dest="json", action="store_true", required=False, help="Accept/send JSON")
+		self.add_option("-x","--expand",action="append", dest="exp", help="additional detail to print")
 
 		self.add_command("get", CmdGET())
 		self.add_command("replace", CmdPUT())
@@ -205,7 +229,10 @@ class RESTManager(Manager):
 		self.add_command("delete", CmdDELETE())
 		self.add_command("list", CmdDIR())
 
-	def __call__(self, app, json=False):
-		app.json = json
+	def __call__(self, app, json=False, exp=None):
+		app._manager_json = json
+		if exp:
+			exp = ",".join(exp)
+		app._manager_expand = exp
 		return app
 	
