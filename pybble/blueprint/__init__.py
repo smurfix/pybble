@@ -53,9 +53,9 @@ def load_app_blueprints(app):
 	while site is not None:
 		for bp in site.blueprints:
 			b = bp.blueprint
-			if b.name in names:
+			if bp.name in names:
 				continue
-			names.add(b.name)
+			names.add(bp.name)
 			params = bp.config
 			bpm = b.mod(bp.name, b.path, url_prefix=bp.path)
 			app.register_blueprint(bpm, **params)
