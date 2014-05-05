@@ -61,10 +61,10 @@ class RESTend(object):
 			obj = D(**data)
 		except TypeError as e:
 			raise TypeError("{}: {}".format(D,e)) ## SIGH
-		Tracker(request.user,obj, comment=comment)
+		res = Tracker(request.user,obj, comment=comment)
 		if self.json:
-			obj = obj.as_dict
-		return obj
+			res = res.as_dict
+		return res
 
 	def patch(self,id,descr=None, comment=None,**data):
 		obj = Object.q.get_by(id=id)
@@ -77,12 +77,14 @@ class RESTend(object):
 			ov = getattr(obj,k,None)
 			if ov != v:
 				setattr(obj,k,v)
-				changed[data] = (ov,v)
+				changed[k] = (ov,v)
 		if changed:
-			Change(request.user,obj, data=encode(changed), comment=comment)
-		if self.json:
-			obj = obj.as_dict
-		return { "obj":obj, "changed":changed }
+			res = Change(request.user,obj, data=encode(changed), comment=comment)
+			if self.json:
+				res = res.as_dict
+		else:
+			res = { 'obj': obj}
+		return res
 	
 	def delete(self,id,descr=None):
 		obj = Object.q.get_by(id=id)
