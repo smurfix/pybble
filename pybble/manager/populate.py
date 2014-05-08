@@ -16,6 +16,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 import os
 import sys
 import logging
+from traceback import print_exc
 
 from flask import request,current_app
 from flask._compat import text_type
@@ -376,23 +377,41 @@ class PopulateCommand(Command):
 
 		loadables(list_apps,App,"pybble.app")
 		for app in App.q.all():
-			mod = sys.modules[app.mod.__module__]
-			path = os.path.join(mod.__path__[0], 'templates')
-			added = find_templates(app, path)
-			if added:
-				logger.info("{} templates for app {} added/changed.".format(added,app.name))
-			else:
-				logger.debug("No new/changed templates for app {}.".format(app.name))
+			try:
+				mod = sys.modules[app.mod.__module__]
+				try:
+					mp = os.path.dirname(mod.__file__)
+				except AttributeError:
+					mp = mod.__path__[0]
+				path = os.path.join(mp, 'templates')
+				added = find_templates(app, path)
+				if added:
+					logger.info("{} templates for app {} added/changed.".format(added,app.name))
+				else:
+					logger.debug("No new/changed templates for app {}.".format(app.name))
+			except Exception:
+				print("Error trying to load app ‘{}’".format(app.path), file=sys.stderr)
+				print_exc()
+				sys.exit(1)
 
 		loadables(list_blueprints,Blueprint,"pybble.blueprint")
 		for bp in Blueprint.q.all():
-			mod = sys.modules[bp.mod.__module__]
-			path = os.path.join(mod.__path__[0], 'templates')
-			added = find_templates(bp, path)
-			if added:
-				logger.info("{} templates for blueprint {} added/changed.".format(added,bp.name))
-			else:
-				logger.debug("No new/changed templates for blueprint {}.".format(bp.name))
+			try:
+				mod = sys.modules[bp.mod.__module__]
+				try:
+					mp = os.path.dirname(mod.__file__)
+				except AttributeError:
+					mp = mod.__path__[0]
+				path = os.path.join(mp, 'templates')
+				added = find_templates(bp, path)
+				if added:
+					logger.info("{} templates for blueprint {} added/changed.".format(added,bp.name))
+				else:
+					logger.debug("No new/changed templates for blueprint {}.".format(bp.name))
+			except Exception:
+				print("Error trying to load blueprint ‘{}’".format(bp.path), file=sys.stderr)
+				print_exc()
+				sys.exit(1)
 
 		rapp = App.q.get_by(name="_root")
 		if root.app is None or force:
