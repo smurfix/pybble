@@ -23,7 +23,7 @@ from random import random
 from datetime import datetime,timedelta
 from threading import Lock
 
-from flask import current_app,request
+from flask import Flask, current_app,request
 from flask._compat import string_types,text_type
 from werkzeug import cookie_date, get_host
 from werkzeug.contrib.securecookie import SecureCookie
@@ -174,8 +174,10 @@ class SubdomainDispatcher(object):
 				# `self.instances` for convenience
 				from ..app import create_app
 				self.instances[host] = app = create_app(site=app, testing=testing)
-				app.before_request(add_session)
-				app.before_request(add_user)
+				if isinstance(app,Flask):
+					app.before_request(add_session)
+					app.before_request(add_user)
+					app.after_request(save_session)
 				app.pybble_dispatcher = self
 				# Note that this assumes that a site's app cannot change
 				# TODO: this is not actually enforced anywhere
