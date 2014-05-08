@@ -67,7 +67,7 @@ def add_user(request):
 	user = None
 	if user_id is not None:
 		try: user = db.get_by(User, id=user_id)
-		except NoResult: pass
+		except NoData: pass
 	if user is None:
 		user = request.site.anon_user
 

@@ -9,7 +9,7 @@ from wtforms import Form, BooleanField, TextField, TextAreaField, \
 	SelectField, PasswordField, HiddenField, validators, IntegerField
 from wtforms.validators import ValidationError
 
-from pybble.core.db import db,NoResult
+from pybble.core.db import db,NoData
 from pybble.core.session import logged_in
 from pybble.utils import random_string
 from pybble.render import url_for, expose, render_template, valid_obj

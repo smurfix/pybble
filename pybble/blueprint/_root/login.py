@@ -9,7 +9,7 @@ from pybble.utils import make_permanent
 from pybble.render import url_for, render_template, send_mail
 from pybble.models.user import User
 from pybble.models.verify import Verifier, VerifierBase
-from pybble.core.db import db,NoResult
+from pybble.core.db import db,NoData
 from pybble.core.session import logged_in
 from wtforms import Form, BooleanField, TextField, PasswordField, HiddenField, validators
 from wtforms.validators import ValidationError
@@ -43,8 +43,8 @@ def do_login(request):
 		try:
 			u = db.store.find(User, And(User.username == form.username.data, User.password == form.password.data)).one()
 			if u is None:
-				raise NoResult
-		except NoResult:
+				raise NoData
+		except NoData:
 			print >>sys.stderr,"No user",form.username.data,form.password.data,current_app.site
 			u = None
 		else:
@@ -85,7 +85,7 @@ def do_login(request):
 def no_such_user(form, field):
 	try:
 		u = db.get_by(User, username=field.data)
-	except NoResult:
+	except NoData:
 		return
 	else:
 		raise ValidationError(u"Einen Benutzer '%s' gibt es bereits" % (field.data,))
@@ -93,7 +93,7 @@ def no_such_user(form, field):
 def no_such_email(form, field):
 	try:
 		u = db.get_by(User, email=field.data)
-	except NoResult:
+	except NoData:
 		return
 	else:
 		raise ValidationError(u"Einen Benutzer mit Mailadresse '%s' gibt es bereits" % (field.data,))

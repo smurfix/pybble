@@ -195,7 +195,7 @@ def view_oid(request, oid, **args):
 		dv = [ Comment.superparent_id == obj.id ]
 		try:
 			bc = db.get_by(Breadcrumb, parent=obj, owner=request.user)
-		except NoResult:
+		except NoData:
 			pass
 		else:
 			if bc.last_visited:
