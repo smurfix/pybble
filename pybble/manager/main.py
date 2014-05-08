@@ -18,12 +18,10 @@ import os
 import sys
 import logging
 from importlib import import_module
-from threading import Lock
 from gevent.wsgi import WSGIServer
 
 from flask import Flask
 from flask.config import Config
-from flask._compat import string_types,text_type
 
 from flask.ext.script import Server
 from flask.ext.script.commands import ShowUrls
