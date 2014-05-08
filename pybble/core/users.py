@@ -35,6 +35,7 @@ from ..core.models.template import Template as DBTemplate
 from ..core.models.site import Site,App
 from ..core.models.config import ConfigVar
 from ..core.models.user import User
+from ..core.models.tracking import Delete
 from ..manager import Manager,Command
 from ..blueprint import load_app_blueprints
 from ..render import load_app_renderer
