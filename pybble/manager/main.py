@@ -34,6 +34,7 @@ from werkzeug.wsgi import responder
 from . import Manager,Command,Option
 from .. import ROOT_SITE_NAME
 from ..core.db import db
+from ..core.session import SubDomainDispatcher
 from ..core.models.site import Site,Blueprint
 from ..core.signal import all_apps,app_list
 from ..app import create_site, list_apps
@@ -138,62 +139,4 @@ class DeadApp(object):
 		e = self.exc
 		e.description = self.msg
 		return e
-
-class SubdomainDispatcher(object):
-	"""
-	This code creates individual app instances (one per site) and sends
-	requests to the correct one.
-
-	:param root: Only dispatch to sites within this sub-hierarchy
-	"""
-	def __init__(self, root=ROOT_SITE_NAME):
-		if isinstance(root,string_types):
-			root = Site.q.get_by(name=text_type(root))
-		self.root = root
-		self.lock = Lock()
-		self.instances = i = {}
-		all_apps.connect(self._reload)
-		app_list.connect(self._reload)
-		self._reload(sender=self)
-
-	def _reload(self,sender):
-		# This pre-loads the instances with the sites necessary to
-		# later instantiate the apps.
-		i = self.instances
-		seen = set()
-		for s in self.root.all_sites:
-			if s.domain not in i:
-				i[s.domain] = s
-			seen.add(s.domain)
-		for s in i.keys():
-			if s not in seen:
-				del i[s]
-
-	def get_application(self, host=None, site=None, testing=None):
-		if site:
-			assert host is None
-			host = site.domain
-		else:
-			host = host.split(':')[0]
-		with self.lock:
-			try:
-				app = self.instances[host]
-			except KeyError:
-				logger.warn("Unknown site: {}".format(host))
-				return DeadApp(NotFound,'The domain “{}” is unknown here.'.format(host))
-			if isinstance(app,Site):
-				# first request: create an instance and re-save in
-				# `self.instances` for convenience
-				from ..app import create_app
-				self.instances[host] = app = create_app(site=app, testing=testing)
-				app.pybble_dispatcher = self
-				# Note that this assumes that a site's app cannot change
-				# TODO: this is not actually enforced anywhere
-
-			return app
-
-	def __call__(self, environ, start_response):
-		"""Standard WSGI"""
-		app = self.get_application(environ['HTTP_HOST'], testing=environ.get('testing', None))
-		return app(environ, start_response)
 
