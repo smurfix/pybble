@@ -102,7 +102,7 @@ def add_user():
 	user.cur_login = now
 	request.user = user
 
-def save_session(request, response):
+def save_session(response):
 	new = request.session.new
 	session_data = request.session.serialize()
 	if new or request.session_data != session_data:
@@ -113,7 +113,7 @@ def save_session(request, response):
 			expires = None
 		response.set_cookie(current_app.config.SESSION_COOKIE_NAME, session_data, httponly=True, expires=expires)
 
-def add_response_headers(request,response):
+def add_response_headers(response):
 	s = getattr(request,"session",None)
 	if not s:
 		return
