@@ -85,9 +85,9 @@ class TemplateMatch(ObjectRef):
 		self.for_discr = discr
 		self.detail = detail
 		self.data = data
-		db.store.add(self)
+		db.flush()
 		self.parent = obj
-		db.store.flush()
+		db.flush()
 	
 	@property
 	def as_str(self):

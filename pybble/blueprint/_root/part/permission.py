@@ -83,19 +83,19 @@ def editor(obj=None, parent=None):
 		m = [ Permission.discr == discr, Permission.parent_id == obj.id, Permission.owner_id == user.id ]
 		if obj.inherit is None:
 			m.append(Permission.inherit != None)
-		else:
-			m.append(Permission.inherit == None)
-		m = db.store.find(Permission,And(*m))
-		if obj.inherit is None:
+			m = Permission.q.filter(*m)
 			if m.count():
 				flash(u"Vorherige Berechtigung(en) entfernt.")
 				for mm in m:
-					db.store.remove(mm)
+					Delete(mm)
 		else:
+			m.append(Permission.inherit == None)
+			m = Permission.q.filter(*m)
 			if m.count():
 				flash(u"Bestehende Berechtigung eingeschränkt.")
 				for mm in m:
 					mm.inherit = not obj.inherit
+					Change(mm,data=dict(inherit=[None,mm.inherit]))
 
 		return redirect(url_for("pybble.views.view_oid", oid=dest.oid()))
 

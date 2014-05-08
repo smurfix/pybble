@@ -209,7 +209,7 @@ def view_oid(oid, **args):
 		else:
 			if bc.last_visited:
 				dv.append(Comment.added > bc.last_visited)
-		d = db.store.find(Comment, And(*dv))
+		d = Comment.q.get(*dv)
 		d,a = split_details_aux(obj,d)
 		args["details"] = d
 		args["aux"] = a

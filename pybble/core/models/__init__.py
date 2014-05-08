@@ -342,7 +342,7 @@ class Object(Dumpable, Base):
 	@property
 	def templates(self):
 		q = [ TemplateMatch.parent_id == self.id ]
-		return db.store.find(TemplateMatch, TemplateMatch.parent_id == self.id).order_by(TemplateMatch.discr,TemplateMatch.detail,TemplateMatch.inherit)
+		return TemplateMatch.q.filter_by(parent=self).order_by(TemplateMatch.discr,TemplateMatch.detail,TemplateMatch.inherit)
 
 	def all_memberships(self, discr=None):
 		"""Return all objects (of some type?) I am a member of."""
@@ -444,7 +444,7 @@ class Object(Dumpable, Base):
 	
 	@property
 	def last_change(self):
-		return db.store.find(Change, Change.parent_id == self.id).order_by(Desc(Change.timestamp)).first()
+		return Change.q.filter_by(parent == self).order_by(Change.timestamp.desc()).first()
 
 	@property
 	def pso(self): # parent/super/owner/deletedFlag

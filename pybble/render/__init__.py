@@ -153,7 +153,7 @@ def add_to_jinja(jinja_env):
 		g = u.get(obj.id,None)
 		if g is None:
 			g = []
-			for d in db.store.find(Discriminator, ):
+			for d in Discriminator.q.all():
 #			if getattr(obj_class(d.id),"_no_crumbs",False):
 #				continue
 				if request.user.can_add(obj, discr=obj.discriminator, new_discr=d.id):

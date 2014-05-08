@@ -53,9 +53,7 @@ def do_login():
 	if request.method == 'POST' and form.validate():
 		# create new user and show the confirmation page
 		try:
-			u = db.store.find(User, And(User.username == form.username.data, User.password == form.password.data)).one()
-			if u is None:
-				raise NoData
+			u = User.q.get_by(username=form.username.data, password=form.password.data)
 		except NoData:
 			print >>sys.stderr,"No user",form.username.data,form.password.data,current_app.site
 			u = None
@@ -130,7 +128,6 @@ def register():
 		u.record_creation()
 
 		v = verifier.new(u)
-		db.store.add(v)
 		v.send()
 
 		flash(Markup(u"Wir haben soeben eine Email an dich geschickt. <br />" + \
