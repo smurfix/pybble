@@ -18,6 +18,8 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from flask import render_template
 from .. import BaseApp
+from pybble.core.route import Exposer
+expose = Exposer()
 
 class App(BaseApp):
 	PARAMS = (
@@ -25,17 +27,18 @@ class App(BaseApp):
 		)
 
 	def setup(self):
-		@self.route('/one')
-		def get_one():
-			return "This is Number One"
+		super(App,self).setup()
+		expose.add_to(self)
 
-		@self.route('/two')
-		def get_two():
-			return render_template('_test/two.haml')
+@expose('/one')
+def get_one():
+	return "This is Number One"
 
-		@self.route('/three')
-		def get_three():
-			return render_template('_test/three.html')
+@expose('/two')
+def get_two():
+	return render_template('_test/two.haml')
 
-	pass
+@expose('/three')
+def get_three():
+	return render_template('_test/three.html')
 

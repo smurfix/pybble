@@ -18,8 +18,10 @@ This module contains a few dummy URLs for testing.
 """
 
 from pybble.blueprint import BaseBlueprint
-from flask import render_template, abort
+from flask import render_template, abort, request
 from jinja2 import TemplateNotFound
+from pybble.core.route import Exposer
+expose = Exposer()
 
 class Blueprint(BaseBlueprint):
 	PARAMS = (
@@ -27,21 +29,22 @@ class Blueprint(BaseBlueprint):
 	)
 	def setup(self):
 		super(Blueprint,self).setup()
+		expose.add_to(self)
 
-		@self.route('/red')
-		def test_red():
-			return "This is Red Color"
+@expose('/red')
+def test_red():
+	return "This is Red Color"
 
-		@self.route('/green')
-		def test_green():
-			"""Fetch template by blueprint name"""
-			return render_template('_test/green.haml')
+@expose('/green')
+def test_green():
+	"""Fetch template by blueprint name"""
+	return render_template('_test/green.haml')
 
-		@self.route('/blue')
-		def test_blue():
-			"""Fetch template by SiteBlueprint name"""
-			return render_template('BlueTest/blue.html')
+@expose('/blue')
+def test_blue():
+	"""Fetch template by SiteBlueprint name"""
+	return render_template('BlueTest/blue.html')
 
-		@self.route('/yellow')
-		def test_yellow():
-			return "This is %s Color"%(self.params['color'],)
+@expose('/yellow')
+def test_yellow():
+	return "This is %s Color"%(request.bp.config['color'],)

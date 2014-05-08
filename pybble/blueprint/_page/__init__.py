@@ -18,6 +18,8 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from pybble.blueprint import BaseBlueprint
 from flask import render_template, abort, g
 from jinja2 import TemplateNotFound
+from pybble.core.route import Exposer
+expose = Exposer()
 
 _doc="""
 This blueprint is the mains erver for content, as stored in Pybble's MongoDB.
@@ -26,10 +28,11 @@ This blueprint is the mains erver for content, as stored in Pybble's MongoDB.
 class Blueprint(BaseBlueprint):
 	def setup(self):
 		super(Blueprint,self).setup()
+		expose.add_to(self)
 
-		@self.route('/')
-		def homepage():
-			page = g.site.homepage
-			if page is None:
-				return render_template('empty.haml')
-			return page.render_as("page")
+@expose('/')
+def homepage():
+	page = g.site.homepage
+	if page is None:
+		return render_template('empty.haml')
+	return page.render_as("page")

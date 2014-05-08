@@ -13,13 +13,17 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
+"""\
+This is the basic support module for blueprints.
+"""
+
 import os
 import sys
 import logging
 from time import time
 from importlib import import_module
 
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask import Blueprint as FlaskBlueprint
 from flask.config import Config
 from flask.ext.script import Server
@@ -45,7 +49,15 @@ class BaseBlueprint(FlaskBlueprint):
 	
 	def setup(self):
 		"""Called after data are loaded. Set up routing, attach modules, etc., here."""
-		pass
+		@self.url_value_preprocessor
+		def bp_url_value_preprocessor(endpoint, values):
+			request.bp = values.pop('bp')
+		@self.url_defaults
+		def bp_url_defaults(endpoint, values):
+			config = getattr(request, 'bp', None)
+			if config is not None:
+				values.setdefault('bp', config)
+
 
 def load_app_blueprints(app):
 	site = app.site
@@ -60,7 +72,7 @@ def load_app_blueprints(app):
 			path = bp.path
 			if path == "/": path = ""
 			bpm = b.mod(bp.name, b.path, url_prefix=path)
-			app.register_blueprint(bpm, **params)
+			app.register_blueprint(bpm, url_defaults = { "bp": bp })
 		site = site.parent
 
 def create_blueprint(site, blueprint, path, name=None):

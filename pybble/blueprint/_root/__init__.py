@@ -19,7 +19,9 @@ from importlib import import_module
 from flask import render_template, abort
 from jinja2 import TemplateNotFound
 
-from .. import BaseBlueprint
+from pybble.blueprint import BaseBlueprint
+from pybble.core.route import Exposer
+expose = Exposer()
 
 _doc="""\
 This is the standard blueprint for your site root,
@@ -33,26 +35,27 @@ TODO: replace this with a “real” site root.
 class Blueprint(BaseBlueprint):
 	def setup(self):
 		super(Blueprint,self).setup()
+		expose.add_to(self)
 
-		@self.route('/')
-		def test_root():
-			return """This is the colorful root, having <a href="red">red</a>, <a href="yellow">yellow</a>, <a href="green">green</a>, and <a href="blue">blue</a>."""
+@expose('/')
+def test_root():
+	return """This is the colorful root, having <a href="red">red</a>, <a href="yellow">yellow</a>, <a href="green">green</a>, and <a href="blue">blue</a>."""
 
-		@self.route('/red')
-		def test_red():
-			return "This is Red Color"
+@expose('/red')
+def test_red():
+	return "This is Red Color"
 
-		@self.route('/green')
-		def test_green():
-			return render_template('green.haml')
+@expose('/green')
+def test_green():
+	return render_template('green.haml')
 
-		@self.route('/blue')
-		def test_blue():
-			return render_template('blue.html')
+@expose('/blue')
+def test_blue():
+	return render_template('blue.html')
 
-		@self.route('/yellow')
-		def test_yellow():
-			return "This is %s Color"%(self.params['color'],)
+@self.route('/yellow')
+def test_yellow():
+	return "This is %s Color"%(self.params['color'],)
 
 #class TheView(AdminBaseView):
 #	@expose('/')

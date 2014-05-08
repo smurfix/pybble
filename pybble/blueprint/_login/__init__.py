@@ -17,26 +17,30 @@ _doc="""
 This module attaches to Flask.login.
 """
 
-from pybble.blueprint import BaseBlueprint
+from .. import BaseBlueprint
 from flask import render_template, abort
 from jinja2 import TemplateNotFound
 
+from ...core.route import Exposer
+expose = Exposer()
+
 class Blueprint(BaseBlueprint):
 	def setup(self):
-		super(Blueprint,self).setup()
+		super(BaseBlueprint,self).setup()
+		expose.add_to(self)
 
-		@self.route('/red')
-		def test_red():
-			return "This is Red Color"
+@expose('/red')
+def test_red():
+	return "This is Red Color"
 
-		@self.route('/green')
-		def test_green():
-			return render_template('green.haml')
+@expose('/green')
+def test_green():
+	return render_template('green.haml')
 
-		@self.route('/blue')
-		def test_blue():
-			return render_template('blue.html')
+@expose('/blue')
+def test_blue():
+	return render_template('blue.html')
 
-		@self.route('/yellow')
-		def test_yellow():
-			return "This is %s Color"%(self.params['color'],)
+@expose('/yellow')
+def test_yellow():
+	return "This is %s Color"%(self.params['color'],)
