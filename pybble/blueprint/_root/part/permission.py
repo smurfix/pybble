@@ -1,20 +1,22 @@
 # -*- coding: utf-8 -*-
 ##BP
 
-from flask import request, flash
-from werkzeug import redirect, url_for
+from flask import request, flash,url_for
+from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from wtforms import Form, BooleanField, TextField, TextAreaField, \
 	SelectField, PasswordField, HiddenField, validators
 from wtforms.validators import ValidationError
 
-from pybble.utils import current_request, make_permanent
+from pybble.utils import make_permanent
 from pybble.render import render_template, valid_obj, \
-	discr_list, valid_admin,valid_access,valid_read
-from pybble.models import Template, TemplateMatch, Discriminator, \
-	Permission, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE, PERM_NONE
+	valid_admin,valid_access,valid_read
+from pybble.core.models import obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE, PERM_NONE
+from pybble.core.models.user import Permission
+from pybble.core.models.template import Template, TemplateMatch
 from pybble.core.db import db,NoData
-from pybble.session import logged_in
+from pybble.core.models._descr import D
+from pybble.core.session import logged_in
 from .._base import expose
 
 from datetime import datetime
@@ -31,8 +33,8 @@ class PermissionForm(Form):
 	user = TextField('User', [valid_obj,valid_admin])
 	object = TextField('Object', [valid_obj,valid_read])
 
-	discr = SelectField('Existing Object type', choices=tuple((str(q.id),q.name) for q in discr_list))
-	new_discr = SelectField('New Object type', choices=(("-","(not applicable)"),)+tuple((str(q.id),q.name) for q in discr_list))
+	discr = SelectField('Existing Object type') ###TODO, choices=tuple((str(q.id),q.name) for q in D))
+	new_discr = SelectField('New Object type') ###TODO, choices=(("-","(not applicable)"),)+tuple((str(q.id),q.name) for q in D))
 	inherit = SelectField('Applies to', choices=(('Yes','All sub-pages'), ('No','this page only'),('*','This page and all sub-pages')))
 	right = SelectField('Access to', choices=tuple((str(x),y) for x,y in plc),validators=[valid_access('object')])
 

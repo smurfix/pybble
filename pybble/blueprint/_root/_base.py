@@ -14,7 +14,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ##BP
 
 from pybble.blueprint import BaseBlueprint
-from pybble.core.routes import Exposer
+from pybble.core.route import Exposer
 expose = Exposer()
 
 class Blueprint(BaseBlueprint):

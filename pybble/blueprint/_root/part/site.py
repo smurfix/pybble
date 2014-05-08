@@ -13,7 +13,7 @@ from pybble.render import render_template, render_my_template
 from pybble.core.db import db,NoData
 from pybble.core.models import TM_DETAIL_PAGE
 from pybble.core.models.site import Site
-from pybble.session import logged_in
+from pybble.core.session import logged_in
 from ..views import view_oid
 from .._base import expose
 

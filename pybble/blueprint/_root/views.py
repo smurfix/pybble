@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 ##BP
 
-from flask import request, url_for
+from flask import request, url_for, flash
 
 from werkzeug import redirect, import_string, Response
 from werkzeug.routing import BuildError
@@ -15,7 +15,6 @@ from pybble.core.models.template import TemplateMatch
 from pybble.core.models.tracking import Breadcrumb
 from pybble.core.models.site import Site
 from pybble.core.db import db,NoData
-from pybble.flashing import flash
 from ._base import expose
 
 import inspect,sys

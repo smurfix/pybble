@@ -7,10 +7,10 @@ from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from wtforms import Form, BooleanField, TextField, SelectField, validators
 
-from pybble.utils import current_request, make_permanent
-from pybble.render import render_template, valid_obj, \
-	discr_list, name_discr, valid_read, valid_admin_self
+from pybble.utils import make_permanent
+from pybble.render import render_template, valid_obj, valid_read, valid_admin_self
 from pybble.core.models import Discriminator, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE, PERM_READ
+from pybble.core.models._descr import D
 from pybble.core.models.tracking import WantTracking
 from pybble.core.db import db
 from .._base import expose
@@ -38,7 +38,7 @@ class WantTrackingForm(Form):
 	user = TextField('User', [valid_obj, valid_admin_self])
 	object = TextField('Object', [valid_obj, valid_read])
 
-	discr = SelectField('Object type', choices=(("-","any object"),)+tuple((str(q.id),q.name) for q in discr_list))
+	discr = SelectField('Object type') ###TODO , choices=(("-","any object"),)+tuple((str(q.id),q.name) for q in D))
 	email = BooleanField(u'Mail schicken')
 	track_new = BooleanField(u'Meldung bei neuen Einträgen')
 	track_mod = BooleanField(u'Meldung bei Änderungen')

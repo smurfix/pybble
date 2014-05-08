@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 ##BP
 
-from flask import request
+from flask import request, url_for
 
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
@@ -12,10 +12,11 @@ from wtforms.validators import ValidationError
 from pybble.core.db import db,NoData
 from pybble.core.session import logged_in
 from pybble.utils import random_string
-from pybble.render import url_for, expose, render_template, valid_obj
+from pybble.render import render_template, valid_obj
 from pybble.core.models.template import Template, TemplateMatch
 from pybble.core.models import Discriminator, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE
 from pybble.core.models.user import Permission, User
+from ._base import expose
 
 from flask import flash
 from datetime import datetime

@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 ##BP
 
-from flask import request, flash, current_app
+from flask import request, flash, current_app, url_for
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 
 from pybble.utils import make_permanent
-from pybble.render import url_for, render_template, send_mail
-from pybble.models.user import User
-from pybble.models.verify import Verifier, VerifierBase
+from pybble.render import render_template, send_mail
 from pybble.core.db import db,NoData
+from pybble.core.models.user import User
+from pybble.core.models.verifier import Verifier, VerifierBase
 from pybble.core.session import logged_in
 from wtforms import Form, BooleanField, TextField, PasswordField, HiddenField, validators
 from wtforms.validators import ValidationError

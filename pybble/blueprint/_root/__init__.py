@@ -21,6 +21,6 @@ This is the standard blueprint for Pybble's object view.
 """
 
 # Now load whatever
-from . import admin,confirm,login,render,rss,views
+from . import admin,confirm,login,rss,views
 from .part import permission,site,usertracker,wanttracking
 

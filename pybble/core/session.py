@@ -9,14 +9,18 @@ import sys
 from time import time
 from random import random
 from datetime import datetime,timedelta
+from threading import Lock
 
 from flask import current_app,request
+from flask._compat import string_types,text_type
 from werkzeug import cookie_date, get_host
 from werkzeug.contrib.securecookie import SecureCookie
 
-from .models.user import User,Site
-from .models.site import User,Site
+from .. import ROOT_SITE_NAME
+from .models.user import User
+from .models.site import Site
 from .db import db, NoData
+from .signal import all_apps,app_list
 
 class Session(SecureCookie):
 	@property
@@ -35,7 +39,7 @@ class Session(SecureCookie):
 			del cls.new
 		return super(Session,cls).serialize(*a,**k)
 	
-def add_session(request):
+def add_session():
 	data = request.cookies.get(current_app.config.SESSION_COOKIE_NAME, "")
 	session = None
 	expired = False
@@ -62,7 +66,7 @@ def add_session(request):
 #from inyoka.utils.flashing import flash
 #from inyoka.utils.html import escape
 
-def add_user(request):
+def add_user():
 	user_id = request.session.get('uid')
 	user = None
 	if user_id is not None:
