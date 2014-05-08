@@ -117,8 +117,7 @@ class Site(ObjectRef):
 	def anon_user(self):
 		from .user import User
 		## create a new anon user.
-		raise RuntimeError
-		return User(site=self,username=ANON_USER_NAME)
+		return User.new_anon_user(site=self)
 
 		
 	@property

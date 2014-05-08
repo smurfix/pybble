@@ -30,7 +30,7 @@ from ... import ANON_USER_NAME
 from ...utils import random_string, AuthError
 from ...core import config
 from ..db import Base, Column, db, NoData, no_autoflush
-from . import Object,ObjectRef, PERM,PERM_NONE,PERM_READ, Discriminator
+from . import Object,ObjectRef, PERM,PERM_NONE,PERM_READ,PERM_ADD, Discriminator
 from .site import Site
 from ._descr import D
 
@@ -199,6 +199,30 @@ class User(ObjectRef):
 	feed_pass = Column(Unicode(30), nullable=True)
 	feed_read = Column(DateTime, nullable=True)
 
+	@classmethod
+	def new_anon_user(cls,site=None):
+		if site is None:
+			site = current_app.site
+		u = cls.q.filter_by(username=ANON_USER_NAME, site=site).order_by(cls.cur_login).first()
+		if u is not None and u.cur_login >= datetime.now()-timedelta(0,current_app.config.SESSION_COOKIE_AGE):
+			u = None
+		if u is None:
+			u = cls(username=ANON_USER_NAME, site=site)
+			Permission(user=u,obj=site,right=PERM_READ)
+		else:
+			### Clean up this anon user
+			from tracker import Delete, TrackingObjectRef
+			for c in u.all_children(want=None):
+				if not isinstance(c,TrackingObjectRef):
+					Delete(c,comment="ANON user cleanup")
+			for c in u.all_superchildren(want=None):
+				if not isinstance(c,TrackingObjectRef):
+					Delete(c,comment="ANON user cleanup")
+			for c in u.all_owned(want=None):
+				if not isinstance(c,TrackingObjectRef):
+					Delete(c,comment="ANON user cleanup")
+		return u
+		
 	@property
 	def data(self):
 		res="username: %s\n" % (self.username,)
@@ -378,14 +402,22 @@ class User(ObjectRef):
 			new_discr = Discriminator.get(new_discr)
 			pq.append(Permission.new_discr == new_discr)
 
-		no_inh = True
+		inherited = False
 		done = set()
 		while obj:
 			if obj in done:
 				raise ValueError("Parent recursion on "+repr(obj))
 			done.add(obj)
+			if discr is None:
+				ds = Permission.for_discr == None
+			else:
+				ds = or_(Permission.for_discr == None, Permission.for_discr == discr)
 
-			p = Permission.q.filter(and_(or_(Permission.inherit != no_inh, Permission.inherit == None), or_(*(Permission.owner == u for u in user.groups)), Permission.parent == obj, *pq)).order_by(Permission.right.desc())
+			p = Permission.q.filter(and_(or_(Permission.for_discr == None, Permission.for_discr == discr) if discr is not None else (Permission.for_discr == None),
+			                             or_(Permission.inherit == inherited, Permission.inherit == None),
+			                             or_(*(Permission.owner == u for u in user.groups)),
+			                             Permission.parent == obj,
+			                             *pq)).order_by(Permission.right.desc())
 			if current_app.config.DEBUG_ACCESS:
 				log_access("Checking",obj)
 			p = p.first()
@@ -395,7 +427,7 @@ class User(ObjectRef):
 				p = p.right
 				return p
 
-			no_inh = False
+			inherited = True
 			obj = obj.parent
 
 		if current_app.config.DEBUG_ACCESS:
@@ -561,18 +593,18 @@ class Permission(ObjectRef):
 	_no_crumbs = True
 
 	right = Column(Integer, nullable=False)
-	inherit = Column(Boolean, nullable=True)
+	inherit = Column(Boolean, nullable=True, doc="three-valued: False:this, True:descendants, None:Both")
 
-	for_discr_id = Column("discr", Integer, ForeignKey(Discriminator.id), nullable=False)
+	for_discr_id = Column("discr", Integer, ForeignKey(Discriminator.id), nullable=True)
 	for_discr = relationship(Discriminator, primaryjoin=for_discr_id==Discriminator.id)
 
 	new_discr_id = Column("new_discr", Integer, ForeignKey(Discriminator.id), nullable=True)
 	new_discr = relationship(Discriminator, primaryjoin=new_discr_id==Discriminator.id)
 
 	def __init__(self, user=None, obj=None, discr=None, right=None, inherit=None, new_discr=None, **kw):
-		assert discr is not None
 		assert right is not None
-		discr = Discriminator.get(discr,obj)
+		if discr is not None:
+			discr = Discriminator.get(discr,obj)
 		super(Permission,self).__init__(**kw)
 		self.for_discr = discr
 		self.right = right
