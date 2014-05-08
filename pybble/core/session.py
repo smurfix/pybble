@@ -85,7 +85,7 @@ def add_user():
 		try: user = User.q.get_by(id=user_id)
 		except NoData: pass
 	if user is None:
-		user = request.site.anon_user
+		user = current_app.site.anon_user
 
 #	# check for bann
 #	if user.is_banned:
@@ -94,7 +94,7 @@ def add_user():
 #				session=request.session)
 #
 #		request.session.pop('uid', None)
-#		user = request.site.anon_user
+#		user = current_app.site.anon_user
 
 	now = datetime.utcnow()
 	if user.cur_login is None or user.cur_login < now-timedelta(0,600):

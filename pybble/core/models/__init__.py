@@ -534,12 +534,12 @@ class Object(Dumpable, Base):
 
 		if content is None:
 			content = self.data
-		Change(request.user,self,content,comment)
+		Change(self,data=content,comment=comment)
 
 	def record_deletion(self,comment=None):
 		"""Record the fact that a user killed this object, and why"""
 		from .tracking import Delete
-		Delete(request.user,self,comment)
+		Delete(self,comment=comment)
 
 	@property
 	def default_storage(self):

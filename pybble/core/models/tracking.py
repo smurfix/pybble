@@ -29,7 +29,11 @@ from ._descr import D
 from ..db import Base, Column
 from ...core import config
 
-class Breadcrumb(ObjectRef):
+class TrackingObjectRef(ObjectRef):
+	"""Objects of this subclass cannot get changes recorded"""
+	pass
+
+class Breadcrumb(TrackingObjectRef):
 	"""\
 		Track page visits.
 		Owner: the user who did it.
@@ -72,7 +76,7 @@ class Breadcrumb(ObjectRef):
 			self.visited = now
 		self.cur_visited = now
 
-class Change(ObjectRef):
+class Change(TrackingObjectRef):
 	"""\
 		Track content changes.
 		Owner: the user who did it.
@@ -85,13 +89,13 @@ class Change(ObjectRef):
 	timestamp = Column(DateTime,default=datetime.utcnow)
 	data = Column(Unicode(100000))
 
-	def __init__(self, user, obj, data, comment=None):
+	def __init__(self, obj, user=None, data=None, comment=None):
 		super(Change,self).__init__()
-		self.owner = user
+		self.owner = user or request.user
 		self.parent = obj
 		self.data = data
 
-		Tracker(user,self, comment=comment)
+		Tracker(self, user=user, comment=comment)
 
 	@property
 	def as_str(self):
@@ -117,10 +121,10 @@ class Change(ObjectRef):
 	def prev_change(self):
 		return Change.q.filter(Change.timestamp<self.timestamp)\
 				.filter(Change.parent==self.parent)\
-                	.order_by(-Change.timestamp)\
+                	.order_by(Change.timestamp.desc())\
                 	.first()
 
-class Delete(ObjectRef):
+class Delete(TrackingObjectRef):
 	"""\
 		Track deleted content.
 		Owner: the user who did it.
@@ -146,9 +150,10 @@ class Delete(ObjectRef):
 
 	timestamp = Column(DateTime,default=datetime.utcnow)
 
-	def __init__(self, user, obj, comment):
+	def __init__(self, obj, user=None, comment=None):
+		assert obj and not isinstance(obj,TrackingObjectRef)
 		super(Delete,self).__init__()
-		self.owner = user
+		self.owner = user or request.user
 		self.parent = obj
 		self.old_owner = obj.owner
 		self.superparent = obj.parent
@@ -157,7 +162,7 @@ class Delete(ObjectRef):
 		obj.owner = None
 		obj.parent = None
 		obj.superparent = None
-		Tracker(user,self, comment=comment)
+		Tracker(self, user=user, comment=comment)
 
 	@property
 	def as_str(self):
@@ -172,7 +177,7 @@ class Delete(ObjectRef):
 	def change_obj(self):
 		return self.parent
 
-class Tracker(ObjectRef):
+class Tracker(TrackingObjectRef):
 	"""\
 		Track any kind of change, for purpose of RSSification, Emails, et al.
 		Owner: the user who did it.
@@ -190,9 +195,10 @@ class Tracker(ObjectRef):
 	comment = Column(Unicode(1000), nullable=True)
 	timestamp = Column(DateTime,default=datetime.utcnow)
 
-	def __init__(self, user, obj, site=None, comment=None):
+	def __init__(self, obj, user=None,site=None, comment=None):
+		assert obj and not isinstance(obj,TrackingObjectRef)
 		super(Tracker,self).__init__()
-		self.owner = user
+		self.owner = user or request.user
 		self.parent = obj
 		self.superparent = site or current_app.site
 		self.comment = comment
@@ -225,7 +231,7 @@ class Tracker(ObjectRef):
 	def is_del(self):
 		return isinstance(self.parent, Delete)
 
-class UserTracker(ObjectRef):
+class UserTracker(TrackingObjectRef):
 	"""\
 		Record that a change be reported to a user. This will be auto-built from Tracker and WantTracking objects.
 		"""
@@ -323,4 +329,3 @@ Email: %s
 	   self.for_discr.name if self.for_discr is not None else "None",
 	   " ".join(wh) if wh else "-", \
 	   "yes" if self.email else "no")
-

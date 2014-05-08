@@ -60,7 +60,7 @@ def do_login():
 			print >>sys.stderr,"No user",form.username.data,form.password.data,current_app.site
 			u = None
 		else:
-			if not u.member_of(request.site):
+			if not u.member_of(current_app.site):
 				print >>sys.stderr,u,"wrong site"
 				u = None
 		if u:
@@ -126,7 +126,7 @@ def register():
 	if request.method == 'POST' and form.validate():
 		u = User(form.username.data, form.password.data)
 		u.email = form.email.data
-		u.parent = request.site
+		u.parent = current_app.site
 		u.record_creation()
 
 		v = verifier.new(u)
@@ -198,7 +198,7 @@ def do_logout():
 		return redirect(request.args.get("next",None) or url_for("pybble.views.mainpage"))
 	else:
 		request.session.pop('uid', None)
-		request.user = request.site.anon_user
+		request.user = current_app.site.anon_user
 		flash(u'Du hast dich erfolgreich abgemeldet.', True)
 		return redirect(url_for("pybble.views.mainpage"))
 

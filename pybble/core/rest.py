@@ -50,7 +50,7 @@ class RESTend(object):
 				setattr(obj,k,None)
 				changed[data] = (ov,None)
 		if changed:
-			Change(request.user,obj, data=encode(changed), comment=comment)
+			Change(obj, data=encode(changed), comment=comment)
 		if self.json:
 			obj = obj.as_dict
 		return { "obj":obj, "changed":changed }
@@ -79,7 +79,7 @@ class RESTend(object):
 				setattr(obj,k,v)
 				changed[k] = (ov,v)
 		if changed:
-			res = Change(request.user,obj, data=encode(changed), comment=comment)
+			res = Change(obj, data=encode(changed), comment=comment)
 			if self.json:
 				res = res.as_dict
 		else:
@@ -91,7 +91,7 @@ class RESTend(object):
 		if descr is not None:
 			D = Discriminator.get(descr).mod
 			assert D is type(obj), "{} is not a {}".format(str(obj),str(D))
-		Delete(request.user, obj, comment=comment)
+		Delete(obj, comment=comment)
 		if self.json:
 			obj = obj.as_dict
 		return { "obj":obj, "deleted":True }
