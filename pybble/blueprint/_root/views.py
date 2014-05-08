@@ -194,7 +194,7 @@ def view_oid(request, oid, **args):
 	if "details" not in args:
 		dv = [ Comment.superparent_id == obj.id ]
 		try:
-			bc = db.get_by(Breadcrumb, parent=obj, owner=request.user)
+			bc = Breadcrumb.q.get_by(parent=obj, owner=request.user)
 		except NoData:
 			pass
 		else:

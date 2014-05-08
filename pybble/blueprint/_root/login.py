@@ -84,7 +84,7 @@ def do_login(request):
 
 def no_such_user(form, field):
 	try:
-		u = db.get_by(User, username=field.data)
+		u = User.q.get_by(username=field.data)
 	except NoData:
 		return
 	else:
@@ -92,7 +92,7 @@ def no_such_user(form, field):
 
 def no_such_email(form, field):
 	try:
-		u = db.get_by(User, email=field.data)
+		u = User.q.get_by(email=field.data)
 	except NoData:
 		return
 	else:

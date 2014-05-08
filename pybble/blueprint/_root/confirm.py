@@ -18,7 +18,7 @@ from ._base import expose
 
 def code_exists(form, field):
 	try:
-		v = db.get_by(Verifier, code=str(field.data))
+		v = Verifier.q.get_by(code=str(field.data))
 	except NoData:
 		raise ValidationError(u"Diesen Code kenne ich nicht.")
 	else:
@@ -38,7 +38,7 @@ def confirm(request, code=None):
 			return render_template('confirm.html', form=form, title_trace=[u"Bestätigung"])
 		code=form.code.data.lower()
 
-	v=db.get_by(Verifier, code=str(code))
+	v=Verifier.q.get_by(code=str(code))
 	if v.expired:
 		flash(u"Die Anfrage ist schon zu alt. Bitte schicke sie nochmal ab!")
 		return v.retry()
