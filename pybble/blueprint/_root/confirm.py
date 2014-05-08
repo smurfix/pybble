@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 ##BP
 
-from flask import flash
+from flask import flash, request
 from werkzeug.exceptions import NotFound
 from wtforms import Form, TextField, validators
 from wtforms.validators import ValidationError
@@ -30,7 +30,7 @@ class ConfirmForm(Form):
 
 @expose('/admin/confirm')
 @expose('/admin/confirm/<code>')
-def confirm(request, code=None):
+def confirm(code=None):
 	if code is None:
 		form = ConfirmForm(request.values, prefix='confirm')
 
@@ -46,7 +46,7 @@ def confirm(request, code=None):
 	
 	
 @expose('/admin/confirmed/<oid>')
-def confirmed(request, oid):
+def confirmed(oid):
 	obj = obj_get(oid)
 	if isinstance(obj,Verifier):
 		return obj.confirmed()
@@ -54,7 +54,7 @@ def confirmed(request, oid):
 
 
 @expose('/admin/do_confirm/<oid>')
-def do_confirm(request, oid):
+def do_confirm(oid):
 	if request.method == 'POST':
 		obj = obj_get(oid)
 		if isinstance(obj,Verifier) and request.user.can_admin(obj.parent):

@@ -20,7 +20,7 @@ from .._base import expose
 from datetime import datetime
 
 @expose("/admin/perm/<permission>")
-def show_permission(request, permission=None):
+def show_permission(permission=None):
 	p = obj_get(permission)
 	return render_template('permissionlist.html', obj=p, title_trace=["Permissions"])
 
@@ -36,10 +36,10 @@ class PermissionForm(Form):
 	inherit = SelectField('Applies to', choices=(('Yes','All sub-pages'), ('No','this page only'),('*','This page and all sub-pages')))
 	right = SelectField('Access to', choices=tuple((str(x),y) for x,y in plc),validators=[valid_access('object')])
 
-def newer(request, parent, name=None):
-	return editor(request, parent=parent)
+def newer(parent, name=None):
+	return editor(parent=parent)
 
-def editor(request, obj=None, parent=None):
+def editor(obj=None, parent=None):
 	form = PermissionForm(request.form, prefix="perm")
 	if request.method == 'POST' and form.validate():
 		user = obj_get(form.user.data)

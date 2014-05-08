@@ -49,7 +49,7 @@ class SiteEditForm(Form):
 	name = TextField('Name', [validators.required(u"Das Kind braucht einen Namen."), validators.length(min=3, max=30), free_name])
 	domain = TextField('Domain', [validators.required(u"Ohne Domain habe ich ein Problem, das Kind wiederzufinden."), validators.length(min=3, max=100), free_domain])
 
-def editor(request, obj, name=None, parent=None):
+def editor(obj, name=None, parent=None):
 	assert parent is None
 
 	form = SiteEditForm(request.form, prefix="site")
@@ -66,7 +66,7 @@ def editor(request, obj, name=None, parent=None):
 		form.domain.data = obj.domain
 	return render_template('edit/site.html', obj=obj, form=form, name=form.name.data, title_trace=["globale Einstellungen"])
 
-def newer(request, parent, name=None):
+def newer(parent, name=None):
 	form = SiteEditForm(request.form, prefix="site")
 	if request.method == 'POST' and form.validate():
 		obj = Site(form.domain.data, form.name.data)
@@ -78,7 +78,7 @@ def newer(request, parent, name=None):
 
 
 @expose("/")
-def viewer(request, **args):
-	return render_my_template(request, obj=request.site, detail=TM_DETAIL_PAGE, **args)
+def viewer(**args):
+	return render_my_template(obj=request.site, detail=TM_DETAIL_PAGE, **args)
 
 

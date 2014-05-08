@@ -214,7 +214,7 @@ def add_to_jinja(jinja_env):
 		jinja_env.globals['can_' + b.lower()] = c
 		jinja_env.globals['will_' + b.lower()] = d
 
-def render_my_template(request, obj, detail=None, mimetype=NotGiven, **context):
+def render_my_template(obj, detail=None, mimetype=NotGiven, **context):
 	"""Global render"""
 
 	if isinstance(obj,basestring):
@@ -274,7 +274,7 @@ def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE, discr=None):
 	ctx["detail"] = detail
 	if discr is not None:
 		ctx["sub"] = db.filter_by(obj_class(discr), parent=obj).count()
-	return render_my_template(request, mimetype=None, **ctx)
+	return render_my_template(mimetype=None, **ctx)
 
 @contextfunction
 def render_subline(ctx,obj):
@@ -292,7 +292,7 @@ def render_subrss(ctx,obj, detail=TM_DETAIL_RSS, discr=None):
 	ctx["usertracker"] = obj
 	ctx["detail"] = detail
 	try:
-		return render_my_template(request, mimetype=None, **ctx)
+		return render_my_template(mimetype=None, **ctx)
 	except AuthError:
 		if detail == TM_DETAIL_EMAIL:
 			raise

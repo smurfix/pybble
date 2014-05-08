@@ -17,7 +17,7 @@ from time import time
 ###
 
 @expose("/changes")
-def view_all(request):
+def view_all():
 	user = request.user
 	f = (UserTracker.owner_id == user.id)
 	last = request.session.get("chg_",None)

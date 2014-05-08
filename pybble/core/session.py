@@ -107,7 +107,7 @@ def add_response_headers(request,response):
 		except AttributeError:
 			pass
 
-def logged_in(request,user):
+def logged_in(user):
 	request.session['uid'] = user.id
 	request.user = user
 

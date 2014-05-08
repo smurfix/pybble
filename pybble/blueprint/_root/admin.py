@@ -14,7 +14,7 @@ from ._base import expose
 
 @expose("/admin/template")
 @expose("/admin/template/<oid>")
-def list_templates(request,oid=None):
+def list_templates(oid=None):
 	"""List all named templates"""
 	obj = obj_get(oid) if oid else current_app.site
 	s = obj
@@ -25,7 +25,7 @@ def list_templates(request,oid=None):
 	return render_template('templates.html', templates=t, obj=obj, title_trace=["Templates",current_app.site.name])
 	
 @expose("/admin/template_for/<oid>")
-def show_templates(request, oid):
+def show_templates(oid):
 	"""show list of templates for that object"""
 	obj = obj_get(oid)
 	return render_template('templatelist.html', obj=obj, title_trace=["Template list",obj.oid()])

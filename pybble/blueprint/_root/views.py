@@ -44,12 +44,12 @@ def tryAddOn(obj,req, **kw):
 	raise NoRedir
 
 @expose("/")
-def mainpage(request):
-	return render_my_template(request, request.site)
+def mainpage():
+	return render_my_template(request.site)
 
 @expose('/tree')
 @expose('/tree/<oid>')
-def view_tree(request, oid=None):
+def view_tree(oid=None):
 	if oid is None:
 		obj = request.site
 	else:
@@ -66,21 +66,21 @@ def view_tree(request, oid=None):
 	                                    title_trace=title_trace)
 
 @expose('/edit/<oid>')
-def edit_oid(request, oid):
+def edit_oid(oid):
 	obj=obj_get(oid)
 
 	try: return tryAddOn(obj,"html_edit")
 	except NoRedir: pass
 
-	v = import_string("pybble.part.%s.editor" % (obj.classname.lower(),))
+	v = import_string(".part.%s.editor" % (obj.classname.lower(),))
 	if not getattr(v,"no_check_perm",None):
 		request.user.will_write(obj)
-	return v(request, obj)
+	return v(obj)
 
 @expose('/new/<oid>')
 @expose('/new/<oid>/<discr>')
 @expose('/new/<oid>/<discr>/<name>')
-def new_oid(request, oid, discr=None, name=None):
+def new_oid(oid, discr=None, name=None):
 	obj=obj_get(oid)
 	if discr is None:
 		discr = obj.discriminator
@@ -90,9 +90,9 @@ def new_oid(request, oid, discr=None, name=None):
 		v = cls.html_new
 		vc = v
 	else:
-		v = import_string("pybble.part.%s.newer" % (cls.__name__.lower(),))
+		v = import_string(".part.%s.newer" % (cls.__name__.lower(),))
 		def vc(**args):
-			return v(request, **args)
+			return v(**args)
 
 	args = {}
 	fn = inspect.getargspec(v)[0]
@@ -101,7 +101,7 @@ def new_oid(request, oid, discr=None, name=None):
 	return vc(**args)
 
 @expose('/copy/<oid>/<parent>')
-def copy_oid(request, oid, parent):
+def copy_oid(oid, parent):
 	"""Create a copy of <oid> which lives beyond / controls / whatever <parent>."""
 	obj=obj_get(oid)
 	parent=obj_get(parent)
@@ -113,8 +113,8 @@ def copy_oid(request, oid, parent):
 	if hasattr(obj,"html_edit"):
 		return cls.html_edit(parent=parent)
 	else:
-		v = import_string("pybble.part.%s.editor" % (obj.classname.lower(),))
-		return v(request, obj=obj,parent=parent)
+		v = import_string(".part.%s.editor" % (obj.classname.lower(),))
+		return v(obj=obj,parent=parent)
 
 
 class DeleteForm(Form):
@@ -122,7 +122,7 @@ class DeleteForm(Form):
 	comment = TextField('Grund', [validators.required(u"Grund der Löschung?"), validators.length(min=3, max=200)])
 
 @expose('/delete/<oid>')
-def delete_oid(request, oid):
+def delete_oid(oid):
 	obj=obj_get(oid)
 	request.user.will_delete(obj)
 
@@ -143,7 +143,7 @@ def delete_oid(request, oid):
 
 	return render_template('delete.html', form=form, title_trace=[u"Löschen"], obj=obj)
 
-def split_details(request,obj, details):
+def split_details(obj, details):
 	if details == "all":
 		for o in db.filter_by(Comment, superparent_id = obj.id):
 			yield o
@@ -159,12 +159,12 @@ def split_details(request,obj, details):
 			print >>sys.stderr,e
 			pass
 
-def split_details_aux(request,obj,details):
+def split_details_aux(obj,details):
 	det = set()
 	aux = set()
 
 	if isinstance(details,basestring):
-		details = split_details(request,obj,details)
+		details = split_details(obj,details)
 
 	for o in details:
 		if o in det:
@@ -180,14 +180,14 @@ def split_details_aux(request,obj,details):
 
 
 @expose('/view/<oid>/<details>')
-def view_oid_exp(request, oid, details):
+def view_oid_exp(oid, details):
 	obj = obj_get(oid)
-	d,a = split_details_aux(request,obj,details)
+	d,a = split_details_aux(obj,details)
 	print >>sys.stderr,"D A",obj,details,d,a
-	return view_oid(request, oid, details=d, aux=a)
+	return view_oid(oid, details=d, aux=a)
 
 @expose('/view/<oid>')
-def view_oid(request, oid, **args):
+def view_oid(oid, **args):
 	obj = obj_get(oid)
 	request.user.will_read(obj)
 
@@ -201,7 +201,7 @@ def view_oid(request, oid, **args):
 			if bc.last_visited:
 				dv.append(Comment.added > bc.last_visited)
 		d = db.store.find(Comment, And(*dv))
-		d,a = split_details_aux(request,obj,d)
+		d,a = split_details_aux(obj,d)
 		args["details"] = d
 		args["aux"] = a
 
@@ -210,13 +210,13 @@ def view_oid(request, oid, **args):
 
 	try:
 		name = getattr(obj,"name",None)
-		v = import_string("pybble.part.%s.viewer" % (obj.classname.lower(),))
+		v = import_string(".part.%s.viewer" % (obj.classname.lower(),))
 	except Exception,e:
-		return render_my_template(request, obj=obj, detail=TM_DETAIL_PAGE, **args);
+		return render_my_template(obj=obj, detail=TM_DETAIL_PAGE, **args);
 	else:
 		try:
 			if not args and (not isinstance(obj,Site) or obj == request.site):
-				return redirect(url_for('pybble.part.%s.viewer' % (obj.classname.lower(),),**args))
+				return redirect(url_for('.part.%s.viewer' % (obj.classname.lower(),),**args))
 		except BuildError:
 			pass
 		fn = inspect.getargspec(v)[0]
@@ -225,10 +225,10 @@ def view_oid(request, oid, **args):
 		if "name" in fn: args["name"]=name
 		if "details" in fn: args["details"]=details
 		if "aux" in fn: args["aux"]=aux
-		return v(request, **args)
+		return v(**args)
 
 @expose('/detail/<oid>')
-def detail_oid(request, oid):
+def detail_oid(oid):
 	obj = obj_get(oid)
 	request.user.will_read(obj)
 	p,s,o,d = obj.pso
@@ -236,12 +236,12 @@ def detail_oid(request, oid):
 	return render_template("detail.html", obj=obj, obj_parent=p, obj_superparent=s, obj_owner=o, obj_deleted=d, title_trace=title_trace)
 
 @expose('/last_visited')
-def last_visited(request):
+def last_visited():
 	return render_template("last_visited.html", q=request.user.all_visited(), title_trace=[u"zuletzt besucht"])
 	
 
 @expose('/snippet/<t>')
-def view_snippet(request, t):
+def view_snippet(t):
 	oid = request.values["dir"]
 	if '/' in oid:
 		oid,discr = oid.split('/',1)
@@ -251,9 +251,9 @@ def view_snippet(request, t):
 		t = int(t)
 	except ValueError:
 		if discr:
-			return view_snippet2(request, t, oid, int(discr))
+			return view_snippet2(t, oid, int(discr))
 		else:
-			return view_snippet1(request, t, oid)
+			return view_snippet1(t, oid)
 	else:
 		c = obj_class(t)
 		obj = obj_get(oid)
@@ -262,14 +262,14 @@ def view_snippet(request, t):
 			discr = int(discr)
 			for o in obj.all_children(discr):
 				sub = o.has_children(discr)
-				res.append(render_my_template(request, o, detail=TM_DETAIL_SNIPPET, discr=t, sub=sub, mimetype=None))
+				res.append(render_my_template(o, detail=TM_DETAIL_SNIPPET, discr=t, sub=sub, mimetype=None))
 			return Response("\n".join(res), mimetype="text/html")
 		else:
 			sub = db.filter_by(c, parent=obj)
-			return render_my_template(request, obj, detail=TM_DETAIL_SNIPPET, discr=t, sub=sub)
+			return render_my_template(obj, detail=TM_DETAIL_SNIPPET, discr=t, sub=sub)
 
 @expose('/snippet/<t>/<oid>')
-def view_snippet1(request, t, oid):
+def view_snippet1(t, oid):
 	obj = obj_get(oid)
 	if t == "parent":
 		sub = obj.discr_children
@@ -278,7 +278,7 @@ def view_snippet1(request, t, oid):
 	elif t == "owner":
 		sub = obj.discr_slaves
 	elif t == "hierarchy":
-		return render_my_template(request, obj, detail=TM_DETAIL_HIERARCHY)
+		return render_my_template(obj, detail=TM_DETAIL_HIERARCHY)
 		
 	else:
 		raise NotFound()
@@ -286,7 +286,7 @@ def view_snippet1(request, t, oid):
 	return render_template("snippet1.html", obj=obj, t=t, sub=list(sub))
 
 @expose('/snippet/<t>/<oid>/<discr>')
-def view_snippet2(request, t, oid, discr):
+def view_snippet2(t, oid, discr):
 	c = obj_class(discr)
 	obj = obj_get(oid)
 	if t == "parent":
@@ -302,12 +302,12 @@ def view_snippet2(request, t, oid, discr):
 		raise NotFound()
 	return render_template("snippet2.html", obj=obj, t=t, discr=discr, sub=sub, what=what, cls=c, count=sub.count())
 
-def not_found(request, url=None):
+def not_found(url=None):
     return render_template('not_found.html', title_trace=[u"Seite nicht gefunden"])
 
-def not_allowed(request, obj, perm=None):
+def not_allowed(obj, perm=None):
     return render_template('not_allowed.html', title_trace=[u"Keine Berechtigung"], obj=obj, perm=perm)
 
-def not_able(request, obj, perm=None):
+def not_able(obj, perm=None):
     return render_template('not_able.html', title_trace=[u"Das geht nicht"], obj=obj, perm=perm)
 

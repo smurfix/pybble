@@ -29,7 +29,7 @@ class LoginForm(Form):
 	next = HiddenField("next URL")
 
 @expose("/admin/login")
-def do_login(request):
+def do_login():
 	form = LoginForm(request.form, prefix='login')
 	error = ""
 
@@ -52,7 +52,7 @@ def do_login(request):
 				print >>sys.stderr,u,"wrong site"
 				u = None
 		if u:
-			logged_in(request,u)
+			logged_in(u)
 
 			now = datetime.utcnow()
 			if u.cur_login is None or u.cur_login < now-timedelta(0,600):
@@ -60,7 +60,7 @@ def do_login(request):
 			u.cur_login = now
 
 			if form.remember.data:
-				make_permanent(request)
+				make_permanent()
 
 			if u.verified:
 				flash(u"Du bist jetzt eingeloggt.",True)
@@ -105,11 +105,11 @@ class RegisterForm(Form):
 	password2 = PasswordField('nochmal', [validators.equal_to('password',u"Die Paßwörter stimmen nicht überein.")])
 
 @expose('/admin/lostpw')
-def lostpw(request):
+def lostpw():
 	pass
 
 @expose('/admin/register')
-def register(request):
+def register():
 	form = RegisterForm(request.form, prefix='register')
 	if request.method == 'POST' and form.validate():
 		u = User(form.username.data, form.password.data)
@@ -181,7 +181,7 @@ class verifier(object):
 
 
 @expose("/admin/logout")
-def do_logout(request):
+def do_logout():
 	if request.user.anon:
 		flash(u'Du warst nicht eingeloggt', False)
 		return redirect(request.args.get("next",None) or url_for("pybble.views.mainpage"))

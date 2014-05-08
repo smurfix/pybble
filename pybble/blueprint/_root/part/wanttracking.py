@@ -17,16 +17,16 @@ from .._base import expose
 from datetime import datetime
 
 @expose("/admin/wanttracking")
-def list_wanttracking(request):
+def list_wanttracking():
 	"""Complete list"""
 	return render_template('wanttrackinglist.html', data=db.filter_by(WantTracking, user=request.user), title_trace=["Beobachtungsliste"])
 
 @expose("/admin/wanttracking/<oid>")
-def edit_wanttracking(request, oid=None):
+def edit_wanttracking(oid=None):
 	"""Sub-list below the current object"""
 	obj = obj_get(oid)
 	if isinstance(obj,WantTracking):
-		return editor(request,obj)
+		return editor(obj)
 	else:
 		# show list of tracks for that object
 		return render_template('wanttrackinglist.html', obj=obj, title_trace=["Beobachtungsliste"])
@@ -44,10 +44,10 @@ class WantTrackingForm(Form):
 	track_mod = BooleanField(u'Meldung bei Änderungen')
 	track_del = BooleanField(u'Meldung bei Löschung')
 
-def newer(request, parent, name=None):
-	return editor(request, parent=parent)
+def newer(parent, name=None):
+	return editor(parent=parent)
 
-def editor(request, obj=None, parent=None):
+def editor(obj=None, parent=None):
 	form = WantTrackingForm(request.form, prefix="perm")
 	if request.method == 'POST' and form.validate():
 		user = obj_get(form.user.data)

@@ -13,6 +13,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
+from flask import request
 from urlparse import urlparse
 from random import sample, randrange
 from jinja2 import Environment, BaseLoader, Markup
@@ -91,15 +92,15 @@ def random_string(bytes=9, base="23456789abcdefghijkmnpqrstuvwxyz", dash="-",
 			passwd += dash
 	return passwd
 
-def make_permanent(request):
+def make_permanent():
 	"""Make this session a permanent one."""
 	request.session['_perm'] = True
 
-def close_with_browser(request):
+def close_with_browser():
 	"""Close the session with the end of the browser session."""
 	request.session.pop('_perm', None)
 
-def test_session_cookie(request):
+def test_session_cookie():
 	"""
 	Test if the session cookie works.  This is used in login and register
 	to inform the user about an inproperly configured browser.  If the
