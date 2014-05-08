@@ -1,4 +1,16 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import, print_function, division, unicode_literals
+##
+## This is part of Pybble, a WMS (Whatever Management System) based on
+## Jinja2/Haml, Werkzeug, Flask, and Optimism.
+##
+## Pybble is Copyright © 2009-2014 by Matthias Urlichs <matthias@urlichs.de>,
+## it is licensed under the GPLv3. See the file `README.md` for details,
+## including an optimistic statements by the author.
+##
+## This paragraph is auto-generated and may self-destruct at any time,
+## courtesy of "make update". The original is in ‘utils/_boilerplate.py’.
+## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
 from flask import request, url_for, flash
@@ -18,7 +30,6 @@ from ..views import view_oid
 from .._base import expose
 
 from datetime import datetime
-
 
 ###
 ### Site page editor
@@ -43,7 +54,6 @@ def free_domain(form, field):
 	obj = db.store.find(Site,*filter).one()
 	if obj:
 		raise ValidationError(u"Seiten in der Domain '%s' gibt es hier bereits!" % (field.data,))
-
 
 class SiteEditForm(Form):
 	name = TextField('Name', [validators.required(u"Das Kind braucht einen Namen."), validators.length(min=3, max=30), free_name])
@@ -76,9 +86,7 @@ def newer(parent, name=None):
 	
 	return render_template('edit/site.html', obj=None, form=form, title_trace=["neue Website"])
 
-
 @expose("/")
 def viewer(**args):
 	return render_my_template(obj=request.site, detail=TM_DETAIL_PAGE, **args)
-
 

@@ -58,7 +58,6 @@ class BaseBlueprint(FlaskBlueprint):
 			if config is not None:
 				values.setdefault('bp', config)
 
-
 def load_app_blueprints(app):
 	site = app.site
 	names = set() 

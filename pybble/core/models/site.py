@@ -199,7 +199,6 @@ class SiteBlueprint(ObjectRef):
 	def as_str(self):
 		return u"‘%s’: %s @ %s%s" % (self.name, self.blueprint.name, self.site.domain, self.path)
 
-
 @event.listens_for(SiteBlueprint.path, 'set')
 def block_bad_path(target, value, oldvalue, initiator):
 	if value == "/":
