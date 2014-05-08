@@ -1,22 +1,23 @@
 # -*- coding: utf-8 -*-
+##BP
 
-from werkzeug import redirect
+from flask import request, flash
+from werkzeug import redirect, url_for
 from werkzeug.exceptions import NotFound
-from pybble.utils import current_request, make_permanent
-from pybble.render import url_for, expose, render_template, valid_obj, \
-	discr_list, valid_admin,valid_access,valid_read
-from pybble.models import Template, TemplateMatch, Discriminator, \
-	Permission, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE, PERM_NONE
-
-from pybble.database import db,NoResult
-from pybble.flashing import flash
-from pybble.session import logged_in
 from wtforms import Form, BooleanField, TextField, TextAreaField, \
 	SelectField, PasswordField, HiddenField, validators
 from wtforms.validators import ValidationError
-from datetime import datetime
-from storm.locals import And
 
+from pybble.utils import current_request, make_permanent
+from pybble.render import render_template, valid_obj, \
+	discr_list, valid_admin,valid_access,valid_read
+from pybble.models import Template, TemplateMatch, Discriminator, \
+	Permission, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE, PERM_NONE
+from pybble.core.db import db,NoData
+from pybble.session import logged_in
+from .._base import expose
+
+from datetime import datetime
 
 @expose("/admin/perm/<permission>")
 def show_permission(request, permission=None):
@@ -106,5 +107,5 @@ def editor(request, obj=None, parent=None):
 editor.no_check_perm = True
 
 def may_delete(obj):
-	current_request.user.will_admin(obj.owner)
+	request.user.will_admin(obj.owner)
 	

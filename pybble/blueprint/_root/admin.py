@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
+##BP
 
-from pybble.render import expose, render_template
-from pybble.models import Template, obj_get
-from pybble.database import db
+from flask import current_app
+from pybble.render import render_template
+from pybble.core.models import obj_get
+from pybble.core.models.template import Template
+from pybble.core.db import db
+from ._base import expose
 
 ###
 ### Template editor
@@ -12,13 +16,13 @@ from pybble.database import db
 @expose("/admin/template/<oid>")
 def list_templates(request,oid=None):
 	"""List all named templates"""
-	obj = obj_get(oid) if oid else request.site
+	obj = obj_get(oid) if oid else current_app.site
 	s = obj
 	t = []
 	while s:
-		t.extend(db.filter(Template, Template.superparent_id == s.id).order_by(Template.name))
+		t.extend(Template.q.filter_by(superparent_id == s).order_by(Template.name))
 		s = s.parent
-	return render_template('templates.html', templates=t, obj=obj, title_trace=["Templates",request.site.name])
+	return render_template('templates.html', templates=t, obj=obj, title_trace=["Templates",current_app.site.name])
 	
 @expose("/admin/template_for/<oid>")
 def show_templates(request, oid):

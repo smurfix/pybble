@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
+##BP
 
-from pybble.render import render_template, expose
-from pybble.flashing import flash
-from pybble.models import Verifier, VerifierBase, obj_get
-from pybble.database import db,NoResult
+from flask import flash
+from werkzeug.exceptions import NotFound
 from wtforms import Form, TextField, validators
 from wtforms.validators import ValidationError
-from werkzeug.exceptions import NotFound
+
+from pybble.render import render_template
+from pybble.core.db import db,NoData
+from pybble.core.models import obj_get
+from pybble.core.models.verifier import Verifier, VerifierBase
+from ._base import expose
 
 ###
 ### Confirm
@@ -15,7 +19,7 @@ from werkzeug.exceptions import NotFound
 def code_exists(form, field):
 	try:
 		v = db.get_by(Verifier, code=str(field.data))
-	except NoResult:
+	except NoData:
 		raise ValidationError(u"Diesen Code kenne ich nicht.")
 	else:
 		if v.expired:

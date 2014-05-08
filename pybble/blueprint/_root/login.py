@@ -1,19 +1,22 @@
 # -*- coding: utf-8 -*-
+##BP
 
+from flask import request, flash, current_app
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
-from pybble.utils import current_request, make_permanent
-from pybble.render import url_for, expose, render_template, send_mail
-from pybble.models import User, Verifier, VerifierBase
-from pybble.database import db,NoResult
-from pybble.flashing import flash
-from pybble.session import logged_in
+
+from pybble.utils import make_permanent
+from pybble.render import url_for, render_template, send_mail
+from pybble.models.user import User
+from pybble.models.verify import Verifier, VerifierBase
+from pybble.core.db import db,NoResult
+from pybble.core.session import logged_in
 from wtforms import Form, BooleanField, TextField, PasswordField, HiddenField, validators
 from wtforms.validators import ValidationError
 from jinja2 import Markup
 from datetime import datetime,timedelta
-from storm.locals import And
 import sys
+from ._base import expose
 
 ###
 ### Login
@@ -42,7 +45,7 @@ def do_login(request):
 			if u is None:
 				raise NoResult
 		except NoResult:
-			print >>sys.stderr,"No user",form.username.data,form.password.data,current_request.site
+			print >>sys.stderr,"No user",form.username.data,form.password.data,current_app.site
 			u = None
 		else:
 			if not u.member_of(request.site):
@@ -133,7 +136,7 @@ class verifier(object):
 	@staticmethod
 	def new(user):
 		v=Verifier("register",user)
-		v.superparent = current_request.site
+		v.superparent = current_app.site
 		return v
 
 	@staticmethod
@@ -152,10 +155,10 @@ class verifier(object):
 			u.add_verified(True,verifier.superparent)
 			return redirect(url_for("pybble.confirm.confirmed",oid=verifier.oid()))
 
-		if current_request.user == u:
+		if current_app.user == u:
 			flash(u"Du bist bereits verifiziert.")
 			return redirect(url_for("pybble.views.mainpage"))
-		elif not current_request.user.anon:
+		elif not request.user.anon:
 			flash(u"Der User ist bereits verifiziert.")
 			return redirect(url_for("pybble.views.mainpage"))
 		else:
@@ -166,10 +169,10 @@ class verifier(object):
 	def confirmed(verifier):
 		u = verifier.parent
 
-		if current_request.user == u:
+		if request.user == u:
 			flash(u"Du bist jetzt verifiziert.", True)
 			return redirect(url_for("pybble.views.mainpage"))
-		elif not current_request.user.anon:
+		elif not request.user.anon:
 			flash(u"Der User ist jetzt verifiziert.", True)
 			return redirect(url_for("pybble.views.mainpage"))
 		else:

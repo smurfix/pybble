@@ -1,19 +1,23 @@
 # -*- coding: utf-8 -*-
+##BP
+
+from flask import request
 
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
-from pybble.utils import current_request, make_permanent, random_string
-from pybble.render import url_for, expose, render_template, valid_obj, \
-	discr_list
-from pybble.models import Template, TemplateMatch, Discriminator, \
-	Permission, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE, User
-
-from pybble.database import db,NoResult
-from pybble.flashing import flash
-from pybble.session import logged_in
 from wtforms import Form, BooleanField, TextField, TextAreaField, \
 	SelectField, PasswordField, HiddenField, validators, IntegerField
 from wtforms.validators import ValidationError
+
+from pybble.core.db import db,NoResult
+from pybble.core.session import logged_in
+from pybble.utils import random_string
+from pybble.render import url_for, expose, render_template, valid_obj
+from pybble.core.models.template import Template, TemplateMatch
+from pybble.core.models import Discriminator, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE
+from pybble.core.models.user import Permission, User
+
+from flask import flash
 from datetime import datetime
 
 ###
