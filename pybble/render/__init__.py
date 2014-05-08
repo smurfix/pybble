@@ -301,23 +301,13 @@ def render_subrss(ctx,obj, detail=TM_DETAIL_RSS, discr=None):
 
 pybble_dtd = None
 def get_dtd():
-	"""
-	This returns either our dtd or our dtd + xml comment.  Neither is stricly
-	valid as XML documents with custom doctypes must be served as XML but
-	currently as MSIE is pain in the ass we have to workaround that IE bug
-	by removing the XML PI comment.
-	"""
-	global pybble_dtd
-	if pybble_dtd is None:
-		dtd_path = url_for('static', file='xhtml1-strict-pybble.dtd')
-		pybble_dtd = '<!DOCTYPE html SYSTEM "%s">' % dtd_path
-	try:
-		ua = UserAgent(request.META['HTTP_USER_AGENT'])
-		if ua.browser == 'msie':
-			return pybble_dtd
-	except Exception:
-		pass
-	return '<?xml version="1.0" encoding="utf-8"?>\n' + pybble_dtd
+	"""\
+		Pybble now does HTML5. No DTD stupidity and no incomplete charsets allowed.
+		"""
+	return """\
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+"""
 
 import smtplib
 import email.Message
