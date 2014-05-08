@@ -526,7 +526,7 @@ class Object(Dumpable, Base):
 
 	def record_creation(self):
 		"""Record the fact that a user created this object"""
-		Tracker(request.user,self)
+		Tracker(self)
 
 	def record_change(self,content=None,comment=None):
 		"""Record the fact that a user changed this object, and why"""
