@@ -20,12 +20,15 @@ class Exposer(object):
 
 		Basic Usage:
 			## pybble/blueprint/foo/__init__.py:
-			from .. import BaseApp
+			from pybble.app import BaseApp
+			#from pybble.blueprint import BaseBlueprint
 			from ...core.route import Exposer
 			expose = Exposer()
 
+			#class Blueprint(BaseBlueprint):
 			class App(BaseApp):
 				def setup(self):
+					super(App,self).setup()
 					expose.add_to(self)
 
 			@expose("/path/<id>") # see Flask.route for details
@@ -35,12 +38,13 @@ class Exposer(object):
 		Multi-module setup:
 
 			## pybble/blueprint/foo/_base.py:
-			from ...core.route import Exposer
-			from .. import BaseApp
+			from pybble.core.route import Exposer
+			from pybble.app import BaseApp
 			expose = Exposer()
 
 			class App(BaseApp):
 				def setup(self):
+					super(App,self).setup()
 					expose.add_to(self)
 
 			## pybble/blueprint/foo/__init__.py:
