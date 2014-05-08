@@ -196,7 +196,9 @@ class Tracker(TrackingObjectRef):
 	timestamp = Column(DateTime,default=datetime.utcnow)
 
 	def __init__(self, obj, user=None,site=None, comment=None):
-		assert obj and not isinstance(obj,TrackingObjectRef)
+		# You can track Change and Delete objects, but not e.g. a Tracker or a Breadcrumb
+		assert obj and (isinstance(obj,(Change,Delete)) or not isinstance(obj,TrackingObjectRef))
+
 		super(Tracker,self).__init__()
 		self.owner = user or request.user
 		self.parent = obj
