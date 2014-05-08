@@ -289,7 +289,7 @@ class _fake_app(WrapperApp,Flask):
 
 def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing=False):
 	"""\
-		Setup an app instance. Configuration is loded from
+		Setup an app instance. Configuration is loaded from
 		* local_settings
 		* PYBBLE_SETTINGS
 		* the database
