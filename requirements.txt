@@ -1,18 +1,19 @@
 SQLAlchemy>=0.9
+gevent>=1.0.1
 https://github.com/smurfix/markupsafe/tarball/master
 https://github.com/smurfix/markdown/tarball/master
 https://github.com/smurfix/jinja2/tarball/master
 https://github.com/smurfix/flask/tarball/master
 https://github.com/smurfix/flask-script/tarball/master
+##Flask-Script>=2.0.2
 https://github.com/smurfix/flask-login/tarball/master
 https://github.com/smurfix/blinker/tarball/master
+##blinker
 https://github.com/smurfix/formalchemy/tarball/master
 https://github.com/smurfix/yapps/tarball/master
 Flask-Security
-##Flask-Script>=2.0.2
+WTForms
 #python-texttable
-#WTForms
-#blinker
 #Flask-Assets
 #Flask-Babel
 #Flask-Bcrypt
@@ -35,4 +36,3 @@ Flask-Security
 #pyyaml
 #speaklater
 #quokka-themes
-#flask-security
