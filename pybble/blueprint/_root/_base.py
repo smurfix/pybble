@@ -13,14 +13,12 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from pybble.core.route import Exposer
-from ._base import expose,Blueprint
+from pybble.blueprint import BaseBlueprint
+from pybble.core.routes import Exposer
+expose = Exposer()
 
-_doc="""\
-This is the standard blueprint for Pybble's object view.
-"""
-
-# Now load whatever
-from . import admin,confirm,login,render,rss,views
-from .part import permission,site,usertracker,wanttracking
+class Blueprint(BaseBlueprint):
+	def setup(self):
+		super(Blueprint,self).setup()
+		expose.add_to(self)
 
