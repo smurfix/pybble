@@ -34,7 +34,7 @@ from werkzeug.wsgi import responder
 from . import Manager,Command,Option
 from .. import ROOT_SITE_NAME
 from ..core.db import db
-from ..core.session import SubDomainDispatcher
+from ..core.session import SubdomainDispatcher
 from ..core.models.site import Site,Blueprint
 from ..core.signal import all_apps,app_list
 from ..app import create_site, list_apps
