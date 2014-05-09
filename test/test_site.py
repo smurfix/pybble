@@ -107,9 +107,10 @@ class SiteTestCase(TC):
 		assert site1.config["TEST2"] == 987
 		assert site.config["TEST2"] == u"345"
 		del site1.config["TEST2"]
-		assert site1.config["TEST2"] == u"234"
+		assert site1.config["TEST2"] == u"345"
 		assert site.config["TEST2"] == u"345"
 		del site.config["TEST2"]
+		assert site1.config["TEST2"] == u"234"
 		assert site.config["TEST2"] == u"234"
 		assert site1.config.TEST == [56,67]
 
