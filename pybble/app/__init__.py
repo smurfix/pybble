@@ -86,7 +86,9 @@ class WrapperApp(object):
 	
 	def _reload(self,sender,**kw):
 		"""Blinker signal processor to reload my configuration"""
-		self.config._reload(name=kw.get('name',None))
+		### this might also invalidate cached data or whatever
+		### note that the site has its own listener
+		pass
 	
 class SiteTemplateLoader(BaseLoader):
 	def __init__(self, site):
@@ -172,8 +174,8 @@ class BaseApp(WrapperApp,Flask):
 			assert testing == self.config.TESTING
 		self.wsgi_app = CustomProxyFix(self.wsgi_app)
 
-		self.signal = Signal()
-		self.signal.connect(self._reload)
+		if site is not None:
+			site.signal.connect(self._reload)
 		all_apps.connect(self._reload)
 
 		load_app_renderer(self)

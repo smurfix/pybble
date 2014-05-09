@@ -26,6 +26,7 @@ from flask._compat import string_types,text_type
 from .. import json, config
 from ..utils import attrdict
 from ..db import db, Base, Column, NoData
+from ..signal import ConfigChanged
 from . import ObjectRef
 from ._descr import D
 
@@ -55,6 +56,8 @@ class ConfigDict(Config,attrdict):
 		self._parent = parent
 		self._vars = {}
 		self._loads = []
+		if parent:
+			parent.signal.connect(self._reload, sender=ConfigChanged)
 		
 	def _load(self, parent=None, force=False, recurse=None, vars=None, name=None):
 		"""\
@@ -79,7 +82,7 @@ class ConfigDict(Config,attrdict):
 			self._parent = parent
 		self._load1(recurse=recurse,vars=vars, name=name)
 
-	def _reload(self,name=None):
+	def _reload(self, sender=None, name=None):
 		"""\
 			Reload variable data from the database, after something
 			was changed.
@@ -92,11 +95,14 @@ class ConfigDict(Config,attrdict):
 	def _load1(self, force=False, recurse=None, vars=None, name=None):
 		if vars is not None and vars == "GLOBALS":
 			# Special hack to include the globals, esp. when reloading
-			for k,v in config.items():
-				super(ConfigDict,self).__setitem__(k,v)
+			if name is None:
+				for k,v in config.items():
+					super(ConfigDict,self).__setitem__(k,v)
+			elif name in config:
+				super(ConfigDict,self).__setitem__(name,config[name])
 			return
 
-		s = self._parent
+		s = db.merge(self._parent)
 		seen = set()
 		if recurse is True:
 			recurse = "parent"
@@ -106,7 +112,7 @@ class ConfigDict(Config,attrdict):
 
 			vf = SiteConfigVar.q.filter_by(parent=s)
 			if name is not None:
-				vf = vf.filter(SiteConfigVar.var.name==name)
+				vf = vf.join(ConfigVar, SiteConfigVar.var).filter(ConfigVar.name==name)
 			for v in vf:
 				if force:
 					if v.var.name not in seen:
@@ -141,10 +147,11 @@ class ConfigDict(Config,attrdict):
 				cf = SiteConfigVar(parent=self._parent, var=cfv, value=v)
 			else:
 				cf.value=v
+			db.flush()
 		super(ConfigDict,self).__setitem__(k,v)
-		db.flush()
-		if self._set_db and self._parent is not None:
-			self._parent.config_changed()
+
+		if self._parent is not None:
+			self._parent.signal.send(ConfigChanged, name=k)
 
 	def __delitem__(self,k):
 		cfv = self._vars.get(k,None)
@@ -156,14 +163,14 @@ class ConfigDict(Config,attrdict):
 				pass
 			else:
 				db.delete(cf)
+			db.flush()
 		if cfv is not None:
 			super(ConfigDict,self).__setitem__(k,cfv.value)
 		else:
 			super(ConfigDict,self).__delitem__(k)
-		db.flush()
 
-		if self._set_db and self._parent is not None:
-			self._parent.config_changed()
+		if self._parent is not None:
+			self._parent.signal.send(ConfigChanged, name=k)
 	
 	def _disarm(self):
 		self._set_db = False

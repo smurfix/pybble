@@ -25,8 +25,8 @@ from flask._compat import string_types
 
 from ... import ROOT_SITE_NAME,ANON_USER_NAME
 from .. import config
-from ..db import Base, Column, db, NoData, no_autoflush
-from ..signal import app_list
+from ..db import Base, Column, db, NoData, no_autoflush, maybe_stale
+from ..signal import app_list, ConfigChanged,NewSite
 from . import Object, ObjectRef, TM_DETAIL_PAGE, Loadable
 from ._descr import D
 
@@ -76,15 +76,18 @@ class Site(ObjectRef):
 
 	## XXX convert to relationship
 	@property
+	@maybe_stale
 	def storages(self):
 		return self.all_children("Storage")
 
 	## XXX convert to relationship
 	@property
+	@maybe_stale
 	def blueprints(self):
 		return self.all_children("SiteBlueprint", want=None)
 
 	@property
+	@maybe_stale
 	def all_sites(self):
 		yield self
 		for s in self.all_children(D.Site):
@@ -111,9 +114,11 @@ class Site(ObjectRef):
 			except (AttributeError,RuntimeError):
 				self.owner = None if self.parent is None else self.parent.owner
 		db.flush()
-		app_list.send(self)
+		app_list.send(NewSite)
+		self.signal.connect(self.config_changed, ConfigChanged)
 
 	@property
+	@maybe_stale
 	def anon_user(self):
 		from .user import User
 		## create a new anon user.
@@ -121,10 +126,12 @@ class Site(ObjectRef):
 
 		
 	@property
+	@maybe_stale
 	def as_str(self):
 		return u"‘%s’ @ %s" % (self.name, self.domain)
 
 	@property
+	@maybe_stale
 	def data(self):
 		return u"""\
 name: %s
@@ -140,11 +147,12 @@ domain: %s
 		res._load(recurse="parent",vars="superparent")
 		return res
 	
-	def config_changed(self):
-		## TODO: invalidate a bunch of caches, as soon as we have any
-		for s in self.all_children("Site",None):
-			s.config._reload()
-			s.config_changed()
+	@maybe_stale
+	def config_changed(self, sender=None, name=None):
+		## TODO: invalidate caches, as soon as we have any
+		for s in self.all_sites:
+			if s is not self: # don't recurse
+				s.signal.send(ConfigChanged, name=name)
 
 class SiteBlueprint(ObjectRef):
 	"""A blueprint attached to a site's path"""
@@ -184,6 +192,9 @@ class SiteBlueprint(ObjectRef):
 					site = Site.q.get_by(domain=text_type(site))
 			self.parent = site
 
+		self.blueprint.signal.connect(self.config_changed, ConfigChanged)
+		self.signal.connect(self.config_changed, ConfigChanged)
+
 	@cached_property
 	def config(self):
 		from .config import ConfigDict
@@ -191,10 +202,8 @@ class SiteBlueprint(ObjectRef):
 		res._load(vars="superparent")
 		return res
 
-	def config_changed(self):
-		for s in self.all_children("Site",None):
-			s.config._reload()
-			s.config_changed()
+	def config_changed(self, sender=None, name=None):
+		self.config._reload(name=name)
 
 	@property
 	def as_str(self):
