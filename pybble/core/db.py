@@ -128,3 +128,11 @@ def no_autoflush(fn):
 			db.autoflush = autoflush
 
 	return update_wrapper(go, fn)
+
+def maybe_stale(fn):
+	def go(self, *args, **kw):
+		self = db.merge(self)
+		return fn(self, *args, **kw)
+
+	return update_wrapper(go, fn)
+	
