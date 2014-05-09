@@ -57,11 +57,6 @@ class AppConfigTestCase(TC):
 		app2 = create_app(site="bar", testing=True)
 		app11 = create_app(site="foofoo", testing=True)
 
-		app.config._reload()
-		app1.config._reload()
-		app2.config._reload()
-		app11.config._reload()
-
 		self.assertEqual(app11.config["test1"],-1)
 		self.assertEqual(app11.config["test2"],-2)
 
