@@ -25,6 +25,7 @@ from ...compat import py2_unicode
 from ..json import register_object
 
 from ..db import Base, Column, IDrenderer, db, NoData
+from ..signal import ObjSignal
 
 from flask import request,current_app
 from flask._compat import text_type, string_types
@@ -239,6 +240,17 @@ class Object(Dumpable, Base):
 			else: d = ""
 			return '<%s%s: ?? %s>' % (self.__class__.__name__, self.id, str(err))
 	
+	@property
+	def signal(self):
+		"""\
+			A unique signal for this object which others can connect to.
+			
+			You must either send a signal, register yourself, or call
+			.maybe_dispose() when you're done with this value, otherwise
+			you'll leak (some) memory.
+			"""
+		return ObjSignal(self)
+
 	def _dump(self):
 		"""\
 			Fetch the referring objects. This can be a whole lot!
