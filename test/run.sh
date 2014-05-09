@@ -56,13 +56,14 @@ else
 		ASS=--assert=plain
     elif [ "$1" = "-d" ] ; then
 		PY=pdb
+		ASS="-s --pdb"
 		shift
 	fi
 fi
 
 if [ "$*" = "" ] ; then
 	./manage.py -t core check
-	./manage.py -t core config
+	./manage.py -t core config | fgrep -qs 'SESSION_COOKIE_DOMAIN=None'
 
 	#PYTHONPATH=$(pwd) test/run.py -x
 	PYTHONPATH=$(pwd) py.test $ASS -x
