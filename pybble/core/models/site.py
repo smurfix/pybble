@@ -192,7 +192,9 @@ class SiteBlueprint(ObjectRef):
 		return res
 
 	def config_changed(self):
-		pass
+		for s in self.all_children("Site",None):
+			s.config._reload()
+			s.config_changed()
 
 	@property
 	def as_str(self):

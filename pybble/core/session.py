@@ -151,7 +151,8 @@ class SubdomainDispatcher(object):
 		# later instantiate the apps.
 		i = self.instances
 		seen = set()
-		for s in self.root.all_sites:
+		r = db.merge(self.root)
+		for s in r.all_sites:
 			if s.domain not in i:
 				i[s.domain] = s
 			seen.add(s.domain)

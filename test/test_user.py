@@ -22,6 +22,7 @@ from .manager import ManagerTC, run
 from .base import WebTC
 from webunit.webunittest import WebTestCase
 
+from pybble.core.db import db
 from pybble.core.models.user import User
 
 def u_test():
@@ -40,4 +41,5 @@ class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 		u = User.q.get_by(username="Joe")
 		assert u.password is None
 		self.run_manager("mgr -t -s UserTest obj update User {} password=blafasel".format(u.id))
+		u = db.merge(u)
 		assert ":" in u.password # make sure it's hashed

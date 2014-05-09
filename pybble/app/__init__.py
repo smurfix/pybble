@@ -330,6 +330,8 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 					logger.warn("Creating a new root site")
 					site = create_site(None,"localhost","_root",ROOT_SITE_NAME)
 
+		if site is not None:
+			site = db.merge(site)
 		if site is None or site.app is None:
 			app = cfg_app
 		else:
