@@ -112,6 +112,7 @@ def save_session(response):
 		else:
 			expires = None
 		response.set_cookie(current_app.config.SESSION_COOKIE_NAME, session_data, httponly=True, expires=expires)
+	return response
 
 def add_response_headers(response):
 	s = getattr(request,"session",None)
@@ -122,6 +123,7 @@ def add_response_headers(response):
 			response.headers.add('Vary','Cookie')
 		except AttributeError:
 			pass
+	return response
 
 def logged_in(user):
 	request.session['uid'] = user.id

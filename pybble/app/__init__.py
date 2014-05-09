@@ -30,7 +30,7 @@ from werkzeug import import_string
 from blinker import Signal
 
 from .. import FROM_SCRIPT,ROOT_SITE_NAME,ROOT_USER_NAME
-from ..core.db import db, NoData
+from ..core.db import db, NoData, register
 from ..core.signal import all_apps
 from ..core.models.template import Template as DBTemplate
 from ..core.models.site import Site,App,SiteBlueprint,Blueprint
@@ -342,6 +342,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 				datefmt=app.config['LOGGER_DATE_FORMAT']
 			)
 
+	register(app)
 	return app
 
 def create_site(parent,domain,app,name):
