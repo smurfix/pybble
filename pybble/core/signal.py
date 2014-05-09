@@ -25,6 +25,8 @@ app_list = signal("app-list", doc="""\
 					the list of applications to change (e.g. create a new app).""")
 
 ## Senders
+class ObjDeleted:
+	"""This item has been deleted"""
 class ConfigChanged:
 	"""This item's configuration has changed"""
 class NewSite:
@@ -75,5 +77,8 @@ class ObjSignal(Signal):
 
 	def maybe_dispose(self):
 		if not self._by_receiver and not self._by_sender:
-			self._names.pop(self.name,None)
+			self.dispose()
+
+	def dispose(self):
+		self._names.pop(self.name,None)
 

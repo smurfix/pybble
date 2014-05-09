@@ -163,6 +163,8 @@ class Delete(TrackingObjectRef):
 		obj.parent = None
 		obj.superparent = None
 		Tracker(self, user=user, comment=comment)
+		obj.signal.send(ObjDeleted)
+		obj.signal.dispose()
 
 	@property
 	def as_str(self):
