@@ -243,11 +243,8 @@ class Object(Dumpable, Base):
 	@property
 	def signal(self):
 		"""\
-			A unique signal for this object which others can connect to.
-			
-			You must either send a signal, register yourself, or call
-			.maybe_dispose() when you're done with this value, otherwise
-			you'll leak (some) memory.
+			A unique and site-wide signaller for this object.
+			See ``blinker.Signal`` for details.
 			"""
 		return ObjSignal(self)
 
