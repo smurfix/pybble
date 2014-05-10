@@ -14,11 +14,16 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ##BP
 
 from pybble.app import BaseApp
+from pybble.core.db import db
 
 class App(BaseApp):
 	"""
 	This app simply does the same thing as its parent.
 	"""
+	_parent = None
 	def __call__(self, environ, start_response):
-		return self.pybble_dispatcher.get_application(site=self.site.parent)(environ, start_response)
+		if self._parent is None:
+			s = db.merge(self.site)
+			self._parent = self.pybble_dispatcher.get_application(site=s.parent)
+		return self._parent(environ, start_response)
 
