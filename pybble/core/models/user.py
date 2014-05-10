@@ -15,6 +15,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from flask import current_app,g,request
 from flask.ext.security import UserMixin, RoleMixin
+from flask._compat import string_types
 
 from werkzeug import security
 from werkzeug.utils import cached_property
@@ -205,12 +206,14 @@ class User(ObjectRef):
 	def new_anon_user(cls,site=None):
 		if site is None:
 			site = current_app.site
-		u = cls.q.filter_by(username=ANON_USER_NAME, site=site).order_by(cls.cur_login).first()
+		g = Group.q.get_by(name=ANON_USER_NAME,owner=site,parent=site)
+		u = User.q.filter_by(site=site).order_by(cls.cur_login).join(Member,Member.parent_id==User.id).filter(Member.owner==site).first()
+		#u = cls.q.filter_by(username=ANON_USER_NAME, site=site).order_by(cls.cur_login).first()
 		if u is not None and u.cur_login is not None and u.cur_login >= datetime.now()-timedelta(0,current_app.config.SESSION_COOKIE_AGE):
 			u = None
 		if u is None:
 			u = cls(username=ANON_USER_NAME, site=site)
-			Permission(user=u,obj=site,right=PERM_READ)
+			Member(owner=g,parent=u)
 		else:
 			### Clean up this anon user
 			from .tracking import Delete, TrackingObjectRef
@@ -417,8 +420,8 @@ class User(ObjectRef):
 
 			p = Permission.q.filter(and_(or_(Permission.for_discr == None, Permission.for_discr == discr) if discr is not None else (Permission.for_discr == None),
 			                             or_(Permission.inherit == inherited, Permission.inherit == None),
-			                             or_(*(Permission.owner == u for u in user.groups)),
 			                             Permission.parent == obj,
+			                             or_(Permission.owner == u for u in user.groups), ## includes the user itself!
 			                             *pq)).order_by(Permission.right.desc())
 			if current_app.config.DEBUG_ACCESS:
 				log_access("Checking",obj)
@@ -500,14 +503,16 @@ def block_updates(target, value, oldvalue, initiator):
 	if oldvalue not in (NO_VALUE,NEVER_SET):
 		raise RuntimeError("You cannot change {} (old value: ‘{}’)".format(target,oldvalue))
 
-class GroupRef(ObjectRef):
+class Group(ObjectRef):
 	"""
 		A group of users. (Usually.)
 		superparent: the site this group belongs to.
 		owner: the managing user; the site, for system groups.
+
+		owner+parent+name should be unique.
 		"""
 	__tablename__ = "groups"
-	_descr = D.GroupRef
+	_descr = D.Group
 	        
 	name = Column(Unicode(30))
 
@@ -527,6 +532,8 @@ class Member(ObjectRef):
 		Indicates membership of one object of another.
 		owner: the individual who's the member.
 		parent: the group
+
+		TODO: parent=member, superparent=group, owner=whodunit
 		"""
 	__tablename__ = "groupmembers"
 	_descr = D.Member
@@ -674,4 +681,19 @@ for a,b in PERM.iteritems():
 	c,d = can_do_closure(a,b)
 	setattr(Object,'can_'+b.lower(), c)
 	setattr(Object,'will_'+b.lower(), d)
+
+# owner+parent+name should be unique.
+@event.listens_for(Group.name, 'set')
+@no_autoflush
+def block_dup_name(target, value, oldvalue, initiator):
+	if isinstance(oldvalue,string_types) and value == oldvalue:
+		return
+	try:
+		Group.q.get_by(owner=target.owner, parent=target.parent, name=value)
+	except NoData:
+		pass
+	else:
+		raise RuntimeError("A group ‘{}’ already exists at ‘{}/{}’".format(value, target.parent,target.owner))
+
+Object.new_member_rule(Member, "owner","parent")
 

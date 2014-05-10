@@ -63,7 +63,7 @@ class PopulateCommand(Command):
 		from ..core.models.site import Site
 		from ..core.models.storage import Storage
 		from ..core.models.files import BinData,StaticFile
-		from ..core.models.user import User,Permission
+		from ..core.models.user import User,Permission,Group,Member
 		from ..core.models.types import MIMEtype
 		from ..core.models.template import Template
 		from ..core.models.config import ConfigVar
@@ -174,14 +174,31 @@ class PopulateCommand(Command):
 		db.commit()
 
 		## anon user
-		try:
-			anon = User.q.filter_by(parent=root, username=ANON_USER_NAME).count()
-		except NoData:
-			anon = User(ANON_USER_NAME)
-			logger.debug("An anon user has been created.")n
-		else:
+		if User.q.filter_by(parent=root, username=ANON_USER_NAME).count():
 			logger.debug("An anon user exists. Good.")
+		else:
+			User(ANON_USER_NAME, parent=root)
+			logger.debug("An initial anon user has been created.")
 		db.commit()
+
+		## anon group
+		try:
+			anon = Group.q.get_by(parent=root, owner=root, name=ANON_USER_NAME)
+		except NoData:
+			anon = Group(parent=root, owner=root, name=ANON_USER_NAME)
+			logger.debug("An anon user group has been created.")
+		else:
+			logger.debug("The anon user group exists. Good.")
+
+		## check membership
+		for a in User.q.filter_by(parent=root, username=ANON_USER_NAME):
+			try:
+				Member.q.get_by(parent=anon, owner=a)
+			except NoData:
+				Member(parent=anon, owner=a)
+				logger.warn("{} was added to the anon group".format(a))
+			else:
+				logger.debug("{} is an anon-group member".format(a))
 
 		## main user
 		superuser = root.owner
@@ -431,12 +448,12 @@ class PopulateCommand(Command):
 		dt = Discriminator.q.get_by(name="WantTracking")
 		dd = Discriminator.q.get_by(name="BinData")
 
-		# a = anon_user
-		#for d in (dw,ds,dt,dd):
-		#	if Permission.q.filter(Permission.for_discr==d,Permission.right>=0,Permission.owner==a, Permission.parent==s).count():
-		#		continue
-		#	p=Permission(a, s, d, PERM_READ)
-		#	p.superparent=s
+		a = anon
+		for d in (dw,ds,dt,dd):
+			if Permission.q.filter(Permission.for_discr==d,Permission.right>=0,Permission.owner==a, Permission.parent==s).count():
+				continue
+			p=Permission(a, s, d, PERM_READ)
+			p.superparent=s
 
 		for d,e in ((ds,dd),(dw,dd),(ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk),(ds,dt)):
 			if Permission.q.filter(Permission.new_discr==e,Permission.for_discr==d, Permission.parent==s).count():
