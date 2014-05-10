@@ -204,7 +204,7 @@ class User(ObjectRef):
 		if site is None:
 			site = current_app.site
 		u = cls.q.filter_by(username=ANON_USER_NAME, site=site).order_by(cls.cur_login).first()
-		if u is not None and u.cur_login >= datetime.now()-timedelta(0,current_app.config.SESSION_COOKIE_AGE):
+		if u is not None and u.cur_login is not None and u.cur_login >= datetime.now()-timedelta(0,current_app.config.SESSION_COOKIE_AGE):
 			u = None
 		if u is None:
 			u = cls(username=ANON_USER_NAME, site=site)
