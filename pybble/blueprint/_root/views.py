@@ -13,7 +13,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from flask import request, url_for, flash
+from flask import request, url_for, flash, current_app
 
 from werkzeug import redirect, import_string, Response
 from werkzeug.routing import BuildError
