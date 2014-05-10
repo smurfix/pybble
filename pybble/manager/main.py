@@ -119,13 +119,14 @@ class RootManager(Manager):
 		return create_app(**kw)
 
 ############################### Accessing sub-sites by domain
-## (need
 
 class SubdomainServer(Server):
 	"""Actually run the server"""
 	def __call__(self,app, host,port,**opts):
 		dispatch = SubdomainDispatcher(app.site)
 		server = WSGIServer((host,port), dispatch)
+		db.commit()
+		db.close()
 		server.serve_forever()
 		
 class DeadApp(object):
