@@ -21,6 +21,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker,query
 from sqlalchemy.orm.exc import NoResultFound as NoData, MultipleResultsFound
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
+from sqlalchemy.pool import AssertionPool
 
 from formalchemy import Column, helpers
 from formalchemy.fields import IntegerFieldRenderer
@@ -41,6 +42,7 @@ def db_engine(**kw):
 	kw.setdefault('uri',config.sql_uri)
 	if config.TRACE:
 		kw.setdefault('echo',True)
+		kw.setdefault('poolclass',AssertionPool)
 	uri = kw.pop('uri')
 	if uri.startswith("mysql"):
 		uri += "?charset=utf8"
