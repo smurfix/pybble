@@ -109,7 +109,7 @@ Base = declarative_base(cls=Base)
 Base.super_readonly = False
 #logged_session(db,Base)
 
-def register(app):
+def init_db(app):
 	@app.teardown_request
 	def shutdown_session(exception=None):
 		if exception:
