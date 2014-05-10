@@ -606,7 +606,7 @@ class Permission(ObjectRef):
 	def __init__(self, user=None, obj=None, discr=None, right=None, inherit=None, new_discr=None, **kw):
 		assert right is not None
 		if discr is not None:
-			discr = Discriminator.get(discr,obj)
+			discr = Discriminator.get(discr)
 		super(Permission,self).__init__(**kw)
 		self.for_discr = discr
 		self.right = right
@@ -631,7 +631,7 @@ class Permission(ObjectRef):
 		if self._rec_str or not o or not p: return "‽"
 		try:
 			self._rec_str = False
-			return u'%s can %s %s %s %s %s' % (unicode(o),PERM[self.right],self.for_discr.name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N", Discriminator.q.get_by(id=self.new_discr).name if self.new_discr is not None else "-")
+			return u'%s can %s %s %s %s %s' % (unicode(o),PERM[self.right],self.for_discr.name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N", self.new_discr.name if self.new_discr is not None else "-")
 		finally:
 			self._rec_str = False
 
