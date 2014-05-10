@@ -60,7 +60,7 @@ do
                         shift; break;;
         esac
 done
-[ "$KEEP$REBUILD" = "yy" ] && usage 1
+[ "$NOCHECK$REBUILD" = "yy" ] && usage 1
 
 D=/tmp/pybble/$USER
 mkdir -p $D
@@ -78,7 +78,7 @@ if [ -f $rev ] ; then
 fi
 if [ -n "$REBUILD" ] ; then
 	redo=Y
-elif [ -n "$KEEP" ] ; then
+elif [ -n "$NOCHECK" ] ; then
 	if [ -z "$OREV" ] ; then
 		echo "No existing test database" >&2
 		exit 1
