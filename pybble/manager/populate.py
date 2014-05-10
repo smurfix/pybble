@@ -175,12 +175,12 @@ class PopulateCommand(Command):
 
 		## anon user
 		try:
-			anon = User.q.get_by(parent=root, username=ANON_USER_NAME)
+			anon = User.q.filter_by(parent=root, username=ANON_USER_NAME).count()
 		except NoData:
 			anon = User(ANON_USER_NAME)
-			logger.debug("The anon user has been created.")
+			logger.debug("An anon user has been created.")n
 		else:
-			logger.debug("The anon user exists. Good.")
+			logger.debug("An anon user exists. Good.")
 		db.commit()
 
 		## main user
