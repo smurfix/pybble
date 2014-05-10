@@ -37,7 +37,9 @@ from ._descr import D
 import sys
 
 import logging
-log_access = logging.getLogger('pybble.access').debug
+logger = logging.getLogger('pybble.access')
+def log_access(*args):
+	logger.debug(" ".join(str(x) for x in args))
 
 ## Auth
 #class Role(ObjectRef, RoleMixin):
