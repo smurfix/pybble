@@ -610,7 +610,9 @@ class Permission(ObjectRef):
 	_no_crumbs = True
 	@classmethod
 	def __declare_last__(cls):
-		check_unique(cls, 'owner parent name')
+		#check_unique(cls, 'owner parent ???')
+		no_update(cls.parent)
+		no_update(cls.owner)
 
 	right = Column(Integer, nullable=False)
 	inherit = Column(Boolean, nullable=True, doc="three-valued: False:this, True:descendants, None:Both")
