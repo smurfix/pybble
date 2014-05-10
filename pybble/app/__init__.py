@@ -182,12 +182,19 @@ class BaseApp(WrapperApp,Flask):
 		load_app_blueprints(self)
 		self.setup()
 
+		self.before_request(self._setup_site)
 		self.before_request(self._setup_user)
 	
+	def _setup_site(self, **kw):
+		if current_app.site is None:
+			request.site = None
+		else:
+			request.site = db.merge(current_app.site)
+		
 	def _setup_user(self, **kw):
 		## TODO convert to Flask.login
 		if current_app.config.TESTING:
-			request.user = current_app.site.owner
+			request.user = request.site.owner
 		elif 'user' in session:
 			request.user = User.q.get_by(id=session.user)
 		elif FROM_SCRIPT:
@@ -203,7 +210,7 @@ class BaseApp(WrapperApp,Flask):
 					logger.warn("No root user was found.")
 					request.user = None
 		else:
-			request.user = User.q.get_by(name="",site=current_app.site)
+			request.user = User.q.get_by(name="",site=request.site)
 	
 	def create_jinja_environment(self):
 		"""Add support for .haml templates."""
@@ -356,10 +363,10 @@ def create_site(parent,domain,app,name):
 
 def drop_site(site=None):
 	if site is None:
-		site = current_app.site
+		site = request.site
 	elif isinstance(site,string_types):
 		try:
-			site = Site.q.get_by(name=text_type(site),parent=current_app.site)
+			site = Site.q.get_by(name=text_type(site),parent=request.site)
 		except NoData:
 			site = Site.q.get_by(domain=text_type(site))
 	Delete(site)

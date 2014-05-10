@@ -183,7 +183,7 @@ class SiteBlueprint(ObjectRef):
 		if self.parent is not None:
 			assert site is None
 		elif site is None:
-			self.parent = current_app.site
+			self.parent = request.site
 		else:
 			if isinstance(site,string_types):
 				try:

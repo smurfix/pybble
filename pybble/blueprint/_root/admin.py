@@ -13,7 +13,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from flask import current_app
+from flask import request
 from pybble.render import render_template
 from pybble.core.models import obj_get
 from pybble.core.models.template import Template
@@ -28,13 +28,13 @@ from ._base import expose
 @expose("/admin/template/<oid>")
 def list_templates(oid=None):
 	"""List all named templates"""
-	obj = obj_get(oid) if oid else current_app.site
+	obj = obj_get(oid) if oid else request.site
 	s = obj
 	t = []
 	while s:
 		t.extend(Template.q.filter_by(superparent_id == s).order_by(Template.name))
 		s = s.parent
-	return render_template('templates.html', templates=t, obj=obj, title_trace=["Templates",current_app.site.name])
+	return render_template('templates.html', templates=t, obj=obj, title_trace=["Templates",request.site.name])
 	
 @expose("/admin/template_for/<oid>")
 def show_templates(oid):

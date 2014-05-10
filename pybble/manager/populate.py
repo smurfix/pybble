@@ -159,7 +159,7 @@ class PopulateCommand(Command):
 			else:
 				logger.debug("The root site exists. Good.")
 		db.commit()
-		current_app.site = root
+		request.site = root
 
 		## storage
 		try:

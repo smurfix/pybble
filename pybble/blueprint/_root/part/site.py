@@ -98,5 +98,5 @@ def newer(parent, name=None):
 
 @expose("/")
 def viewer(**args):
-	return render_my_template(obj=current_app.site, detail=TM_DETAIL_PAGE, **args)
+	return render_my_template(obj=request.site, detail=TM_DETAIL_PAGE, **args)
 

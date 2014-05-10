@@ -57,7 +57,7 @@ class Breadcrumb(TrackingObjectRef):
 		self.for_discr = obj.discriminator
 		self.owner = user
 		self.parent = obj
-		self.superparent = current_app.site
+		self.superparent = request.site
 
 	@property
 	def as_str(self):
@@ -204,7 +204,7 @@ class Tracker(TrackingObjectRef):
 		super(Tracker,self).__init__()
 		self.owner = user or request.user
 		self.parent = obj
-		self.superparent = site or current_app.site
+		self.superparent = site or request.site
 		self.comment = comment
 
 	@property

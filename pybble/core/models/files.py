@@ -68,7 +68,7 @@ class BinData(ObjectRef):
 	@no_autoflush
 	def __init__(self,name, ext=None,mimetype=None, content=None, parent=None, storage=None, **kw):
 		super(BinData,self).__init__(**kw)
-		if not parent: parent = current_app.site
+		if not parent: parent = request.site
 		if not storage: storage = parent.default_storage
 		if mimetype:
 			self.mime = mimetype
@@ -294,7 +294,7 @@ class StaticFile(ObjectRef):
 	def __init__(self, path, bin, **kw):
 		super(StaticFile,self).__init__(**kw)
 		self.path = path
-		self.superparent = current_app.site
+		self.superparent = request.site
 		self.parent = bin
 		
 	@property

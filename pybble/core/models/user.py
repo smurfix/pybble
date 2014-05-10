@@ -113,7 +113,7 @@ def log_access(*args):
 #
 #		username = username or cls.generate_username(email)
 #		if site is None:
-#			site = current_app.site
+#			site = request.site
 #		return cls.objects.create(
 #			name=name,
 #			email=email,
@@ -205,7 +205,7 @@ class User(ObjectRef):
 	@classmethod
 	def new_anon_user(cls,site=None):
 		if site is None:
-			site = current_app.site
+			site = request.site
 		g = Group.q.get_by(name=ANON_USER_NAME,owner=site,parent=site)
 		u = User.q.filter_by(site=site).order_by(cls.cur_login).join(Member,Member.parent_id==User.id).filter(Member.owner==site).first()
 		#u = cls.q.filter_by(username=ANON_USER_NAME, site=site).order_by(cls.cur_login).first()
@@ -249,17 +249,17 @@ class User(ObjectRef):
 		else:
 			## there may be more than one anon user
 			try:
-				User.q.get_by(parent=current_app.site, username=username)
+				User.q.get_by(parent=request.site, username=username)
 			except (AttributeError,NoData):
 				pass
 			else:
-				raise RuntimeError(u"User '%s' already exists in %s" % (username,current_app.site))
+				raise RuntimeError(u"User '%s' already exists in %s" % (username,request.site))
 		self.username=username
 		self.password=password
 
 		db.flush()
 		if self.parent is None:
-			self.parent = current_app.site
+			self.parent = request.site
 		db.flush()
 	
 	@property
@@ -297,10 +297,10 @@ class User(ObjectRef):
 		else:
 			s.visit()
 			if not s.superparent: # bugfix
-				s.superparent = current_app.site
+				s.superparent = request.site
 	
 	def last_visited(self,cls=None):
-		q = { "owner":self, "superparent":current_app.site }
+		q = { "owner":self, "superparent":request.site }
 		if cls:
 			q["discr"] = cls.cls_discr()
 		try:
@@ -311,14 +311,14 @@ class User(ObjectRef):
 			return r.parent
 	
 	def all_visited(self, cls=None):
-		q = { "owner":self, "superparent":current_app.site }
+		q = { "owner":self, "superparent":request.site }
 		if cls:
 			q["discr"] = cls.cls_discr()
 		return Breadcrumb.q.filter_by(**q).order_by(Breadcrumb.visited.desc())
 
 	def is_verified(self, site=None):
 		if site is None:
-			site = current_app.site
+			site = request.site
 		try:
 			m = Member.q.get_by(user=self,group=site)
 		except NoData:
@@ -328,7 +328,7 @@ class User(ObjectRef):
 
 	def add_verified(self,v,site=None):
 		if site is None:
-			site = current_app.site
+			site = request.site
 		try:
 			m = Member.q.get_by(user_id=self.id,group_id=site.id)
 		except NoData:
@@ -374,8 +374,8 @@ class User(ObjectRef):
 		"""Recursively get the permission of this user for that (type of) object."""
 
 		ru = getattr(request,"user",None)
-		if obj is not current_app.site and \
-		   ru and ru.can_admin(current_app.site, discr=current_app.site.classdiscr):
+		if obj is not request.site and \
+		   ru and ru.can_admin(request.site, discr=request.site.classdiscr):
 			if current_app.config.DEBUG_ACCESS:
 				log_access("ADMIN",obj)
 			return want if want and want < 0 else PERM_ADMIN
@@ -386,7 +386,7 @@ class User(ObjectRef):
 			return want
 
 		if current_app.config.DEBUG_ACCESS:
-			log_access("PERM", Discriminator.get(discr).name if discr else "-", Discriminator.get(new_discr) if new_discr else "-", (PERM_name(want) if want else "-")+":",obj,"FOR",user,"AT",current_app.site, u"⇒")
+			log_access("PERM", Discriminator.get(discr).name if discr else "-", Discriminator.get(new_discr) if new_discr else "-", (PERM_name(want) if want else "-")+":",obj,"FOR",user,"AT",request.site, u"⇒")
 
 		pq = []
 		if want is not None:

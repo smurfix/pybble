@@ -96,7 +96,7 @@ def create_blueprint(site, blueprint, path, name=None):
 
 def drop_blueprint(blueprint,site=None):
 	if site is None:
-		site = current_app.site
+		site = request.site
 
 	if isinstance(blueprint,string_types):
 		blueprint = Blueprint.q.get_by(name=text_type(blueprint))

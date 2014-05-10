@@ -76,7 +76,7 @@ class DatabaseLoader(BaseLoader):
 			t = template
 		else:
 			if isinstance(template,str): template = unicode(template)
-			site = current_app.site
+			site = request.site
 			t = None
 			while site:
 				try: t = Template.q.get_by(name=template,superparent=site)
@@ -87,7 +87,7 @@ class DatabaseLoader(BaseLoader):
 				raise TemplateNotFound(template)
 		mtime = t.modified
 		return (t.data,
-				"//db/%s/%s/%s" % (t.__class__.__name__,(t.superparent or current_app.site).domain,getattr(t,"name",t.oid())),
+				"//db/%s/%s/%s" % (t.__class__.__name__,(t.superparent or request.site).domain,getattr(t,"name",t.oid())),
 				lambda: False ) # t.modified != mtime) 
 	
 def add_to_jinja(jinja_env):
@@ -249,7 +249,7 @@ def render_template(template, mimetype=NotGiven, **context):
 			# CURRENT_URL=request.build_absolute_uri(),
 			USER=getattr(request,"user",None),
 			MESSAGES=get_flashed_messages(),
-			SITE=current_app.site,
+			SITE=request.site,
 			CRUMBS=(user.groups+list(p.parent for p in user.all_visited()[0:20])) if user else None,
 			NOW=datetime.utcnow(),
 		)
@@ -314,12 +314,12 @@ import email.Message
 
 def send_mail(to='', template='', server=None, **context):
 	if "site" not in context:
-		context["site"] = current_app.site
+		context["site"] = request.site
 	if "user" not in context:
 		context["user"] = request.user
 	rand = random_string(8)
 	for x in range(3):
-		context["id"+str(x)] = "%d.%s%d@%s" % (time(),random_string(10),x,current_app.site.domain)
+		context["id"+str(x)] = "%d.%s%d@%s" % (time(),random_string(10),x,request.site.domain)
 	
 	if server:
 		mailServer = server
@@ -388,7 +388,7 @@ for a,b in PERM.iteritems():
 def add_to_app(app):
 	@app.route("/static/<path:path>")
 	def serve_path(request,path):
-		site = current_app.site
+		site = request.site
 		while site:
 			try:
 				sf = StaticFile.q.get_by(superparent=site, path=path)

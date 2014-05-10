@@ -18,7 +18,7 @@ import sys
 import logging
 from importlib import import_module
 
-from flask import current_app
+from flask import request
 from flask._compat import text_type
 
 from . import Manager,Option
@@ -47,7 +47,7 @@ class AddBlueprint(Command):
 		bp = Blueprint.q.get_by(name=bp)
 		if name is None:
 			name = bp.name
-		create_blueprint(site=current_app.site, path=path, blueprint=bp, name=name)
+		create_blueprint(site=request.site, path=path, blueprint=bp, name=name)
 		
 class DirBlueprint(Command):
 	"""List available blueprints, or blueprint details."""
@@ -93,9 +93,9 @@ class ParamBlueprint(Command):
 			self.parser.print_help()
 			sys.exit(not help)
 		try:
-			bp = SiteBlueprint.q.get_by(name=name, site=current_app.site)
+			bp = SiteBlueprint.q.get_by(name=name, site=request.site)
 		except NoData:
-			raise NoData("Blueprint site=%s name=%s" % (current_app.site.name,name))
+			raise NoData("Blueprint site=%s name=%s" % (request.site.name,name))
 		if key is None:
 			for k,v in bp.config.items():
 				print(k,v)
@@ -128,7 +128,7 @@ class ListBlueprint(Command):
 		if help:
 			self.parser.print_help()
 			sys.exit(not help)
-		for bp in current_app.site.blueprints:
+		for bp in request.site.blueprints:
 			print(bp.name,bp.blueprint,bp.path)
 		
 class BlueprintManager(Manager):

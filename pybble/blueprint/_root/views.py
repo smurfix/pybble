@@ -56,18 +56,18 @@ def tryAddOn(obj,req, **kw):
 
 @expose("/")
 def mainpage():
-	return render_my_template(current_app.site)
+	return render_my_template(request.site)
 
 @expose('/tree')
 @expose('/tree/<oid>')
 def view_tree(oid=None):
 	if oid is None:
-		obj = current_app.site
+		obj = request.site
 	else:
 		obj = obj_get(oid)
 
 	request.user.will_admin(obj)
-	if obj is current_app.site:
+	if obj is request.site:
 		title_trace=["Objects"]
 	else:
 		title_trace=[unicode(obj),"Objects"]
@@ -224,7 +224,7 @@ def view_oid(oid, **args):
 		return render_my_template(obj=obj, detail=TM_DETAIL_PAGE, **args);
 	else:
 		try:
-			if not args and (not isinstance(obj,Site) or obj == current_app.site):
+			if not args and (not isinstance(obj,Site) or obj == request.site):
 				return redirect(url_for('.part.%s.viewer' % (obj.classname.lower(),),**args))
 		except BuildError:
 			pass

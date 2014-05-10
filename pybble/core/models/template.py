@@ -52,8 +52,8 @@ class Template(ObjectRef):
 		self.name = name
 		self.data = data
 		self.owner = request.user
-		self.parent = parent or current_app.site
-		self.superparent = getattr(parent,"site",None) or current_app.site
+		self.parent = parent or request.site
+		self.superparent = getattr(parent,"site",None) or request.site
 
 		dot = name.rindex(".")
 		self.mime = mime_ext(name[dot+1:])

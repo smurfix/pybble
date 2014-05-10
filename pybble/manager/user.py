@@ -17,7 +17,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 import os
 import sys
 
-from flask import current_app
+from flask import request
 from flask._compat import text_type
 
 from . import PrepCommand as Command
@@ -36,7 +36,7 @@ class AddUser(Command):
 		if help or name is None:
 			self.parser.print_help()
 			sys.exit(not help)
-		create_user(current_app.site, name)
+		create_user(request.site, name)
 		
 class ListUsers(Command):
 	"""Show the list of known sites"""
@@ -50,7 +50,7 @@ class ListUsers(Command):
 		if help:
 			self.parser.print_help()
 			sys.exit(0)
-		u = User.q.filter_by(parent=current_app.site)
+		u = User.q.filter_by(parent=request.site)
 		if name is not None:
 			u = u.filter_by(username=name)
 		for user in u:
@@ -82,7 +82,7 @@ class ParamUser(Command):
 		if help:
 			self.parser.print_help()
 			sys.exit(0)
-		site = current_app.site
+		site = request.site
 		if bp is not None:
 			site = SiteBlueprint.q.get_by(site=site, name=name).blueprint
 		else:
@@ -92,8 +92,8 @@ class ParamUser(Command):
 				print(var.name,var.value, sep="\t")
 			return
 		user = User.q.get_by(name=key)
-		if user.parent != current_app.site and not force:
-			raise InvalidCommand("This user's main site is ‘{}’.\nYou're changing settings for ‘{}’.\nUse the ‘--force’ option if you mean it.".format(user.parent.name,current_app.site.name))
+		if user.parent != request.site and not force:
+			raise InvalidCommand("This user's main site is ‘{}’.\nYou're changing settings for ‘{}’.\nUse the ‘--force’ option if you mean it.".format(user.parent.name,request.site.name))
 		if key is None:
 			for v in SiteConfigVar.q.filter(SiteConfigVar.owner.parent==site, SiteConfigVar.parent==user):
 				print(v.var.name,v.value, sep="\t")

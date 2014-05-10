@@ -36,7 +36,7 @@ try:
 	def convert(ctx,s,extern=False):
 		b = ""
 		if extern:
-			b = "http://"+current_app.site.domain
+			b = "http://"+request.site.domain
 		b += "/wiki/"
 		obj = ctx.get("obj",None)
 		if obj and isinstance(obj,WikiPage):

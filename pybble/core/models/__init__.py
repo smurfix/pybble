@@ -514,8 +514,8 @@ class Object(Dumpable, Base):
 				obj = s
 			elif got_site:
 				break
-			elif current_app.site not in seen:
-				obj = current_app.site # last resort
+			elif request.site not in seen:
+				obj = request.site # last resort
 			else:
 				break
 
