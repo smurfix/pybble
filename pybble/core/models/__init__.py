@@ -24,7 +24,7 @@ from sqlalchemy.inspection import inspect
 from ...compat import py2_unicode
 from ..json import register_object
 
-from ..db import Base, Column, IDrenderer, db, NoData
+from ..db import Base, Column, IDrenderer, db, NoData, maybe_stale
 from ..signal import ObjSignal
 
 from flask import request,current_app
@@ -222,6 +222,7 @@ class Object(Dumpable, Base):
 		else:
 			return None
 		
+	@maybe_stale
 	def __str__(self):
 		if self.deleted: d = "DEL "
 		else: d = ""
@@ -264,6 +265,7 @@ class Object(Dumpable, Base):
 		return res
 
 	@property
+	@maybe_stale
 	def deleted(self):
 		if self.id is None:
 			db.flush()
