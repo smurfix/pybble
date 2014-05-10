@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, print_function, division, unicode_literals
 ##
@@ -25,7 +24,7 @@ from flask._compat import string_types,text_type
 
 from .. import json, config
 from ..utils import attrdict
-from ..db import db, Base, Column, NoData
+from ..db import db, Base, Column, NoData, check_unique,no_update
 from ..signal import ConfigChanged
 from . import ObjectRef
 from ._descr import D
@@ -47,6 +46,8 @@ from sqlalchemy.types import TypeDecorator, VARCHAR
 #from .admin.utils import _l
 
 logger = logging.getLogger()
+
+## ConfigDict
 
 class ConfigDict(Config,attrdict):
 	_parent = None
@@ -177,6 +178,8 @@ class ConfigDict(Config,attrdict):
 	def _arm(self):
 		self._set_db = True
 
+## JSON type
+
 class JSON(TypeDecorator):
 	"""Represents any Python object as a json-encoded string.
 	"""
@@ -195,9 +198,17 @@ class JSON(TypeDecorator):
 class JsonValue(object):
 	value = Column(JSON)
 
+## ConfigVar
+
 class ConfigVar(ObjectRef, JsonValue):
 	"""Describes one configuration variable."""
 	_descr = D.ConfigVar
+
+	@classmethod
+	def __declare_last__(cls):
+		check_unique(cls,"parent name")
+		no_update(cls.name)
+		no_update(cls.parent)
 
 	# Parent: the object this setting is known at
 
@@ -207,12 +218,6 @@ class ConfigVar(ObjectRef, JsonValue):
 
 	def __init__(self, parent, name,value, **kw):
 		## cannot have a uniqueness constraint across inherited tables
-		try:
-			ConfigVar.q.get_by(name=name,parent=parent)
-		except NoData:
-			pass
-		else:
-			raise ManyData("Variable {} exists in {}".format(name,parent))
 		super(ConfigVar,self).__init__(**kw)
 		self.parent = parent
 		self.name = name
@@ -236,6 +241,8 @@ class ConfigVar(ObjectRef, JsonValue):
 	def as_str(self):
 		return u"%s=%s @%s" % (self.name,repr(self.value),self.parent.name)
 
+## SiteConfigVar
+
 class SiteConfigVar(ObjectRef, JsonValue):
 	"""This is one configuration variable's value for a site (or some other object, in fact)."""
 	_descr = D.SiteConfigVar
@@ -244,6 +251,9 @@ class SiteConfigVar(ObjectRef, JsonValue):
 	def __declare_last__(cls):
 		if not hasattr(cls,'var'):
 			cls.var = cls.superparent
+		check_unique(cls,"parent var")
+		no_update(cls.name)
+		no_update(cls.parent)
 	# Owner: the user who last set the variable
 
 	def __init__(self,parent,var=None,superparent=None,**kw):
@@ -254,12 +264,6 @@ class SiteConfigVar(ObjectRef, JsonValue):
 			assert superparent is None
 		assert var is not None
 
-		try:
-			SiteConfigVar.q.get_by(var=var,parent=parent)
-		except NoData:
-			pass
-		else:
-			raise ManyData("A value for {} already exists in {}".format(var,parent))
 		super(SiteConfigVar,self).__init__(var=var,parent=parent,**kw)
 
 	@property
@@ -267,4 +271,5 @@ class SiteConfigVar(ObjectRef, JsonValue):
 		if self.var is None or self.parent is None:
 			return "‽"
 		return u"%s=%s @%s" % (self.var.name,repr(self.value),self.parent.name)
+
 

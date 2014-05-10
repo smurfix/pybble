@@ -59,6 +59,8 @@ def mime_ext(ext):
 	except NoData:
 		return MIMEext.q.get_by(ext=ext).mime
 
+## MIME type
+
 @py2_unicode
 class MIMEtype(Base):
 	"""Known MIME Types"""
@@ -82,6 +84,8 @@ def find_mimetype(typ,subtyp=None):
 	if subtyp is None:
 		typ,subtyp = typ.split("/")
 	return MIMEtype.q.get_by(typ=typ, subtyp=subtyp)
+
+## additional MIME filename extensions
 
 @py2_unicode
 class MIMEext(Base):

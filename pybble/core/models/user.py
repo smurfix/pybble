@@ -30,7 +30,7 @@ from sqlalchemy.types import TypeDecorator, VARCHAR
 from ... import ANON_USER_NAME
 from ...utils import random_string, AuthError
 from ...core import config
-from ..db import Base, Column, db, NoData, no_autoflush
+from ..db import Base, Column, db, NoData, no_autoflush, check_unique,no_update
 from . import Object,ObjectRef, PERM,PERM_NONE,PERM_ADMIN,PERM_READ,PERM_ADD,PERM_name, Discriminator
 from .site import Site
 from ._descr import D
@@ -150,6 +150,8 @@ def log_access(*args):
 #	def user(self):
 #		return User.objects(id=self.user_id).first()
 
+## User
+
 class Password(TypeDecorator):
 	"""Represents any Python object as a json-encoded string.
 	"""
@@ -184,9 +186,13 @@ class User(ObjectRef):
 	def __declare_last__(cls):
 		if not hasattr(cls,'site'):
 			cls.site = cls.parent
+		no_update(cls.username)
+		no_update(cls.parent)
+		# Uniqueness of username+site is handled in __init__,
+		# which works because none of these may be updated
 	        
 	# A simple way to make 'username' read-only
-	username = Column(Unicode(30), nullable=False)
+	username = Column(Unicode(30), nullable=False, unique=True)
 	password = Column(Password(), nullable=True)
 	## empty: cannot be used.  None: not known.
 
@@ -206,7 +212,11 @@ class User(ObjectRef):
 	def new_anon_user(cls,site=None):
 		if site is None:
 			site = request.site
-		g = Group.q.get_by(name=ANON_USER_NAME,owner=site,parent=site)
+		try:
+			g = Group.q.get_by(name=ANON_USER_NAME,owner=site,parent=site)
+		except NoData:
+			g = Group(name=ANON_USER_NAME,owner=site,parent=site,superparent=site)
+			db.flush()
 		u = User.q.filter_by(site=site).order_by(cls.cur_login).join(Member,Member.parent_id==User.id).filter(Member.owner==site).first()
 		#u = cls.q.filter_by(username=ANON_USER_NAME, site=site).order_by(cls.cur_login).first()
 		if u is not None and u.cur_login is not None and u.cur_login >= datetime.now()-timedelta(0,current_app.config.SESSION_COOKIE_AGE):
@@ -498,10 +508,8 @@ class User(ObjectRef):
 	def has_trackers(self):
 		return WantTracking.q.filter_by(owner=self).count()
 
-@event.listens_for(User.username, 'set')
-def block_updates(target, value, oldvalue, initiator):
-	if oldvalue not in (NO_VALUE,NEVER_SET):
-		raise RuntimeError("You cannot change {} (old value: ‘{}’)".format(target,oldvalue))
+
+## Groups
 
 class Group(ObjectRef):
 	"""
@@ -523,9 +531,7 @@ class Group(ObjectRef):
 		self.owner = owner
 		self.name = name
 	
-def named_group(owner, name):
-	"""Return the site-specific group with that name."""
-	return Group.q.get_by(name=name, owner=site)
+## Membership
 
 class Member(ObjectRef):
 	"""\
@@ -583,6 +589,8 @@ Member: %s
 
 Object.new_member_rule(Member, "owner","parent")
 
+## Permissions
+
 class Permission(ObjectRef):
 	"""
 		Permission checks: This user can do that to objects of yonder type.
@@ -600,6 +608,9 @@ class Permission(ObjectRef):
 	__tablename__ = "permissions"
 	_descr = D.Permission
 	_no_crumbs = True
+	@classmethod
+	def __declare_last__(cls):
+		check_unique(cls, 'owner parent name')
 
 	right = Column(Integer, nullable=False)
 	inherit = Column(Boolean, nullable=True, doc="three-valued: False:this, True:descendants, None:Both")
@@ -682,18 +693,4 @@ for a,b in PERM.iteritems():
 	setattr(Object,'can_'+b.lower(), c)
 	setattr(Object,'will_'+b.lower(), d)
 
-# owner+parent+name should be unique.
-@event.listens_for(Group.name, 'set')
-@no_autoflush
-def block_dup_name(target, value, oldvalue, initiator):
-	if isinstance(oldvalue,string_types) and value == oldvalue:
-		return
-	try:
-		Group.q.get_by(owner=target.owner, parent=target.parent, name=value)
-	except NoData:
-		pass
-	else:
-		raise RuntimeError("A group ‘{}’ already exists at ‘{}/{}’".format(value, target.parent,target.owner))
-
-Object.new_member_rule(Member, "owner","parent")
 

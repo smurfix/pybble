@@ -25,10 +25,12 @@ from flask._compat import string_types
 
 from ... import ROOT_SITE_NAME,ANON_USER_NAME
 from .. import config
-from ..db import Base, Column, db, NoData, no_autoflush, maybe_stale
+from ..db import Base, Column, db, NoData, no_autoflush, maybe_stale, no_update,check_unique
 from ..signal import app_list, ConfigChanged,NewSite
 from . import Object, ObjectRef, TM_DETAIL_PAGE, Loadable
 from ._descr import D
+
+## App
 
 class App(Loadable,ObjectRef):
 	"""An App known to pybble."""
@@ -36,12 +38,19 @@ class App(Loadable,ObjectRef):
 	__tablename__ = "apps"
 	_descr = D.App
 
-	name = Column(Unicode(30), nullable=False, doc="Human-readable short name")
+	@classmethod
+	def __declare_last__(cls):
+		no_update(cls.path)
+
+	name = Column(Unicode(30), nullable=False, unique=True, doc="Human-readable short name")
 	doc = Column(Unicode(1000), nullable=True, doc="Docstring")
 
 	@property
 	def as_str(self):
 		return u"‘%s’ @ %s" % (self.name, self.path)
+
+
+## Blueprint
 
 class Blueprint(Loadable,ObjectRef):
 	"""A Flask blueprint known to pybble. Usually a child of the master site"""
@@ -49,12 +58,19 @@ class Blueprint(Loadable,ObjectRef):
 	__tablename__ = "blueprints"
 	_descr = D.Blueprint
 
-	name = Column(Unicode(30), nullable=False)
-	doc = Column(Unicode(1000), nullable=True)
+	@classmethod
+	def __declare_last__(cls):
+		no_update(cls.path)
+
+	name = Column(Unicode(30), unique=True, nullable=False, doc="Human-readable short name")
+	doc = Column(Unicode(1000), nullable=True, doc="docstring")
 
 	@property
 	def as_str(self):
 		return u"‘%s’ @ %s" % (self.name, self.path)
+
+
+## Site
 
 class Site(ObjectRef):
 	"""A web domain / app."""
@@ -68,6 +84,7 @@ class Site(ObjectRef):
 			cls.superuser = cls.parent
 		if not hasattr(cls,'app'):
 			cls.app = cls.superparent
+		check_unique(cls, "name parent")
 
 	domain = Column(Unicode(100), nullable=False, unique=True)
 	name = Column(Unicode(30), nullable=False, unique=True)
@@ -154,6 +171,9 @@ domain: %s
 			if s is not self: # don't recurse
 				s.signal.send(ConfigChanged, name=name)
 
+
+## SiteBlueprint
+
 class SiteBlueprint(ObjectRef):
 	"""A blueprint attached to a site's path"""
 	__tablename__ = "site_blueprint"
@@ -164,6 +184,7 @@ class SiteBlueprint(ObjectRef):
 			cls.site = cls.parent
 		if not hasattr(cls,'blueprint'):
 			cls.blueprint = cls.superparent
+		check_unique(cls, "parent name")
 
 	name = Column(Unicode(30), required=True, nullable=False) ## (, verbose_name="blueprint's name, for url_for() et al.")
 	path = Column(Unicode(1000), nullable=False, default="") ## (, verbose_name="URL path where to attach this ")
@@ -209,22 +230,11 @@ class SiteBlueprint(ObjectRef):
 	def as_str(self):
 		return u"‘%s’: %s @ %s%s" % (self.name, self.blueprint.name, self.site.domain, self.path)
 
+
 @event.listens_for(SiteBlueprint.path, 'set')
 def block_bad_path(target, value, oldvalue, initiator):
 	if value == "/":
 		return
 	if value == "" or value[0] != '/' or value[-1] == '/' or "//" in value or "/../" in value:
 		raise RuntimeError("You cannot set a blueprint path to ‘{}’)".format(value))
-
-@event.listens_for(SiteBlueprint.name, 'set')
-@no_autoflush
-def block_dup_name(target, value, oldvalue, initiator):
-	if isinstance(oldvalue,string_types) and value == oldvalue:
-		return
-	try:
-		SiteBlueprint.q.get_by(site=target.site, name=value)
-	except NoData:
-		pass
-	else:
-		raise RuntimeError("A blueprint ‘{}’ already exists at ‘{}’".format(value, self.site.domain))
 

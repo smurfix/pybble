@@ -24,7 +24,7 @@ from sqlalchemy import event
 
 from ...core import config
 from ...utils import hash_data
-from ..db import Base, Column, no_autoflush, db
+from ..db import Base, Column, no_autoflush, db, check_unique,no_update
 from . import Object,ObjectRef, update_modified
 from ._descr import D
 from .types import MIMEtype, mime_ext
@@ -32,6 +32,8 @@ from .types import MIMEtype, mime_ext
 import os
 
 logger = logging.getLogger('pybble.core.models.files')
+
+## BinData
 
 class BinData(ObjectRef):
 	"""
@@ -49,6 +51,7 @@ class BinData(ObjectRef):
 	def __declare_last__(cls):
 		if not hasattr(cls,'storage'):
 			cls.storage = cls.superparent
+		no_update(cls.hash)
 
 	storage_seq = Column(Integer, autoincrement=True, unique=True)
 	## The mysql driver ignores autoincrement on non-primary-key columns.
@@ -274,6 +277,9 @@ class BinData(ObjectRef):
 				os.remove(p)
 			raise
 
+
+## StaticFile
+
 class StaticFile(ObjectRef):
 	"""\
 		Record that a static file belongs to a specific site.
@@ -287,6 +293,7 @@ class StaticFile(ObjectRef):
 	def __declare_last__(cls):
 		if not hasattr(cls,'bindata'):
 			cls.bindata = cls.parent
+		check_unique(cls, "superparent path")
 
 	path = Column(Unicode(1000), nullable=False)
 	modified = Column(DateTime,default=datetime.utcnow)

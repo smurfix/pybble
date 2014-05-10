@@ -16,15 +16,18 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from datetime import datetime,timedelta
 
 from sqlalchemy import Integer, Unicode, DateTime, Boolean, ForeignKey
+from sqlalchemy import event
 from sqlalchemy.orm import relationship
 
 from flask import request,current_app
 
 from .. import config
-from ..db import Base, Column, no_autoflush
+from ..db import Base, Column, no_autoflush, no_update,check_unique
 from . import Object,ObjectRef, TM_DETAIL, Discriminator
 from ._descr import D
 from .types import MIMEtype, mime_ext
+
+## Template
 
 class Template(ObjectRef):
 	"""
@@ -38,6 +41,7 @@ class Template(ObjectRef):
 	def __declare_last__(cls):
 		if not hasattr(cls,'site'):
 			cls.site = cls.parent
+		check_unique(cls, "parent name")
 
 	name = Column(Unicode(30), nullable=False)
 	data = Column(Unicode(100000))
@@ -58,10 +62,20 @@ class Template(ObjectRef):
 		dot = name.rindex(".")
 		self.mime = mime_ext(name[dot+1:])
 
+
+## TemplateMatch
+
 class TemplateMatch(ObjectRef):
 	"""
 		Associate a template to an object.
+
 		Parent: The object which the template is for.
+		for_discr: data types the template shall be applied to
+
+		if Inherit==False, only for_discr==parent.discr makes sense.
+
+		TODO: Check whether for_discr should be in the template instead
+		(or in addition, to speed up searches?)
 		"""
 	__tablename__ = "template_match"
 	_descr = D.TemplateMatch
@@ -69,9 +83,6 @@ class TemplateMatch(ObjectRef):
 	def __declare_last__(cls):
 		if not hasattr(cls,'obj'):
 			cls.obj = cls.parent
-
-	data = Column(Unicode(100000))
-	modified = Column(DateTime,default=datetime.utcnow)
 
 	for_discr_id = Column('discr',Integer, ForeignKey(Discriminator.id), nullable=False)
 	for_discr = relationship(Discriminator, primaryjoin=for_discr_id==Discriminator.id)
@@ -98,4 +109,10 @@ class TemplateMatch(ObjectRef):
 		finally:
 			return u'%s %s %s %s' % (TM_DETAIL[self.detail],self.for_discr.name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N")
 			self._rec_str = False
+
+def _ref_descr(mapper, connection, obj):
+	if obj.inherit is False:
+		assert obj.for_descr == obj.parent.descr
+event.listen(TemplateMatch, 'before_insert', _ref_descr)
+event.listen(TemplateMatch, 'before_update', _ref_descr)
 

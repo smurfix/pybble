@@ -46,13 +46,6 @@ logger = logging.getLogger('pybble.core.users')
 # User management
 
 def create_user(site,name,pw=None):
-	try:
-		user = User.q.get_by(username=name)
-	except NoData:
-		pass
-	else:
-		return ManyDataExc("The user ‘{}’ already exists (site ‘{}’).".format(name,user.site.name))
-
 	user = User(username=name,password=pw)
 	db.flush()
 	return user

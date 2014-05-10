@@ -28,14 +28,16 @@ import os
 from . import ObjectRef
 from ._descr import D
 
+## Storage
+
 class Storage(ObjectRef):
 	"""A box for binary data files"""
 	_descr = D.Storage
 	_no_crumbs = True
 
-	name = Column(Unicode(30), nullable=False)
-	path = Column(Unicode(1000), nullable=False)
-	url = Column(Unicode(200), nullable=False)
+	name = Column(Unicode(30), unique=True, nullable=False)
+	path = Column(Unicode(1000), unique=True, nullable=False)
+	url = Column(Unicode(200), unique=True, nullable=False)
 
 	def __init__(self, name,path,url, **kw):
 		super(Storage,self).__init__(**kw)
@@ -49,4 +51,5 @@ class Storage(ObjectRef):
 	@property
 	def as_str(self):
 		return u"%s at %s" % (self.name,unicode(self.path))
+
 

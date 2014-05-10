@@ -24,9 +24,11 @@ from sqlalchemy.orm import relationship,backref
 
 from ...utils import random_string
 from .. import config
-from ..db import Column, NoData
+from ..db import Column, NoData, check_unique,no_update
 from . import Loadable, ObjectRef
 from ._descr import D
+
+## VerifierBase
 
 VerifierBases = {}
 class VerifierBase(Loadable, ObjectRef):
@@ -36,8 +38,16 @@ class VerifierBase(Loadable, ObjectRef):
 
 	__tablename__ = "verifierbase"
 	_descr = D.VerifierBase
-	name = Column(Unicode(30), nullable=False)
+
+	@classmethod
+	def __declare_last__(cls):
+		no_update(cls.path)
+
+	name = Column(Unicode(30), unique=True, nullable=False)
 	doc = Column(Unicode(1000), nullable=True)
+
+
+## Verifier
 
 class Verifier(ObjectRef):
 	"""
@@ -49,8 +59,13 @@ class Verifier(ObjectRef):
 	_descr = D.Verifier
 	@classmethod
 	def __declare_last__(cls):
+		if not hasattr(cls,'obj'):
+			cls.obj = cls.parent
 		if not hasattr(cls,'base'):
 			cls.base = cls.superparent
+		if not hasattr(cls,'user'):
+			cls.user = cls.owner
+		check_unique(cls,"user obj base")
 
 	code = Column(Unicode(30), nullable=False)
 
@@ -60,16 +75,20 @@ class Verifier(ObjectRef):
 
 	def __init__(self,base=None, obj=None, user=None, code=None, days=None, **kw):
 		super(Verifier,self).__init__(**kw)
+
 		if isinstance(base, basestring):
 			base = VerifierBase.q.get_by(name=unicode(base))
+
 		if self.superparent is None:
 			self.superparent = base
 		else:
 			assert base is None
+
 		if self.parent is None:
 			self.parent = obj
 		else:
 			assert obj is None
+
 		if self.owner is None:
 			self.owner = user or obj
 		else:

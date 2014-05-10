@@ -26,12 +26,14 @@ from flask import request, current_app
 
 from . import Object,ObjectRef, Discriminator
 from ._descr import D
-from ..db import Base, Column
+from ..db import Base, Column, check_unique
 from ...core import config
 
 class TrackingObjectRef(ObjectRef):
 	"""Objects of this subclass cannot get changes recorded"""
 	pass
+
+## Breadcrumb
 
 class Breadcrumb(TrackingObjectRef):
 	"""\
@@ -75,6 +77,8 @@ class Breadcrumb(TrackingObjectRef):
 			self.last_visited = self.visited
 			self.visited = now
 		self.cur_visited = now
+
+## Change
 
 class Change(TrackingObjectRef):
 	"""\
@@ -123,6 +127,8 @@ class Change(TrackingObjectRef):
 				.filter(Change.parent==self.parent)\
                 	.order_by(Change.timestamp.desc())\
                 	.first()
+
+## Delete
 
 class Delete(TrackingObjectRef):
 	"""\
@@ -178,6 +184,8 @@ class Delete(TrackingObjectRef):
 	@property
 	def change_obj(self):
 		return self.parent
+
+## Tracker
 
 class Tracker(TrackingObjectRef):
 	"""\
@@ -235,6 +243,8 @@ class Tracker(TrackingObjectRef):
 	def is_del(self):
 		return isinstance(self.parent, Delete)
 
+## UserTracker
+
 class UserTracker(TrackingObjectRef):
 	"""\
 		Record that a change be reported to a user. This will be auto-built from Tracker and WantTracking objects.
@@ -269,6 +279,10 @@ class UserTracker(TrackingObjectRef):
 	@property
 	def change_obj(self):
 		return self.parent.change_obj
+
+check_unique(UserTracker,"user tracker")
+
+## WantTracking
 
 class WantTracking(ObjectRef):
 	"""

@@ -16,7 +16,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from functools import update_wrapper
 
-from sqlalchemy import create_engine, Integer, types, util, exc as sa_exc
+from sqlalchemy import create_engine, Integer, types, util, exc as sa_exc, event
 from sqlalchemy.orm import scoped_session, sessionmaker,query
 from sqlalchemy.orm.exc import NoResultFound as NoData, MultipleResultsFound
 from sqlalchemy.exc import IntegrityError
@@ -138,3 +138,33 @@ def maybe_stale(fn):
 
 	return update_wrapper(go, fn)
 	
+def check_unique(cls, *vars):
+	"""\
+		This is a before-insert/update verifier which tests for uniqueness
+		across tables. A database-based constraint is not possible because 
+		parent pointers are in a different table.
+
+		Usage:
+
+			class SomeObj(ObjectRef):
+				name = ...
+			check_unique(SomeObj,"name parent")
+			# check_unique(SomeObj,"name","parent") ## same thing
+		"""
+	if len(vars) == 1:
+		vars = vars[0].split(" ")
+	assert vars
+	def check(mapper, connection, obj):
+		q = [getattr(cls,v)==getattr(obj,v) for v in vars]
+		if obj.id is not None:
+			q.append(cls.id != obj.id)
+		assert 0 == cls.q.filter(*q).count()
+	event.listen(cls,"before_insert",check)
+	event.listen(cls,"before_update",check)
+
+def _block_updates(target, value, oldvalue, initiator):
+	if oldvalue not in (NO_VALUE,NEVER_SET):
+		raise RuntimeError("You cannot change {} (old value: ‘{}’)".format(target,oldvalue))
+def no_update(var):
+	event.listen(var, 'set', _block_updates)
+
