@@ -252,8 +252,8 @@ class SiteConfigVar(ObjectRef, JsonValue):
 		if not hasattr(cls,'var'):
 			cls.var = cls.superparent
 		check_unique(cls,"parent var")
-		no_update(cls.name)
 		no_update(cls.parent)
+		no_update(cls.superparent)
 	# Owner: the user who last set the variable
 
 	def __init__(self,parent,var=None,superparent=None,**kw):
