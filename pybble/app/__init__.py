@@ -305,17 +305,22 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 		"""
 
 	global cfg_app
-	if verbose:
-		logging.basicConfig(stream=sys.stderr,level=logging.DEBUG)
 
 	if cfg_app is None:
 		cfg_app = _fake_app(os.path.abspath(os.curdir))
 		if config:
 			os.environ['PYBBLE'] = config
 		from pybble.core import config as cfg
+		assert testing == cfg.get('TESTING',False), (testing,cfg.get('TESTING',False))
 		cfg_app.config = cfg
 
-		assert testing == cfg.get('TESTING',False), (testing,cfg.get('TESTING',False))
+		if verbose:
+			logging.basicConfig(
+				stream=sys.stderr,
+				level=getattr(logging, app.config['LOGGER_LEVEL']),
+				format=app.config['LOGGER_FORMAT'],
+				datefmt=app.config['LOGGER_DATE_FORMAT']
+			)
 	
 	with cfg_app.test_request_context('/'):
 		if site is None:
@@ -339,14 +344,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 		else:
 			app = site.app.mod(site, testing=testing)
 
-		if verbose:
-			logging.basicConfig(
-				level=getattr(logging, app.config['LOGGER_LEVEL']),
-				format=app.config['LOGGER_FORMAT'],
-				datefmt=app.config['LOGGER_DATE_FORMAT']
-			)
-
-	init_db
+	init_db(app)
 	return app
 
 def create_site(parent,domain,app,name):
