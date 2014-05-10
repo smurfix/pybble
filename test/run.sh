@@ -19,6 +19,7 @@ Usage: $(basename $0)  -- run Pybble in a test environment
 	-n	don't rebuild the test database
 	-p	don't mangle assertions
 	-r	always rebuild the test database
+	-t	trace database execution
 	-v	be verbose
 	XX	run script XX instead of testing
 END
@@ -31,8 +32,9 @@ DEBUG=
 PLAIN=
 REBUILD=
 V=
+TRACE=
 export POSIXLY_CORRECT=1
-T="$(/usr/bin/getopt "+dhknprv" "$@")" || usage 1
+T="$(/usr/bin/getopt "+dhknprtv" "$@")" || usage 1
 eval set -- "$T"
 for i
 do
@@ -50,6 +52,8 @@ do
                         shift; PLAIN=y ;;
                 -r)
                         shift; REBUILD=y ;;
+                -t)
+                        shift; TRACE=y ;;
                 -v)
                         shift; V=y ;;
                 --)
@@ -61,7 +65,9 @@ done
 D=/tmp/pybble/$USER
 mkdir -p $D
 
-skip=N
+if [ -n "$TRACE" ] ; then
+	export PYBBLE_TRACE=True
+fi
 
 NREV=$(git rev-parse --short=9 HEAD)
 rev="$D/tag"
