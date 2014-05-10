@@ -13,9 +13,9 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from pybble.app import WrapperApp
+from pybble.app import BaseApp
 
-class App(WrapperApp):
+class App(BaseApp):
 	"""
 	This app simply does the same thing as its parent.
 	"""
