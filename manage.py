@@ -37,4 +37,10 @@ manager = RootManager()
 
 if __name__ == '__main__':
 	init_logging()
-	manager.run()
+	import pdb,sys,traceback
+	try:
+		manager.run()
+	except Exception:
+		x=sys.exc_info()
+		traceback.print_exc()
+		pdb.post_mortem(x[2])
