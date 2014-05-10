@@ -211,7 +211,7 @@ class User(ObjectRef):
 			Permission(user=u,obj=site,right=PERM_READ)
 		else:
 			### Clean up this anon user
-			from tracker import Delete, TrackingObjectRef
+			from .tracking import Delete, TrackingObjectRef
 			for c in u.all_children(want=None):
 				if not isinstance(c,TrackingObjectRef):
 					Delete(c,comment="ANON user cleanup")
