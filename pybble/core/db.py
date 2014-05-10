@@ -18,6 +18,7 @@ from functools import update_wrapper
 
 from sqlalchemy import create_engine, Integer, types, util, exc as sa_exc, event
 from sqlalchemy.orm import scoped_session, sessionmaker,query
+from sqlalchemy.orm.base import NO_VALUE,NEVER_SET
 from sqlalchemy.orm.exc import NoResultFound as NoData, MultipleResultsFound
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
@@ -163,7 +164,7 @@ def check_unique(cls, *vars):
 	event.listen(cls,"before_update",check)
 
 def _block_updates(target, value, oldvalue, initiator):
-	if oldvalue not in (NO_VALUE,NEVER_SET):
+	if oldvalue not in (None,NO_VALUE,NEVER_SET):
 		raise RuntimeError("You cannot change {} (old value: ‘{}’)".format(target,oldvalue))
 def no_update(var):
 	event.listen(var, 'set', _block_updates)
