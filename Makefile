@@ -4,7 +4,7 @@ all: fetch pybble/utils/sql_diff.py
 
 .PHONY:	test
 test:
-	@sh test/run.sh
+	@sh test/run.sh -r
 
 update:
 	@sh utils/update_boilerplate
