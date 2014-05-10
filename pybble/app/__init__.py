@@ -336,10 +336,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 				try:
 					site = Site.q.get_by(name=text_type(site))
 				except NoData:
-					if site != ROOT_SITE_NAME:
-						raise RuntimeError("The site '%s' does not exist yet."%(site,))
-					logger.warn("Creating a new root site")
-					site = create_site(None,"localhost","_root",ROOT_SITE_NAME)
+					raise RuntimeError("The site '%s' does not exist yet."%(site,))
 
 		if site is not None:
 			site = db.merge(site)
