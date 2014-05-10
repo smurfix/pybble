@@ -1,4 +1,7 @@
 #!/bin/bash
+if test -z "$BASH_VERSION" ; then
+	exec /bin/bash "$0" "$*"
+fi
 
 test -n "$*" || set -x
 set -e
@@ -15,7 +18,8 @@ cat >&2 <<END
 Usage: $(basename $0)  -- run Pybble in a test environment
 	-h	this help
 	-d	debug when a test fails / run using the debugger
-	-k	keep intermediate files
+	-k	don't delete the databse copy afterwards
+	-K	don't copy the database (breaks testing)
 	-n	don't rebuild the test database
 	-p	don't mangle assertions
 	-r	always rebuild the test database
@@ -27,6 +31,7 @@ exit $1
 }
 
 KEEP=
+KEEPAFTER=
 NOCHECK=
 DEBUG=
 PLAIN=
@@ -34,33 +39,37 @@ REBUILD=
 V=
 TRACE=
 export POSIXLY_CORRECT=1
-T="$(/usr/bin/getopt "+dhknprtv" "$@")" || usage 1
-eval set -- "$T"
-for i
-do
+while getopts "dhkKnprtv" i ; do
         case "$i"
         in
-                -d)
-                        shift; DEBUG=y ;;
-                -h)
+                d)
+                        DEBUG=y ;;
+                h)
                         usage 0 ;;
-                -n)
-                        shift; NOCHECK=y ;;
-                -k)
-                        shift; KEEP=y ;;
-                -p)
-                        shift; PLAIN=y ;;
-                -r)
-                        shift; REBUILD=y ;;
-                -t)
-                        shift; TRACE=y ;;
-                -v)
-                        shift; V=y ;;
+                n)
+                        NOCHECK=y ;;
+                k)
+                        KEEP=y ;;
+                K)
+                        KEEPAFTER=y ;;
+                p)
+                        PLAIN=y ;;
+                r)
+                        REBUILD=y ;;
+                t)
+                        TRACE=y ;;
+                v)
+                        V=y ;;
+                *)
+                        usage 1 ;;
                 --)
-                        shift; break;;
+                        break ;;
         esac
 done
 [ "$NOCHECK$REBUILD" = "yy" ] && usage 1
+[ "$KEEP$KEEPAFTER" = "yy" ] && usage 1
+[ "$KEEPAFTER" = "y" -a -z "$*" ] && usage 1
+shift $((OPTIND-1))
 
 D=/tmp/pybble/$USER
 mkdir -p $D
@@ -111,30 +120,33 @@ else
 	PYBBLE_SQL_DATABASE="$D/$OREV".db
 fi
 
-[ -z "$V" ] || echo "Copying database"
-DATA="$(tempfile)"
-SQL="$DATA.db"
-rm $DATA
-cp -a "$PYBBLE_SQL_DATABASE" "$SQL"
-cp -a "$PYBBLE_MEDIA_PATH" "$DATA"
-PYBBLE_SQL_DATABASE="$SQL"
-PYBBLE_MEDIA_PATH="$DATA"
+if [ -z "$KEEPAFTER" ] ; then
+	[ -z "$V" ] || echo "Copying database"
+	DATA="$(tempfile)"
+	SQL="$DATA.db"
+	rm $DATA
+	cp -a "$PYBBLE_SQL_DATABASE" "$SQL"
+	cp -a "$PYBBLE_MEDIA_PATH" "$DATA"
+	PYBBLE_SQL_DATABASE="$SQL"
+	PYBBLE_MEDIA_PATH="$DATA"
+	if [ -n "$KEEP" ] ; then
+		trap 'echo rm -r $DATA $SQL' 0 1 2 15
+	else
+		trap 'rm -r $DATA $SQL' 0 1 2 15
+	fi
+else
+	[ -z "$V" ] || echo "Modifying the database"
+fi
 
 SHELL=
 PY=python
 ASS=
-if [ -n "$KEEP" ] ; then
-	shift
-	trap 'echo rm -r $DATA $SQL' 0 1 2 15
-else
-	trap 'rm -r $DATA $SQL' 0 1 2 15
-    if [ -n "$PLAIN" ] ; then
-		ASS="$ASS --assert=plain"
-	fi
-    if [ -n "$DEBUG" ] ; then
-		PY=pdb
-		ASS="$ASS -s --pdb"
-	fi
+if [ -n "$PLAIN" ] ; then
+	ASS="$ASS --assert=plain"
+fi
+if [ -n "$DEBUG" ] ; then
+	PY=pdb
+	ASS="$ASS -s --pdb"
 fi
 
 if [ "$*" = "" ] ; then
