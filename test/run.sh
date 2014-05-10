@@ -19,6 +19,7 @@ Usage: $(basename $0)  -- run Pybble in a test environment
 	-n	don't rebuild the test database
 	-p	don't mangle assertions
 	-r	always rebuild the test database
+	-v	be verbose
 	XX	run script XX instead of testing
 END
 exit $1
@@ -29,8 +30,9 @@ NOCHECK=
 DEBUG=
 PLAIN=
 REBUILD=
+V=
 export POSIXLY_CORRECT=1
-T="$(/usr/bin/getopt "+dhknpr" "$@")" || usage 1
+T="$(/usr/bin/getopt "+dhknprv" "$@")" || usage 1
 eval set -- "$T"
 for i
 do
@@ -48,6 +50,8 @@ do
                         shift; PLAIN=y ;;
                 -r)
                         shift; REBUILD=y ;;
+                -v)
+                        shift; V=y ;;
                 --)
                         shift; break;;
         esac
@@ -81,27 +85,32 @@ else
 fi
 
 if [ $redo = Y ] ; then
+	[ -z "$V" ] || echo "Building database $NREV"
 	if [ -n "$OREV" ] ; then
 		rm -rf $D/"$OREV".*
 	fi
 	rm -f "$rev"
 	echo "$NREV" > "$rev"
-	PYBBLE_MEDIA_PATH="$D/$NREV"
-	PYBBLE_SQL_DATABASE="$D/$NREV"
+	PYBBLE_MEDIA_PATH="$D/$NREV".files
+	PYBBLE_SQL_DATABASE="$D/$NREV".db
 
+	mkdir -p "$PYBBLE_MEDIA_PATH"
 	./manage.py -t -S schema -x
+	[ -z "$V" ] || echo "Populating database $NREV"
 	./manage.py -t -S populate
 	echo "$NREV" > $rev
 else
+	[ -z "$V" ] || echo "Re-using database $OREV"
 	PYBBLE_MEDIA_PATH="$D/$OREV".files
 	PYBBLE_SQL_DATABASE="$D/$OREV".db
 fi
 
-DATA=$(tempfile)
-SQL=$DATA.db
+[ -z "$V" ] || echo "Copying database"
+DATA="$(tempfile)"
+SQL="$DATA.db"
 rm $DATA
-cp -a "$PYBBLE_SQL_DATABASE" $SQL
-cp -a "$PYBBLE_MEDIA_PATH" $DATA
+cp -a "$PYBBLE_SQL_DATABASE" "$SQL"
+cp -a "$PYBBLE_MEDIA_PATH" "$DATA"
 PYBBLE_SQL_DATABASE="$SQL"
 PYBBLE_MEDIA_PATH="$DATA"
 
@@ -125,12 +134,16 @@ else
 fi
 
 if [ "$*" = "" ] ; then
+	[ -z "$V" ] || echo "Consistency check"
 	./manage.py -t core check
+	[ -z "$V" ] || echo "Config dump"
 	./manage.py -t core config | fgrep -qs 'SESSION_COOKIE_DOMAIN=None'
 
+	[ -z "$V" ] || echo "Starting test run"
 	#PYTHONPATH=$(pwd) test/run.py -x
 	PYTHONPATH=$(pwd) py.test $ASS -x
 else
+	[ -z "$V" ] || echo "# ./manage.py -t $*"
 	PYTHONPATH=$(pwd) $PY ./manage.py -t "$@"
 fi
 
