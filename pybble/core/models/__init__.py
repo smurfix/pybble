@@ -65,7 +65,7 @@ def PERM_name(id):
 	return PERM[int(id)]
 
 class Loadable(object):
-	path = Column(Unicode(100), nullable=False, doc="Python object name")
+	path = Column(Unicode(100), nullable=False, unique=True, doc="Python object name")
 	_module = None
 
 	@property
@@ -119,7 +119,7 @@ class Discriminator(Loadable, Dumpable, Base):
 	"""Discriminator for Object"""
 	__tablename__ = "discriminator"
 
-	name = Column(Unicode(30), nullable=False)
+	name = Column(Unicode(30), nullable=False, unique=True)
 	doc = Column(Unicode(250), nullable=True)
 
 	def __str__(self):
