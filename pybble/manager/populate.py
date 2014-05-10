@@ -25,7 +25,6 @@ from .. import TEMPLATE_PATH, STATIC_PATH
 from ..utils import random_string
 from ..core import config
 from ..core.db import db, NoData
-from ..core.db import db, NoData
 from . import Manager,Command,Option
 
 logger = logging.getLogger('pybble.manager.populate')
@@ -59,11 +58,12 @@ class PopulateCommand(Command):
 
 	def main(self,app, force=False):
 		from ..core.models import Discriminator,Renderer
+		from ..core.models import PERM_ADMIN,PERM_READ,PERM_ADD
 		from ..core.models._descr import D
 		from ..core.models.site import Site
 		from ..core.models.storage import Storage
 		from ..core.models.files import BinData,StaticFile
-		from ..core.models.user import User
+		from ..core.models.user import User,Permission
 		from ..core.models.types import MIMEtype
 		from ..core.models.template import Template
 		from ..core.models.config import ConfigVar
@@ -371,6 +371,7 @@ class PopulateCommand(Command):
 				yield text_type(k),v,getattr(DS,'d_'+k,None)
 		add_vars(gen_vars(),root)
 
+		## built-in Apps and Blueprints
 		from ..app import list_apps
 		from ..blueprint import list_blueprints
 		from ..core.models.site import App,Blueprint,SiteBlueprint
@@ -413,6 +414,58 @@ class PopulateCommand(Command):
 				print_exc()
 				sys.exit(1)
 
+		## Basic permissions
+		s=root
+		u=root.owner
+		for d in Discriminator.q.all():
+			if Permission.q.filter(Permission.for_discr==d,Permission.right>=PERM_ADMIN, Permission.parent==root).count():
+				continue
+			p=Permission(u, s, d, PERM_ADMIN)
+			p.superparent=s
+		db.flush()
+
+		dw = Discriminator.q.get_by(name="WikiPage")
+		ds = Discriminator.q.get_by(name="Site")
+		dp = Discriminator.q.get_by(name="Permission")
+		dk = Discriminator.q.get_by(name="Comment")
+		dt = Discriminator.q.get_by(name="WantTracking")
+		dd = Discriminator.q.get_by(name="BinData")
+
+		# a = anon_user
+		#for d in (dw,ds,dt,dd):
+		#	if Permission.q.filter(Permission.for_discr==d,Permission.right>=0,Permission.owner==a, Permission.parent==s).count():
+		#		continue
+		#	p=Permission(a, s, d, PERM_READ)
+		#	p.superparent=s
+
+		for d,e in ((ds,dd),(dw,dd),(ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk),(ds,dt)):
+			if Permission.q.filter(Permission.new_discr==e,Permission.for_discr==d, Permission.parent==s).count():
+				continue
+			p=Permission(u, s, d, PERM_ADD)
+			p.new_discr=e
+			p.superparent=s
+
+			# View templates
+			#for addon in self.addons:
+			#	for cls in addon.__dict__.values():
+			#		if not(isinstance(cls,type) and issubclass(cls,Object)):
+			#			continue
+			#		if cls.__name__ not in addon.__ALL__:
+			#			continue
+			#		if db.filter_by(Permission, discr=cls.cls_discr()).count():
+			#			continue
+			#		p=Permission(u, s, ds, PERM_ADMIN)
+			#		p.new_discr=cls.cls_discr()
+			#		p.superparent=s
+			#		db.store.add(p)
+			#
+			#		p=Permission(u, s, ds, PERM_ADD)
+			#		p.new_discr=cls.cls_discr()
+			#		p.superparent=s
+
+			db.flush()
+
+		## possible root app fix-ups
 		rapp = App.q.get_by(name="_root")
 		if root.app is None or force:
 			if root.app is not rapp:
@@ -443,4 +496,5 @@ class PopulateCommand(Command):
 				logger.debug("Root site's blueprint created.")
 		db.commit()
 
+		## All done!
 		logger.debug("Setup finished.")
