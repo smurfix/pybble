@@ -129,13 +129,11 @@ if [ -n "$KEEP" ] ; then
 else
 	trap 'rm -r $DATA $SQL' 0 1 2 15
     if [ -n "$PLAIN" ] ; then
-		shift
 		ASS="$ASS --assert=plain"
 	fi
     if [ -n "$DEBUG" ] ; then
 		PY=pdb
 		ASS="$ASS -s --pdb"
-		shift
 	fi
 fi
 
