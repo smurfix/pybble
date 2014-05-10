@@ -30,7 +30,7 @@ from ... import ANON_USER_NAME
 from ...utils import random_string, AuthError
 from ...core import config
 from ..db import Base, Column, db, NoData, no_autoflush
-from . import Object,ObjectRef, PERM,PERM_NONE,PERM_READ,PERM_ADD, Discriminator
+from . import Object,ObjectRef, PERM,PERM_NONE,PERM_READ,PERM_ADD,PERM_name, Discriminator
 from .site import Site
 from ._descr import D
 
