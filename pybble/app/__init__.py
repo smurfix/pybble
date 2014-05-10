@@ -315,11 +315,15 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 		cfg_app.config = cfg
 
 		if verbose:
+			if app:
+				cf = app.config
+			else:
+				cf = cfg
 			logging.basicConfig(
 				stream=sys.stderr,
-				level=getattr(logging, app.config['LOGGER_LEVEL']),
-				format=app.config['LOGGER_FORMAT'],
-				datefmt=app.config['LOGGER_DATE_FORMAT']
+				level=getattr(logging, cf['LOGGER_LEVEL']),
+				format=cf['LOGGER_FORMAT'],
+				datefmt=cf['LOGGER_DATE_FORMAT']
 			)
 	
 	with cfg_app.test_request_context('/'):
