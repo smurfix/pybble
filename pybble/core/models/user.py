@@ -281,7 +281,7 @@ class User(ObjectRef):
 		elif self.username:
 			return self.username
 		else:
-			return self.email
+			return "·ANONYM·"
 
 	def visits(self,obj):
 		if getattr(obj,"_no_crumbs",False):
