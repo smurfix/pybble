@@ -35,8 +35,6 @@ from time import time
 from datetime import datetime,timedelta
 import sys,os
 
-url_map = Map([Rule('/static/<file>', endpoint='static', build_only=True)])
-
 def valid_obj(form, field):
 	"""Field verifier which checks that an object ID is valid"""
 	try:
@@ -91,17 +89,6 @@ class DatabaseLoader(BaseLoader):
 				lambda: False ) # t.modified != mtime) 
 	
 def add_to_jinja(jinja_env):
-
-	expose_map = {}
-	def expose(rule, **kw):
-		def decorate(f):
-			name = "%s.%s" % (f.__module__,f.__name__)
-			kw['endpoint'] = name
-			expose_map[name] = f
-			url_map.add(Rule(rule, **kw))
-			return f
-		return decorate
-
 	def render(obj, *a,**kw):
 		if hasattr(obj,"render"):
 			return obj.render(*a,**kw)
