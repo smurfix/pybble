@@ -367,6 +367,11 @@ class Object(Dumpable, Base):
 
 	@property
 	def templates(self):
+		global TemplateMatch
+		if TemplateMatch is None:
+			from pybble.core.models.template import TemplateMatch as TM
+			TemplateMatch = TM
+
 		q = [ TemplateMatch.parent_id == self.id ]
 		return TemplateMatch.q.filter_by(parent=self).order_by(TemplateMatch.discr,TemplateMatch.detail,TemplateMatch.inherit)
 
@@ -504,6 +509,11 @@ class Object(Dumpable, Base):
 			if seen on standard parent/child path).
 			"""
 		discr = self.discr
+
+		global TemplateMatch
+		if TemplateMatch is None:
+			from pybble.core.models.template import TemplateMatch as TM
+			TemplateMatch = TM
 
 		no_inherit = True
 		obj = self
@@ -713,3 +723,5 @@ class renderObject(Object):
 				return "<pre>"+Markup.escape(self.data)+"<pre>\n"
 			return _wr
 
+# TemplateMatch
+TemplateMatch = None
