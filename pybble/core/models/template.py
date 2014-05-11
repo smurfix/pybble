@@ -22,7 +22,7 @@ from sqlalchemy.orm import relationship
 from flask import request,current_app
 
 from .. import config
-from ..db import Base, Column, no_autoflush, no_update,check_unique
+from ..db import Base, Column, no_update,check_unique
 from . import Object,ObjectRef, TM_DETAIL, Discriminator
 from ._descr import D
 from .types import MIMEtype, mime_ext
@@ -50,7 +50,6 @@ class Template(ObjectRef):
 	mime_id = Column(Integer, ForeignKey(MIMEtype.id), nullable=False, index=True)
 	mime = relationship(MIMEtype, primaryjoin=mime_id==MIMEtype.id)
 
-	@no_autoflush
 	def __init__(self, name, data, parent=None, **kw):
 		super(Template,self).__init__(**kw)
 		self.name = name

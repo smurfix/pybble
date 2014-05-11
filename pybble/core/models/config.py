@@ -24,7 +24,7 @@ from flask._compat import string_types,text_type
 
 from .. import json, config
 from ..utils import attrdict
-from ..db import db, Base, Column, NoData, check_unique,no_update
+from ..db import db, Base, Column, NoData, check_unique,no_update, refresh
 from ..signal import ConfigChanged
 from . import ObjectRef
 from ._descr import D
@@ -103,7 +103,7 @@ class ConfigDict(Config,attrdict):
 				super(ConfigDict,self).__setitem__(name,config[name])
 			return
 
-		s = db.merge(self._parent)
+		s = refresh(self._parent)
 		seen = set()
 		if recurse is True:
 			recurse = "parent"

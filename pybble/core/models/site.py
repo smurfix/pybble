@@ -25,7 +25,7 @@ from flask._compat import string_types
 
 from ... import ROOT_SITE_NAME,ANON_USER_NAME
 from .. import config
-from ..db import Base, Column, db, NoData, no_autoflush, maybe_stale, no_update,check_unique
+from ..db import Base, Column, db, NoData, maybe_stale, no_update,check_unique
 from ..signal import app_list, ConfigChanged,NewSite
 from . import Object, ObjectRef, TM_DETAIL_PAGE, Loadable
 from ._descr import D
@@ -189,7 +189,6 @@ class SiteBlueprint(ObjectRef):
 	name = Column(Unicode(30), required=True, nullable=False) ## (, verbose_name="blueprint's name, for url_for() et al.")
 	path = Column(Unicode(1000), nullable=False, default="") ## (, verbose_name="URL path where to attach this ")
 
-	@no_autoflush
 	def __init__(self,site=None,blueprint=None,**kw):
 		super(SiteBlueprint,self).__init__(**kw)
 

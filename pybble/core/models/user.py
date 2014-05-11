@@ -30,7 +30,7 @@ from sqlalchemy.types import TypeDecorator, VARCHAR
 from ... import ANON_USER_NAME
 from ...utils import random_string, AuthError
 from ...core import config
-from ..db import Base, Column, db, NoData, no_autoflush, check_unique,no_update
+from ..db import Base, Column, db, NoData, check_unique,no_update
 from . import Object,ObjectRef, PERM,PERM_NONE,PERM_ADMIN,PERM_READ,PERM_ADD,PERM_name, Discriminator
 from .site import Site
 from ._descr import D
@@ -192,7 +192,7 @@ class User(ObjectRef):
 		# which works because none of these may be updated
 	        
 	# A simple way to make 'username' read-only
-	username = Column(Unicode(30), nullable=False, unique=True)
+	username = Column(Unicode(30), nullable=False)
 	password = Column(Password(), nullable=True)
 	## empty: cannot be used.  None: not known.
 
@@ -249,7 +249,6 @@ class User(ObjectRef):
 		res += "First login: %s\nLast login: %s\n" % (self.first_login,self.last_login)
 		return res
 
-	@no_autoflush
 	def __init__(self, username=ANON_USER_NAME, password=None, **kw):
 		super(User,self).__init__(**kw)
 		if username == ANON_USER_NAME:

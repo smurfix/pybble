@@ -42,11 +42,9 @@ class AppConfigTestCase(TC):
 
 		with pytest.raises(ManyData):
 			site21a = Site(name='foofoo', domain='foo2.foo.example.com', parent=site2)
-			db.flush()
 		db.rollback()
 		with pytest.raises(ManyData):
 			site21a = Site(name='foofoo3', domain='foo.foo.example.com', parent=site2)
-			db.flush()
 		db.rollback()
 
 		ConfigVar.exists(site,"test1","Test One",-1)

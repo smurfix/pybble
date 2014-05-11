@@ -31,7 +31,7 @@ from werkzeug.contrib.securecookie import SecureCookie
 from .. import ROOT_SITE_NAME
 from .models.user import User
 from .models.site import Site
-from .db import db, NoData
+from .db import db, NoData, refresh
 from .signal import all_apps,app_list
 
 class Session(SecureCookie):
@@ -151,7 +151,7 @@ class SubdomainDispatcher(object):
 		# later instantiate the apps.
 		i = self.instances
 		seen = set()
-		r = db.merge(self.root)
+		r = refresh(self.root)
 		for s in r.all_sites:
 			if s.domain not in i:
 				i[s.domain] = s

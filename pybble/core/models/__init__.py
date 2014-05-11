@@ -14,6 +14,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ##BP
 
 from datetime import datetime,timedelta
+from functools import update_wrapper
 
 from sqlalchemy import Integer, Unicode, ForeignKey
 from sqlalchemy import event, select, func, and_
@@ -24,7 +25,7 @@ from sqlalchemy.inspection import inspect
 from ...compat import py2_unicode
 from ..json import register_object
 
-from ..db import Base, Column, IDrenderer, db, NoData, maybe_stale
+from ..db import Base, Column, IDrenderer, db, NoData, maybe_stale, no_autoflush
 from ..signal import ObjSignal
 
 from flask import request,current_app
@@ -224,6 +225,7 @@ class Object(Dumpable, Base):
 		
 	@maybe_stale
 	def __str__(self):
+		return '<%s:%s>' % (self.__class__.__name__, self.id)
 		if self.deleted: d = "DEL "
 		else: d = ""
 		s = self.as_str
@@ -234,12 +236,13 @@ class Object(Dumpable, Base):
 		return u'‹%s%s:%s%s›' % (d,self.__class__.__name__, self.id, s)
 
 	def __repr__(self):
+		return '<%s:%s>' % (self.__class__.__name__, self.id)
 		try:
 			return str(self)
 		except Exception as err:
 			if self.deleted: d = "DEL "
 			else: d = ""
-			return '<%s%s: ?? %s>' % (self.__class__.__name__, self.id, str(err))
+			return '<%d%s%s: ?? %s>' % (d, self.__class__.__name__, self.id, str(err))
 	
 	@property
 	def signal(self):
@@ -597,6 +600,15 @@ class ObjectMeta(type(Object)):
 				setattr(cls,'__tablename__',name.lower())
 			if "modified" in dct:
 				event.listen(cls,'before_update',update_modified)
+			def wrap_init(old_init):
+				@no_autoflush
+				def init(self,*a,**k):
+					old_init(self,*a,**k)
+					db.add(self)
+					db.flush((self,))
+				update_wrapper(init,old_init)
+				return init
+			setattr(cls,'__init__', wrap_init(dct.get('__init__',cls.__init__)))
 
 		super(ObjectMeta, cls).__init__(name, bases, dct)
 
@@ -606,9 +618,6 @@ def update_modified(mapper, connection, target):
 
 class ObjectRef(Object):
 	__metaclass__ = ObjectMeta
-	def __init__(self,*a,**k):
-		super(ObjectRef,self).__init__(*a,**k)
-		db.add(self)
 
 	#__abstract__ = True
 	## this would prevent inheritance from working

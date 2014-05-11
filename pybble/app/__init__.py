@@ -30,7 +30,7 @@ from werkzeug import import_string
 from blinker import Signal
 
 from .. import FROM_SCRIPT,ROOT_SITE_NAME,ROOT_USER_NAME
-from ..core.db import db, NoData, init_db
+from ..core.db import db, NoData, init_db, refresh
 from ..core.signal import all_apps
 from ..core.models.template import Template as DBTemplate
 from ..core.models.site import Site,App,SiteBlueprint,Blueprint
@@ -189,7 +189,7 @@ class BaseApp(WrapperApp,Flask):
 		if current_app.site is None:
 			request.site = None
 		else:
-			request.site = db.merge(current_app.site)
+			request.site = refresh(current_app.site)
 		
 	def _setup_user(self, **kw):
 		## TODO convert to Flask.login
@@ -346,7 +346,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 					raise RuntimeError("The site '%s' does not exist yet."%(site,))
 
 		if site is not None:
-			site = db.merge(site)
+			site = refresh(site)
 		if site is None or site.app is None:
 			app = cfg_app
 		else:

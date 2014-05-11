@@ -18,7 +18,10 @@ from functools import update_wrapper
 
 from sqlalchemy import create_engine, Integer, types, util, exc as sa_exc, event
 from sqlalchemy.orm import scoped_session, sessionmaker,query
+from sqlalchemy.inspection import inspect
+from sqlalchemy.orm.session import Session
 from sqlalchemy.orm.base import NO_VALUE,NEVER_SET
+from sqlalchemy.orm.attributes import instance_state
 from sqlalchemy.orm.exc import NoResultFound as NoData, MultipleResultsFound
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
@@ -32,7 +35,13 @@ from flask._compat import implements_to_string as py2_unicode
 
 class ManyDataExc(IntegrityError,MultipleResultsFound):
 	"""Class for tests of unique constraint violations"""
-	pass
+	msg = None
+	def __init__(self, msg):
+		self.msg = msg
+	def __str__(self):
+		return "{}: {}".format(self.__class__.__name,self.msg)
+	def __repr__(self):
+		return "<{}: {}>".format(self.__class__.__name,self.msg)
 ManyData = (ManyDataExc,)+ManyDataExc.__bases__
 
 from . import config
@@ -52,7 +61,23 @@ engine = db_engine()
 
 # don't keep database connections open for more than 5min
 
+#class PybbleSession(Session):
+#	"""Ignore recursive calls to flush()"""
+#	def flush(self, *a,**k):
+#		if self._flushing:
+#			return
+#		super(PybbleSession,self).flush(*a,**k)
+#
+#	def merge(self,obj):
+#		if self._flushing:
+#			return obj
+#		s = instance_state(obj)
+#		if not s.expired:
+#			return obj
+#		return super(PybbleSession,self).merge(obj)
+
 db = scoped_session(sessionmaker(autocommit=False,
+                                 #class_=PybbleSession,
                                  #autoflush=False,
                                  bind=engine))
 
@@ -132,13 +157,26 @@ def no_autoflush(fn):
 
 	return update_wrapper(go, fn)
 
+def refresh(obj):
+	"""\
+		Return a current copy of my argument, if that is necessary.
+		"""
+	i = inspect(obj)
+	if i.expired:
+		obj = i.class_.q.get_by(id=i.identity[0])
+	return obj
+
 def maybe_stale(fn):
-	def go(self, *args, **kw):
-		self = db.merge(self)
+	"""\
+		Decorator which refreshes its target's first argument.
+		"""
+	def refresh_first(self, *args, **kw):
+		self = refresh(self)
 		return fn(self, *args, **kw)
 
-	return update_wrapper(go, fn)
+	return update_wrapper(refresh_first, fn)
 	
+@no_autoflush
 def check_unique(cls, *vars):
 	"""\
 		This is a before-insert/update verifier which tests for uniqueness
@@ -159,7 +197,8 @@ def check_unique(cls, *vars):
 		q = [getattr(cls,v)==getattr(obj,v) for v in vars]
 		if obj.id is not None:
 			q.append(cls.id != obj.id)
-		assert 0 == cls.q.filter(*q).count()
+		if cls.q.filter(*q).count() > 0:
+			raise ManyDataExc("Duplicate:{}:{}".format(",".join(vars), str(obj)))
 	event.listen(cls,"before_insert",check)
 	event.listen(cls,"before_update",check)
 

@@ -24,7 +24,7 @@ from sqlalchemy import event
 
 from ...core import config
 from ...utils import hash_data
-from ..db import Base, Column, no_autoflush, db, check_unique,no_update
+from ..db import Base, Column, db, check_unique,no_update
 from . import Object,ObjectRef, update_modified
 from ._descr import D
 from .types import MIMEtype, mime_ext
@@ -68,7 +68,6 @@ class BinData(ObjectRef):
 	def lookup(content):
 		return BinData.q.filter(BinData.hash == hash_data(content), BinData.superparent != None).one()
 			
-	@no_autoflush
 	def __init__(self,name, ext=None,mimetype=None, content=None, parent=None, storage=None, **kw):
 		super(BinData,self).__init__(**kw)
 		if not parent: parent = request.site
