@@ -223,6 +223,9 @@ class Object(Dumpable, Base):
 		else:
 			return None
 		
+	def _init(self):
+		pass
+
 	@maybe_stale
 	def __str__(self):
 		return '<%s:%s>' % (self.__class__.__name__, self.id)
@@ -606,9 +609,14 @@ class ObjectMeta(type(Object)):
 					old_init(self,*a,**k)
 					db.add(self)
 					db.flush((self,))
+					self._init()
 				update_wrapper(init,old_init)
 				return init
 			setattr(cls,'__init__', wrap_init(dct.get('__init__',cls.__init__)))
+
+			@event.listens_for(cls, 'load')
+			def receive_load(target, context):
+			    target._init()
 
 		super(ObjectMeta, cls).__init__(name, bases, dct)
 
@@ -675,6 +683,7 @@ class renderObject(Object):
 	renderer = relationship(Renderer, primaryjoin=renderer_id==Renderer.id)
 
 	def __init__(self,renderer = None):
+		super(renderObject,self).__init__()
 		if renderer is not None:
 			if not isinstance(renderer,Renderer):
 				renderer = Renderer.q.get_by(name=renderer)

@@ -131,6 +131,9 @@ class Site(ObjectRef):
 			except (AttributeError,RuntimeError):
 				self.owner = None if self.parent is None else self.parent.owner
 		db.flush()
+
+	def _init(self):
+		super(Site,self)._init()
 		app_list.send(NewSite)
 		self.signal.connect(self.config_changed, ConfigChanged)
 
