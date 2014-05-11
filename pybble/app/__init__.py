@@ -17,12 +17,14 @@ import os
 import sys
 import logging
 from time import time
+from itertools import chain
 
 from flask import Flask, request, render_template, g, session, Markup, Response, current_app
 from flask.config import Config
 from flask.templating import DispatchingJinjaLoader
 from flask.ext.script import Server
 from flask._compat import text_type
+from flask.wrappers import Request
 
 from hamlish_jinja import HamlishExtension
 from jinja2 import Template,BaseLoader, TemplateNotFound
@@ -192,6 +194,20 @@ class BaseApp(WrapperApp,Flask):
 		else:
 			request.site = refresh(current_app.site)
 		
+	def inject_url_defaults(self, endpoint, values):
+		"""Injects the URL defaults for the given endpoint directly into
+		the values dictionary passed.  This is used internally and
+		automatically called on URL building.
+
+		Fix: Blueprint endpoints may not be dotted.
+		"""
+		funcs = self.url_default_functions.get(None, ())
+		if '.' in endpoint:
+			bp = endpoint.split('.', 1)[0]
+			funcs = chain(funcs, self.url_default_functions.get(bp, ()))
+		for func in funcs:
+			func(endpoint, values)
+
 	def _setup_user(self, **kw):
 		## TODO convert to Flask.login
 		if current_app.config.TESTING:
@@ -270,6 +286,12 @@ class BaseApp(WrapperApp,Flask):
 
 	# Note that there is no `teardown` call.
 	# Your app needs to be able to restart after being forcibly terminated.
+
+def _blueprint(self):
+	"""The name of the current blueprint"""
+	if self.url_rule and '.' in self.url_rule.endpoint:
+		return self.url_rule.endpoint.split('.', 1)[0]
+Request.blueprint = property(_blueprint)
 
 def datetimeformat(value, format='%d-%m-%Y %H:%M %Z%z'):
 	if isinstance(value,(int,float)):
