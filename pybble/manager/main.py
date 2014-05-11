@@ -97,8 +97,8 @@ class RootManager(Manager):
 		coremanager.command(config)
 		coremanager.add_command("descr",DisManager())
 		coremanager.add_command("mime",MIMEManager())
+		coremanager.add_command("urls",ShowUrls())
 
-		#self.add_command("urls",ShowUrls())
 		self.add_command("site",SiteManager())
 		self.add_command("populate",PopulateCommand())
 		self.add_command("schema",SchemaCommand())
