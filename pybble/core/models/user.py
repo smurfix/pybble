@@ -224,7 +224,7 @@ class User(ObjectRef):
 			u = None
 		if u is None:
 			u = cls(username=ANON_USER_NAME, site=site)
-			Member(owner=g,parent=u)
+			Member(group=g,user=u)
 		else:
 			### Clean up this anon user
 			from .tracking import Delete, TrackingObjectRef

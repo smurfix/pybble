@@ -56,7 +56,7 @@ class Breadcrumb(TrackingObjectRef):
 
 	def __init__(self, user, obj):
 		super(Breadcrumb,self).__init__()
-		self.for_discr = obj.discriminator
+		self.for_discr = obj.discr
 		self.owner = user
 		self.parent = obj
 		self.superparent = request.site
