@@ -228,9 +228,17 @@ class Object(Dumpable, Base):
 	def _init(self):
 		pass
 
-	@maybe_stale
+	@property
+	def _stale(self):
+		"""Check whether an object should not be displayed en detail, and why"""
+		i = inspect(self)
+		if i.expired: return "EXP"
+		return ""
+
 	def __str__(self):
-		return '<%s:%s>' % (self.__class__.__name__, self.id)
+		s = self._stale
+		if s: return '‹%s:%s %s›' % (self.__class__.__name__, self.id, s)
+
 		if self.deleted: d = "DEL "
 		else: d = ""
 		s = self.as_str
@@ -241,13 +249,12 @@ class Object(Dumpable, Base):
 		return u'‹%s%s:%s%s›' % (d,self.__class__.__name__, self.id, s)
 
 	def __repr__(self):
-		return '<%s:%s>' % (self.__class__.__name__, self.id)
+		s = self._stale
+		if s: return '<%s:%s %s>' % (self.__class__.__name__, self.id, s)
 		try:
 			return str(self)
 		except Exception as err:
-			if self.deleted: d = "DEL "
-			else: d = ""
-			return '<%d%s%s: ?? %s>' % (d, self.__class__.__name__, self.id, str(err))
+			return '<%s%s: ?? %s>' % (d, self.__class__.__name__, self.id, str(err))
 	
 	@property
 	def signal(self):
