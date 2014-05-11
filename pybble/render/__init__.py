@@ -17,7 +17,7 @@ from jinja2 import Environment, BaseLoader, Markup, contextfunction, contextfilt
 from werkzeug import cached_property, Response
 from werkzeug.http import parse_etags, remove_entity_headers, http_date
 from werkzeug.routing import Map, Rule
-from flask import request,current_app
+from flask import request,current_app, get_flashed_messages
 
 from ..utils import random_string, AuthError, NotGiven
 from ..core.models import PERM, PERM_NONE, PERM_ADD, obj_get, \
@@ -139,6 +139,9 @@ def add_to_jinja(jinja_env):
 	jinja_env.globals['textdiff'] = textOnlyDiff
 
 	for did,dname in D.items():
+		i = dname.rindex(".")
+		if i > 0:
+			dname = dname[i+1:]
 		jinja_env.globals[str("d_"+dname.lower())] = did
 
 	for tm,name in TM_DETAIL.items():
@@ -243,7 +246,6 @@ def render_my_template(obj, detail=None, mimetype=NotGiven, **context):
 def render_template(template, mimetype=NotGiven, **context):
 	if isinstance(template,str): template = unicode(template)
 	if request:
-		from pybble.flashing import get_flashed_messages
 		user = getattr(request,"user",None)
 		context.update(
 			# CURRENT_URL=request.build_absolute_uri(),

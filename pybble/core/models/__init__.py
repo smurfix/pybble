@@ -17,7 +17,7 @@ from datetime import datetime,timedelta
 from functools import update_wrapper
 
 from sqlalchemy import Integer, Unicode, ForeignKey
-from sqlalchemy import event, select, func, and_
+from sqlalchemy import event, select, func, and_, or_
 from sqlalchemy.orm import relationship,backref
 from sqlalchemy.orm.base import NO_VALUE,NEVER_SET
 from sqlalchemy.inspection import inspect
