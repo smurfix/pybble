@@ -76,6 +76,7 @@ class Site(ObjectRef):
 	"""A web domain / app."""
 	__tablename__ = "sites"
 	_descr = D.Site
+	_is_new = False
 	#id = Column(None, ForeignKey(Object.id), primary_key=True)
 	#__mapper_args__ = {'polymorphic_identity':D.Site, 'inherit_condition': id == Object.id}
 	@classmethod
@@ -113,6 +114,7 @@ class Site(ObjectRef):
 	# we don't have "yield from" in PY2
 
 	def __init__(self,domain, name=None, **kw):
+		self._is_new = True
 		super(Site,self).__init__(**kw)
 		if name is None:
 			name=u"Here be "+domain
@@ -134,7 +136,8 @@ class Site(ObjectRef):
 
 	def _init(self):
 		super(Site,self)._init()
-		app_list.send(NewSite)
+		if self._is_new:
+			app_list.send(NewSite)
 		self.signal.connect(self.config_changed, ConfigChanged)
 
 	@property
