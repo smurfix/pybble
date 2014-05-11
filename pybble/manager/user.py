@@ -119,7 +119,7 @@ class ParamUser(Command):
 		db.commit()
 		
 class UserManager(Manager):
-	"""Manage web domains (a 'site') and their primary content (the 'app')."""
+	"""Manage a site's users"""
 	def __init__(self):
 		super(UserManager,self).__init__()
 		self.add_command("add", AddUser())
