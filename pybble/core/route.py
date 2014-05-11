@@ -59,28 +59,52 @@ class Exposer(object):
 			def pather(id):
 				return Flask.render_template("not_here.html", id=id)
 
+		If you have sub-modules (with a path like <blueprint>.admin.foo):
+
+			## pybble/blueprint/admin.py:
+			from ._base import expose
+			expose = expose.sub("admin")
+
+			@expose("/admin/foobar")
+			def foo():
+				…
+			
 		"""
 
-	def __init__(self):
+	def __init__(self, sub_name=None):
 		self.app = None
+		self.sub_name = sub_name
 		self.rules = []
+		self.subs = []
 
+	def sub(self, name):
+		s = Exposer(name)
+		self.subs.append(s)
+		return s
+		
 	def add_to(self, app):
 		"""\
 			Add my rules to the app or blueprint.
 			"""
 		self.app = app
-		for a,k in self.rules:
-			app.add_url_rule(*a,**k)
+		for r,e,v,a,k in self.rules:
+			app.add_url_rule(r,endpoint=e,view_func=v, *a,**k)
+		for s in self.subs:
+			s.add_to(app)
 
-	def add_url_rule(self, *a,**k):
+	def add_url_rule(self, rule, view_func, endpoint=None, *a,**k):
 		"""\
 			Works like Flask.add_url_rule, but registers locally for
 			addition to an app or blueprint.
 		"""
-		self.rules.append((a,k))
+		if endpoint is None:
+			endpoint = view_func.__name__
+		if self.sub is not None:
+			endpoint = self.sub_name+"."+endpoint
+
+		self.rules.append((rule, endpoint,view_func, a,k))
 		if self.app is not None:
-			self.app.add_url_rule(*a,**k)
+			self.app.add_url_rule(rule, endpoint=endpoint, view_func=view_func, *a,**k)
 
 	def __call__(self, rule, **options):
 		"""\
@@ -88,8 +112,7 @@ class Exposer(object):
 			addition to an app or blueprint.
 		"""
 		def decorator(f):
-			endpoint = options.pop('endpoint', None)
-			self.add_url_rule(rule, endpoint, f, **options)
+			self.add_url_rule(rule, f, **options)
 			return f
 		return decorator
 
