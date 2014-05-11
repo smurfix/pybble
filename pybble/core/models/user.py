@@ -406,8 +406,8 @@ class User(ObjectRef):
 				pq.append(Permission.right == want)
 		else:
 			pq.append(Permission.right >= 0)
-		if discr is None and obj and want < 0:
-			discr = obj.discriminator
+		if discr is None and want < 0:
+			discr = obj
 
 		if discr is not None:
 			discr = Discriminator.get(discr)
