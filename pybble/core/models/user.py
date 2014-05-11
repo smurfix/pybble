@@ -674,6 +674,8 @@ Inherited: %s
 for a,b in PERM.iteritems():
 	def can_do_closure(a,b):
 		def can_do(self, obj, discr=None, new_discr=None):
+			if discr is None and obj is not None:
+				discr = obj.discr
 			if current_app.config.DEBUG_ACCESS:
 				log_access("can_"+b+":", self,obj,discr,new_discr)
 			if a > PERM_NONE:
