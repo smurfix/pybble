@@ -82,7 +82,7 @@ def load_app_blueprints(app):
 			path = bp.path
 			if path == "/": path = ""
 			bpm = b.mod(bp.name, b.path, url_prefix=path)
-			app.register_blueprint(bpm, url_defaults = { "bp": bp })
+			app.register_blueprint(bpm, url_defaults = { 'bp': bp })
 		site = site.parent
 
 def create_blueprint(site, blueprint, path, name=None):
