@@ -376,7 +376,7 @@ for a,b in PERM.iteritems():
 
 def add_to_app(app):
 	@app.route("/static/<path:file>", endpoint="static")
-	def serve_path(request,file):
+	def serve_path(file):
 		site = request.site
 		while site:
 			try:
