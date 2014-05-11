@@ -38,7 +38,7 @@ from ..core.models.config import ConfigVar
 from ..core.models.user import User
 from ..manager import Manager,Command
 from ..blueprint import load_app_blueprints
-from ..render import load_app_renderer
+from ..render import load_app_renderer, add_to_app
 
 logger = logging.getLogger('pybble.app')
 
@@ -165,9 +165,10 @@ class BaseApp(WrapperApp,Flask):
 		template_folder = getattr(self.config,"TEMPLATE_ROOT",None)
 		if template_folder is None:
 			template_folder = os.path.join(os.getcwd(),'templates')
-		static_folder = getattr(self.config,"STATIC_ROOT",None)
-		if static_folder is None:
-			static_folder = os.path.join(os.getcwd(),'pybble','static')
+		#static_folder = getattr(self.config,"STATIC_ROOT",None)
+		#if static_folder is None:
+		#	static_folder = os.path.join(os.getcwd(),'pybble','static')
+		static_folder=None
 
 		Flask.__init__(self, site.name, template_folder=template_folder, static_folder=static_folder, **kw)
 		if testing is not None:
@@ -293,6 +294,7 @@ class _fake_app(WrapperApp,Flask):
 	and for initial database access
 	"""
 	def __init__(self,*a,**k):
+		k["static_folder"] = None
 		WrapperApp.__init__(self,None)
 		Flask.__init__(self,*a,**k)
 
@@ -353,6 +355,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 			app = site.app.mod(site, testing=testing)
 
 	init_db(app)
+	add_to_app(app)
 	return app
 
 def create_site(parent,domain,app,name):
