@@ -142,6 +142,8 @@ class Discriminator(Loadable, Dumpable, Base):
 			except ValueError: pass
 		if isinstance(discr, Discriminator):
 			return discr
+		elif isinstance(discr, Object):
+			return discr.discr
 		elif isinstance(discr, string_types):
 			return Discriminator.q.get_by(name=text_type(discr))
 		elif isinstance(discr, (int,long)):
