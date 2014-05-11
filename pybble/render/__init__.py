@@ -388,12 +388,12 @@ for a,b in PERM.iteritems():
 #	pages = property(lambda x: max(0, x.count - 1) // x.per_page + 1)
 
 def add_to_app(app):
-	@app.route("/static/<path:path>")
-	def serve_path(request,path):
+	@app.route("/static/<path:file>", endpoint="static")
+	def serve_path(request,file):
 		site = request.site
 		while site:
 			try:
-				sf = StaticFile.q.get_by(superparent=site, path=path)
+				sf = StaticFile.q.get_by(superparent=site, path=file)
 			except NoData:
 				site = site.parent
 				if not site:
