@@ -65,6 +65,12 @@ for _x,_y in PERM.items():
 def PERM_name(id):
 	return PERM[int(id)]
 
+def count(it):
+	n=0
+	for x in iter(it):
+		n += 1
+	return n
+
 class Loadable(object):
 	path = Column(Unicode(100), nullable=False, unique=True, doc="Python object name")
 	_module = None
@@ -305,11 +311,11 @@ class Object(Dumpable, Base):
 		return self._all_X("owner",discr,want)
 
 	def has_children(self, discr=None, want=None):
-		return len(self._all_x("parent",discr, want=want))
+		return count(self._all_X("parent",discr, want=want))
 	def has_superchildren(self, discr=None, want=None):
-		return len(self._all_x("superparent",discr, want=want))
+		return count(self._all_X("superparent",discr, want=want))
 	def has_owned(self, discr=None, want=None):
-		return len(self._all_x("owner",discr, want=want))
+		return count(self._all_X("owner",discr, want=want))
 
 	def _discr_X(self,attr):
 		"""\
