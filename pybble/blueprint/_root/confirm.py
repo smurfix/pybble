@@ -23,6 +23,7 @@ from pybble.core.db import db,NoData
 from pybble.core.models import obj_get
 from pybble.core.models.verifier import Verifier, VerifierBase
 from ._base import expose
+expose = expose.sub("confirm")
 
 ###
 ### Confirm

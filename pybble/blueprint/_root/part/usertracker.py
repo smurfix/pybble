@@ -19,6 +19,7 @@ from pybble.render import render_template
 from pybble.core.models.tracking import UserTracker
 from pybble.core.db import db
 from .._base import expose
+expose = expose.sub("part.usertracker")
 
 from storm.locals import And,Desc
 from datetime import datetime,timedelta

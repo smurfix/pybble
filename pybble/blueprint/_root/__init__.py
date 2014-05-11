@@ -17,7 +17,7 @@ from pybble.core.route import Exposer
 from ._base import expose,Blueprint
 
 _doc="""\
-This is the standard blueprint for Pybble's object view.
+This is the "historic" standard blueprint for Pybble's object view.
 """
 
 # Now load whatever

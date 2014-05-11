@@ -29,6 +29,7 @@ from jinja2 import Markup
 from datetime import datetime,timedelta
 import sys
 from ._base import expose
+expose = expose.sub("login")
 
 ###
 ### Login

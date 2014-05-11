@@ -30,6 +30,7 @@ from pybble.core.db import db,NoData
 from pybble.core.models._descr import D
 from pybble.core.session import logged_in
 from .._base import expose
+expose = expose.sub("part.permission")
 
 from datetime import datetime
 

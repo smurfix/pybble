@@ -28,6 +28,7 @@ from pybble.core.models.tracking import Breadcrumb
 from pybble.core.models.site import Site
 from pybble.core.db import db,NoData
 from ._base import expose
+expose = expose.sub("views")
 
 import inspect,sys
 

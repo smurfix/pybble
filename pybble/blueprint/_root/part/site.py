@@ -28,6 +28,7 @@ from pybble.core.models.site import Site
 from pybble.core.session import logged_in
 from ..views import view_oid
 from .._base import expose
+expose = expose.sub("part.site")
 
 from datetime import datetime
 

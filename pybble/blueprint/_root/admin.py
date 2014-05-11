@@ -19,6 +19,7 @@ from pybble.core.models import obj_get
 from pybble.core.models.template import Template
 from pybble.core.db import db
 from ._base import expose
+expose = expose.sub("admin")
 
 ###
 ### Template editor

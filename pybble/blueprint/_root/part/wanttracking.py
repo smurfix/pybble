@@ -26,6 +26,8 @@ from pybble.core.models._descr import D
 from pybble.core.models.tracking import WantTracking
 from pybble.core.db import db
 from .._base import expose
+expose = expose.sub("part.wanttracking")
+
 from datetime import datetime
 
 @expose("/admin/wanttracking")

@@ -13,7 +13,9 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from flask import request, url_for
+from datetime import datetime
+
+from flask import request, url_for, flash
 
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
@@ -29,9 +31,7 @@ from pybble.core.models.template import Template, TemplateMatch
 from pybble.core.models import Discriminator, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE
 from pybble.core.models.user import Permission, User
 from ._base import expose
-
-from flask import flash
-from datetime import datetime
+expose = expose.sub("rss")
 
 ###
 ### Template editor
