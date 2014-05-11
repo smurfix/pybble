@@ -299,7 +299,7 @@ class User(ObjectRef):
 	def visits(self,obj):
 		if getattr(obj,"_no_crumbs",False):
 			return # no recursive or similar nonsense, please
-		q = { "owner":self, "discr":obj.discriminator }
+		q = { "owner":self, "discr":obj.discr }
 		try:
 			s = Breadcrumb.q.get_by(parent=obj, **q)
 		except NoData:
