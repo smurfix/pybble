@@ -20,11 +20,10 @@ import logging
 from importlib import import_module
 from gevent.wsgi import WSGIServer
 
-from flask import Flask
+from flask import Flask, url_for
 from flask.config import Config
 
 from flask.ext.script import Server
-from flask.ext.script.commands import ShowUrls
 
 from werkzeug.exceptions import NotFound
 from werkzeug.wsgi import responder
@@ -64,6 +63,59 @@ def config():
 	for k,v in app.config.items():
 		print("%s=%s" % (k,repr(v)))
 
+class ShowUrls(Command):
+	"""
+		Displays all of the url matching routes for the project
+	"""
+	def __init__(self, order='rule'):
+		self.order = order
+
+	def get_options(self):
+		return (
+			Option('url',
+				   nargs='?',
+				   help='URL (/static/image.png) or endpoint (static)'),
+			Option('params', nargs="*", help='Parameters (file=img/lolcats.img)')
+		)
+		return options
+
+	def run(self, url=None, params=()):
+		from flask import current_app
+		from werkzeug.exceptions import NotFound, MethodNotAllowed
+
+		if url is None: # list
+			column_headers = ('Rule', 'Endpoint')
+
+			rules = sorted(current_app.url_map.iter_rules(), key=lambda rule: rule.rule)
+			max_rule_length = max(4,max(len(r.rule) for r in rules))
+			max_ep_length = max(4,max(len(r.endpoint) for r in rules))
+			str_template = '%%-%ds  %%s' % (max_rule_length,)
+			table_width = max_rule_length +2+ max_ep_length
+
+			print(str_template % column_headers)
+			print('-' * table_width)
+	
+			for r in rules:
+				print(str_template % (r.rule,r.endpoint))
+			return
+
+		a = current_app.url_map.bind(current_app.site.domain)
+
+		opts = {}
+		for s in params:
+			try:
+				s,v = s.split('=',1)
+			except ValueError:
+				v = True
+			opts[s] = v
+
+		if url.startswith('/'): # match an URL ➙ emit an endpoint
+			r = a.match(url, query_args=opts)
+			print(r[0]+"  "+" ".join("%s=%s"%(k,v) for k,v in r[1].items()))
+
+		else: # match an endpoint ➙ emit a URL
+			print(url_for(url, **opts))
+
 ############################### Root
 
 class RootManager(Manager):
@@ -97,7 +149,7 @@ class RootManager(Manager):
 		coremanager.command(config)
 		coremanager.add_command("descr",DisManager())
 		coremanager.add_command("mime",MIMEManager())
-		coremanager.add_command("urls",ShowUrls())
+		coremanager.add_command("url",ShowUrls())
 
 		self.add_command("site",SiteManager())
 		self.add_command("populate",PopulateCommand())
