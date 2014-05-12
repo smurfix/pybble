@@ -203,9 +203,10 @@ class User(ObjectRef):
 	last_name = Column(Unicode(50), nullable=True)
 	email = Column(Unicode(200), nullable=True)
 
-	first_login = Column(DateTime, nullable=True)
-	last_login = Column(DateTime, nullable=True)
-	cur_login = Column(DateTime, nullable=True)
+	first_login = Column(DateTime, nullable=True) ## ever
+	last_login = Column(DateTime, nullable=True)  ## the one before this session
+	this_login = Column(DateTime, nullable=True)  ## this session start
+	cur_login = Column(DateTime, nullable=True)   ## this session end
 
 	feed_age = Column(Integer, nullable=False, default=10)
 	feed_pass = Column(Unicode(30), nullable=True)
