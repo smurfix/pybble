@@ -212,7 +212,7 @@ def check_unique(cls, *vars):
 	event.listen(cls,"before_update",check)
 
 def _block_updates(target, value, oldvalue, initiator):
-	if oldvalue not in (None,NO_VALUE,NEVER_SET,value):
+	if oldvalue not in (None,NO_VALUE,NEVER_SET,value) and not target._deleting:
 		raise RuntimeError("You cannot change {}.{} (‘{}’ to ‘{}’)".format(target,initiator.parent_token.key,oldvalue,value))
 def no_update(var):
 	k = '_pybble_block_'+var.key

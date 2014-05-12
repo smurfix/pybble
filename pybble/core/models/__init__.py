@@ -215,6 +215,7 @@ class Object(Dumpable, Base):
 	discr = relationship(Discriminator, primaryjoin=discr_id==Discriminator.id)
 
 	_rec_str = False ## marker for possibly-recursive __str__ calls
+	_deleting = False ## marker for skipping some do-not-modify tests
 
 ## causes a sqlalchemy warning. TODO: create a testcase and submit a bug report
 #	@classmethod

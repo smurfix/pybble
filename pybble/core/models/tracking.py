@@ -160,6 +160,7 @@ class Delete(TrackingObjectRef):
 
 	def __init__(self, obj, user=None, comment=None):
 		assert obj and not isinstance(obj,TrackingObjectRef)
+		obj._deleting = True
 		super(Delete,self).__init__()
 		self.owner = user or request.user
 		self.parent = obj
