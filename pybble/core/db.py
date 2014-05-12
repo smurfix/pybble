@@ -204,7 +204,13 @@ def check_unique(cls, *vars):
 	setattr(cls,k,True)
 
 	def check(mapper, connection, obj):
-		q = [getattr(cls,v)==getattr(obj,v) for v in vars]
+		q = []
+		for v in vars:
+			if v == "inherit":
+				if getattr(obj,v) is not None:
+					q.append(or_(getattr(cls,v) == None, getattr(cls,v) == getattr(obj,v)))
+			else:
+				q.append(getattr(cls,v)==getattr(obj,v))
 		if obj.id is not None:
 			q.append(cls.id != obj.id)
 		if cls.q.filter(*q).count() > 0:
