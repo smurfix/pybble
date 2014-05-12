@@ -219,7 +219,6 @@ class User(ObjectRef):
 			g = Group.q.get_by(name=ANON_USER_NAME,owner=site,parent=site)
 		except NoData:
 			g = Group(name=ANON_USER_NAME,owner=site,parent=site,superparent=site)
-			db.flush()
 		u = User.q.filter_by(site=site).order_by(cls.cur_login).join(Member,Member.parent_id==User.id).filter(Member.owner==site).first()
 		#u = cls.q.filter_by(username=ANON_USER_NAME, site=site).order_by(cls.cur_login).first()
 		if u is not None and u.cur_login is not None and u.cur_login >= datetime.now()-timedelta(0,current_app.config.SESSION_COOKIE_AGE):
@@ -341,20 +340,15 @@ class User(ObjectRef):
 			return not m.excluded
 
 	def add_verified(self,v,site=None):
+		anon = Group.q.get_by(name=ANON_USER_NAME,owner=site,parent=site)
 		if site is None:
 			site = request.site
-		try:
-			m = Member.q.get_by(user_id=self.id,group_id=site.id)
-		except NoData:
-			if v:
-				Member(user=self,group=site)
-		else:
-			if not v:
-				db.delete(m)
+		Member.add_to(self,site)
+		Member.drop_from(self,anon)
 	verified = property(is_verified,add_verified)
 				
 	@property
-	def as_str__(self):
+	def as_str(self):
 		if self.username:
 			return self.username
 
@@ -572,6 +566,30 @@ class Member(ObjectRef):
 		self.excluded = False
 		try: del self._memberships
 		except AttributeError: pass
+
+	@classmethod
+	def add_to(cls,user,group,fail=False):
+		"""Adds the user to the group"""
+		try:
+			M = cls.q.get_by(user=user,group=group)
+		except NoData:
+			M = cls(user=user,group=group)
+		else:
+			if fail:
+				raise ManyDataExc("{} is already a member of {}".format(user,group))
+		return m
+
+	@classmethod
+	def drop_from(cls,user,group,fail=False):
+		"""Remove the user from the group"""
+		try:
+			M = cls.q.get_by(user=user,group=group)
+		except NoData:
+			if fail:
+				raise ManyDataExc("{} is not a member of {}".format(user,group))
+			return M
+		else:
+			return Delete(M)
 
 	@property
 	def data(self):
