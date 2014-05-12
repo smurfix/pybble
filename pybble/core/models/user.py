@@ -33,15 +33,17 @@ from ...core import config
 from ..db import Base, Column, db, NoData, check_unique,no_update
 from . import Object,ObjectRef, PERM,PERM_NONE,PERM_ADMIN,PERM_READ,PERM_ADD,PERM_name, Discriminator
 from .site import Site
-from .tracking import Breadcrumb
+from .tracking import Breadcrumb,Delete
 from ._descr import D
 
 import sys
 
 import logging
-logger = logging.getLogger('pybble.access')
+logger = logging.getLogger('pybble.core.models.user')
+
+access_logger = logging.getLogger('pybble.access')
 def log_access(*args):
-	logger.debug(" ".join(str(x) for x in args))
+	access_logger.debug(" ".join(str(x) for x in args))
 
 ## Auth
 #class Role(ObjectRef, RoleMixin):
@@ -225,8 +227,9 @@ class User(ObjectRef):
 		if u is None:
 			u = cls(username=ANON_USER_NAME, site=site)
 			Member(group=g,user=u)
+			logger.info("New anon user {} for {}".format(u,site))
 		else:
-			### Clean up this anon user
+			logger.info("Recycling anon user {} for {}".format(u,site))
 			from .tracking import Delete, TrackingObjectRef
 			for c in u.all_children(want=None):
 				if not isinstance(c,TrackingObjectRef):
@@ -283,6 +286,7 @@ class User(ObjectRef):
 	@property
 	def anon(self):
 		return self.username == ANON_USER_NAME
+
 	@property
 	def name(self):
 		if self.first_name and self.last_name:
