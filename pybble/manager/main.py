@@ -127,6 +127,7 @@ class SubdomainServer(Server):
 		server = WSGIServer((host,port), dispatch)
 		db.commit()
 		db.close()
+		logger.debug("Serving requests.")
 		server.serve_forever()
 		
 class DeadApp(object):
