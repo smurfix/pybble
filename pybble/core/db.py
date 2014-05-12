@@ -200,7 +200,7 @@ def check_unique(cls, *vars):
 	k = '_pybble_unique_'+'_'.join(vars)
 	if getattr(cls,k,False):
 		return
-	setattr(cls,k,True):
+	setattr(cls,k,True)
 
 	def check(mapper, connection, obj):
 		q = [getattr(cls,v)==getattr(obj,v) for v in vars]
