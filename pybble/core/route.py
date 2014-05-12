@@ -99,7 +99,7 @@ class Exposer(object):
 		"""
 		if endpoint is None:
 			endpoint = view_func.__name__
-		if self.sub is not None:
+		if self.sub_name is not None:
 			endpoint = self.sub_name+"."+endpoint
 
 		self.rules.append((rule, endpoint,view_func, a,k))
