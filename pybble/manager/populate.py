@@ -251,7 +251,10 @@ class PopulateCommand(Command):
 					continue
 				f = f.decode("utf-8")
 				filepath = os.path.join(dir,f)
-				webpath = path+'/'+f
+				if path:
+					webpath = path+'/'+f
+				else:
+					webpath = f
 				if os.path.isdir(filepath):
 					added += add_files(filepath,webpath)
 					continue
@@ -265,10 +268,16 @@ class PopulateCommand(Command):
 						sb = BinData(f[:dot],ext=f[dot+1:],content=content, storage=st)
 
 					try:
-						sf = StaticFile.q.get_by(path=webpath,superparent=root)
+						try:
+							sf = StaticFile.q.get_by(path=webpath,superparent=root)
+						except NoData:
+							sf = StaticFile.q.get_by(path='/'+webpath,superparent=root)
 					except NoData:
 						sf = StaticFile(webpath,sb)
 					else:
+						if sf.path.startswith('/'):
+							sf.path = sf.path[1:] # silently fix this
+
 						try:
 							c = sf.content
 						except EnvironmentError as e:
