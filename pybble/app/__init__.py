@@ -109,7 +109,7 @@ class SiteTemplateLoader(BaseLoader):
 			* recurse to my parent
 			"""
 		seen = set()
-		s = self.site
+		s = refresh(self.site)
 		template = text_type(template)
 		while s is not None:
 			if s in seen:
@@ -145,8 +145,8 @@ class SiteTemplateLoader(BaseLoader):
 			if t is not None:
 				mtime = t.modified
 				def t_is_current():
-					db.refresh(t,('modified',))
-					return mtime == t.modified
+					#db.refresh(refresh(t),('modified',))
+					return mtime == refresh(t).modified
 				return t.data, template, t_is_current
 
 			if not s.parent:
