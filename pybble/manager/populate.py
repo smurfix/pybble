@@ -517,8 +517,12 @@ class PopulateCommand(Command):
 			try:
 				rbp = SiteBlueprint.q.get_by(site=root,blueprint=root_bp,path="/")
 			except NoData:
-				rbp = SiteBlueprint(site=root,blueprint=root_bp,path="/",name="root")
+				rbp = SiteBlueprint(site=root,blueprint=root_bp,path="/",name="pybble")
 				logger.debug("Root site's blueprint created.")
+			else:
+				if rbp.name != "pybble" and force:
+					logger.warn("Root site's blueprint name changed from ‘{}’ to ‘pybble’.".format(rbp.name))
+					rbp.name = "pybble"
 		db.commit()
 
 		## All done!
