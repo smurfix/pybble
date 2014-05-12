@@ -59,8 +59,10 @@ class MissingDummy(Exception):
 ## Positive one accumulate, i.e. somebody who can write is obviously able to read
 
 PERM = {0:"None", 1:"List", 2:"Read", -3:"Add", 4:"Write", 5:"Delete", 9:"Admin"}
+PERM_NAME = {}
 for _x,_y in PERM.items():
 	globals()["PERM_"+_y.upper()] = _x
+	PERM_NAME[_y] = _x
 
 def PERM_name(id):
 	return PERM[int(id)]
