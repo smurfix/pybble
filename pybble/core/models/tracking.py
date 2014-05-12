@@ -147,6 +147,7 @@ class Delete(TrackingObjectRef):
 			cls.old_parent = cls.superparent
 		if not hasattr(cls,'old_parent_id'):
 			cls.old_parent_id = cls.superparent_id
+		check_unique(cls,"parent")
 
 	## The old parent is in self.superparent
 	old_owner_id = Column(Integer, ForeignKey(ObjectRef.id), nullable=True, index=True)

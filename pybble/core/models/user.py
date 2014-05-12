@@ -554,6 +554,7 @@ class Member(ObjectRef):
 			cls.user = cls.owner
 		if not hasattr(cls,'group'):
 			cls.group = cls.parent
+		check_unique(cls,"user group")
 
 	excluded = Column(Boolean, nullable=False,default=False)
 
