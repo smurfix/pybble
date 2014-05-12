@@ -47,8 +47,10 @@ class VerifierBase(Loadable, ObjectRef):
 	doc = Column(Unicode(1000), nullable=True)
 
 	def new(self, obj, user=None,*a,**k):
-		"""Return a new verifier for me and this user."""
-		obj = self.mod.new(obj, *a,**k) or obj
+		"""Return a new verifier for me and the current user."""
+		if user is None:
+			user = request.user
+		obj = self.mod.new(obj=obj, user=user, *a,**k) or obj
 		return Verifier(user=user or request.user, base=self, obj=obj)
 
 ## Verifier

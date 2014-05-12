@@ -133,7 +133,7 @@ def register():
 		u.record_creation()
 
 		verifier = VerifierBase.q.get_by(name="register")
-		v = verifier.new(u)
+		v = verifier.new(obj=request.site, user=u)
 		v.send()
 
 		flash(Markup(u"Wir haben soeben eine Email an dich geschickt. <br />" + \

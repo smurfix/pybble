@@ -33,13 +33,13 @@ class Verifier(BaseVerifier):
 	"""Verify an email."""
 
 	@classmethod
-	def new(cls, user):
+	def new(cls, user,obj, *a,**k):
 		## verify this user's email
-		return user
+		return None
 
 	@classmethod
 	def send(cls,verifier):
-		user=verifier.obj
+		user=verifier.user
 		send_mail(user.email, 'verify_email.txt',
 			  user=user, code=verifier.code,
 			  link=url_for("pybble.confirm.confirm", code=verifier.code, _external=1),
