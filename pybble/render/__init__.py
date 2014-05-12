@@ -35,6 +35,9 @@ from time import time
 from datetime import datetime,timedelta
 import sys,os
 
+import logging
+logger = logging.getLogger('pybble.render')
+
 def valid_obj(form, field):
 	"""Field verifier which checks that an object ID is valid"""
 	try:
@@ -230,14 +233,25 @@ def render_my_template(obj, detail=None, mimetype=NotGiven, **context):
 
 	return render_template(t, mimetype=mimetype, **context)
 
+class TaggedMarkup(Markup):
+	success = None
+	@property
+	def text(self):
+		return self
+
 def render_template(template, mimetype=NotGiven, **context):
 	if isinstance(template,str): template = unicode(template)
 	if request:
 		user = getattr(request,"user",None)
+		msgs = []
+		for c,m in get_flashed_messages(with_categories=True):
+			m = TaggedMarkup.escape(m)
+			m.success = c
+			msgs.append(m)
 		context.update(
 			# CURRENT_URL=request.build_absolute_uri(),
 			USER=getattr(request,"user",None),
-			MESSAGES=get_flashed_messages(),
+			MESSAGES=msgs,
 			SITE=request.site,
 			CRUMBS=(user.groups+list(p.parent for p in user.all_visited()[0:20])) if user else None,
 			NOW=datetime.utcnow(),
