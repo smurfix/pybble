@@ -13,11 +13,10 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from flask import request, flash, current_app, url_for
+from flask import request, flash, current_app, url_for, session
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 
-from pybble.utils import make_permanent
 from pybble.render import render_template, send_mail
 from pybble.core.db import db,NoData
 from pybble.core.models.user import User
@@ -69,9 +68,6 @@ def do_login():
 			if u.cur_login is None or u.cur_login < now-timedelta(0,600):
 				u.last_login = u.cur_login or now
 			u.cur_login = now
-
-			if form.remember.data:
-				make_permanent()
 
 			if u.verified:
 				flash(u"Du bist jetzt eingeloggt.",True)
@@ -145,8 +141,8 @@ def do_logout():
 		flash(u'Du warst nicht eingeloggt', False)
 		return redirect(request.args.get("next",None) or url_for("pybble.views.mainpage"))
 	else:
-		request.session.pop('uid', None)
-		request.user = request.site.anon_user
+		request.user = u = request.site.anon_user
+		session['uid'] = u.id
 		flash(u'Du hast dich erfolgreich abgemeldet.', True)
 		return redirect(url_for("pybble.views.mainpage"))
 

@@ -19,7 +19,6 @@ from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from wtforms import Form, BooleanField, TextField, SelectField, validators
 
-from pybble.utils import make_permanent
 from pybble.render import render_template, valid_obj, valid_read, valid_admin_self
 from pybble.core.models import Discriminator, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE, PERM_READ
 from pybble.core.models._descr import D

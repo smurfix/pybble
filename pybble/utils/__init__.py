@@ -92,40 +92,6 @@ def random_string(bytes=9, base="23456789abcdefghijkmnpqrstuvwxyz", dash="-",
 			passwd += dash
 	return passwd
 
-def make_permanent():
-	"""Make this session a permanent one."""
-	request.session['_perm'] = True
-
-def close_with_browser():
-	"""Close the session with the end of the browser session."""
-	request.session.pop('_perm', None)
-
-def test_session_cookie():
-	"""
-	Test if the session cookie works.  This is used in login and register
-	to inform the user about an inproperly configured browser.  If the
-	cookie doesn't work a link is returned to retry the configuration.
-	"""
-	if request.session.new:
-		arguments = request.GET.copy()
-		if '_cookie_set' not in request.GET:
-			arguments['_cookie_set'] = 'yes'
-			this_url = 'http://%s%s%s' % (
-				request.get_host(),
-				request.path,
-				arguments and '?' + arguments.urlencode() or ''
-			)
-			raise DirectResponse(HttpResponseRedirect(this_url))
-		arguments.pop('_cookie_set', None)
-		retry_link = 'http://%s%s%s' % (
-			request.get_host(),
-			request.path,
-			arguments and '?' + arguments.urlencode() or ''
-		)
-	else:
-		retry_link = None
-	return retry_link
-
 class AuthError(Unauthorized):
 	def __init__(self,obj,perm):
 		super(AuthError,self).__init__()

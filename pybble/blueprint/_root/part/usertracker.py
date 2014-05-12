@@ -13,7 +13,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from flask import request
+from flask import request, session
 
 from pybble.render import render_template
 from pybble.core.models.tracking import UserTracker
@@ -33,13 +33,13 @@ from time import time
 def view_all():
 	user = request.user
 	f = (UserTracker.owner_id == user.id)
-	last = request.session.get("chg_",None)
+	last = session.get("chg_",None)
 	if last and time()-last[0] < 2*60:
 		pass
 #		if last[1]:
 #			f = And(f,UserTracker.tracker.timestamp < last[1])
 	else:
-		request.session["chg_"] = (int(time()), user.feed_read)
+		session["chg_"] = (int(time()), user.feed_read)
 		user.feed_read = datetime.utcnow()
 
 	return render_template("changelist.html",

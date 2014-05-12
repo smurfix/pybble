@@ -23,7 +23,7 @@ from random import random
 from datetime import datetime,timedelta
 from threading import Lock
 
-from flask import Flask, current_app,request
+from flask import Flask, current_app,request,session, flash
 from flask._compat import string_types,text_type
 from werkzeug import cookie_date, get_host
 from werkzeug.contrib.securecookie import SecureCookie
@@ -34,101 +34,59 @@ from .models.site import Site
 from .db import db, NoData, refresh
 from .signal import all_apps,app_list
 
-class Session(SecureCookie):
-	@property
-	def session_key(self):
-		if 'uid' in self:
-			self.pop('_sk', None)
-			return self['uid']
-		elif not '_sk' in self:
-			self['_sk'] = md5('%s%s%s' % (random(), time(),
-							current_app.config.SECRET_KEY)).digest() \
-							.encode('base64').strip('\n =')
-		return self['_sk']
-	
-	def serialize(cls,*a,**k):
-		if hasattr(cls,"new"):
-			del cls.new
-		return super(Session,cls).serialize(*a,**k)
-	
 def add_session():
-	data = request.cookies.get(current_app.config.SESSION_COOKIE_NAME, "")
-	session = None
+	if '_ex' not in session:
+		assert 'uid' not in session
 	expired = False
-	if data:
-		session = Session.unserialize(data, current_app.config.SECRET_KEY)
-		if session.get('_ex', 0) < time():
-			session = None
-			expired = True
-		else:
-			session.new = False
-
-	if session is None:
-		session = Session(secret_key=current_app.config.SECRET_KEY)
-		session['_ex'] = time() + current_app.config.SESSION_COOKIE_AGE
-		session.new = True
-	else:
-		request.session_data = data
-	request.session = session
-	if expired and request.session.get('uid'):
-		from pybble.flashing import flash
-		flash(u'Deine Sitzung ist abgelaufen.  Du musst dich neu '
-				u'anmelden.', session=session)
+	if session.get('_ex', 0) < time():
+		expired = True
+	session['_ex'] = time() + current_app.config.SESSION_COOKIE_AGE
+	if expired and session.get('uid'):
+		del session['uid']
+		flash(u'Deine Sitzung ist abgelaufen.  Du musst dich neu anmelden.')
 
 #from inyoka.utils.flashing import flash
 #from inyoka.utils.html import escape
 
 def add_user():
-	user_id = request.session.get('uid')
+	user_id = session.get('uid')
 	user = None
 	if user_id is not None:
-		try: user = User.q.get_by(id=user_id)
-		except NoData: pass
+		try:
+			user = User.q.get_by(id=user_id)
+		except NoData:
+			pass
+		else:
+			if user.this_login < datetime.now() - current_app.config.PERMANENT_SESSION_LIFETIME:
+				## Last login was too long ago.
+				user = None
 	if user is None:
 		user = request.site.anon_user
-		request.session['uid'] = user.id
+		session['uid'] = user.id
 
 #	# check for bann
 #	if user.is_banned:
 #		flash((u'Du wurdest ausgeloggt, da der Benutzer „%s“ '
 #				u'gerade gebannt wurde' % escape(user.username)), False,
-#				session=request.session)
+#				session=session)
 #
-#		request.session.pop('uid', None)
+#		session.pop('uid', None)
 #		user = request.site.anon_user
+#		session['uid'] = user.id
+
+	user.cur_login = datetime.now()
+	request.user = user
+
+def logged_in(user):
+	if session.get('uid',0) == user.id:
+		return
+	session['uid'] = user.id
+	request.user = user
 
 	now = datetime.utcnow()
 	if user.cur_login is None or user.cur_login < now-timedelta(0,600):
-		user.last_login = user.cur_login or now
-	user.cur_login = now
-	request.user = user
-
-def save_session(response):
-	new = request.session.new
-	session_data = request.session.serialize()
-	if new or request.session_data != session_data:
-		if request.session.get('_perm'):
-			expires_time = request.session.get('_ex', 0)
-			expires = cookie_date(expires_time)
-		else:
-			expires = None
-		response.set_cookie(current_app.config.SESSION_COOKIE_NAME, session_data, httponly=True, expires=expires)
-	return response
-
-def add_response_headers(response):
-	s = getattr(request,"session",None)
-	if not s:
-		return
-	if s.should_vary:
-		try:
-			response.headers.add('Vary','Cookie')
-		except AttributeError:
-			pass
-	return response
-
-def logged_in(user):
-	request.session['uid'] = user.id
-	request.user = user
+		user.last_login = user.this_login or now
+		user.this_login = user.cur_login = now
 
 class SubdomainDispatcher(object):
 	"""
@@ -181,7 +139,6 @@ class SubdomainDispatcher(object):
 				if isinstance(app,Flask):
 					app.before_request(add_session)
 					app.before_request(add_user)
-					app.after_request(save_session)
 				app.pybble_dispatcher = self
 				# Note that this assumes that a site's app cannot change
 				# TODO: this is not actually enforced anywhere

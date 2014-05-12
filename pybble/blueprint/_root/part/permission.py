@@ -20,7 +20,6 @@ from wtforms import Form, BooleanField, TextField, TextAreaField, \
 	SelectField, PasswordField, HiddenField, validators
 from wtforms.validators import ValidationError
 
-from pybble.utils import make_permanent
 from pybble.render import render_template, valid_obj, \
 	valid_admin,valid_access,valid_read
 from pybble.core.models import obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE, PERM_NONE
