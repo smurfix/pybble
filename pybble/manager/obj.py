@@ -22,7 +22,7 @@ from flask import current_app
 
 from . import Manager,Command,Option,PrepCommand
 from ..core.rest import RESTend
-from ..core.db import db, NoData
+from ..core.db import db, NoData,ManyData
 from ..core.models import Discriminator
 from ..core.json import encode
 from ..utils import getsubattr
