@@ -290,7 +290,9 @@ class PopulateCommand(Command):
 							db.flush()
 
 							sb = BinData(f[:dot],ext=f[dot+1:],content=content, storage=st)
+							osb = sf.bindata
 							sf.bindata = sb
+							sf.record_change({"bindata":[osb,sb]},"file vanished")
 							c = sf.content
 
 						if content != sf.content:
