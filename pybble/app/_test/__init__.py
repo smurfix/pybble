@@ -22,6 +22,7 @@ from pybble.core.route import Exposer
 expose = Exposer()
 
 class App(BaseApp):
+	"""Test app. Not suitable for production use."""
 	PARAMS = (
 	        ("appiti","pappiti", "Test for passing a parameter into a site"),
 		)
@@ -29,6 +30,10 @@ class App(BaseApp):
 	def setup(self):
 		super(App,self).setup()
 		expose.add_to(self)
+
+@expose('/')
+def get_root():
+	return "This is a test app. Do not use."
 
 @expose('/one')
 def get_one():

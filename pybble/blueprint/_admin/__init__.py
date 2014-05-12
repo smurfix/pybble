@@ -13,6 +13,12 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
+##
+## This is the administrative front-end for your site.
+## 
+## You typically add it under /admin.
+## 
+
 import os
 from importlib import import_module
 
@@ -23,12 +29,6 @@ from flask.ext.admin import AdminIndexView, expose
 from flask.ext.admin import BaseView as AdminBaseView
 
 from .. import BaseBlueprint
-
-_doc="""
-This is the administrative front-end for your site.
-
-You typically add it under /admin.
-"""
 
 class TheView(AdminBaseView):
 	@expose('/')

@@ -18,6 +18,11 @@ from pybble.core.route import Exposer
 expose = Exposer()
 
 class Blueprint(BaseBlueprint):
+	"""\
+This is the "historic" standard blueprint for Pybble's object view.
+"""
+	_name = "pybble"
+
 	def setup(self):
 		super(Blueprint,self).setup()
 		expose.add_to(self)

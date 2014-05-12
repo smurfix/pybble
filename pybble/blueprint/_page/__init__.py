@@ -21,11 +21,8 @@ from jinja2 import TemplateNotFound
 from pybble.core.route import Exposer
 expose = Exposer()
 
-_doc="""
-This blueprint is the mains erver for content, as stored in Pybble's MongoDB.
-"""
-
 class Blueprint(BaseBlueprint):
+	"""Dead, do not use."""
 	def setup(self):
 		super(Blueprint,self).setup()
 		expose.add_to(self)

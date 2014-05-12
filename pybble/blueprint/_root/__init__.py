@@ -16,10 +16,6 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from pybble.core.route import Exposer
 from ._base import expose,Blueprint
 
-_doc="""\
-This is the "historic" standard blueprint for Pybble's object view.
-"""
-
 # Now load whatever
 from . import admin,confirm,login,rss,views
 from .part import permission,site,usertracker,wanttracking

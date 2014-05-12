@@ -13,9 +13,9 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-_doc="""
-This module attaches to Flask.login.
-"""
+##
+## This module attaches to Flask.login.
+## 
 
 from .. import BaseBlueprint
 from flask import render_template, abort
@@ -25,6 +25,7 @@ from ...core.route import Exposer
 expose = Exposer()
 
 class Blueprint(BaseBlueprint):
+	"""Login. Not yet actually used, let alone tested."""
 	def setup(self):
 		super(BaseBlueprint,self).setup()
 		expose.add_to(self)

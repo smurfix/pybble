@@ -100,7 +100,7 @@ def create_blueprint(site, blueprint, path, name=None):
 		blueprint = Blueprint.q.get_by(name=text_type(blueprint))
 	
 	if name is None:
-		name = blueprint.name
+		name = getattr(blueprint.mod,"_name",blueprint.name)
 	bp = SiteBlueprint(site=site, path=path, blueprint=blueprint, name=name)
 	db.flush()
 	return bp

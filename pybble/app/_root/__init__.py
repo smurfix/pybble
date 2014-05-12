@@ -19,4 +19,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from .. import BaseApp
 
 class App(BaseApp):
+	"""\
+This basic root app leaves all the work to blueprints.
+	"""
 	pass
