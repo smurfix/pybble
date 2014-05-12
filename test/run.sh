@@ -21,6 +21,7 @@ Usage: $(basename $0)  -- run Pybble in a test environment
 	-k	don't delete the databse copy afterwards
 	-K	don't copy the database (breaks testing)
 	-n	don't rebuild the test database
+	-N	don't run the pre-test code
 	-p	don't mangle assertions
 	-r	always rebuild the test database
 	-t	trace database execution
@@ -38,18 +39,21 @@ PLAIN=
 REBUILD=
 V=
 TRACE=
+NOTEST=
 export POSIXLY_CORRECT=1
-while getopts "dhkKnprtv" i ; do
+while getopts "dhkKnNprtv" i ; do
         case "$i"
         in
                 d)
                         DEBUG=y ;;
                 h)
                         usage 0 ;;
-                n)
-                        NOCHECK=y ;;
                 k)
                         KEEP=y ;;
+                n)
+                        NOCHECK=y ;;
+                N)
+                        NOTEST=y ;;
                 K)
                         KEEPAFTER=y ;;
                 p)
@@ -150,10 +154,12 @@ if [ -n "$DEBUG" ] ; then
 fi
 
 if [ "$*" = "" ] ; then
-	[ -z "$V" ] || echo "Consistency check"
-	./manage.py -t core check
-	[ -z "$V" ] || echo "Config dump"
-	./manage.py -t core config | fgrep -qs 'SESSION_COOKIE_DOMAIN=None'
+	if [ -z "$NOTEST" ] ; then
+		[ -z "$V" ] || echo "Consistency check"
+		./manage.py -t core check
+		[ -z "$V" ] || echo "Config dump"
+		./manage.py -t core config | fgrep -qs 'SESSION_COOKIE_DOMAIN=None'
+	fi
 
 	[ -z "$V" ] || echo "Starting test run"
 	#PYTHONPATH=$(pwd) test/run.py -x
