@@ -289,7 +289,8 @@ class Object(Dumpable, Base):
 	@maybe_stale
 	def deleted(self):
 		if self.id is None:
-			db.flush()
+			db.flush((self,))
+			assert self.id is not None
 		return self.parent_id is None and self.superparent_id is None and self.owner_id is None
 	
 	#all_children = relation('Object', backref=backref("superparent", remote_side=Object.id)) 

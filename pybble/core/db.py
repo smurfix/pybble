@@ -61,12 +61,12 @@ engine = db_engine()
 
 # don't keep database connections open for more than 5min
 
-#class PybbleSession(Session):
-#	"""Ignore recursive calls to flush()"""
-#	def flush(self, *a,**k):
-#		if self._flushing:
-#			return
-#		super(PybbleSession,self).flush(*a,**k)
+class PybbleSession(Session):
+	"""Ignore recursive calls to flush()"""
+	def flush(self, *a,**k):
+		if self._flushing:
+			return
+		super(PybbleSession,self).flush(*a,**k)
 #
 #	def merge(self,obj):
 #		if self._flushing:
@@ -77,7 +77,7 @@ engine = db_engine()
 #		return super(PybbleSession,self).merge(obj)
 
 db = scoped_session(sessionmaker(autocommit=False,
-                                 #class_=PybbleSession,
+                                 class_=PybbleSession,
                                  #autoflush=False,
                                  bind=engine))
 
