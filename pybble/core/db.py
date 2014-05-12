@@ -203,8 +203,8 @@ def check_unique(cls, *vars):
 	event.listen(cls,"before_update",check)
 
 def _block_updates(target, value, oldvalue, initiator):
-	if oldvalue not in (None,NO_VALUE,NEVER_SET):
-		raise RuntimeError("You cannot change {} (old value: ‘{}’)".format(target,oldvalue))
+	if oldvalue not in (None,NO_VALUE,NEVER_SET,value):
+		raise RuntimeError("You cannot change {}.{} (‘{}’ to ‘{}’)".format(target,initiator.parent_token.key,oldvalue,value))
 def no_update(var):
 	event.listen(var, 'set', _block_updates)
 
