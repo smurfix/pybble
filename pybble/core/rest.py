@@ -86,7 +86,7 @@ class RESTend(object):
 			res = { 'obj': obj}
 		return res
 	
-	def delete(self,id,descr=None):
+	def delete(self,id,descr=None, comment=None):
 		obj = Object.q.get_by(id=id)
 		if descr is not None:
 			D = Discriminator.get(descr).mod
