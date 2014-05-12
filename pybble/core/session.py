@@ -86,6 +86,7 @@ def add_user():
 		except NoData: pass
 	if user is None:
 		user = request.site.anon_user
+		request.session['uid'] = user.id
 
 #	# check for bann
 #	if user.is_banned:
