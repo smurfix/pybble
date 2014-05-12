@@ -23,7 +23,7 @@ from flask import current_app
 from . import Manager,Command,Option,PrepCommand
 from ..core.rest import RESTend
 from ..core.db import db, NoData,ManyData
-from ..core.models import Discriminator
+from ..core.models import Discriminator, PERM_NAME, TM_DETAIL
 from ..core.json import encode
 from ..utils import getsubattr
 from ..utils.show import show,Cache
@@ -37,6 +37,10 @@ def _parse(args):
 	Special cases:
 		* foo=- ⇒ None
 		* foo=123 ⇒ converted to integer
+		* foo=True ⇒ converted to Boolean
+		* foo==D:User ⇒ refer to the User table
+		* foo==R:Read ⇒ refer to the "Read" access right
+		* foo==T:Detail ⇒ refer to the "Detail" template type
 		* foo==Bar:123 ⇒ reference to this database entry
 	"""
 	data = {}
@@ -46,17 +50,27 @@ def _parse(args):
 			pass
 		elif v == "-":
 			v = None
+		elif v == "True":
+			v = True
+		elif v == "False":
+			v = False
 		elif v.startswith("="):
 			descr,oid = v[1:].split(":")
-			try:
-				v = Discriminator.get(descr)
-			except NoData:
-				raise RuntimeError("I do not know the type ‘{}’".format(descr))
-			try:
-				v = v.mod.q.get_by(id=int(oid))
-			except NoData:
-				raise RuntimeError("I do not know the item ‘{}:{}’".format(descr,oid))
-
+			if descr == "D":
+				v = Discriminator.get(oid)
+			elif descr == "R":
+				v = PERM_NAME[oid]
+			elif descr == "T":
+				v = TM_DETAIL[oid]
+			else:
+				try:
+					v = Discriminator.get(descr)
+				except NoData:
+					raise RuntimeError("I do not know the type ‘{}’".format(descr))
+				try:
+					v = v.mod.q.get_by(id=int(oid))
+				except NoData:
+					raise RuntimeError("I do not know the item ‘{}:{}’".format(descr,oid))
 		else:
 			try:
 				v = int(v)
@@ -168,6 +182,7 @@ class CmdPOST(PrepCommand):
 			self.parser.print_help()
 			sys.exit(not help)
 		data = _parse(args)
+		import pdb;pdb.set_trace()
 		res = RESTend(json).post(descr=typ, comment=comment, **data)
 		if json:
 			print(encode(res))
