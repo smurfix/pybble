@@ -85,9 +85,9 @@ def show_(k,v,expand=None,cache=None):
 
 		if isinstance(v,(list,tuple)):
 			i = 0
-			for vx in sorted(v):
+			for vx in v:
 				i += 1
-				ned = expand[str(i)] if expand else None
+				ned = expand[str(getattr(vx,'id', i))] if expand else None
 				show_(k+str(i),vx,ned,cache)
 				k = " "*len(unicode(k))
 			return
