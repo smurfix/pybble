@@ -294,6 +294,8 @@ class User(PasswordValue,ObjectRef):
 		else:
 			Member.add_to(self,site)
 
+		if username != ANON_USER_NAME:
+			Permission(self,self, right=PERM_READ, inherit=False)
 	
 	@property
 	def tracks(self):
