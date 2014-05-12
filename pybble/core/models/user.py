@@ -225,14 +225,17 @@ class User(PasswordValue,ObjectRef):
 			g = Group.q.get_by(name=ANON_USER_NAME,owner=site,parent=site)
 		except NoData:
 			g = Group(name=ANON_USER_NAME,owner=site,parent=site,superparent=site)
-		u = User.q.filter_by(site=site).order_by(cls.cur_login).join(Member,Member.parent_id==User.id).filter(Member.owner==site).first()
+
+		now = datetime.now()
+		old = now - timedelta(0,current_app.config.SESSION_COOKIE_AGE)
+
+		u = User.q.filter(User.site==site, or_(User.cur_login == None, User.cur_login < old)).order_by(cls.cur_login).join(Member,Member.parent_id==User.id).filter(Member.owner==site).first()
 		#u = cls.q.filter_by(username=ANON_USER_NAME, site=site).order_by(cls.cur_login).first()
-		if u is not None and u.cur_login is not None and u.cur_login >= datetime.now()-timedelta(0,current_app.config.SESSION_COOKIE_AGE):
-			u = None
 		if u is None:
 			u = cls(username=ANON_USER_NAME, site=site)
 			Member(group=g,user=u)
 			logger.info("New anon user {} for {}".format(u,site))
+			u.first_login = now
 		else:
 			logger.info("Recycling anon user {} for {}".format(u,site))
 			from .tracking import Delete, TrackingObjectRef
@@ -245,6 +248,9 @@ class User(PasswordValue,ObjectRef):
 			for c in u.all_owned(want=None):
 				if not isinstance(c,TrackingObjectRef):
 					Delete(c,comment="ANON user cleanup")
+			u.last_login = u.this_login
+		u.cur_login = now
+		u.this_login = now
 		return u
 		
 	@property
@@ -299,20 +305,31 @@ class User(PasswordValue,ObjectRef):
 
 	@property
 	def anon(self):
-		return self.username == ANON_USER_NAME
+		# for compatibility
+		return self.anon_on()
+
+	def anon_on(self, site=None):
+		"""Check if this user is anonymous OR unverified, on this site."""
+		if self.username == ANON_USER_NAME:
+			return True
+		if site is None:
+			site = request.site
+		anon = Group.q.get_by(name=ANON_USER_NAME,owner=site,parent=site)
+		return self.member_of(anon)
 
 	@property
 	def name(self):
+		if self.username == ANON_USER_NAME:
+			return "·ANONYM·"
 		if self.first_name and self.last_name:
 			return u"%s %s" % (self.first_name,self.last_name)
-		elif self.first_name:
+		if self.first_name:
 			return self.first_name
-		elif self.last_name:
+		if self.last_name:
 			return self.last_name
-		elif self.username:
+		if self.username:
 			return self.username
-		else:
-			return "·ANONYM·"
+		return "·UNNAMED·"
 
 	def visits(self,obj):
 		if getattr(obj,"_no_crumbs",False):

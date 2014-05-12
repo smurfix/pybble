@@ -30,6 +30,9 @@ import sys
 from ._base import expose
 expose = expose.sub("login")
 
+import logging
+logger = logging.getLogger('pybble._root.login')
+
 ###
 ### Login
 ###
@@ -53,14 +56,19 @@ def do_login():
 	if request.method == 'POST' and form.validate():
 		# create new user and show the confirmation page
 		try:
-			u = User.q.get_by(username=form.username.data, password=form.password.data)
+			u = User.q.get_by(username=form.username.data)
 		except NoData:
-			print >>sys.stderr,"No user",form.username.data,form.password.data,request.site
+			logger.warn("No user {} in {}".format(form.username.data,request.site))
 			u = None
 		else:
-			if not u.member_of(request.site):
-				print >>sys.stderr,u,"wrong site"
+			if not u.check_password(form.password.data):
+				logger.warn("Wrong password of {} in {}".format(u,request.site))
 				u = None
+			else:
+				import pdb;pdb.set_trace()
+				if not u.member_of(request.site) and not u.anon:
+					logger.warn("Wrong user {} in {}".format(u,request.site))
+					u = None
 		if u:
 			logged_in(u)
 
@@ -119,7 +127,7 @@ def lostpw():
 def register():
 	form = RegisterForm(request.form, prefix='register')
 	if request.method == 'POST' and form.validate():
-		u = User(form.username.data, form.password.data)
+		u = User(form.username.data, form.password.data, anon=True) ## needs verification
 		u.email = form.email.data
 		u.parent = request.site
 		u.record_creation()
