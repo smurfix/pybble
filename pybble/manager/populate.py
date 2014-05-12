@@ -328,20 +328,23 @@ class PopulateCommand(Command):
 				t.owner = superuser
 				added += 1
 			else:
+				chg = 0
 				if t.mime is not mime:
 					logger.warn("Template ‘{}’: changed MIME type from {} to {}".format(filepath, t.mime.mimetype if t.mime else '?', mime.mimetype))
 					if force:
 						t.mime = mime
+						chg = 1
 
 				if t.data != data:
 					logger.warn(u"Template {} ‘{}’ differs.".format(t.id,filepath))
 					if force:
 						t.data = data
+						chg = 1
 
 				if force:
 					t.superparent = parent
 					t.owner = superuser
-					added += 1
+					added += chg
 			db.commit()
 			return added
 
