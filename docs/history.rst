@@ -38,3 +38,40 @@ Since then, a bunch of things have happened.
 
 Thus, I decided to bite the bullet and revive `Pybble`.
 
+Why Pybble?
+-----------
+
+Two answers: Hackability and Discoverability.
+
+Pybble is designed to be hackable. You can plug in your own data structures,
+without modifying the Python base. (The templates are another matter …)
+
+All data objects are linkable to all other data objects. This may be
+overkill at first glance (who needs to attach a bunch of Wiki pages to a
+Comment, instead of a bunch of Comments to a Wiki page?) but the point is
+that you want to build your site the way you envision it, not the way the
+data structure allows you to.
+
+Pybble is discoverable. All object relations are explicit and
+foreign-key-coded. All data objects are mirrored SQL tables -- none of these
+pseudo-tables which certain other systems play with, to get around the fact
+that SQL is not NoSQL.
+
+Why not NoSQL?
+--------------
+
+No explicit relationships between first-class objects. Databases protect
+you against deleting things that are still referenced.
+
+No transactions. Sorry, but IMHO a web access which throws an error shall
+have no impact on my data structures, much less a partial one.
+
+On the other hand, let's face it: object inheritance and SQL really don't
+work all that well together, and all options for that have a heap of
+disadvantages. Pybble chooses the joined-table version because that has the
+least redundancy WRT data storage, but any other way should in principle
+work just as well.
+
+If all else fails, a NoSQL back-end that can replace SQLAlchemy should not
+be too difficult to write …
+
