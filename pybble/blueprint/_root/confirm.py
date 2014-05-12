@@ -43,9 +43,11 @@ def code_exists(form, field):
 class ConfirmForm(Form):
 	code = TextField('Code', [validators.required(u"Den Code solltest du schon angeben …"), validators.length(min=10, max=30), code_exists])
 
-@expose('/admin/confirm', methods=['GET','POST'])
 @expose('/admin/confirm/<code>')
+@expose('/admin/confirm', methods=['GET','POST'])
 def confirm(code=None):
+	if code is None:
+		code = request.values.get('code',None)
 	if code is None:
 		form = ConfirmForm(request.values, prefix='confirm')
 
