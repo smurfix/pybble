@@ -33,6 +33,9 @@ from formalchemy.fields import IntegerFieldRenderer
 from flask import Markup, url_for, escape, g
 from flask._compat import implements_to_string as py2_unicode
 
+import logging
+logger = logging.getLogger('pybble.core.db')
+
 class ManyDataExc(IntegrityError,MultipleResultsFound):
 	"""Class for tests of unique constraint violations"""
 	msg = None
@@ -193,6 +196,12 @@ def check_unique(cls, *vars):
 	if len(vars) == 1:
 		vars = vars[0].split(" ")
 	assert vars
+
+	k = '_pybble_unique_'+'_'.join(vars)
+	if getattr(cls,k,False):
+		return
+	setattr(cls,k,True):
+
 	def check(mapper, connection, obj):
 		q = [getattr(cls,v)==getattr(obj,v) for v in vars]
 		if obj.id is not None:
@@ -206,5 +215,9 @@ def _block_updates(target, value, oldvalue, initiator):
 	if oldvalue not in (None,NO_VALUE,NEVER_SET,value):
 		raise RuntimeError("You cannot change {}.{} (‘{}’ to ‘{}’)".format(target,initiator.parent_token.key,oldvalue,value))
 def no_update(var):
+	k = '_pybble_block_'+var.key
+	if getattr(var.class_,k,False):
+		return
+	setattr(var.class_,k,True)
 	event.listen(var, 'set', _block_updates)
 
