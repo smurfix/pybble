@@ -14,10 +14,10 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ##BP
 
 from jinja2 import Environment, BaseLoader, Markup, contextfunction, contextfilter
-from werkzeug import cached_property, Response
+from werkzeug import cached_property
 from werkzeug.http import parse_etags, remove_entity_headers, http_date
 from werkzeug.routing import Map, Rule
-from flask import request,current_app, get_flashed_messages
+from flask import request,current_app, get_flashed_messages, Response
 
 from ..utils import random_string, AuthError, NotGiven
 from ..core.models import PERM, PERM_NONE, PERM_ADD, obj_get, \
@@ -395,9 +395,9 @@ def add_to_app(app):
 		else:
 			r = Response(sf.content, mimetype=sf.mimetype)
 		r.set_etag(sf.hash)
-		r.headers['Cache-Control']='public'
-		r.headers['Expiry']=http_date(datetime.utcnow()+timedelta(0,current_app.config.STATIC_EXPIRE))
-		r.headers['Last-Modified']=http_date(sf.modified)
+		r.headers[b'Cache-Control']='public'
+		r.headers[b'Expiry']=http_date(datetime.utcnow()+timedelta(0,current_app.config.STATIC_EXPIRE))
+		r.headers[b'Last-Modified']=http_date(sf.modified)
 		return r
 
 	@app.route("/download/<oid>")
