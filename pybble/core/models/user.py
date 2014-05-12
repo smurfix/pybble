@@ -372,6 +372,8 @@ class User(PasswordValue,ObjectRef):
 			return not m.excluded
 
 	def add_verified(self,v,site=None):
+		if site is None:
+			site = request.site
 		anon = Group.q.get_by(name=ANON_USER_NAME,owner=site,parent=site)
 		if site is None:
 			site = request.site
