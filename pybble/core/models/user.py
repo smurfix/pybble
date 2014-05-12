@@ -610,7 +610,7 @@ class Member(ObjectRef):
 		else:
 			if fail:
 				raise ManyDataExc("{} is already a member of {}".format(user,group))
-		return m
+		return M
 
 	@classmethod
 	def drop_from(cls,user,group,fail=False):
