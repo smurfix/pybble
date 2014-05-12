@@ -28,6 +28,7 @@ from . import Object,ObjectRef, Discriminator
 from ._descr import D
 from ..db import Base, Column, check_unique
 from ...core import config
+from ...core.signal import ObjDeleted
 
 class TrackingObjectRef(ObjectRef):
 	"""Objects of this subclass cannot get changes recorded"""
