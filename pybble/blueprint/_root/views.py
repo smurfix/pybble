@@ -205,18 +205,23 @@ def view_oid(oid, **args):
 	request.user.will_read(obj)
 
 	if "details" not in args:
-		dv = [ Comment.superparent_id == obj.id ]
-		try:
-			bc = Breadcrumb.q.get_by(parent=obj, owner=request.user)
-		except NoData:
-			pass
-		else:
-			if bc.last_visited:
-				dv.append(Comment.added > bc.last_visited)
-		d = Comment.q.get(*dv)
-		d,a = split_details_aux(obj,d)
-		args["details"] = d
-		args["aux"] = a
+		## The purpose of this code is to get any comments added since the
+		## last visit on this page. Does not work well, and comments are
+		## not yet ported anyway.
+		#dv = [ Comment.superparent_id == obj.id ]
+		#try:
+		#	bc = Breadcrumb.q.get_by(parent=obj, owner=request.user)
+		#except NoData:
+		#	pass
+		#else:
+		#	if bc.last_visited:
+		#		dv.append(Comment.added > bc.last_visited)
+		#d = Comment.q.get(*dv)
+		#d,a = split_details_aux(obj,d)
+		#args["details"] = d
+		#args["aux"] = a
+		args["details"] = ()
+		args["aux"] = ()
 
 	try: return tryAddOn(obj,"html_view", **args)
 	except NoRedir: pass
