@@ -119,6 +119,7 @@ class ShowUrls(Command):
 ############################### Root
 
 class RootManager(Manager):
+	_pdb = False
 	def __init__(self, app=None, *a,**kw):
 		super(RootManager, self).__init__(*a,**kw)
 		self.add_root_options()
@@ -131,6 +132,7 @@ class RootManager(Manager):
 		self.add_option("-S", "--no-site", dest="site", action="store_const", const=None, required=False, help="Do not choose a site")
 		self.add_option("-v", "--verbose", dest="verbose", action="count", default=0, required=False, help="Enable verbose logging")
 		self.add_option("-t", "--test", dest="testing", action="store_true", required=False, default=False, help="Use the test database")
+		self.add_option("-d", "--pdb", dest="pdb", action="store_true", required=False, default=False, help="drop into the debugger if there's an error")
 
 	def add_root_commands(self):
 		from .blueprint import BlueprintManager
@@ -162,7 +164,18 @@ class RootManager(Manager):
 		self.add_command("user",UserManager())
 		self.shell(make_shell_context)
 
-	def __call__(self, app=None, **kw):
+	def run(self,*a,**k):
+		try:
+			super(RootManager,self).run(*a,**k)
+		except Exception as e:
+			x=sys.exc_info()
+			print("ERROR:",str(e))
+			if self._pdb:
+				import pdb
+				pdb.post_mortem(x[2])
+
+	def __call__(self, app=None, pdb=False, **kw):
+		self._pdb = pdb
 		if self.app is not None:
 			# this can't happen in production
 			assert self.app.testing, self.app
