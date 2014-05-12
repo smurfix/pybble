@@ -45,7 +45,7 @@ from sqlalchemy.types import TypeDecorator, VARCHAR
 #
 #from .admin.utils import _l
 
-logger = logging.getLogger()
+logger = logging.getLogger('pybble.core.models.config')
 
 ## ConfigDict
 
