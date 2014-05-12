@@ -124,6 +124,16 @@ sessions and all that should be managed by `Flask-Login` but is not yet,
 because when Pybble was originally written there was no `Flask`, much less
 `Flask-Login`.
 
+The "user" table of course has a password column. Passwords are hashed
+with your site secret, so if you need to change that, all logins become
+invalid.
+
+The LEGACY_PASSWORDS setting controls whether somebody can log in if their
+password is stored non-hashed (it will be hashed as soon as the user logs
+in). This is useful if you ever need to use SQL to change a password, but
+dangerous if somebody who does not know your site secret should gain write
+access to the database .
+
 Authorization
 -------------
 

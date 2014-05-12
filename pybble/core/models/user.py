@@ -169,14 +169,21 @@ class Password(TypeDecorator):
 
 class PasswordValue(object):
 	password = Column(Password)
+	## empty: cannot be used.  None: not known.
+
 	def check_password(self, password):
 		if not self.password:
 			return False
 		if ':' not in self.password:
-			self.password = security.generate_password_hash(self.password)
+			# legacy database contents. Should not happen, but might if
+			# somebody sets the password via SQL.
+			if app.config.LEGACY_PASSWORDS:
+				self.password = security.generate_password_hash(self.password)
+			else:
+				return False
 		return security.check_password_hash(self.password,password)
 
-class User(ObjectRef):
+class User(PasswordValue,ObjectRef):
 	"""\
 		Authorized users.
 		Owner: Managing user; some sort of root for anon users.
@@ -196,8 +203,6 @@ class User(ObjectRef):
 	        
 	# A simple way to make 'username' read-only
 	username = Column(Unicode(30), nullable=False)
-	password = Column(Password(), nullable=True)
-	## empty: cannot be used.  None: not known.
 
 	first_name = Column(Unicode(50), nullable=True)
 	last_name = Column(Unicode(50), nullable=True)

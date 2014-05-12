@@ -51,6 +51,8 @@ TESTING=False
 TRAP_BAD_REQUEST_ERRORS=False
 TRAP_HTTP_EXCEPTIONS=False
 USE_X_SENDFILE=False
+LEGACY_PASSWORDS=True
+d_LEGACY_PASSWORDS="If True, allow cleartext passwords in the database"
 
 ## used when logging is on.
 LOGGER_NAME='pybble'
