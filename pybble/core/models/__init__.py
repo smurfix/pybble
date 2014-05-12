@@ -209,9 +209,9 @@ class Object(Dumpable, Base):
 	superparent_id = Column(Integer,ForeignKey(id), index=True) # indirect ancestor (replied-to wiki page)
 	## XXX The individual tables should document the semantics of these pointers if they don't match
 	
-	children = relationship("Object", backref=backref('parent', remote_side=[id]), foreign_keys=(parent_id,))
-	superchildren = relationship("Object", backref=backref('superparent', remote_side=[id]), foreign_keys=(superparent_id,))
-	owned = relationship("Object", backref=backref('owner', remote_side=[id]), foreign_keys=(owner_id,))
+	children = relationship("Object", backref=backref('parent', remote_side=[id]), foreign_keys=(parent_id,), order_by="Object.id")
+	superchildren = relationship("Object", backref=backref('superparent', remote_side=[id]), foreign_keys=(superparent_id,), order_by="Object.id")
+	owned = relationship("Object", backref=backref('owner', remote_side=[id]), foreign_keys=(owner_id,), order_by="Object.id")
 
 	discr_id = Column("discriminator", Integer, ForeignKey(Discriminator.id), nullable=False)
 	discr = relationship(Discriminator, primaryjoin=discr_id==Discriminator.id)
