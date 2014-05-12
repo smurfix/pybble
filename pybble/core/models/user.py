@@ -258,7 +258,7 @@ class User(PasswordValue,ObjectRef):
 		res += "First login: %s\nLast login: %s\n" % (self.first_login,self.last_login)
 		return res
 
-	def __init__(self, username=ANON_USER_NAME, password=None, **kw):
+	def __init__(self, username=ANON_USER_NAME, password=None, site=None, anon=False, **kw):
 		super(User,self).__init__(**kw)
 		if username == ANON_USER_NAME:
 			if password is None:
@@ -276,9 +276,18 @@ class User(PasswordValue,ObjectRef):
 		self.password=password
 
 		db.flush()
+		if site is None:
+			site = self.parent or request.site
 		if self.parent is None:
 			self.parent = request.site
 		db.flush()
+
+		if anon:
+			anon = Group.q.get_by(name=ANON_USER_NAME,owner=site,parent=site)
+			Member.add_to(self,anon)
+		else:
+			Member.add_to(self,site)
+
 	
 	@property
 	def tracks(self):

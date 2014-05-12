@@ -30,6 +30,9 @@ from pybble.core.db import db,NoData
 from ._base import expose
 expose = expose.sub("views")
 
+import logging
+logger = logging.getLogger('pybble._root.views')
+
 import inspect,sys
 
 class NoRedir(BaseException):
@@ -84,7 +87,7 @@ def edit_oid(oid):
 	try: return tryAddOn(obj,"html_edit")
 	except NoRedir: pass
 
-	v = import_string(".part.%s.editor" % (obj.classname.lower(),))
+	v = import_string("pybble.blueprint._root.part.%s.editor" % (obj.classname.lower(),))
 	if not getattr(v,"no_check_perm",None):
 		request.user.will_write(obj)
 	return v(obj)
@@ -102,7 +105,7 @@ def new_oid(oid, discr=None, name=None):
 		v = cls.html_new
 		vc = v
 	else:
-		v = import_string(".part.%s.newer" % (cls.__name__.lower(),))
+		v = import_string("pybble.blueprint._root.part.%s.newer" % (cls.__name__.lower(),))
 		def vc(**args):
 			return v(**args)
 
@@ -125,7 +128,7 @@ def copy_oid(oid, parent):
 	if hasattr(obj,"html_edit"):
 		return cls.html_edit(parent=parent)
 	else:
-		v = import_string(".part.%s.editor" % (obj.classname.lower(),))
+		v = import_string("pybble.blueprint._root.part.%s.editor" % (obj.classname.lower(),))
 		return v(obj=obj,parent=parent)
 
 class DeleteForm(Form):
@@ -166,8 +169,8 @@ def split_details(obj, details):
 				pass
 			request.user.will_read(o)
 			yield o
-		except Exception,e:
-			print >>sys.stderr,e
+		except Exception as e:
+			logger.err("ERROR",e)
 			pass
 
 def split_details_aux(obj,details):
@@ -186,14 +189,14 @@ def split_details_aux(obj,details):
 		while o and o != obj and o not in aux:
 			aux.add(o.id)
 			o = o.parent
-	print >>sys.stderr,"DET",det,"AUX",aux
+	logger.debug("DET",det,"AUX",aux)
 	return det,aux
 
 @expose('/view/<oid>/<details>')
 def view_oid_exp(oid, details):
 	obj = obj_get(oid)
 	d,a = split_details_aux(obj,details)
-	print >>sys.stderr,"D A",obj,details,d,a
+	logger.debug("D A",obj,details,d,a)
 	return view_oid(oid, details=d, aux=a)
 
 @expose('/view/<oid>')
@@ -220,8 +223,8 @@ def view_oid(oid, **args):
 
 	try:
 		name = getattr(obj,"name",None)
-		v = import_string(".part.%s.viewer" % (obj.classname.lower(),))
-	except Exception,e:
+		v = import_string("pybble.blueprint._root.part.%s.viewer" % (obj.classname.lower(),))
+	except Exception as e:
 		return render_my_template(obj=obj, detail=TM_DETAIL_PAGE, **args);
 	else:
 		try:
