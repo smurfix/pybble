@@ -474,10 +474,12 @@ class PopulateCommand(Command):
 
 		a = anon
 		for d in (dw,ds,dt,dd):
-			if Permission.q.filter(Permission.for_discr==d,Permission.right>=0,Permission.owner==a, Permission.parent==s).count():
-				continue
-			p=Permission(a, s, d, PERM_READ)
-			p.superparent=s
+			if not Permission.q.filter(Permission.for_discr==d,Permission.right>=0,Permission.owner==a, Permission.parent==s).count():
+				p=Permission(a, s, d, PERM_READ)
+				p.superparent=s
+			if not Permission.q.filter(Permission.for_discr==d,Permission.right>=0,Permission.owner==s, Permission.parent==s).count():
+				p=Permission(s, s, d, PERM_READ)
+				p.superparent=s
 
 		for d,e in ((ds,dd),(dw,dd),(ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk),(ds,dt)):
 			if Permission.q.filter(Permission.new_discr==e,Permission.for_discr==d, Permission.parent==s).count():
