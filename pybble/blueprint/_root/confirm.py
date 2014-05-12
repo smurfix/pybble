@@ -14,6 +14,8 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ##BP
 
 from flask import flash, request
+from flask._compat import text_type
+
 from werkzeug.exceptions import NotFound
 from wtforms import Form, TextField, validators
 from wtforms.validators import ValidationError
@@ -31,7 +33,7 @@ expose = expose.sub("confirm")
 
 def code_exists(form, field):
 	try:
-		v = Verifier.q.get_by(code=str(field.data))
+		v = Verifier.q.get_by(code=text_type(field.data))
 	except NoData:
 		raise ValidationError(u"Diesen Code kenne ich nicht.")
 	else:
@@ -41,7 +43,7 @@ def code_exists(form, field):
 class ConfirmForm(Form):
 	code = TextField('Code', [validators.required(u"Den Code solltest du schon angeben …"), validators.length(min=10, max=30), code_exists])
 
-@expose('/admin/confirm')
+@expose('/admin/confirm', methods=['GET','POST'])
 @expose('/admin/confirm/<code>')
 def confirm(code=None):
 	if code is None:
@@ -51,7 +53,7 @@ def confirm(code=None):
 			return render_template('confirm.html', form=form, title_trace=[u"Bestätigung"])
 		code=form.code.data.lower()
 
-	v=Verifier.q.get_by(code=str(code))
+	v=Verifier.q.get_by(code=text_type(code))
 	if v.expired:
 		flash(u"Die Anfrage ist schon zu alt. Bitte schicke sie nochmal ab!")
 		return v.retry()
