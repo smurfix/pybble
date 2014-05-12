@@ -174,6 +174,10 @@ class PopulateCommand(Command):
 			logger.warn(u"The root site's owner is ‘{}’, not ‘{}’".format(superuser.username,ROOT_USER_NAME))
 		else:
 			logger.debug("The root user exists. Good.")
+		if superuser.email is None or force:
+			if superuser.email is not None:
+				logger.info(u"The main admin email changed from ‘{}’ ro ‘{}’".format(superuser.email,config.ADMIN_EMAIL))
+			superuser.email = text_type(config.ADMIN_EMAIL)
 		db.commit()
 		request.user = superuser
 

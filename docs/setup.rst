@@ -8,6 +8,7 @@ Create a file named LOGIN.py with, at minimum, the following content:
 	sql_pass="test"
 	sql_database="test_pybble"
 	SECRET_KEY="Change this, or risk being hacked!"
+	ADMIN_EMAIL="you@your.domain.example"
 
 Then, run
 

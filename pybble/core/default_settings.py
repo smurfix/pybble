@@ -56,4 +56,7 @@ LOGGER_DATE_FORMAT='%Y-%m-%d %H:%M:%S'
 
 MEDIA_PATH="/var/www/pybble"
 
+MAILHOST="localhost"
+d_MAILHOST="The system to send email through"
+
 del datetime
