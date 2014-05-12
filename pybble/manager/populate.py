@@ -211,7 +211,8 @@ class PopulateCommand(Command):
 				db.commit()
 				logger.info(u"The root user has been created. Password: ‘{}’.".format(password))
 			else:
-				logger.warning(u"The root user has been associated. This is strange.")
+				if root.owner != superuser:
+					logger.warning(u"The root user is not ({}, not {}). This is strange.".format(root.owner,superuser))
 			root.owner = superuser
 			db.flush()
 		elif superuser.username != ROOT_USER_NAME:
