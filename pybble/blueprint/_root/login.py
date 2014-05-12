@@ -41,7 +41,7 @@ class LoginForm(Form):
 	remember = BooleanField('Eingeloggt bleiben')
 	next = HiddenField("next URL")
 
-@expose("/admin/login")
+@expose("/admin/login", methods=['GET','POST'])
 def do_login():
 	form = LoginForm(request.form, prefix='login')
 	error = ""
@@ -119,7 +119,7 @@ class RegisterForm(Form):
 def lostpw():
 	pass
 
-@expose('/admin/register')
+@expose('/admin/register', methods=['GET','POST'])
 def register():
 	form = RegisterForm(request.form, prefix='register')
 	if request.method == 'POST' and form.validate():
