@@ -17,7 +17,7 @@ from flask import request, flash, current_app, url_for, session
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 
-from pybble.render import render_template, send_mail
+from pybble.render import render_template
 from pybble.core.db import db,NoData
 from pybble.core.models.user import User
 from pybble.core.models.verifier import Verifier, VerifierBase
