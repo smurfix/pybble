@@ -400,7 +400,7 @@ class Object(Dumpable, Base):
 			q = dict(t.args)
 			q[t.src] = self
 			q[t.dst] = obj
-			for m in db.filter_by(t.table, **q):
+			for m in t.table.q.filter_by(**q):
 				return not getattr(m,"excluded",False)
 		return False
 
