@@ -57,7 +57,7 @@ def add_user():
 		except NoData:
 			pass
 		else:
-			if user.this_login < datetime.now() - current_app.config.PERMANENT_SESSION_LIFETIME:
+			if user.this_login is None or user.this_login < datetime.now() - current_app.config.PERMANENT_SESSION_LIFETIME:
 				## Last login was too long ago.
 				user = None
 	if user is None:
