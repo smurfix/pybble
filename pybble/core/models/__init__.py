@@ -260,7 +260,7 @@ class Object(Dumpable, Base):
 		try:
 			return str(self)
 		except Exception as err:
-			return '<%s%s: ?? %s>' % (d, self.__class__.__name__, self.id, str(err))
+			return '<%s:%s ?? %s>' % (self.__class__.__name__, self.id, str(err))
 	
 	@property
 	def signal(self):
