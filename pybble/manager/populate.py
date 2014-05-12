@@ -16,7 +16,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 import os
 import sys
 import logging
-from traceback import print_exc
+from traceback import print_exc,format_exc
 
 from flask import request,current_app
 from flask._compat import text_type
@@ -90,7 +90,7 @@ class PopulateCommand(Command):
 				try:
 					a = obj.mod
 				except Exception as e:
-					logger.warn("{} ‘{}’ ({}) is not usable: {}".format(Obj.__name__,name,obj.path,str(e)))
+					logger.warn("{} ‘{}’ ({}) is not usable: {}\n{}".format(Obj.__name__,name,obj.path,str(e), format_exc()))
 					if is_new:
 						# Dance 
 						db.add(obj)
