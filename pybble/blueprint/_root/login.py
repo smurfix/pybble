@@ -128,6 +128,7 @@ def register():
 		u.parent = request.site
 		u.record_creation()
 
+		verifier = VerifierBase.q.get_by(name="register")
 		v = verifier.new(u)
 		v.send()
 
@@ -137,57 +138,6 @@ def register():
 
 	form.password.data = form.password2.data = ""
 	return render_template('register.html', form=form, title_trace=[u"Neuer Benutzer"])
-
-###
-### Confirm email 
-###
-
-class verifier(object):
-	@staticmethod
-	def new(user):
-		v=Verifier("register",user)
-		v.superparent = request.site
-		return v
-
-	@staticmethod
-	def send(verifier):
-		from pybble.confirm import confirm
-		user=verifier.parent
-		send_mail(user.email, 'verify_email.txt',
-		          user=user, code=verifier.code,
-		          link=url_for("pybble.confirm.confirm", code=verifier.code, _external=1),
-				  page=url_for("pybble.confirm.confirm", _external=1))
-	
-	@staticmethod
-	def entered(verifier):
-		u = verifier.parent
-		if not u.is_verified(verifier.superparent):
-			u.add_verified(True,verifier.superparent)
-			return redirect(url_for("pybble.confirm.confirmed",oid=verifier.oid()))
-
-		if current_app.user == u:
-			flash(u"Du bist bereits verifiziert.")
-			return redirect(url_for("pybble.views.mainpage"))
-		elif not request.user.anon:
-			flash(u"Der User ist bereits verifiziert.")
-			return redirect(url_for("pybble.views.mainpage"))
-		else:
-			flash(u"Du bist bereits verifiziert, musst dich aber einloggen.")
-			return redirect(url_for("pybble.login.do_login"))
-	
-	@staticmethod
-	def confirmed(verifier):
-		u = verifier.parent
-
-		if request.user == u:
-			flash(u"Du bist jetzt verifiziert.", True)
-			return redirect(url_for("pybble.views.mainpage"))
-		elif not request.user.anon:
-			flash(u"Der User ist jetzt verifiziert.", True)
-			return redirect(url_for("pybble.views.mainpage"))
-		else:
-			flash(u"Du bist jetzt verifiziert, musst dich aber noch einloggen.", True)
-			return redirect(url_for("pybble.login.do_login"))
 
 @expose("/admin/logout")
 def do_logout():

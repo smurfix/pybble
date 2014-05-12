@@ -13,7 +13,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from flask import current_app,g
+from flask import current_app,g, request
 
 from werkzeug import import_string
 
@@ -46,6 +46,10 @@ class VerifierBase(Loadable, ObjectRef):
 	name = Column(Unicode(30), unique=True, nullable=False)
 	doc = Column(Unicode(1000), nullable=True)
 
+	def new(self, obj, user=None,*a,**k):
+		"""Return a new verifier for me and this user."""
+		obj = self.mod.new(obj, *a,**k) or obj
+		return Verifier(user=user or request.user, base=self, obj=obj)
 
 ## Verifier
 
@@ -53,7 +57,8 @@ class Verifier(ObjectRef):
 	"""
 		Verification emails (or similar).
 		Parent: the thing to be verified.
-		Owner: the user who's asked.
+		Owner: the user who asked.
+		SuperParent: the VerifierBase object this refers to.
 		"""
 	__tablename__ = "verifiers"
 	_descr = D.Verifier
@@ -113,17 +118,17 @@ class Verifier(ObjectRef):
 	
 	def send(self,*a,**k):
 		"""Send the data to the user"""
-		return self.base._module.send(self,*a,**k)
+		return self.base.mod.send(self,*a,**k)
 
 	def entered(self,*a,**k):
 		"""The user entered the code. Redirect to whatever."""
-		return self.base._module.entered(self,*a,**k)
+		return self.base.mod.entered(self,*a,**k)
 
 	def confirmed(self,*a,**k):
 		"""Confirmation page. Redirect to whatever."""
-		return self.base._module.confirmed(self,*a,**k)
+		return self.base.mod.confirmed(self,*a,**k)
 
 	def retry(self,*a,**k):
 		"""The user entered the code too late, or whaveter. Redirect to request page."""
-		return self.base._module.retry(self,*a,**k)
+		return self.base.mod.retry(self,*a,**k)
 

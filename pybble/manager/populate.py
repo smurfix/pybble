@@ -67,56 +67,11 @@ class PopulateCommand(Command):
 		from ..core.models.types import MIMEtype
 		from ..core.models.template import Template
 		from ..core.models.config import ConfigVar
+		from ..core.models.verifier import VerifierBase
 		from .. import ROOT_SITE_NAME,ROOT_USER_NAME, ANON_USER_NAME
 
 		if 'MEDIA_PATH' not in config:
 			raise RuntimeError("You have to set MEDIA_PATH so that I can store my files somewhere")
-
-		## helper to load known apps, blueprints, renderers
-		def loadables(lister,Obj,path):
-			added=changed=found=0
-			for name in lister():
-				name = text_type(name)
-				found += 1
-				is_new = False
-				try:
-					obj = Obj.q.get_by(name=name)
-				except NoData:
-					obj = Obj(name=name, path="{}.{}.{}".format(path,name,Obj.__name__))
-					is_new = True
-				db.flush()
-				if force or is_new:
-					obj.superparent = root
-				try:
-					a = obj.mod
-				except Exception as e:
-					logger.warn("{} ‘{}’ ({}) is not usable: {}\n{}".format(Obj.__name__,name,obj.path,str(e), format_exc()))
-					if is_new:
-						# Dance 
-						db.add(obj)
-						db.flush()
-						db.delete(obj)
-				else:
-					if obj.doc is None or force:
-						try:
-							obj.doc = a.__doc__
-						except AttributeError:
-							pass
-
-					if hasattr(a,"PARAMS"):
-						## Set default variables
-						add_vars(a.PARAMS,obj)
-
-					else:
-						logger.debug("No parameters in {}.".format(obj.path))
-				
-			if not found:
-				logger.warn("{}: None found".format(Obj.__name__))
-			elif not changed and not added:
-				logger.debug("{}: {} found, No changes".format(Obj.__name__,found))
-			else:
-				logger.info("{}: {} new, {} updated".format(Obj.__name__,added,changed))
-			db.commit()
 
 		## Object discriminators
 		count = added = updated = 0
@@ -239,10 +194,83 @@ class PopulateCommand(Command):
 			logger.debug("No new MIME types necessary.")
 		db.commit()
 		
+		## Variable installer.
+		## Generic code because it doesn't hurt and may be used for Blueprint vars later.
+		def add_vars(gen,parent):
+			"""Add variables. The generator yields (name,value,docstring) triples."""
+			
+			added=[]
+			for k,v,d in gen:
+				try:
+					cf = ConfigVar.q.get_by(name=k, parent=parent)
+				except NoData:
+					cf = ConfigVar(parent=parent, name=k, value=v, doc=d)
+					db.flush()
+					added.append(k)
+				else:
+					if not cf.doc or force:
+						cf.doc = d
+			if added:
+				logger.info("New variables for {}: ".format(str(parent))+",".join(added))
+			else:
+				logger.debug("No new variables for {} necessary.".format(str(parent)))
+			db.commit()
+
+		## helper to load known apps, blueprints, renderers
+		def loadables(lister,Obj,path, iname=None,add_vars=add_vars,root=root):
+			if iname is None:
+				iname = Obj.__name__
+			added=changed=found=0
+			for name in lister():
+				name = text_type(name)
+				found += 1
+				is_new = False
+				try:
+					obj = Obj.q.get_by(name=name)
+				except NoData:
+					obj = Obj(name=name, path="{}.{}.{}".format(path,name,iname))
+					is_new = True
+				db.flush()
+				if force or is_new:
+					obj.superparent = root
+				try:
+					a = obj.mod
+				except Exception as e:
+					logger.warn("{} ({}) is not usable: {}\n{}".format(iname,obj.path,str(e), format_exc()))
+					if is_new:
+						# Dance 
+						db.add(obj)
+						db.flush()
+						db.delete(obj)
+				else:
+					if obj.doc is None or force:
+						try:
+							obj.doc = a.__doc__
+						except AttributeError:
+							pass
+
+					if hasattr(a,"PARAMS"):
+						## Set default variables
+						add_vars(a.PARAMS,obj)
+
+					else:
+						logger.debug("No parameters in {}.".format(obj.path))
+				
+			if not found:
+				logger.warn("{}: None found".format(Obj.__name__))
+			elif not changed and not added:
+				logger.debug("{}: {} found, No changes".format(Obj.__name__,found))
+			else:
+				logger.info("{}: {} new, {} updated".format(Obj.__name__,added,changed))
+			db.commit()
+
 		## Rendering actual content
 		from ..render import list_renderers
 		from ..core.models.types import mime_ext
 		loadables(list_renderers,Renderer,"pybble.render")
+
+		from ..verifier import list_verifiers
+		loadables(list_verifiers,VerifierBase,"pybble.verifier","Verifier")
 
 		## static files (recursive)
 		def add_files(dir,path):
@@ -369,28 +397,6 @@ class PopulateCommand(Command):
 
 		added = find_templates(root, TEMPLATE_PATH)
 		logger.debug("{} templates changed.".format(added))
-
-		## Variables.
-		## Generic code because it doesn't hurt and may be used for Blueprint vars later.
-		def add_vars(gen,parent):
-			"""Add variables. The generator yields (name,value,docstring) triples."""
-			
-			added=[]
-			for k,v,d in gen:
-				try:
-					cf = ConfigVar.q.get_by(name=k, parent=parent)
-				except NoData:
-					cf = ConfigVar(parent=parent, name=k, value=v, doc=d)
-					db.flush()
-					added.append(k)
-				else:
-					if not cf.doc or force:
-						cf.doc = d
-			if added:
-				logger.info("New variables for {}: ".format(str(parent))+",".join(added))
-			else:
-				logger.debug("No new variables for {} necessary.".format(str(parent)))
-			db.commit()
 
 		## Set default variables
 		def gen_vars():
