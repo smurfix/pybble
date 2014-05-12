@@ -42,9 +42,9 @@ class ManyDataExc(IntegrityError,MultipleResultsFound):
 	def __init__(self, msg):
 		self.msg = msg
 	def __str__(self):
-		return "{}: {}".format(self.__class__.__name,self.msg)
+		return "{}: {}".format(self.__class__.__name__,self.msg)
 	def __repr__(self):
-		return "<{}: {}>".format(self.__class__.__name,self.msg)
+		return "<{}: {}>".format(self.__class__.__name__,self.msg)
 ManyData = (ManyDataExc,)+ManyDataExc.__bases__
 
 from . import config
