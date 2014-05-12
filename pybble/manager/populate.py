@@ -287,11 +287,10 @@ class PopulateCommand(Command):
 							logger.error("File ‘{}’ vanished".format(filepath))
 							sf.bindata.hash = None
 							sf.bindata.record_deletion("file vanished")
-							sf.record_deletion("file vanished")
 							db.flush()
 
 							sb = BinData(f[:dot],ext=f[dot+1:],content=content, storage=st)
-							sf = StaticFile(webpath,sb)
+							sf.bindata = sb
 							c = sf.content
 
 						if content != sf.content:
