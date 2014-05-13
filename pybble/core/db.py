@@ -16,7 +16,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from functools import update_wrapper
 
-from sqlalchemy import create_engine, Integer, types, util, exc as sa_exc, event
+from sqlalchemy import create_engine, Integer, types, util, exc as sa_exc, event, or_
 from sqlalchemy.orm import scoped_session, sessionmaker,query
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm.session import Session
@@ -99,8 +99,27 @@ class GetQuery(query.Query):
 	"""A query which allows .get and .get_by"""
 	def get(self,*a,**k):
 		return self.filter(*a,**k).one()
+		#return self._one(self.filter(*a,**k))
 	def get_by(self,**k):
 		return self.filter_by(**k).one()
+		#return self._one(self.filter_by(**k))
+
+	@staticfunction
+	def _one(query):
+		"""A re-implementation of one() which can be breakpointed, to aid in debugging"""
+		res = None
+		for obj in query:
+			if res is None:
+				res = obj
+			else:
+				res = ManyDataExc
+		if res is None:
+			raise NoData(query)
+		elif res is ManyDataExc:
+			raise ManyDataExc(query)
+		else:
+			return  res
+
 
 #def limitedQuery(mapper,session):
 #	return session.query(mapper)
