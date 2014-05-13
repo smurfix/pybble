@@ -33,7 +33,6 @@ from .. import BaseBlueprint
 class TheView(AdminBaseView):
 	@expose('/')
 	def index(self):
-		import pdb;pdb.set_trace()
 		#self._template_args['model'] = self.base.model
 		return self.render(['admin/index.haml','admin/index.html'])
 
