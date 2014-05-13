@@ -49,9 +49,6 @@ class BaseBlueprint(FlaskBlueprint):
 	
 	def setup(self):
 		"""Called after data are loaded. Set up routing, attach modules, etc., here."""
-		@self.url_value_preprocessor
-		def bp_url_value_preprocessor(endpoint, values):
-			request.bp = values.pop('bp')
 		@self.url_defaults
 		def bp_url_defaults(endpoint, values):
 			config = getattr(request, 'bp', None)
