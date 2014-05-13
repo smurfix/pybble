@@ -66,12 +66,15 @@ class WrapperApp(object):
 		also holds the app's configuration"""
 	config = cached_config()
 
-	def __init__(self, site, testing=None):
+	def __init__(self, site, testing=None, **kw):
+		super(WrapperApp,self).__init__(**kw)
 		self.site = site
-		if not isinstance(self,Flask):
+		if not hasattr(self,'testing'):
 			self.testing = testing
+		elif testing is not None:
+			assert self.testing = testing
 
-		self.read_config(testing)
+		self.read_config(self.testing)
 
 	def make_config(self, instance_relative=None):
 		"""called by Flask"""
@@ -98,19 +101,8 @@ class BaseApp(JinjaApp,WrapperApp,Flask):
 	config = None
 
 	def __init__(self, site, testing=False, **kw):
-		WrapperApp.__init__(self, site, testing=testing)
+		super(BaseApp,self).__init__(site=site,testing=testing, import_name="pybble", site.name, template_folder=None, static_folder=None, **kw)
 
-		template_folder = getattr(self.config,"TEMPLATE_ROOT",None)
-		if template_folder is None:
-			template_folder = os.path.join(os.getcwd(),'templates')
-		#static_folder = getattr(self.config,"STATIC_ROOT",None)
-		#if static_folder is None:
-		#	static_folder = os.path.join(os.getcwd(),'pybble','static')
-		static_folder=None
-
-		Flask.__init__(self, site.name, template_folder=template_folder, static_folder=static_folder, **kw)
-		if testing is not None:
-			assert testing == self.config.TESTING
 		self.wsgi_app = CustomProxyFix(self.wsgi_app)
 
 		if site is not None:
