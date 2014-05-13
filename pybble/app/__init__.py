@@ -65,14 +65,15 @@ class WrapperApp(object):
 	"""A dummy app class, used to implement low-weight redirectors;
 		also holds the app's configuration"""
 	config = cached_config()
+	site = None
 
-	def __init__(self, site, testing=None, **kw):
-		super(WrapperApp,self).__init__(**kw)
+	def __init__(self, site=None, testing=None, **kw):
 		self.site = site
+		super(WrapperApp,self).__init__(**kw)
 		if not hasattr(self,'testing'):
 			self.testing = testing
 		elif testing is not None:
-			assert self.testing = testing
+			assert self.testing == testing
 
 		self.read_config(self.testing)
 
@@ -96,12 +97,17 @@ class WrapperApp(object):
 		### note that the site has its own listener
 		pass
 	
+	def __str__(self):
+		return "‹{}.{} ‘{}’›".format(self.__class__.__module__,self.__class__.__name__,self.site.name if self.site else "??")
+	__repr__=__str__
+	__unicode__=__str__
+
 class BaseApp(JinjaApp,WrapperApp,Flask):
 	"""Pybble's basic WSGI application"""
 	config = None
 
 	def __init__(self, site, testing=False, **kw):
-		super(BaseApp,self).__init__(site=site,testing=testing, import_name="pybble", site.name, template_folder=None, static_folder=None, **kw)
+		super(BaseApp,self).__init__(site=site,testing=testing, import_name="pybble", template_folder=None, static_folder=None, **kw)
 
 		self.wsgi_app = CustomProxyFix(self.wsgi_app)
 
@@ -215,8 +221,7 @@ class _fake_app(WrapperApp,Flask):
 	"""
 	def __init__(self,*a,**k):
 		k["static_folder"] = None
-		WrapperApp.__init__(self,None)
-		Flask.__init__(self,*a,**k)
+		super(_fake_app,self).__init__(*a,**k)
 
 def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing=False):
 	"""\
@@ -236,7 +241,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 	global cfg_app
 
 	if cfg_app is None:
-		cfg_app = _fake_app(os.path.abspath(os.curdir))
+		cfg_app = _fake_app(import_name=os.path.abspath(os.curdir))
 		if config:
 			os.environ['PYBBLE'] = config
 		from pybble.core import config as cfg
