@@ -6,7 +6,7 @@ all: fetch pybble/utils/sql_diff.py
 test:
 	@sh test/run.sh -rv
 retest:
-	@sh test/run.sh -nv
+	@sh test/run.sh -nvN
 
 update:
 	@sh utils/update_boilerplate
