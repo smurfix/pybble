@@ -71,142 +71,6 @@ class TemplateNotFound(IOError, LookupError):
 		IOError.__init__(self, name)
 		self.name = name
 
-class DatabaseLoader(BaseLoader):
-	def get_source(self, environment, template):
-		if isinstance(template,(Template,TemplateMatch)):
-			t = template
-		else:
-			if isinstance(template,str): template = unicode(template)
-			site = request.site
-			t = None
-			while site:
-				try: t = Template.q.get_by(name=template,superparent=site)
-				except NoData: pass
-				else: break
-				site = site.parent
-			if t is None:
-				raise TemplateNotFound(template)
-		mtime = t.modified
-		return (t.data,
-				"//db/%s/%s/%s" % (t.__class__.__name__,(t.superparent or request.site).domain,getattr(t,"name",t.oid())),
-				lambda: False ) # t.modified != mtime) 
-	
-def add_to_jinja(jinja_env):
-	def render(obj, *a,**kw):
-		if hasattr(obj,"render"):
-			return obj.render(*a,**kw)
-		else:
-			return Markup.escape(unicode(obj))
-	jinja_env.filters['render'] = render
-
-	def cdata(data): ## [[[[
-		return Markup("<![CDATA[")+data.replace("]]>","]] >")+Markup("]]>")
-	jinja_env.filters['cdata'] = cdata
-
-	def datetimeformat(value, format='%Y-%m-%d %H:%M'):
-		return value.strftime(format)
-	jinja_env.filters['date'] = datetimeformat
-
-	jinja_env.globals['url'] = lambda: request.url
-
-	def name_discr(id):
-		if id is None or id == "None":
-			return "*"
-		return Discriminator.q.get_by(id=int(id)).name
-	jinja_env.globals['name_discr'] = name_discr
-
-	def name_detail(id):
-		from pybble.models import TM_DETAIL_name
-		return TM_DETAIL_name(id)
-	jinja_env.globals['name_detail'] = name_detail
-
-	def name_permission(id):
-		from pybble.models import PERM_name
-		return PERM_name(id).lower()
-	jinja_env.globals['name_permission'] = name_permission
-
-	jinja_env.globals['diff'] = textDiff
-	jinja_env.globals['textdiff'] = textOnlyDiff
-
-	for did,dname in D.items():
-		i = dname.rindex(".")
-		if i > 0:
-			dname = dname[i+1:]
-		jinja_env.globals[str("d_"+dname.lower())] = did
-
-	for tm,name in TM_DETAIL.items():
-		jinja_env.globals[str("tm_"+name.lower())] = tm
-
-	def addables(obj):
-		u = request.user
-		if not hasattr(u,"_can_add"):
-			u._can_add = {}
-		u = u._can_add
-
-		g = u.get(obj.id,None)
-		if g is None:
-			g = []
-			for d in Discriminator.q.all():
-#			if getattr(obj_class(d.id),"_no_crumbs",False):
-#				continue
-				if request.user.can_add(obj, discr=obj.discriminator, new_discr=d.id):
-					g.append((d.id,d.display_name or d.name, d.infotext))
-			u[obj.id] = g
-		return g
-	jinja_env.globals['addables'] = addables
-
-	jinja_env.globals['subpage'] = render_subpage
-	jinja_env.globals['subline'] = render_subline
-	jinja_env.globals['subrss'] = render_subrss
-
-	# Permission checks for templates: {% if can_edit() %} -- menu -- {% endif %}
-	for a,b in PERM.iteritems():
-		def can_do_closure(a,b):
-			def can_do(env, obj=None, discr=None):
-				if discr is None:
-					if isinstance(obj,(int,long)):
-						discr=obj
-						obj=None
-				if obj is None:
-					obj = env.get('obj',None)
-				if isinstance(obj,basestring):
-					obj = obj_get(obj)
-				u = getattr(request,"user",None)
-				if current_app.config.DEBUG_ACCESS:
-					print("can_do_"+b+":", u,obj,discr,a, file=sys.stderr)
-				if not u:
-					return False
-				if a > PERM_NONE:
-					return u.can_do(obj, discr=discr) >= a
-				elif a == PERM_ADD:
-					return u.can_do(obj, discr=obj, new_discr=discr, want=a) == a
-				else:
-					return u.can_do(obj, discr=discr, want=a) == a
-			can_do.contextfunction = 1 # Jinja
-
-			def will_do(env, obj=None):
-				if obj is None:
-					obj = env.vars['obj']
-				if isinstance(obj,basestring):
-					obj = obj_get(obj)
-				u = getattr(request,"user",None)
-				if current_app.config.DEBUG_ACCESS:
-					print("will_do_"+b+":", u,obj,a, file=sys.stderr)
-				if not u:
-					raise AuthError(obj,a)
-				if a > PERM_NONE:
-					if u.can_do(obj) < a:
-						raise AuthError(obj,a)
-				else:
-					if u.can_do(obj, want=a) != a:
-						raise AuthError(obj,a)
-			will_do.contextfunction = 1 # Jinja
-
-			return can_do,will_do
-		c,d = can_do_closure(a,b)
-		jinja_env.globals['can_' + b.lower()] = c
-		jinja_env.globals['will_' + b.lower()] = d
-
 def render_my_template(obj, detail=None, mimetype=NotGiven, **context):
 	"""Global render"""
 
@@ -240,23 +104,27 @@ class TaggedMarkup(Markup):
 		return self
 
 def render_template(template, mimetype=NotGiven, **context):
-	if isinstance(template,str): template = unicode(template)
-	if request:
-		user = getattr(request,"user",None)
-		msgs = []
-		for c,m in get_flashed_messages(with_categories=True):
-			m = TaggedMarkup.escape(m)
-			m.success = c
-			msgs.append(m)
-		context.update(
-			# CURRENT_URL=request.build_absolute_uri(),
-			USER=getattr(request,"user",None),
-			MESSAGES=msgs,
-			SITE=request.site,
-			CRUMBS=(user.groups+list(p.parent for p in user.all_visited()[0:20])) if user else None,
-			NOW=datetime.utcnow(),
-		)
-	r = current_app.jinja_env.get_template(template).render(**context)
+	#template = current_app.jinja_env.get_template(template)
+	from .loader import get_template
+	template = get_template(template)
+
+	user = getattr(request,"user",None)
+	msgs = []
+	for c,m in get_flashed_messages(with_categories=True):
+		m = TaggedMarkup.escape(m)
+		m.success = c
+		msgs.append(m)
+
+	context.update(
+		# CURRENT_URL=request.build_absolute_uri(),
+		USER=getattr(request,"user",None),
+		MESSAGES=msgs,
+		SITE=request.site,
+		CRUMBS=(user.groups+list(p.parent for p in user.all_visited()[0:20])) if user else None,
+		NOW=datetime.utcnow(),
+	)
+
+	r = template.render(**context)
 	if mimetype:
 		if mimetype is NotGiven:
 			mimetype="text/html"
@@ -387,56 +255,6 @@ for a,b in PERM.iteritems():
 #	previous = property(lambda x: url_for(x.endpoint, page=x.page - 1))
 #	next = property(lambda x: url_for(x.endpoint, page=x.page + 1))
 #	pages = property(lambda x: max(0, x.count - 1) // x.per_page + 1)
-
-def add_to_app(app):
-	@app.route("/static/<path:file>", endpoint="static")
-	def serve_path(file):
-		site = request.site
-		while site:
-			try:
-				sf = StaticFile.q.get_by(superparent=site, path=file)
-			except NoData:
-				site = site.parent
-				if not site:
-					raise
-			else:
-				break
-
-		if parse_etags(request.environ.get('HTTP_IF_NONE_MATCH')).contains(sf.hash):
-			r = Response("", mimetype=sf.mimetype)
-			r.status_code = 304
-			remove_entity_headers(r.headers)
-		else:
-			r = Response(sf.content, mimetype=sf.mimetype)
-		r.set_etag(sf.hash)
-		r.headers[b'Cache-Control']='public'
-		r.headers[b'Expiry']=http_date(datetime.utcnow()+timedelta(0,current_app.config.STATIC_EXPIRE))
-		r.headers[b'Last-Modified']=http_date(sf.modified)
-		return r
-
-	@app.route("/download/<oid>")
-	@app.route("/download/<oid>/<name>")
-	def download(request,oid,name=None):
-		obj = obj_get(oid)
-		r = Response(obj.content, mimetype=obj.mimetype)
-		if name:
-			n = obj.name
-			if obj.mime.ext:
-				n += "."+obj.mime.ext
-			assert n == name
-
-		if parse_etags(request.environ.get('HTTP_IF_NONE_MATCH')).contains(obj.hash):
-			r = Response("", mimetype=obj.mimetype)
-			r.status_code = 304
-			remove_entity_headers(r.headers)
-		else:
-			r = Response(obj.content, mimetype=obj.mimetype)
-
-		r.set_etag(obj.hash)
-		r.headers['Cache-Control']='public'
-		r.headers['Expiry']=http_date(datetime.utcnow()+timedelta(999))
-		r.headers['Last-Modified']=http_date(obj.timestamp)
-		return r
 
 def list_renderers():
 	path = os.path.dirname(os.path.abspath(__file__))

@@ -46,3 +46,15 @@ class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 
 	def test_four(self):
 		self.assertContent("http://btest/blue/yellow","Yellow Color")
+
+	def test_p_one(self):
+		self.assertContent("http://btest/blue/p/red","Red Color")
+			
+	def test_p_two(self):
+		self.assertContent("http://btest/blue/p/green","Green Color")
+
+	def test_p_three(self):
+		self.assertContent("http://btest/blue/p/blue","Blue Color")
+
+	def test_p_four(self):
+		self.assertContent("http://btest/blue/p/yellow","Yellow Color")

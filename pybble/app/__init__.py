@@ -40,7 +40,8 @@ from ..core.models.config import ConfigVar
 from ..core.models.user import User
 from ..manager import Manager,Command
 from ..blueprint import load_app_blueprints
-from ..render import load_app_renderer, add_to_app
+from ..render import load_app_renderer
+from ..render.app import JinjaApp
 
 logger = logging.getLogger('pybble.app')
 
@@ -92,81 +93,7 @@ class WrapperApp(object):
 		### note that the site has its own listener
 		pass
 	
-class SiteTemplateLoader(BaseLoader):
-	def __init__(self, site):
-		self.site = site
-
-	def get_source(self, environment, template):
-		"""\
-			Find a template.
-
-			* attached to "self"
-			* if this is a site:
-			  * if the template name contains a slash,
-			    * attached to the SiteBlueprint
-			    * attached to the Blueprint
-			  * attached to the app
-			* recurse to my parent
-			"""
-		seen = set()
-		s = refresh(self.site)
-		if isinstance(template,TemplateMatch):
-			template = template.template
-		if isinstance(template,DBTemplate):
-			mtime = template.modified
-			def t_is_current():
-				#db.refresh(refresh(t),('modified',))
-				return mtime == refresh(template).modified
-			return template.data, template, t_is_current
-
-		template = text_type(template)
-		while s is not None:
-			if s in seen:
-				break
-			seen.add(s)
-			t = None
-			try: t = DBTemplate.q.get_by(site=s,name=template)
-			except NoData:
-				if isinstance(s,Site):
-					i = template.find('/')
-					if i >0:
-						try: # the name might refer to a SiteBlueprint
-							sbp = SiteBlueprint.q.get_by(parent=s,name=template[:i])
-						except NoData: # or to the Blueprint it points to
-							try:
-								bp = db.query(SiteBlueprint).filter(SiteBlueprint.parent==s).join(Blueprint, SiteBlueprint.superparent).filter(Blueprint.name==template[:i]).limit(1).one().blueprint
-							except NoData:
-								bp = None
-						else:
-							# we get here if the prefix refers to a SiteBlueprint entity
-							try:
-								t = DBTemplate.q.get_by(parent=sbp, name=template[i+1:])
-							except NoData:
-								# not found, so check the blueprint
-								bp = sbp.blueprint
-						if t is None and bp is not None:
-							try: t = DBTemplate.q.get_by(parent=bp, name=template[i+1:])
-							except NoData: pass
-					if t is None and i>0 and s.app.name == template[:i]:
-						try: t = DBTemplate.q.get_by(parent=s.app, name=template[i+1:])
-						except NoData: pass
-
-			if t is not None:
-				mtime = t.modified
-				def t_is_current():
-					#db.refresh(refresh(t),('modified',))
-					return mtime == refresh(t).modified
-				return t.data, template, t_is_current
-
-			if not s.parent:
-				break
-			if s.parent in seen:
-				s = s.superparent or s.parent.superparent
-			else:
-				s = s.parent
-		raise TemplateNotFound(template)
-
-class BaseApp(WrapperApp,Flask):
+class BaseApp(JinjaApp,WrapperApp,Flask):
 	"""Pybble's basic WSGI application"""
 	config = None
 
@@ -238,36 +165,6 @@ class BaseApp(WrapperApp,Flask):
 		else:
 			request.user = User.q.get_by(name="",site=request.site)
 	
-	def create_jinja_environment(self):
-		"""Add support for .haml templates."""
-		rv = super(BaseApp,self).create_jinja_environment()
- 
-		rv.extensions["jinja2.ext.HamlishExtension"] = HamlishExtension(rv)
-		rv.hamlish_file_extensions=('.haml',)
-		rv.hamlish_mode='debug'
-		rv.hamlish_enable_div_shortcut=True
-
-		rv.filters['datetime'] = datetimeformat
-
-		rv.globals['site'] = self.site
-
-		## setup template loader
-		rv.loader = SiteTemplateLoader(self.site)
-		## TODO: do the same thing with static files
-
-		from pybble.render import add_to_jinja
-		add_to_jinja(rv)
-		return rv
-
-	def select_jinja_autoescape(self, filename):
-		"""Returns `True` if autoescaping should be active for the given template name.
-		"""
-		if filename is None:
-			return False
-		if filename.endswith('.haml'):
-			return True
-		return super(BaseApp,self).select_jinja_autoescape(filename)
-
 	@property
 	def preserve_context_on_exception(self):
 		"""Returns the value of the `PRESERVE_CONTEXT_ON_EXCEPTION`
@@ -386,7 +283,6 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 			app = site.app.mod(site, testing=testing)
 
 	init_db(app)
-	add_to_app(app)
 	return app
 
 def create_site(parent,domain,app,name):

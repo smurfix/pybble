@@ -552,7 +552,7 @@ class PopulateCommand(Command):
 			db.flush()
 
 		## possible root app fix-ups
-		rapp = App.q.get_by(name="_root")
+		rapp = App.q.get_by(name='_root')
 		if root.app is None or force:
 			if root.app is not rapp:
 				root.app = rapp
@@ -571,7 +571,7 @@ class PopulateCommand(Command):
 		db.commit()
 
 		try:
-			root_bp = Blueprint.q.get_by(name="_root")
+			root_bp = Blueprint.q.get_by(name='_root')
 		except NoData:
 			logger.error("The ‘_root’ blueprint is not present. Setup is incomplete!")
 		else:
@@ -579,11 +579,27 @@ class PopulateCommand(Command):
 				rbp = SiteBlueprint.q.get_by(site=root,blueprint=root_bp,path="/")
 			except NoData:
 				rbp = SiteBlueprint(site=root,blueprint=root_bp,path="/",name="pybble")
-				logger.debug("Root site's blueprint created.")
+				logger.debug("Root site's content blueprint created.")
 			else:
 				if rbp.name != "pybble" and force:
 					logger.warn("Root site's blueprint name changed from ‘{}’ to ‘pybble’.".format(rbp.name))
 					rbp.name = "pybble"
+		db.commit()
+
+		try:
+			static_bp = Blueprint.q.get_by(name='static')
+		except NoData:
+			logger.error("The ‘static’ blueprint is not present. Setup is incomplete!")
+		else:
+			try:
+				rbp = SiteBlueprint.q.get_by(site=root,blueprint=static_bp,path="/")
+			except NoData:
+				rbp = SiteBlueprint(site=root,blueprint=static_bp,path="/",name="static")
+				logger.debug("Root site's static blueprint created.")
+			else:
+				if rbp.name != "static" and force:
+					logger.warn("Root site's blueprint name changed from ‘{}’ to ‘static’.".format(rbp.name))
+					rbp.name = "static"
 		db.commit()
 
 		## All done!
