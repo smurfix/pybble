@@ -515,6 +515,7 @@ class Object(Dumpable, Base):
 			deleted pages (get "before" data) or nested sites (use them
 			if seen on standard parent/child path).
 			"""
+		from .site import Site
 		discr = self.discr
 
 		global TemplateMatch
