@@ -104,7 +104,7 @@ class GetQuery(query.Query):
 		return self.filter_by(**k).one()
 		#return self._one(self.filter_by(**k))
 
-	@staticfunction
+	@staticmethod
 	def _one(query):
 		"""A re-implementation of one() which can be breakpointed, to aid in debugging"""
 		res = None
