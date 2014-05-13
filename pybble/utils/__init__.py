@@ -16,7 +16,6 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from flask import request
 from urlparse import urlparse
 from random import sample, randrange
-from jinja2 import Environment, BaseLoader, Markup
 from werkzeug import Local, LocalManager, cached_property, import_string
 from werkzeug.exceptions import Unauthorized
 from time import time
