@@ -30,7 +30,8 @@ class JinjaApp(object):
 		return SiteTemplateLoader()
 
 	def create_jinja_environment(self):
-		"""Add support for .haml templates."""
+		"""Add support for .haml templates and a heap of not-yet-documented built-in code."""
+
 		jinja_env = super(JinjaApp,self).create_jinja_environment()
  
 		jinja_env.extensions["jinja2.ext.HamlishExtension"] = HamlishExtension(jinja_env)
