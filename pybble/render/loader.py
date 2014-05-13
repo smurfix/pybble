@@ -27,7 +27,7 @@ def get_template(template, site=None):
 		def t_is_current():
 			#db.refresh(refresh(t),('modified',))
 			return mtime == refresh(template).modified
-		return template.data, template, t_is_current
+		return template
 
 	name = text_type(template)
 	i = name.find('/')
