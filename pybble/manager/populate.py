@@ -59,13 +59,14 @@ class PopulateCommand(Command):
 	def main(self,app, force=False):
 		from ..core.models import Discriminator,Renderer
 		from ..core.models import PERM_ADMIN,PERM_READ,PERM_ADD
+		from ..core.models import TM_DETAIL_SUBPAGE,TM_DETAIL_DETAIL,TM_DETAIL_HIERARCHY,TM_DETAIL_RSS,TM_DETAIL_STRING,TM_DETAIL_EMAIL,TM_DETAIL_SNIPPET,TM_DETAIL_PREVIEW
 		from ..core.models._descr import D
 		from ..core.models.site import Site
 		from ..core.models.storage import Storage
 		from ..core.models.files import BinData,StaticFile
 		from ..core.models.user import User,Permission,Group,Member
 		from ..core.models.types import MIMEtype
-		from ..core.models.template import Template
+		from ..core.models.template import Template,TemplateMatch
 		from ..core.models.config import ConfigVar
 		from ..core.models.verifier import VerifierBase
 		from .. import ROOT_SITE_NAME,ROOT_USER_NAME, ANON_USER_NAME
@@ -454,6 +455,48 @@ class PopulateCommand(Command):
 				print("Error trying to load blueprint ‘{}’".format(bp.path), file=sys.stderr)
 				print_exc()
 				sys.exit(1)
+
+		## Template>Site mappings
+		added = 0
+		found = 0
+		for d in Discriminator.q.all():
+			for detail,name in ((TM_DETAIL_SUBPAGE,"view"),
+				(TM_DETAIL_DETAIL,"details"),
+				(TM_DETAIL_HIERARCHY,"hierarchy"),
+				(TM_DETAIL_RSS,"rss"),
+				(TM_DETAIL_STRING,"linktext"),
+				(TM_DETAIL_EMAIL,"email"),
+				(TM_DETAIL_SNIPPET,"snippet"),
+				(TM_DETAIL_PREVIEW,"preview")):
+				try:
+					tname = "%s/%s.html" % (name,d.name.lower())
+					t = Template.q.get_by(name=tname, parent=root)
+				except NoData:
+					pass
+				else:
+					found += 1
+					# If there's at least one entry with true/false, use that, else use None
+					q = dict(obj=root, for_discr=d, detail=detail)
+					for inh in ((False,True) if TemplateMatch.q.filter_by(**q).filter(TemplateMatch.inherit != None).count() else (None,)):
+						if inh is False and root.discr != d:
+							# A local templatematch can only apply to the type of the object it's attached to
+							continue
+						try:
+							tm = TemplateMatch.q.get_by(inherit=inh, **q)
+						except NoData:
+							tm = TemplateMatch(template=t, inherit=inh, **q)
+							added += 1
+						else:
+							if tm.template != t:
+								logger.warn("{} should point to {}".format(tm,t))
+								if inh is None and force:
+									tm.template = t
+									db.flush()
+							break
+		if added:
+			logger.debug("{} of {} template matches set.".format(added,found))
+		else:
+			logger.debug("All {} template matches OK.".format(found))
 
 		## Basic permissions
 		s=root
