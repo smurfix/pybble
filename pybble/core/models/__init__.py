@@ -530,9 +530,14 @@ class Object(Dumpable, Base):
 		while obj:
 			p,s,o,d = obj.pso
 			seen.add(obj)
-			t = TemplateMatch.q.get(and_(or_(TemplateMatch.inherit != no_inherit, TemplateMatch.inherit == None),
-									TemplateMatch.obj == obj, TemplateMatch.discr == discr, TemplateMatch.detail == detail))
-			if t is not None:
+			try:
+				t = TemplateMatch.q.get(and_(or_(TemplateMatch.inherit != no_inherit, TemplateMatch.inherit == None),
+				                             TemplateMatch.obj == obj,
+				                             TemplateMatch.for_discr == discr,
+				                             TemplateMatch.detail == detail))
+			except NoData:
+				pass
+			else:
 				return t
 
 			if isinstance(obj,Site):

@@ -34,7 +34,7 @@ from blinker import Signal
 from .. import FROM_SCRIPT,ROOT_SITE_NAME,ROOT_USER_NAME
 from ..core.db import db, NoData, init_db, refresh
 from ..core.signal import all_apps
-from ..core.models.template import Template as DBTemplate
+from ..core.models.template import Template as DBTemplate, TemplateMatch
 from ..core.models.site import Site,App,SiteBlueprint,Blueprint
 from ..core.models.config import ConfigVar
 from ..core.models.user import User
@@ -110,6 +110,15 @@ class SiteTemplateLoader(BaseLoader):
 			"""
 		seen = set()
 		s = refresh(self.site)
+		if isinstance(template,TemplateMatch):
+			template = template.template
+		if isinstance(template,DBTemplate):
+			mtime = template.modified
+			def t_is_current():
+				#db.refresh(refresh(t),('modified',))
+				return mtime == refresh(template).modified
+			return template.data, template, t_is_current
+
 		template = text_type(template)
 		while s is not None:
 			if s in seen:
