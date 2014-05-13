@@ -307,10 +307,10 @@ class StaticFile(ObjectRef):
 	def as_str(self):
 		if self._rec_str or not self.superparent or not self.parent: return "‽"
 		try:
-			self._rec_str = True
+			self._rec_str += 1
 			return u'%s in %s' % (self.path, self.superparent.as_str)
 		finally:
-			self._rec_str = False
+			self._rec_str -= 1
 
 	@property
 	def hash(self):

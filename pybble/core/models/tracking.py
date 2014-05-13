@@ -67,10 +67,10 @@ class Breadcrumb(TrackingObjectRef):
 		p,s,o,d = self.pso
 		if self._rec_str or not o or not p: return "‽"
 		try:
-			self._rec_str = True
+			self._rec_str += 1
 			return u'%s saw %s on %s' % (unicode(o), unicode(p), unicode(self.visited))
 		finally:
-			self._rec_str = False
+			self._rec_str -= 1
 
 	def visit(self):
 		now = datetime.utcnow()
@@ -107,10 +107,10 @@ class Change(TrackingObjectRef):
 		p,s,o,d = self.pso
 		if self._rec_str or not o or not p: return "‽"
 		try:
-			self._rec_str = True
+			self._rec_str += 1
 			return u'%s changed %s on %s' % (unicode(o), unicode(p), unicode(self.timestamp))
 		finally:
-			self._rec_str = False
+			self._rec_str -= 1
 
 	@property
 	def change_obj(self):
@@ -179,10 +179,10 @@ class Delete(TrackingObjectRef):
 	def as_str(self):
 		if self._rec_str or not self.owner or not self.parent: return "‽"
 		try:
-			self._rec_str = True
+			self._rec_str += 1
 			return u'%s deleted %s on %s' % (unicode(self.owner), unicode(self.parent), unicode(self.timestamp))
 		finally:
-			self._rec_str = False
+			self._rec_str -= 1
 
 	@property
 	def change_obj(self):
@@ -222,13 +222,13 @@ class Tracker(TrackingObjectRef):
 	def as_str(self):
 		if self._rec_str or not self.owner or not self.superparent: return "‽"
 		try:
-			self._rec_str = True
+			self._rec_str += 1
 			if self.parent:
 				return u'%s changed %s' % (unicode(self.owner), unicode(self.parent))
 			else:
 				return u'%s changed %s on %s' % (unicode(self.owner), unicode(self.superparent), unicode(self.timestamp))
 		finally:
-			self._rec_str = False
+			self._rec_str -= 1
 
 	@property
 	def change_obj(self):
@@ -274,10 +274,10 @@ class UserTracker(TrackingObjectRef):
 	def as_str(self):
 		if self._rec_str or not self.owner or not self.parent: return "‽"
 		try:
-			self._rec_str = True
+			self._rec_str += 1
 			return '%s for %s' % (unicode(self.parent), unicode(self.owner))
 		finally:
-			self._rec_str = False
+			self._rec_str -= 1
 
 	@property
 	def change_obj(self):
@@ -327,10 +327,10 @@ class WantTracking(ObjectRef):
 		p,s,o,d = self.pso
 		if self._rec_str or not o or not p: return "‽"
 		try:
-			self._rec_str = True
+			self._rec_str += 1
 			return u'%s in %s for %s %s' % ("-" if self.for_discr is None else self.for_discr.name, unicode(p),unicode(o), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
 		finally:
-			self._rec_str = False
+			self._rec_str -= 1
 
 	@property
 	def data(self):

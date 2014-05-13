@@ -109,10 +109,10 @@ class Verifier(ObjectRef):
 		p,s,o,d = self.pso
 		if self._rec_str or not p: return "‽"
 		try:
-			self._rec_str = True
+			self._rec_str += 1
 			return u'%s for %s' % (self.base.name, unicode(p))
 		finally:
-			self._rec_str = False
+			self._rec_str -= 1
 
 	@property
 	def expired(self):

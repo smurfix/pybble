@@ -641,10 +641,10 @@ Member: %s
 		p,s,o,d = self.pso
 		if self._rec_str or not o or not p: return "‽"
 		try:
-			self._rec_str = True
+			self._rec_str += 1
 			return u'%s%s in %s' % (unicode(o), " NOT" if self.excluded else "", unicode(p))
 		finally:
-			self._rec_str = False
+			self._rec_str -= 1
 
 Object.new_member_rule(Member, "owner","parent")
 
@@ -710,10 +710,10 @@ class Permission(ObjectRef):
 		p,s,o,d = self.pso
 		if self._rec_str or not o or not p: return "‽"
 		try:
-			self._rec_str = False
+			self._rec_str -= 1
 			return u'%s can %s %s %s %s %s' % (unicode(o),PERM[self.right],self.for_discr.name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N", self.new_discr.name if self.new_discr is not None else "-")
 		finally:
-			self._rec_str = False
+			self._rec_str -= 1
 
 	@property
 	def data(self):

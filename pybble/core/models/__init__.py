@@ -216,7 +216,7 @@ class Object(Dumpable, Base):
 	discr_id = Column("discriminator", Integer, ForeignKey(Discriminator.id), nullable=False)
 	discr = relationship(Discriminator, primaryjoin=discr_id==Discriminator.id)
 
-	_rec_str = False ## marker for possibly-recursive __str__ calls
+	_rec_str = 0 ## marker for possibly-recursive __str__ calls
 	_deleting = False ## marker for skipping some do-not-modify tests
 
 ## causes a sqlalchemy warning. TODO: create a testcase and submit a bug report
@@ -246,7 +246,7 @@ class Object(Dumpable, Base):
 
 	def __str__(self):
 		s = self._stale
-		if s: return '‹%s:%s %s›' % (self.__class__.__name__, self.id, s)
+		if s or self._rec_str>1: return '‹%s:%s %s›' % (self.__class__.__name__, self.id, s)
 
 		if self.deleted: d = "DEL "
 		else: d = ""
@@ -259,7 +259,7 @@ class Object(Dumpable, Base):
 
 	def __repr__(self):
 		s = self._stale
-		if s: return '<%s:%s %s>' % (self.__class__.__name__, self.id, s)
+		if s or self._rec_str>1: return '<%s:%s %s>' % (self.__class__.__name__, self.id, s)
 		try:
 			return str(self)
 		except Exception as err:

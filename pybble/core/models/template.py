@@ -112,10 +112,10 @@ class TemplateMatch(ObjectRef):
 		p,s,o,d = self.pso
 		if self._rec_str or not p: return "‽"
 		try:
-			self._rec_str = True
+			self._rec_str += 1
 			return u'%s of %s on %s %s shows %s' % (TM_DETAIL[self.detail],self.for_discr.name,p, "*" if self.inherit is None else "Y" if self.inherit else "N", s)
 		finally:
-			self._rec_str = False
+			self._rec_str -= 1
  
  	@property
 	def data(self):
