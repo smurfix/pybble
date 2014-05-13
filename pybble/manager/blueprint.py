@@ -34,8 +34,9 @@ class AddBlueprint(Command):
 		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
 		self.add_option(Option("bp", nargs='?', action="store",help="The Pybble blueprint to install"))
 		self.add_option(Option("path", nargs='?', action="store",help="The URL prefix to attach it to"))
-		self.add_option(Option("name", nargs='?', action="store",help="The blueprint's name, used for templates et al."))
-	def run(self, help=False,bp=None,name=None,path=None):
+		self.add_option(Option("name", nargs='?', action="store",help="The blueprint's name."))
+		self.add_option(Option("endpoint", nargs='?', action="store",help="The blueprint's endpoint, used for templates et al.; defaults to the name"))
+	def run(self, help=False,bp=None,name=None,path=None,endpoint=None):
 		if help or path is None:
 			self.parser.print_help()
 			sys.exit(not help)
@@ -47,7 +48,7 @@ class AddBlueprint(Command):
 		bp = Blueprint.q.get_by(name=bp)
 		if name is None:
 			name = bp.name
-		create_blueprint(site=request.site, path=path, blueprint=bp, name=name)
+		create_blueprint(site=request.site, path=path, blueprint=bp, name=name, endpoint=endpoint)
 		
 class DirBlueprint(Command):
 	"""List available blueprints, or blueprint details."""

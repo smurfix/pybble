@@ -24,7 +24,7 @@ from time import time
 from importlib import import_module
 
 from flask import Flask, render_template, request
-from flask import Blueprint as FlaskBlueprint
+from flask.blueprints import BlueprintSetupState, Blueprint as FlaskBlueprint
 from flask.config import Config
 from flask.ext.script import Server
 from flask._compat import string_types,text_type
@@ -36,8 +36,32 @@ from ..manager import Manager,Command
 
 logger = logging.getLogger('pybble.blueprint')
 
+class SetupState(BlueprintSetupState):
+	def add_url_rule(self, rule, endpoint=None, view_func=None, **options):
+		"""A helper method to register a rule (and optionally a view function)
+		to the application.  The endpoint is automatically prefixed with the
+		blueprint's endpoint if set.
+		"""
+		if self.url_prefix:
+			rule = self.url_prefix + rule
+		options.setdefault('subdomain', self.subdomain)
+		if endpoint is None:
+			endpoint = _endpoint_from_view_func(view_func)
+		defaults = self.url_defaults
+		if 'defaults' in options:
+			defaults = dict(defaults, **options.pop('defaults'))
+		if self.blueprint.endpoint:
+			endpoint = self.blueprint.endpoint+'.'+endpoint
+		self.app.add_url_rule(rule, endpoint, view_func, defaults=defaults, **options)
+
 class BaseBlueprint(FlaskBlueprint):
 	params = None
+	def __init__(self, bp, path, **kw):
+		self.bp = bp
+		self.name = bp.name
+		self.endpoint = bp.endpoint
+		super(BaseBlueprint,self).__init__(bp.name,bp.path, **kw)
+
 	def register(self, app, options, first_registration=False):
 		self.app = app
 		@self.record
@@ -65,6 +89,14 @@ class BaseBlueprint(FlaskBlueprint):
 		#	assert '.' not in endpoint, "Blueprint endpoints should not contain dots"
 		self.record(lambda s:
 			s.add_url_rule(rule, endpoint, view_func, **options))
+	
+	def make_setup_state(self, app, options, first_registration=False):
+		"""Creates an instance of :meth:`~flask.blueprints.BlueprintSetupState`
+		object that is later passed to the register callback functions.
+		Subclasses can override this to return a subclass of the setup state.
+		"""
+		return SetupState(self, app, options, first_registration)
+
 
 def load_app_blueprints(app):
 	site = app.site
@@ -78,11 +110,11 @@ def load_app_blueprints(app):
 			params = bp.config
 			path = bp.path
 			if path == "/": path = ""
-			bpm = b.mod(bp.name, b.path, url_prefix=path)
+			bpm = b.mod(bp, b.path, url_prefix=path)
 			app.register_blueprint(bpm, url_defaults = { 'bp': bp })
 		site = site.parent
 
-def create_blueprint(site, blueprint, path, name=None):
+def create_blueprint(site, blueprint, path, name=None,endpoint=None):
 	"""\
 		Attach a blueprint to a site.
 
@@ -98,7 +130,7 @@ def create_blueprint(site, blueprint, path, name=None):
 	
 	if name is None:
 		name = getattr(blueprint.mod,"_name",blueprint.name)
-	bp = SiteBlueprint(site=site, path=path, blueprint=blueprint, name=name)
+	bp = SiteBlueprint(site=site, path=path, blueprint=blueprint, name=name,endpoint=endpoint)
 	db.flush()
 	return bp
 

@@ -584,6 +584,9 @@ class PopulateCommand(Command):
 				if rbp.name != "pybble" and force:
 					logger.warn("Root site's blueprint name changed from ‘{}’ to ‘pybble’.".format(rbp.name))
 					rbp.name = "pybble"
+				if rbp.endpoint != "pybble" and force:
+					logger.warn("Root site's static blueprint endpoint changed from ‘{}’ to ‘pybble’.".format(rbp.name))
+					rbp.endpoint = "pybble"
 		db.commit()
 
 		try:
@@ -594,12 +597,15 @@ class PopulateCommand(Command):
 			try:
 				rbp = SiteBlueprint.q.get_by(site=root,blueprint=static_bp,path="/")
 			except NoData:
-				rbp = SiteBlueprint(site=root,blueprint=static_bp,path="/",name="static")
+				rbp = SiteBlueprint(site=root,blueprint=static_bp,path="/",name="static",endpoint="")
 				logger.debug("Root site's static blueprint created.")
 			else:
 				if rbp.name != "static" and force:
-					logger.warn("Root site's blueprint name changed from ‘{}’ to ‘static’.".format(rbp.name))
+					logger.warn("Root site's static blueprint name changed from ‘{}’ to ‘static’.".format(rbp.name))
 					rbp.name = "static"
+				if rbp.endpoint != "" and force:
+					logger.warn("Root site's static blueprint endpoint changed from ‘{}’ to ‘static’.".format(rbp.name))
+					rbp.endpoint = ""
 		db.commit()
 
 		## All done!

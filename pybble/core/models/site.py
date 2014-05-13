@@ -192,10 +192,11 @@ class SiteBlueprint(ObjectRef):
 			cls.blueprint = cls.superparent
 		check_unique(cls, "parent name")
 
-	name = Column(Unicode(30), required=True, nullable=False) ## (, verbose_name="blueprint's name, for url_for() et al.")
-	path = Column(Unicode(1000), nullable=False, default="") ## (, verbose_name="URL path where to attach this ")
+	name = Column(Unicode(30), required=True, nullable=False, doc="blueprint's name, for url_for() et al.")
+	endpoint = Column(Unicode(30), nullable=False, default="", doc="Endpoint to attach as. May be empty.")
+	path = Column(Unicode(1000), nullable=False, default="", doc="URL path where to attach this ")
 
-	def __init__(self,site=None,blueprint=None,**kw):
+	def __init__(self,site=None,blueprint=None,name=None,endpoint=None,**kw):
 		super(SiteBlueprint,self).__init__(**kw)
 
 		if self.superparent is not None:
@@ -205,6 +206,13 @@ class SiteBlueprint(ObjectRef):
 			if isinstance(blueprint,string_types):
 				blueprint = Blueprint.q.get_by(name=text_type(blueprint))
 			self.blueprint = blueprint
+
+		if name is None:
+			name = self.blueprint.name
+		if endpoint is None:
+			endpoint = name
+		self.name = name
+		self.endpoint = endpoint
 
 		if self.parent is not None:
 			assert site is None
