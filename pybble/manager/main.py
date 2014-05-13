@@ -120,6 +120,7 @@ class ShowUrls(Command):
 
 class RootManager(Manager):
 	_pdb = False
+	_dump = False
 	def __init__(self, app=None, *a,**kw):
 		super(RootManager, self).__init__(*a,**kw)
 		self.add_root_options()
@@ -133,6 +134,7 @@ class RootManager(Manager):
 		self.add_option("-v", "--verbose", dest="verbose", action="count", default=0, required=False, help="Enable verbose logging")
 		self.add_option("-t", "--test", dest="testing", action="store_true", required=False, default=False, help="Use the test database")
 		self.add_option("-d", "--pdb", dest="pdb", action="store_true", required=False, default=False, help="drop into the debugger if there's an error")
+		self.add_option("-D", "--stackdump", dest="dump", action="store_true", required=False, default=False, help="Do not catch crashes at all")
 
 	def add_root_commands(self):
 		from .blueprint import BlueprintManager
@@ -168,6 +170,8 @@ class RootManager(Manager):
 		try:
 			super(RootManager,self).run(*a,**k)
 		except Exception as e:
+			if self._dump:
+				raise
 			x=sys.exc_info()
 			try:
 				print("ERROR:",str(e))
@@ -177,8 +181,9 @@ class RootManager(Manager):
 				import pdb
 				pdb.post_mortem(x[2])
 
-	def __call__(self, app=None, pdb=False, **kw):
+	def __call__(self, app=None, pdb=False, dump=False, **kw):
 		self._pdb = pdb
+		self._dump = dump
 		if self.app is not None:
 			# this can't happen in production
 			assert self.app.testing, self.app

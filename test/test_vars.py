@@ -36,8 +36,8 @@ class VarsTestCase(ManagerTC,WebTC,WebTestCase):
 		try:
 			s = Site.q.get_by(name=u"test")
 		except NoData:
-			self.run_manager("mgr -t site add test _test test")
-			self.run_manager("mgr -t -s test blueprint add _test /doc VarsTest")
+			self.run_manager("mgr -Dt site add test _test test")
+			self.run_manager("mgr -Dt -s test blueprint add _test /doc VarsTest")
 
 #		d = TheData(foo="Test Me Hard")
 #		d.save()
@@ -53,15 +53,15 @@ class VarsTestCase(ManagerTC,WebTC,WebTestCase):
 
 		res = s.config.appiti
 		assert res == "pappiti"
-		self.run_manager("mgr -t -s test site param appiti foo")
+		self.run_manager("mgr -Dt -s test site param appiti foo")
 		res = s.config.appiti
 		assert res == "foo"
-		self.run_manager("mgr -t -s test site param appiti bar")
+		self.run_manager("mgr -Dt -s test site param appiti bar")
 		assert s.config.appiti == "bar"
-		self.run_manager("mgr -t -s test site param appiti -")
+		self.run_manager("mgr -Dt -s test site param appiti -")
 		assert s.config.appiti == "pappiti"
 		with pytest.raises(KeyError):
-			self.run_manager("mgr -t -s test site param nuppi foo") # does not exist
+			self.run_manager("mgr -Dt -s test site param nuppi foo") # does not exist
 
 	def test_blueprint_vars(self):
 		from pybble.core.models.site import Site, SiteBlueprint
@@ -70,13 +70,13 @@ class VarsTestCase(ManagerTC,WebTC,WebTestCase):
 		assert b.path=="/doc"
 
 		assert b.config.color == "yellow"
-		self.run_manager("mgr -t -s test blueprint param VarsTest color green")
+		self.run_manager("mgr -Dt -s test blueprint param VarsTest color green")
 		assert b.config.color == "green"
-		self.run_manager("mgr -t -s test blueprint param VarsTest color foo")
+		self.run_manager("mgr -Dt -s test blueprint param VarsTest color foo")
 		assert b.config.color == "foo"
-		self.run_manager("mgr -t -s test blueprint param VarsTest color -")
+		self.run_manager("mgr -Dt -s test blueprint param VarsTest color -")
 		assert b.config.color == "yellow"
 		with pytest.raises(KeyError):
-			self.run_manager("mgr -t -s test blueprint param VarsTest nuppsi fu") # does not exist
+			self.run_manager("mgr -Dt -s test blueprint param VarsTest nuppsi fu") # does not exist
 
 		

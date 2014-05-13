@@ -30,10 +30,10 @@ class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 		try:
 			Site.q.get_by(domain="btest")
 		except NoData:
-			self.run_manager("mgr -t site add BlueTest _test btest")
+			self.run_manager("mgr -Dt site add BlueTest _test btest")
 
-			self.run_manager("mgr -t -s btest blueprint add _test /blue BlueTest")
-			self.run_manager("mgr -t -s btest blueprint param BlueTest color Yellow")
+			self.run_manager("mgr -Dt -s btest blueprint add _test /blue BlueTest")
+			self.run_manager("mgr -Dt -s btest blueprint param BlueTest color Yellow")
 
 	def test_one(self):
 		self.assertContent("http://btest/blue/red","Red Color")

@@ -27,8 +27,8 @@ from pybble.core.models.user import User
 
 def u_test():
 	# set a class attribute on the invoking test context
-	run("mgr -t site add UserTest _test utest")
-	run("mgr -t -s utest user add Joe")
+	run("mgr -Dt site add UserTest _test utest")
+	run("mgr -Dt -s utest user add Joe")
 
 class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 	def test_added(self):
@@ -40,6 +40,6 @@ class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 		self.once(u_test)
 		u = User.q.get_by(username="Joe")
 		assert u.password is None
-		self.run_manager("mgr -t -s UserTest obj update User {} password=blafasel".format(u.id))
+		self.run_manager("mgr -Dt -s UserTest obj update User {} password=blafasel".format(u.id))
 		u = refresh(u)
 		assert ":" in u.password # make sure it's hashed

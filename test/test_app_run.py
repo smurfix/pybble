@@ -24,12 +24,12 @@ from .manager import run
 
 def ap_test():
     # set a class attribute on the invoking test context
-	run("mgr -t site add AppTest _test atest")
+	run("mgr -Dt site add AppTest _test atest")
 
 class AppRunTestCase(WebTC,WebTestCase):
 #	def setupData(self):
 #		super(AppRunTestCase,self).setupData()
-#		self.run_manager("mgr -t site new AppTest _test atest")
+#		self.run_manager("mgr -Dt site new AppTest _test atest")
 
 	def test_one(self):
 		self.once(ap_test)

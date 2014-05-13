@@ -30,12 +30,12 @@ pytestmark = pytest.mark.skipif(True, reason="We don't actually have contenttype
 class ContentTestCase(ManagerTC,WebTC,WebTestCase):
 	def setupData(self):
 		super(AppRunTestCase,self).setupData()
-		self.run_manager("mgr -t new ContentTest _test test")
-		self.run_manager("mgr -t -s test blueprint add Homepage _page /")
+		self.run_manager("mgr -Dt new ContentTest _test test")
+		self.run_manager("mgr -Dt -s test blueprint add Homepage _page /")
 
-		self.run_manager("mgr -t contenttype add PageContent page 'Your basic text page'")
-		self.run_manager("mgr -t content add TextContent unfug 'Dies ist Unfug'")
-		self.run_manager("mgr -t content set unfug text u'Dies ist kompletter Unfug'")
+		self.run_manager("mgr -Dt contenttype add PageContent page 'Your basic text page'")
+		self.run_manager("mgr -Dt content add TextContent unfug 'Dies ist Unfug'")
+		self.run_manager("mgr -Dt content set unfug text u'Dies ist kompletter Unfug'")
 
 	def test_one(self):
 		g.site.homepage = None

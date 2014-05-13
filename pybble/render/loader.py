@@ -101,9 +101,11 @@ class SiteTemplateLoader(BaseLoader):
 			  * attached to the app
 			* recurse to my parent
 			"""
+
 		t = get_template(template, refresh(self.site))
 		mtime = t.modified
 		def t_is_current():
 			#db.refresh(refresh(t),('modified',))
 			return mtime == refresh(t).modified
 		return t.data, t.oid(), t_is_current
+
