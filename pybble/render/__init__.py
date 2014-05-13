@@ -15,7 +15,6 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from jinja2 import Environment, BaseLoader, Markup, contextfunction, contextfilter
 from werkzeug import cached_property
-from werkzeug.http import parse_etags, remove_entity_headers, http_date
 from werkzeug.routing import Map, Rule
 from flask import request,current_app, get_flashed_messages, Response
 
@@ -32,7 +31,7 @@ from ..utils.diff import textDiff,textOnlyDiff
 
 from wtforms.validators import ValidationError
 from time import time
-from datetime import datetime,timedelta
+from datetime import datetime
 import sys,os
 
 import logging
