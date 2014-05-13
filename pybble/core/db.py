@@ -228,8 +228,8 @@ def check_unique(cls, *vars):
 		q = []
 		for v in vars:
 			if v == "inherit":
-				if getattr(obj,v) is not None:
-					q.append(or_(getattr(cls,v) == None, getattr(cls,v) == getattr(obj,v)))
+				if obj.inherit is not None:
+					q.append(or_(cls.inherit == None, cls.inherit == obj.inherit))
 			else:
 				q.append(getattr(cls,v)==getattr(obj,v))
 		if obj.id is not None:
