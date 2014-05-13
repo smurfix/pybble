@@ -169,7 +169,10 @@ class RootManager(Manager):
 			super(RootManager,self).run(*a,**k)
 		except Exception as e:
 			x=sys.exc_info()
-			print("ERROR:",str(e))
+			try:
+				print("ERROR:",str(e))
+			except Exception:
+				print("ERROR: ‹error message could not be printed›")
 			if self._pdb:
 				import pdb
 				pdb.post_mortem(x[2])
