@@ -312,11 +312,11 @@ class WantTracking(ObjectRef):
 	track_mod = Column(Boolean, nullable=False) # alert for modifications?
 	track_del = Column(Boolean, nullable=False) # alert for deletions?
 
-	def __init__(self, user,obj, discr=None):
+	def __init__(self, user,obj, for_discr=None):
 		super(WantTracking,self).__init__()
 		self.parent = obj
 		self.owner = user
-		self.for_discr = discr
+		self.for_discr = for_discr
 		self.email = False
 		self.track_new = False
 		self.track_mod = False
@@ -350,3 +350,4 @@ Email: %s
 	   self.for_discr.name if self.for_discr is not None else "None",
 	   " ".join(wh) if wh else "-", \
 	   "yes" if self.email else "no")
+

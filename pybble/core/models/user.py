@@ -682,12 +682,13 @@ class Permission(ObjectRef):
 	new_discr_id = Column("new_discr", Integer, ForeignKey(Discriminator.id), nullable=True)
 	new_discr = relationship(Discriminator, primaryjoin=new_discr_id==Discriminator.id)
 
-	def __init__(self, user=None, obj=None, discr=None, right=None, inherit=None, new_discr=None, **kw):
+	def __init__(self, user=None, obj=None, for_discr=None, right=None, inherit=None, new_discr=None, **kw):
+		assert "discr" not in kw
 		assert right is not None
-		if discr is not None:
-			discr = Discriminator.get(discr)
+		if for_discr is not None:
+			for_discr = Discriminator.get(for_discr)
 		super(Permission,self).__init__(**kw)
-		self.for_discr = discr
+		self.for_discr = for_discr
 		self.right = right
 		self.inherit = inherit
 		if self.owner is None:
