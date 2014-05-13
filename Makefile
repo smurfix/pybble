@@ -2,9 +2,11 @@
 
 all: fetch pybble/utils/sql_diff.py
 
-.PHONY:	test
+.PHONY:	test retest
 test:
 	@sh test/run.sh -rv
+retest:
+	@sh test/run.sh -nv
 
 update:
 	@sh utils/update_boilerplate
