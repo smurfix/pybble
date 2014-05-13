@@ -54,7 +54,7 @@ class Template(ObjectRef):
 	name = Column(Unicode(30), nullable=False)
 	data = Column(Unicode(100000), nullable=False)
 	cache = Column(PickleType(pickler=marshal), nullable=True)
-	version = Column(Unicode(30), nullable=False, default="")
+	version = Column(Unicode(30), nullable=True)
 	modified = Column(DateTime,default=datetime.utcnow)
 
 	mime_id = Column(Integer, ForeignKey(MIMEtype.id), nullable=False, index=True)
@@ -78,9 +78,12 @@ class Template(ObjectRef):
 	def bytecode(self):
 		if self.version is None or self.version != _version:
 			self.cache = self._bytecode()
+			self.version = _version
 		return self.cache
 
 	def template(self,globals=None):
+		if globals is None:
+			globals = current_app.jinja_env.globals
 		mtime = self.modified
 		def uptodate():
 			return mtime == refresh(self).modified
