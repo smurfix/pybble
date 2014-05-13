@@ -52,4 +52,3 @@ class Storage(ObjectRef):
 	def as_str(self):
 		return u"%s at %s" % (self.name,unicode(self.path))
 
-

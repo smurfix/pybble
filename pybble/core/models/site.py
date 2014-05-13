@@ -49,7 +49,6 @@ class App(Loadable,ObjectRef):
 	def as_str(self):
 		return u"‘%s’ @ %s" % (self.name, self.path)
 
-
 ## Blueprint
 
 class Blueprint(Loadable,ObjectRef):
@@ -68,7 +67,6 @@ class Blueprint(Loadable,ObjectRef):
 	@property
 	def as_str(self):
 		return u"‘%s’ @ %s" % (self.name, self.path)
-
 
 ## Site
 
@@ -177,7 +175,6 @@ domain: %s
 			if s is not self: # don't recurse
 				s.signal.send(ConfigChanged, name=name)
 
-
 ## SiteBlueprint
 
 class SiteBlueprint(ObjectRef):
@@ -242,7 +239,6 @@ class SiteBlueprint(ObjectRef):
 	@property
 	def as_str(self):
 		return u"‘%s’: %s @ %s%s" % (self.name, self.blueprint.name, self.site.domain, self.path)
-
 
 @event.listens_for(SiteBlueprint.path, 'set')
 def block_bad_path(target, value, oldvalue, initiator):

@@ -276,7 +276,6 @@ class BinData(ObjectRef):
 				os.remove(p)
 			raise
 
-
 ## StaticFile
 
 class StaticFile(ObjectRef):

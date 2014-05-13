@@ -97,7 +97,6 @@ class BaseBlueprint(FlaskBlueprint):
 		"""
 		return SetupState(self, app, options, first_registration)
 
-
 def load_app_blueprints(app):
 	site = app.site
 	names = set() 

@@ -120,7 +120,6 @@ class GetQuery(query.Query):
 		else:
 			return  res
 
-
 #def limitedQuery(mapper,session):
 #	return session.query(mapper)
 

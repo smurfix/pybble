@@ -272,4 +272,3 @@ class SiteConfigVar(ObjectRef, JsonValue):
 			return "‽"
 		return u"%s=%s @%s" % (self.var.name,repr(self.value),self.parent.name)
 
-

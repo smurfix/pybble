@@ -542,7 +542,6 @@ class User(PasswordValue,ObjectRef):
 	def has_trackers(self):
 		return WantTracking.q.filter_by(owner=self).count()
 
-
 ## Groups
 
 class Group(ObjectRef):
@@ -756,5 +755,4 @@ for a,b in PERM.iteritems():
 	c,d = can_do_closure(a,b)
 	setattr(Object,'can_'+b.lower(), c)
 	setattr(Object,'will_'+b.lower(), d)
-
 
