@@ -13,21 +13,29 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
+import sys
+import marshal
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, DateTime, Boolean, ForeignKey
+from sqlalchemy import Integer, Unicode, DateTime, Boolean, ForeignKey, PickleType
 from sqlalchemy import event
 from sqlalchemy.orm import relationship
 
 from flask import request,current_app
 
 from .. import config
-from ..db import Base, Column, no_update,check_unique, db
+from ..db import Base, Column, no_update,check_unique, db, refresh
 from . import Object,ObjectRef, TM_DETAIL, Discriminator
 from ._descr import D
 from .types import MIMEtype, mime_ext
 
 ## Template
+
+from jinja2 import __version__ as jinja_version
+
+_version = 1
+_version = '|'.join(str(x) for x in ('j2',jinja_version,_version,sys.version_info[0],sys.version_info[1]))
+_not_cached = "not compiled"
 
 class Template(ObjectRef):
 	"""
@@ -44,7 +52,9 @@ class Template(ObjectRef):
 		check_unique(cls, "parent name")
 
 	name = Column(Unicode(30), nullable=False)
-	data = Column(Unicode(100000))
+	data = Column(Unicode(100000), nullable=False)
+	cache = Column(PickleType(pickler=marshal), nullable=True)
+	version = Column(Unicode(30), nullable=False, default="")
 	modified = Column(DateTime,default=datetime.utcnow)
 
 	mime_id = Column(Integer, ForeignKey(MIMEtype.id), nullable=False, index=True)
@@ -61,6 +71,29 @@ class Template(ObjectRef):
 		dot = name.rindex(".")
 		self.mime = mime_ext(name[dot+1:])
 
+	def _bytecode(self):
+		return current_app.jinja_env.compile(self.data, self.name, self.oid())
+
+	@property
+	def bytecode(self):
+		if self.version is None or self.version != _version:
+			self.cache = self._bytecode()
+		return self.cache
+
+	def template(self,globals=None):
+		mtime = self.modified
+		def uptodate():
+			return mtime == refresh(self).modified
+		return current_app.jinja_env.template_class.from_code(current_app.jinja_env, self.bytecode, globals, uptodate)
+
+	def render(self,**vars):
+		return self.template().render(**vars)
+
+def _clear_cache(target, value, oldvalue, initiator):
+	target.cache = None
+	target.version = _not_cached
+
+event.listen(Template.data, 'set', _clear_cache)
 
 ## TemplateMatch
 
