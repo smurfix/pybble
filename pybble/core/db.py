@@ -212,6 +212,8 @@ def check_unique(cls, *vars):
 				name = ...
 			check_unique(SomeObj,"name parent")
 			# check_unique(SomeObj,"name","parent") ## same thing
+
+		TODO: Add replacing behavior if possible.
 		"""
 	if len(vars) == 1:
 		vars = vars[0].split(" ")
