@@ -65,7 +65,6 @@ def do_login():
 				logger.warn("Wrong password of {} in {}".format(u,request.site))
 				u = None
 			else:
-				import pdb;pdb.set_trace()
 				if not u.member_of(request.site) and not u.anon:
 					logger.warn("Wrong user {} in {}".format(u,request.site))
 					u = None
