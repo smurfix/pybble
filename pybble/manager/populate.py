@@ -235,7 +235,6 @@ class PopulateCommand(Command):
 				except NoData:
 					obj = Obj(name=name, path="{}.{}.{}".format(path,name,iname))
 					is_new = True
-				db.flush()
 				if force or is_new:
 					obj.superparent = root
 				try:
@@ -244,8 +243,7 @@ class PopulateCommand(Command):
 					logger.warn("{} ({}) is not usable: {}\n{}".format(iname,obj.path,str(e), format_exc()))
 					if is_new:
 						# Dance 
-						db.add(obj)
-						db.flush()
+						db.flush((obj,))
 						db.delete(obj)
 				else:
 					if obj.doc is None or force:
