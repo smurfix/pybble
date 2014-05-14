@@ -26,7 +26,7 @@ from flask import request, current_app
 
 from . import Object,ObjectRef, Discriminator
 from ._descr import D
-from ..db import Base, Column, check_unique
+from ..db import Base, Column, check_unique, db
 from ...core import config
 from ...core.signal import ObjDeleted
 
@@ -214,6 +214,7 @@ class Tracker(TrackingObjectRef):
 
 		super(Tracker,self).__init__()
 		self.owner = user or request.user
+		db.flush((self,self.owner)) # required to guard against cycles
 		self.parent = obj
 		self.superparent = site or request.site
 		self.comment = comment
