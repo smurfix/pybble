@@ -281,7 +281,8 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 
 	@app.url_value_preprocessor
 	def bp_url_value_preprocessor(endpoint, values):
-		request.bp = values.pop('bp',None)
+		if values:
+			request.bp = values.pop('bp',None)
 
 	init_db(app)
 	return app
