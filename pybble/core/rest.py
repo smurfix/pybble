@@ -14,6 +14,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ##BP
 
 from flask import request
+from .db import db
 from .models import Object,Discriminator
 from .models.tracking import Tracker,Change,Delete
 from .json import encode
