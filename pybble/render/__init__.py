@@ -143,7 +143,7 @@ def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE, discr=None):
 	ctx["obj_deleted"] = d
 	ctx["detail"] = detail
 	if discr is not None:
-		ctx["sub"] = db.filter_by(obj_class(discr), parent=obj).count()
+		ctx["sub"] = Discriminator.get(discr).mod.q.fiter_by(parent=obj).count()
 	return render_my_template(mimetype=None, **ctx)
 
 @contextfunction
