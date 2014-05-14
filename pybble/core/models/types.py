@@ -107,7 +107,6 @@ class _MIMEtype(object):
 
 	@staticmethod
 	def encode(obj):
-		## the string is purely for human consumption and therefore does not have a time zone
 		res = {"t":(obj.typ,obj.subtyp), "s":str(obj)}
 		if obj.ext is not None:
 			res['x'] = obj.ext
