@@ -214,10 +214,8 @@ class ConfigVar(ObjectRef, JsonValue):
 
 	name = Column(Unicode(30), index=True)
 	doc = Column(Unicode(1000))
-	# TODO: make sure that (name,parent_id) is unique
 
 	def __init__(self, parent, name,value, **kw):
-		## cannot have a uniqueness constraint across inherited tables
 		super(ConfigVar,self).__init__(**kw)
 		self.parent = parent
 		self.name = name
