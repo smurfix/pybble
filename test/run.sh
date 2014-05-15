@@ -40,12 +40,15 @@ REBUILD=
 V=
 TRACE=
 NOTEST=
+DBG=
 export POSIXLY_CORRECT=1
 while getopts "dhkKnNprtv" i ; do
         case "$i"
         in
                 d)
-                        DEBUG=y ;;
+                        DEBUG=y
+						DBG=-d
+						;;
                 h)
                         usage 0 ;;
                 k)
@@ -114,9 +117,9 @@ if [ $redo = Y ] ; then
 	PYBBLE_SQL_DATABASE="$D/$NREV".db
 
 	mkdir -p "$PYBBLE_MEDIA_PATH"
-	./manage.py -t -S schema -x
+	./manage.py -t -S $DBG schema -x
 	[ -z "$V" ] || echo "Populating database $NREV"
-	./manage.py -t -S populate
+	./manage.py -t -S $DBG populate
 	echo "$NREV" > $rev
 else
 	[ -z "$V" ] || echo "Re-using database $OREV"
@@ -156,9 +159,10 @@ fi
 if [ "$*" = "" ] ; then
 	if [ -z "$NOTEST" ] ; then
 		[ -z "$V" ] || echo "Consistency check"
-		./manage.py -t core check
+		./manage.py -t $DBG core check
 		[ -z "$V" ] || echo "Config dump"
 		./manage.py -t core config | fgrep -qs 'SESSION_COOKIE_DOMAIN=None'
+		# can't drop into pdb here, stdout is redirected
 	fi
 
 	[ -z "$V" ] || echo "Starting test run"
