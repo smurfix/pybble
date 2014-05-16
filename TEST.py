@@ -5,6 +5,7 @@
 TESTING=True # this file only works in test mode
 
 sql_driver="sqlite"
+sql_database=":memory:" ## overridden
 ## 
 SECRET_KEY="fbfzkar2ihf3ulqhelg8srlzg7resibg748wifgbz478"
 #TRACE=True

@@ -16,25 +16,30 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 import os
 import sys
 import logging
+import re
 from traceback import print_exc,format_exc
 
+from sqlalchemy import or_
+
 from flask import request,current_app
-from flask._compat import text_type
+from flask._compat import text_type,string_types
+from werkzeug import import_string
 
 from .. import TEMPLATE_PATH, STATIC_PATH
 from ..utils import random_string
 from ..core import config
+from ..core.utils import attrdict
 from ..core.db import db, NoData
 from . import Manager,Command,Option
 
 logger = logging.getLogger('pybble.manager.populate')
 
+_metadata = re.compile('##:(\S+):(.*)\n') # re.U ?
+
 content_types = [
 	## MIME type,subtype, file extension, name, description
 	('text','html','html','Web page',"A complete HTML-rendered web page"),
 	('text','plain','txt','Plain text',"raw text, no formatting"),
-	('text','html+obj',None,'HTML content',"one HTML element"),
-	('text','html+haml','haml','HAML template',"HTML template (HAML syntax)"),
     ('text','javascript','js',"JavaScript",None),
     ('text','css','css',"CSS",None),
     ('image','png','png',"PNG image",None),
@@ -44,6 +49,12 @@ content_types = [
     ('application','binary','bin',"raw data",None),
     ('application','pdf','pdf',"PDF document",None),
     ('text','xml','xml',"XML data",None),
+
+    ('pybble','_empty',None,"no data",None),
+
+    ('pybble','*',None,"any pybble data",None),
+    ('html','*',None,"any html data",None),
+    ('text','*',None,"any text data",None),
 ]
 
 class PopulateCommand(Command):
@@ -57,7 +68,7 @@ class PopulateCommand(Command):
 			self.main(app,force)
 
 	def main(self,app, force=False):
-		from ..core.models import Discriminator,Renderer
+		from ..core.models import Discriminator
 		from ..core.models import PERM_ADMIN,PERM_READ,PERM_ADD
 		from ..core.models import TM_DETAIL_SUBPAGE,TM_DETAIL_DETAIL,TM_DETAIL_HIERARCHY,TM_DETAIL_RSS,TM_DETAIL_STRING,TM_DETAIL_EMAIL,TM_DETAIL_SNIPPET,TM_DETAIL_PREVIEW
 		from ..core.models._descr import D
@@ -65,10 +76,11 @@ class PopulateCommand(Command):
 		from ..core.models.storage import Storage
 		from ..core.models.files import BinData,StaticFile
 		from ..core.models.user import User,Permission,Group,Member
-		from ..core.models.types import MIMEtype
+		from ..core.models.types import MIMEtype,MIMEtranslator,MIMEadapter
 		from ..core.models.template import Template,TemplateMatch
 		from ..core.models.config import ConfigVar
 		from ..core.models.verifier import VerifierBase
+		from ..core.users import create_user
 		from .. import ROOT_SITE_NAME,ROOT_USER_NAME, ANON_USER_NAME
 
 		if 'MEDIA_PATH' not in config:
@@ -97,6 +109,30 @@ class PopulateCommand(Command):
 			logger.debug("Discriminators have been loaded.")
 		elif added or updated:
 			logger.debug("{}/{} discriminators updated/added.".format(updated,added))
+
+		## MIME types for Pybble objects
+		count = added = updated = 0
+		for id,name in D.items():
+			count += 1
+			doc = D._doc.get(id,None)
+			path = "pybble.core.models."+name
+			name = name.rsplit(".")[-1]
+			try:
+				d = MIMEtype.q.get_by(typ="pybble",subtyp=name.lower())
+			except NoData:
+				d = MIMEtype(id=id,typ="pybble",subtyp=name.lower(), path=path, doc=doc)
+				db.add(d)
+				added += 1
+			else:
+				d.path = path
+				if (doc and (d.doc is None or d.doc != doc)) or force:
+					d.doc = doc
+					updated += 1
+		db.commit()
+		if count == added:
+			logger.debug("PybbleMIME types have been loaded.")
+		elif added or updated:
+			logger.debug("{}/{} PybbleMIME types updated/added.".format(updated,added))
 
 		## main site
 		try:
@@ -163,7 +199,7 @@ class PopulateCommand(Command):
 				superuser = User.q.get_by(username=ROOT_USER_NAME, parent=root)
 			except NoData:
 				password = random_string()
-				superuser = User(ROOT_USER_NAME,password)
+				superuser = create_user(site=root,name=ROOT_USER_NAME,password=password)
 				db.commit()
 				logger.info(u"The root user has been created. Password: ‘{}’.".format(password))
 			else:
@@ -182,15 +218,14 @@ class PopulateCommand(Command):
 		db.commit()
 		request.user = superuser
 
-		## MIME types
+		## more MIME types
 		added=0
-		for type,subtype,ext,name,doc in content_types:
+		for typ,subtyp,ext,name,doc in content_types:
 			try:
-				mt = MIMEtype.q.get_by(typ=type,subtyp=subtype)
+				mt = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
 			except NoData:
-				mt = MIMEtype(typ=type, subtyp=subtype, ext=ext, name=name, doc=doc)
-				db.add(mt)
-				logger.info("MIME type '%s/%s' (%s) created." % (type,subtype,name))
+				mt = MIMEtype(typ=typ, subtyp=subtyp, ext=ext, name=name, doc=doc)
+				logger.info("MIME type ‘{}’ ({}) created.".format(mt,name))
 				added += 1
 			else:
 				if mt.doc is None or force:
@@ -199,6 +234,74 @@ class PopulateCommand(Command):
 			logger.debug("No new MIME types necessary.")
 		db.commit()
 		
+		## MIME translators
+		def get_them(types, add=False):
+			if isinstance(types,string_types):
+				types = (types,)
+			for s in types:
+				mt = MIMEtype.get(s, add=add)
+				if mt.subtyp == "*":
+					yield mt,10
+					for r in MIMEtype.q.filter_by(typ=mt.typ):
+						if r.subtyp == '*' or r.subtyp.startswith('_'):
+							continue
+						yield mt,50
+				else:
+					yield mt,0
+
+		def translators(lister,path="pybble.translator"):
+			added=found=0
+			for name in lister():
+				name = text_type(name)
+				found += 1
+				is_new = False
+				mpath = "{}.{}.{}".format(path,name,"Translator")
+				mod = "??"
+				try:
+					E=mpath
+					mod = import_string(mpath)
+					E=mod.SOURCE
+					src = get_them(mod.SOURCE, add=True)
+					E=mod.DEST
+					dst = get_them(mod.DEST, add=True)
+					E=mod.CONTENT
+					mt = MIMEtype.get(mod.CONTENT, add=True)
+					E="??"
+					w = mod.WEIGHT
+				except NoData as e:
+					logger.warn("{} is not usable ({}): {}\n{}".format(mod,E,str(e), format_exc()))
+					continue
+				try:
+					trans = MIMEtranslator.q.get_by(path=mpath)
+				except NoData:
+					trans = MIMEtranslator(path=mpath,mime=mt,weight=w,name=mpath)
+				else:
+					if trans.mime != mt:
+						logger.warn("{} has a broken type: {} instead of {}".format(mod,trans.mime,mt))
+						if force:
+							trans.mime = mt
+					if force:
+						trans.weight=w
+
+				for s,sw in src:
+					for d,dw in dst:
+						n = "{} to {} with {}".format(src,dst,mt)
+						w=sw+dw
+						try:
+							obj = MIMEadapter.q.get_by(from_mime=s,to_mime=d,translator=trans)
+						except NoData:
+							obj = MIMEadapter(from_mime=s,to_mime=d,translator=trans,name=n,weight=w)
+							added += 1
+						else:
+							if force:
+								obj.weight = w
+								obj.name = n
+			if not found:
+				logger.warn("{}: None found".format(MIMEtranslator.__name__))
+			else:
+				logger.info("{}: {} new".format(MIMEtranslator.__name__,added))
+			db.commit()
+
 		## Variable installer.
 		## Generic code because it doesn't hurt and may be used for Blueprint vars later.
 		def add_vars(gen,parent):
@@ -221,7 +324,7 @@ class PopulateCommand(Command):
 				logger.debug("No new variables for {} necessary.".format(str(parent)))
 			db.commit()
 
-		## helper to load known apps, blueprints, renderers
+		## helper to load known apps, blueprints
 		def loadables(lister,Obj,path, iname=None,add_vars=add_vars,root=root):
 			if iname is None:
 				iname = Obj.__name__
@@ -235,7 +338,7 @@ class PopulateCommand(Command):
 				except NoData:
 					obj = Obj(name=name, path="{}.{}.{}".format(path,name,iname))
 					is_new = True
-				if force or is_new:
+				if force or obj.superparent is None:
 					obj.superparent = root
 				try:
 					a = obj.mod
@@ -267,13 +370,11 @@ class PopulateCommand(Command):
 				logger.info("{}: {} new, {} updated".format(Obj.__name__,added,changed))
 			db.commit()
 
-		## Rendering actual content
-		from ..render import list_renderers
-		from ..core.models.types import mime_ext
-		loadables(list_renderers,Renderer,"pybble.render")
-
 		from ..verifier import list_verifiers
 		loadables(list_verifiers,VerifierBase,"pybble.verifier","Verifier")
+
+		from ..translator import list_translators
+		translators(list_translators)
 
 		## static files (recursive)
 		def add_files(dir,path):
@@ -291,7 +392,7 @@ class PopulateCommand(Command):
 					added += add_files(filepath,webpath)
 					continue
 				dot = f.rindex(".")
-				mime = mime_ext(f[dot+1:])
+				mime = MIMEtype.get(f[dot+1:])
 				with open(filepath,"rb") as fd:
 					content = fd.read()
 					try:
@@ -348,25 +449,66 @@ class PopulateCommand(Command):
 					print("While reading",filepath,file=sys.stderr)
 					raise
 
-			webpath = unicode(webpath)
+			hdr = attrdict(match=[],inherit=None)
+			m = _metadata.match(data)
+			while m:
+				k,v = m.groups()
+				ov = hdr.get(k,None)
+				if ov is None:
+					if v == "-":
+						v = None
+					if '/' in v:
+						v = MIMEtype.get(v)
+					elif v in ("True False 0 1 None".split()):
+						v = eval(v)
+					hdr[k] = v
+				elif k == "match":
+					hdr[k].append((v,hdr.inherit))
+				else:
+					raise ValueError("Template ‘{}’: duplicate metadata key ‘{}’".format(filepath,k))
+				data = data[m.end():]
+				m = _metadata.match(data)
+
+			if "src" not in hdr: hdr.src = "pybble/_empty"
+			if "dst" not in hdr: hdr.dst = "html/*"
+			if "named" not in hdr: hdr.named = True
+			if "typ" not in hdr:
+				try:
+					dot = filepath.rindex(".")
+					hdr.typ = MIMEtype.get(filepath[dot+1:])
+				except (ValueError,NoData):
+					logger.error("Template ‘{}’ not loaded: unknown MIME type".format(filepath))
+					return added
+
+			hdr_src = MIMEtype.get(hdr.src)
+			hdr_dst = MIMEtype.get(hdr.dst)
+			hdr_typ = MIMEtype.get(hdr.typ)
+
+
 			try:
-				dot = filepath.rindex(".")
-				mime = mime_ext(filepath[dot+1:])
-			except (ValueError,NoData):
-				logger.warn("Template ‘{}’ not loaded: unknown MIME type".format(filepath))
-				return
-			try:
-				t = Template.q.get_by(name=webpath,parent=parent)
+				tr = MIMEtranslator.q.get_by(mime=hdr_typ)
 			except NoData:
-				t = Template(name=webpath,data=data,parent=parent, mime=mime)
+				logger.error("Template ‘{}’ not loaded: no translator which understands {}".format(filepath,hdr_typ))
+				return added
+			try:
+				a = MIMEadapter.q.get_by(from_mime=hdr_src, to_mime=hdr_dst, translator=tr)
+			except NoData:
+				a = MIMEadapter(from_mime=hdr_src, to_mime=hdr_dst, translator=tr)
+
+			try:
+				t = Template.q.get_by(source=filepath, parent=parent, adapter=a)
+			except NoData:
+				t = Template(source=filepath, data=data, parent=parent, adapter=a)
 				t.owner = superuser
+				if hdr.named:
+					t.name = webpath
 				added += 1
 			else:
 				chg = 0
-				if t.mime is not mime:
-					logger.warn("Template ‘{}’: changed MIME type from {} to {}".format(filepath, t.mime.mimetype if t.mime else '?', mime.mimetype))
+				if t.adapter is not a:
+					logger.warn("Template {} ‘{}’: changed adapter from {} to {}".format(t.id, filepath, t.adapter,a))
 					if force:
-						t.mime = mime
+						t.adapter = a
 						chg = 1
 
 				if t.data != data:
@@ -379,6 +521,19 @@ class PopulateCommand(Command):
 					t.superparent = parent
 					t.owner = superuser
 					added += chg
+			for m,inherit in hdr.match:
+				if m == "root":
+					m = root
+				elif m == "superuser":
+					m = superuser
+				else:
+					logger.warn("Template {} ‘{}’: I don't know how to attach to {}".format(t.id, filepath, m))
+
+				try:
+					tm = TemplateMatch.q.filter_by(template=t,obj=m).filter(or_(TemplateMatch.inherit == None,TemplateMatch.inherit==inherit)).one()
+				except NoData:
+					tm = TemplateMatch(template=t,obj=m, )
+
 			db.commit()
 			return added
 
@@ -453,48 +608,6 @@ class PopulateCommand(Command):
 				print("Error trying to load blueprint ‘{}’".format(bp.path), file=sys.stderr)
 				print_exc()
 				sys.exit(1)
-
-		## Template>Site mappings
-		added = 0
-		found = 0
-		for d in Discriminator.q.all():
-			for detail,name in ((TM_DETAIL_SUBPAGE,"view"),
-				(TM_DETAIL_DETAIL,"details"),
-				(TM_DETAIL_HIERARCHY,"hierarchy"),
-				(TM_DETAIL_RSS,"rss"),
-				(TM_DETAIL_STRING,"linktext"),
-				(TM_DETAIL_EMAIL,"email"),
-				(TM_DETAIL_SNIPPET,"snippet"),
-				(TM_DETAIL_PREVIEW,"preview")):
-				try:
-					tname = "%s/%s.html" % (name,d.name.lower())
-					t = Template.q.get_by(name=tname, parent=root)
-				except NoData:
-					pass
-				else:
-					found += 1
-					# If there's at least one entry with true/false, use that, else use None
-					q = dict(obj=root, for_discr=d, detail=detail)
-					for inh in ((False,True) if TemplateMatch.q.filter_by(**q).filter(TemplateMatch.inherit != None).count() else (None,)):
-						if inh is False and root.discr != d:
-							# A local templatematch can only apply to the type of the object it's attached to
-							continue
-						try:
-							tm = TemplateMatch.q.get_by(inherit=inh, **q)
-						except NoData:
-							tm = TemplateMatch(template=t, inherit=inh, **q)
-							added += 1
-						else:
-							if tm.template != t:
-								logger.warn("{} should point to {}".format(tm,t))
-								if inh is None and force:
-									tm.template = t
-									db.flush()
-							break
-		if added:
-			logger.debug("{} of {} template matches set.".format(added,found))
-		else:
-			logger.debug("All {} template matches OK.".format(found))
 
 		## Basic permissions
 		s=root

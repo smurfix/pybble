@@ -14,20 +14,19 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ##BP
 
 from jinja2 import Environment, BaseLoader, Markup, contextfunction, contextfilter
-from werkzeug import cached_property
-from werkzeug.routing import Map, Rule
+from werkzeug.utils import reraise
 from flask import request,current_app, get_flashed_messages, Response
 
 from ..utils import random_string, AuthError, NotGiven
 from ..core.models import PERM, PERM_NONE, PERM_ADD, obj_get, \
 	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, obj_get, TM_DETAIL, \
-	TM_DETAIL_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name, MissingDummy
+	TM_DETAIL_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_MIME, MissingDummy
 from ..core.models._descr import D
 from ..core.models.user import Permission
 from ..core.models.template import TemplateMatch, Template
 from ..core.models.files import StaticFile
+from ..core.models.types import MIMEtype
 from ..core.db import db,NoData
-from ..utils.diff import textDiff,textOnlyDiff
 
 from wtforms.validators import ValidationError
 from time import time
@@ -36,6 +35,97 @@ import sys,os
 
 import logging
 logger = logging.getLogger('pybble.render')
+
+class ContentData(object):
+	"""\
+		This object defines the data I want, the data I have, and the
+		search space used for going from A to B.
+
+		Actual search is handled in pybble.render.loader.
+
+		Values:
+			`obj`: The object which the original URL refers to
+			`anchor`: Start of the template search; usually the object, else the site.
+			`from_mime`: Type of this content
+			`to_mime`: Type I want conversion to
+			`blueprint`: The current/named blueprint, which the search should also examine.
+			`template_name`: If looking for a named template
+			`template_in_blueprint`: Flag whether the template name may have the blueprint name as a prefix
+			`content`: the content `from_mime` applies to
+			`site`: the domain we're looking at. A template search proceeds from the `anchor` through its `parent` pointer, but when encountering `site`, the process is interrupted while the blueprint is examined.
+		
+		"""
+	def __init__(self, obj=None, content=None, anchor=None, site=None, from_mime=None,to_mime=None, template_name=None, blueprint=None, **params):
+
+		if site is None:
+			site = request.site
+
+		if from_mime is None:
+			if content is None:
+				content = obj
+			if content is None:
+				from_mime = MIMEtype.get('pybble','_empty')
+			elif hasattr(content,"mime"):
+				from_mime = content.mime
+			else:
+				raise RuntimeError("No source MIME type")
+		if to_mime is None:
+			best = request.accept_mimetypes.best()
+			try:
+				to_mime = MIMEtype.get(best)
+			except NoData as e:
+				exc_info = sys.exc_info()
+				for k in ('text/html','text/plain','application/json'):
+					if request.accept_mimetypes[k]:
+						try:
+							to_mime = MIMEtype.get(k)
+						except NoData:
+							pass
+						else:
+							break
+				else:
+					reraise(*exc_info)
+			## TODO: use some other type if the client wants something exotic
+			#			    return best == 'application/json' and \
+			#				        request.accept_mimetypes[best] > \
+			#						        request.accept_mimetypes['text/html']
+			
+		template_in_blueprint = False
+
+		if blueprint is None:
+			blueprint = getattr(request,'bp',None)
+			if blueprint is None and template_name is not None and '/' in template_name:
+				bpname,tname = template_name.split('/',1)
+				try: # the name might refer to my SiteBlueprint
+					bp = SiteBlueprint.q.get_by(parent=site,name=bpname)
+				except NoData: # or to the Blueprint it points to
+					try:
+						bp = db.query(SiteBlueprint).filter(SiteBlueprint.parent==site).join(Blueprint, SiteBlueprint.superparent).filter(Blueprint.name==bpname).limit(1).one()
+					except NoData:
+						bp = None
+				if bp is not None:
+					blueprint = bp
+
+			self.obj = obj
+			self.anchor = anchor or obj or site
+			self.from_mime = from_mime
+			self.to_mime = to_mime
+			self.blueprint = blueprint
+			self.template_name = template_name
+			self.template_in_blueprint = template_in_blueprint
+			self.content = content
+			self.site = site
+		
+	def environment(self):
+		return dict((k,v) for k,v in self.__dict__.items() if not k.startswith('_') and v is not None)
+
+	@property
+	def template(self):
+		from .loader import get_template
+		return get_template(self)
+		
+	def render(self, **vars):
+		return self.template.render(self, **vars)
 
 def valid_obj(form, field):
 	"""Field verifier which checks that an object ID is valid"""
@@ -82,11 +172,17 @@ def render_my_template(obj, detail=None, mimetype=NotGiven, **context):
 	else:
 		request.user.will_list(obj)
 
+	if mimetype is NotGiven:
+		mimetype = TM_MIME(detail)
+
 	if detail == TM_DETAIL_PAGE or detail == TM_DETAIL_SUBPAGE or detail == TM_DETAIL_DETAIL:
-		request.user.visits(obj)
+		request.user.visits(obj) # save a breadcrumb
 
 	context["obj"] = obj
 
+	c = ContentData(obj=obj,from_mime=obj.mimetype, to_mime=TM_MIME(detail))
+	return c.render(**context)
+	
 	try:
 		t = obj.get_template(detail=detail)
 	except NoData:
@@ -133,7 +229,7 @@ def render_template(template, mimetype=NotGiven, **context):
 	return r
 
 @contextfunction
-def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE, discr=None):
+def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE, to_typ="html"):
 	ctx = ctx.get_all()
 	ctx["obj"] = obj
 	p,s,o,d = obj.pso
@@ -142,9 +238,10 @@ def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE, discr=None):
 	ctx["obj_owner"] = o
 	ctx["obj_deleted"] = d
 	ctx["detail"] = detail
+
 	if discr is not None:
 		ctx["sub"] = Discriminator.get(discr).mod.q.fiter_by(parent=obj).count()
-	return render_my_template(mimetype=None, **ctx)
+	return render_my_template(obj=obj, detail=detail, **ctx)
 
 @contextfunction
 def render_subline(ctx,obj):
@@ -162,22 +259,12 @@ def render_subrss(ctx,obj, detail=TM_DETAIL_RSS, discr=None):
 	ctx["usertracker"] = obj
 	ctx["detail"] = detail
 	try:
-		return render_my_template(mimetype=None, **ctx)
+		return render_my_template(obj, **ctx)
 	except AuthError:
 		if detail == TM_DETAIL_EMAIL:
 			raise
 		else:
 			return Markup("<p>'%s' kann nicht dargestellt werden (Zugriffsfehler).</p>" % (obj.oid(),))
-
-pybble_dtd = None
-def get_dtd():
-	"""\
-		Pybble now does HTML5. No DTD stupidity and no incomplete charsets allowed.
-		"""
-	return """\
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE html>
-"""
 
 import smtplib
 import email.Message
@@ -232,43 +319,6 @@ for a,b in PERM.iteritems():
 	e,f = can_do_closure(a,b)
 	globals()['valid_' + b.lower()] = e
 	globals()['valid_' + b.lower() + '_self'] = f
-
-#class Pagination(object):
-#	def __init__(self, query, per_page, page, endpoint):
-#		self.query = query
-#		self.per_page = per_page
-#		self.page = page
-#		self.endpoint = endpoint
-#
-#	@cached_property
-#	def count(self):
-#		return self.query.count()
-#
-#	@cached_property
-#	def entries(self):
-#		return self.query.offset((self.page - 1) * self.per_page) \
-#						.limit(self.per_page).all()
-#
-#	has_previous = property(lambda x: x.page > 1)
-#	has_next = property(lambda x: x.page < x.pages)
-#	previous = property(lambda x: url_for(x.endpoint, page=x.page - 1))
-#	next = property(lambda x: url_for(x.endpoint, page=x.page + 1))
-#	pages = property(lambda x: max(0, x.count - 1) // x.per_page + 1)
-
-def list_renderers():
-	path = os.path.dirname(os.path.abspath(__file__))
-	dir_list = os.listdir(path)
-	for fname in dir_list:
-		if os.path.exists(os.path.join(path, fname, '__init__.py')) and \
-				not os.path.exists(os.path.join(path, fname, 'DISABLED')):
-			yield fname
-
-def load_app_renderer(app):
-	## TODO? if renderers can ever be parameterized per-site, do that here
-	from ..core.models import Renderer
-	for r in Renderer.q.all():
-		r = r.mod()
-		r.setup_app(app)
 
 class Renderer(object):
 	"""Base class for rendering"""

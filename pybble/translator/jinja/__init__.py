@@ -13,19 +13,24 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
+"""
+This module contains the filter which translates from HAML to HTML templates.
+"""
+
 from jinja2 import Markup, contextfunction
 from flask import request,current_app
 from flask.helpers import locked_cached_property
 
-from ..utils import AuthError
-from ..core.models import PERM, PERM_NONE, PERM_ADD, obj_get, \
+from pybble.translator import BaseTranslator
+from pybble.utils import AuthError
+from pybble.core.models import PERM, PERM_NONE, PERM_ADD, obj_get, \
     Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, obj_get, TM_DETAIL, \
 	    TM_DETAIL_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name
-from ..core.models._descr import D
-from ..core.models.user import access_logger
-from ..core.db import db,NoData
-from ..utils.diff import textDiff,textOnlyDiff
-from . import render_subpage,render_subline,render_subrss
+from pybble.core.models._descr import D
+from pybble.core.models.user import access_logger
+from pybble.core.db import db,NoData
+from pybble.utils.diff import textDiff,textOnlyDiff
+from pybble.render import render_subpage,render_subline,render_subrss
 from .loader import SiteTemplateLoader
 
 from time import time
@@ -33,21 +38,78 @@ from time import time
 import logging
 logger = logging.getLogger('pybble.render')
 
-class JinjaApp(object):
-	"""This is a mix-in for Flask which overwrites a couple of things with Pybble-specific extensions"""
+from jinja2 import __version__ as jinja_version
+_version = 1
+_version = '|'.join(str(x) for x in ('j2',jinja_version,_version,sys.version_info[0],sys.version_info[1]))
+_not_cached = "not compiled"
 
-	@locked_cached_property
-	def jinja_loader(self):
-		return SiteTemplateLoader()
+class Translator(BaseTranslator):
+	FROM_MIME=("pybble/*","json/*")
+	TO_MIME=("text/html","html/*")
+	WEIGHT = 10
+	CONTENT="template/jinja"
+	
+	def __init__(self, db_template):
+		self.env = self.create_jinja_environment()
+		self.db_template = template
+
+	def __call__(self, c, **params):
+		super(Translator,self).__init__()
+		"""\
+			Run this template.
+			"""
+		params['c'] = c
+        current_app.update_template_context(params)
+		c.content = self.get_template().render(**params)
+		c.to_mime = self.template.adapter.to_mime
+        return c
+
+	@property
+	def bytecode(self):
+		"""\
+			Return the template's (possibly-cached) bytecode
+			"""
+		dbt = self.db_template
+		c = dbt.get_cache(_version)
+		if c is None:
+			c = self.env.compile(dbt.data, dbt.filename, dbt.oid())
+			dbt.set_cache(c, _version)
+		return c
+
+	@property
+	def template(self):
+		return self.env.template_class.from_code(self.env, self.bytecode, self.env.globals, None)
+	
+	def render(self,c,globals=None, *a,**k):
+		vars = dict(*a, **k)
+		ctx = self.new_context(vars)
+		template = self.get_template(
+		return self.template().render(**vars)
 
 	def create_jinja_environment(self):
-		jinja_env = super(JinjaApp,self).create_jinja_environment()
- 
-		jinja_env.globals['site'] = self.site
+        options = dict(extensions=['jinja2.ext.autoescape', 'jinja2.ext.with_'])
+        if 'autoescape' not in options:
+            options['autoescape'] = True # self.select_jinja_autoescape
+        if 'auto_reload' not in options:
+            options['auto_reload'] = self.debug \
+                or self.config['TEMPLATES_AUTO_RELOAD']
+        rv = self.jinja2_environment(self, **options)
+        rv.globals.update(
+            url_for=url_for,
+            get_flashed_messages=get_flashed_messages,
+            config=self.config,
+            # request, session and g are normally added with the
+            # context processor for efficiency reasons but for imported
+            # templates we also want the proxies in there.
+            request=request,
+            session=session,
+            g=g
+        )
+        rv.filters['tojson'] = json.tojson_filter
 
-		## setup template loader
+		jinja_env = current_app.jinja_env
+ 
 		jinja_env.loader = SiteTemplateLoader(self.site)
-		## TODO: do the same thing with static files
 
 		def render(obj, *a,**kw):
 			if hasattr(obj,"render"):
@@ -166,10 +228,4 @@ class JinjaApp(object):
 			jinja_env.globals['will_' + b.lower()] = d
 		return jinja_env
 
-	def select_jinja_autoescape(self, filename):
-		"""\
-			Returns `True` if autoescaping should be active for the given template name.
-			We simply assume it is.
-			"""
-		return True
 

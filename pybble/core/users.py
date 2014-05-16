@@ -18,36 +18,32 @@ import sys
 import logging
 from time import time
 
-from flask import Flask, request, render_template, g, session, Markup, Response, current_app
+from flask import Flask, request, g, session, Markup, Response, current_app
 from flask.config import Config
 from flask.templating import DispatchingJinjaLoader
 from flask.ext.script import Server
 from flask._compat import text_type
 
 from hamlish_jinja import HamlishExtension
-from jinja2 import Template,BaseLoader, TemplateNotFound
-
-from werkzeug import import_string
 
 from .. import FROM_SCRIPT,ROOT_SITE_NAME,ROOT_USER_NAME
-from ..core.db import db, NoData, ManyDataExc
-from ..core.models.template import Template as DBTemplate
+from ..core.db import db, NoData
 from ..core.models.site import Site,App
 from ..core.models.config import ConfigVar
 from ..core.models.user import User
 from ..core.models.tracking import Delete
 from ..manager import Manager,Command
-from ..blueprint import load_app_blueprints
-from ..render import load_app_renderer
 
 logger = logging.getLogger('pybble.core.users')
 
 ###################################################
 # User management
 
-def create_user(site,name,pw=None):
-	user = User(username=name,password=pw)
-	db.flush()
+def create_user(name,password=None,site=None):
+	if site is None:
+		site = request.site
+	user = User(username=name,password=password,parent=site)
+	db.flush((user,))
 	return user
 
 def drop_user(name):

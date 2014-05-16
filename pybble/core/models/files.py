@@ -27,7 +27,7 @@ from ...utils import hash_data
 from ..db import Base, Column, db, check_unique,no_update
 from . import Object,ObjectRef, update_modified
 from ._descr import D
-from .types import MIMEtype, mime_ext
+from .types import MIMEtype
 
 import os
 
@@ -75,9 +75,9 @@ class BinData(ObjectRef):
 		if mimetype:
 			self.mime = mimetype
 			if ext:
-				assert mimetype == mime_ext(ext),"Extension doesn't match MIME type"
+				assert mimetype == MIMEtype.get(ext),"Extension doesn't match MIME type"
 		elif ext:
-			self.mime = mime_ext(ext)
+			self.mime = MIMEtype.get(ext)
 		else:
 			raise RuntimeError("You need to specify MIME type or extension")
 		self.name = name

@@ -47,20 +47,106 @@ display on the front page"? The answer is: Templates.
 Templates
 ---------
 
-Pybble has templates. In fact, it has a lot of them. Templates are
-distinguished by
+Pybble templates are distributed across a bunch of data structures because,
+well, SQL.
 
-* the information's destination (complete page; item in a page;
-  short linked description of the item; email with the page's content …)
+At the bottom there's the actual machinery which transforms some text
+(like a Jinja template) to HTML (or RSS or whatever). Pybble calls that a
+translator.
 
-* what you want to do with the object (view, edit, delete …)
+Since one such machine might be able to work on many inputs and can spit
+out equally many outputs, the next step is an adapter which associates a
+concrete combination of input+output types to that translator.
 
-* which object types this template applies to (site, comment, user …)
+The next step is the actual template which contains the data (usually text)
+that describes the frame around which the translator will mangle its input
+to output.
 
-* whether the template applies to the object it's attached to, or to 
-  some object of type X below the attachee, or both
+Since real site hierarchies don't always conform in any easy way to
+convenient places to attach a template, the next step is a TemplateMatch
+object which links your site's objects to the templates to use.
 
-Thus you can have a sub-hierarchy with a completely different look&feel.
+With that, let's do a walk-through of how Pybble displays your site's
+/about page; we assume that your code is simply
+
+	@expose('/about')
+	def show_about():
+        return render_template('about')
+
+This is the easy case, since the lookup is performed by name and you don't
+have an object to display. Pybble therefore uses an input type of
+‘pybble/_empty’ and searches for a template which can transform that to
+‘text/html’, starting at your site object. Your site probably won't have
+such a translator, so it looks again on the `parent` page, which is likely
+to be the system root. That has a special low-priority translator attached
+which knows that the usual site structure is to have an inner content and a
+layout; the inner content has a type of ‘html/subpage’. (This is hardcoded,
+except for the "html" part which can be anything.)
+
+Thus, that translator looks for a template that transforms ’pybble/_empty’ to
+’html/subpage’ and which is (a) attached to your site, (b) named 'about'.
+Let's assume that you have created one. After interpreting that template,
+Pybble has something of type ’html/subpage’; it now re-enters the process
+with that.
+
+This time, search proceeds 
+
+
+It basically looks uses the object attached to the URL
+for a template which 
+
+A Pybble template gets some input (for instance, a Pybble object) and
+textual data in some form (e.g. a Jinja template), and emits output
+(a HTML subpage).
+
+So this will transform your homepage into that homepage's content.
+The surrounding framework (menu structure and whatnot) is generated in
+another template: the usual way is to have a default template associated
+with your website ("translating" from `pybble/*` to `text/html`), which
+contains a "translate this object to `html/subpage` (this is not a "real"
+MIME type).
+
+To sum this up, a template has an input format (pybble/site),
+an output format (html/subpage), some chunk of text you can edit
+(maybe just configuration parameters, or a whole Jinja template),
+maybe some chunk of cached data you can't edit, and a translator which
+understands a couple of MIME types and emits the appropriate output.
+
+Pybble keeps track of all of this by way of MIME types; some real, some
+not. It also has special association objects; thus you can teach it to use
+an entirely different look-and-feel for the text and the image part of your
+website.
+
+Feeding templates into Pybble
+-----------------------------
+
+With no templates at all, administering a website would be impossible, so
+the initial template data have to come from the file system.
+
+To facilitate this, the manager's 'populate' command understands a couple
+of metadata in template files. They have to be at the immediate start of
+the file; anything not in this format terminates parsing.
+
+	##src pybble/site
+	##dst html/subpage
+	##typ text/jinja
+	##named 0
+	##inherit -
+	##match root
+
+This tells Pybble that this is an unnamed template which translates your site
+to an HTML pagelet, using the Jinja template engine, and that it shall be
+attached to the system's root.
+
+`src `dst` and `typ` are MIME types; the source may use a wildcad subtype.
+`named` is a Boolean denoting that the template shall be findable by name.
+`match` is the datum the template is to be attached to and can be given
+more than once, though so far the only recognized values are "root" and
+"superuser".
+`inherit` defaults to "-" alias None; it affects the following matches and
+says whether the template applies to the attached to the destination only
+(False), to all of its children (True), or both (None).
+
 
 Static data
 -----------
@@ -90,6 +176,11 @@ mitigated in two ways:
   circumvented easily, but the main reason for random third-party linking
   (conserving one's own bandwidth on somebody else's dime) are thwarted
   quite well by this.
+
+* TODO: Some static content needs to be generated+cached; if you have a
+  SASS template but want to emit CSS, it's a good idea to store the CSS
+  output somewhere instead of generating it anew every time somebody wants
+  it.
 
 Navigation
 ----------

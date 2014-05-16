@@ -18,7 +18,6 @@ from datetime import datetime,timedelta
 from sqlalchemy import Integer, Unicode, ForeignKey, DateTime, event
 from sqlalchemy.orm import relationship,backref
 
-from werkzeug import import_string
 from werkzeug.utils import cached_property
 from flask import request
 from flask._compat import string_types

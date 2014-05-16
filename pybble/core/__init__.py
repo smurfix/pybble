@@ -78,7 +78,7 @@ class config(attrdict):
 			if self.sql_pass == "test" and not self.TESTING:
 				raise RuntimeError("For production use, you need to set a database password (or URI).")
 			
-			if self.sql_database.startswith("/"): # it's a file
+			if self.sql_database.startswith("/") or self.sql_database.startswith(":"): # it's a file
 				self.sql_uri = "%s:///%s" % (self.sql_driver,self.sql_database)
 			else: # it's a remote connection
 				self.sql_uri = "%s://%s:%s@%s:%s/%s" % (self.sql_driver,self.sql_user,self.sql_pass,self.sql_host,self.sql_port,self.sql_database)
@@ -94,9 +94,9 @@ class config(attrdict):
 			if conv:
 				v = conv(v)
 		except KeyError:
-			pass
-		if k not in self:
-			self[k] = v
+			if k in self:
+				return
+		self[k] = v
 	
 	def _dump(self, shell=False):
 		if shell:

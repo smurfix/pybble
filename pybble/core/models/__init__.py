@@ -25,12 +25,13 @@ from sqlalchemy.inspection import inspect
 from ...compat import py2_unicode
 from ..json import register_object
 
-from ..db import Base, Column, IDrenderer, db, NoData, maybe_stale, no_autoflush
+from ..db import Base, Column, IDrenderer, db, NoData, maybe_stale, no_autoflush, refresh
 from ..signal import ObjSignal
 
 from flask import request,current_app
 from flask._compat import text_type, string_types
 from werkzeug import import_string
+from werkzeug.utils import cached_property
 from jinja2.utils import Markup
 from copy import copy
 
@@ -43,13 +44,33 @@ except ImportError:
 	from md5 import md5
 
 # Template detail levels
-TM_DETAIL = {1:"Page", 2:"Subpage", 3:"String", 4:"Detail", 5:"Snippet",
-	6:"Hierarchy", 7:"RSS", 8:"email", 9:"preview"}
-for _x,_y in TM_DETAIL.items():
-	globals()["TM_DETAIL_"+_y.upper()] = _x
 
+class TM_DETAIL(dict):
+	_mime = {}
+	def _add(id,name, mime=None):
+		self[id] = name
+		globals()["TM_DETAIL_"+name.upper()] = id
+		if mime is None:
+			mime="html/"+name.lower()
+		self._mime[name]=mime
 def TM_DETAIL_name(id):
 	return TM_DETAIL[int(id)]
+def TM_MIME(id):
+	return TM_DETAIL._mime[id]
+TM_DETAIL=TM_DETAIL()
+
+for _x,_y,_z in (
+		(1,"Page","text/html"),
+		(2,"Subpage",None),
+		(3,"String",None),
+		(4,"Detail",None),
+		(5,"Snippet",None),
+		(6,"Hierarchy",None),
+		(7,"RSS",None),
+		(8,"email","text/plain"),
+		(9,"preview",None),
+		):
+	TM_DETAIL._add(_x,_y,_z)
 
 class MissingDummy(Exception):
 	pass
@@ -74,12 +95,14 @@ def count(it):
 	return n
 
 class Loadable(object):
-	path = Column(Unicode(100), nullable=False, unique=True, doc="Python object name")
+	path = Column(Unicode(100), nullable=True, doc="Python object name")
 	_module = None
 
 	@property
 	def mod(self):
 		"""Load the module"""
+		if self.path is None:
+			return None
 		if self._module is None:
 			self._module = import_string(self.path)
 		return self._module
@@ -136,7 +159,16 @@ class Discriminator(Loadable, Dumpable, Base):
 	def __repr__(self):
 		return '<D:%s %s>' % (self.id, self.name)
 
+	@cached_property
+	def mimetype(self):
+		from .types import MIMEtype
+		return MIMEtype.get("pybble/discr")
 	
+	@cached_property
+	def obj_mimetype(self):
+		from .types import MIMEtype
+		return MIMEtype.get("pybble+obj/"+self.name.lower())
+
 	@staticmethod
 	def get(discr, obj=None):
 		if discr is None and obj is None:
@@ -201,6 +233,7 @@ class Object(Dumpable, Base):
 	__tablename__ = "obj"
 	__mapper_args__ = {'polymorphic_on': 'discr_id'}
 	#__abstract__ = True
+	_mimetype_cache = {} ## global dict
 
 	id = Column(Integer, primary_key=True, label="ID", renderer=IDrenderer)
 
@@ -218,6 +251,16 @@ class Object(Dumpable, Base):
 
 	_rec_str = 0 ## marker for possibly-recursive __str__ calls
 	_deleting = False ## marker for skipping some do-not-modify tests
+
+	@property
+	def mimetype(self):
+		mt = self._mimetype_cache.get(self.discr_id,None)
+		if mt is None:
+			from .types import MIMEtype
+			self._mimetype_cache[self.discr_id] = mt = MIMEtype.q.get_by(to_discr=self.discr)
+		else:
+			mt = refresh(mt)
+		return mt
 
 ## causes a sqlalchemy warning. TODO: create a testcase and submit a bug report
 #	@classmethod
@@ -620,6 +663,8 @@ def block_super_updates(target, value, oldvalue, initiator):
 class ObjectMeta(type(Object)):
 	def __init__(cls, name, bases, dct):
 		if '_descr' in dct:
+			from ._descr import MIMEproperty
+
 			xid = dct.get('id',None)
 			if xid is None:
 				xid = Column(None, ForeignKey(Object.id, ondelete='CASCADE', onupdate='RESTRICT'), primary_key=True)
@@ -647,6 +692,8 @@ class ObjectMeta(type(Object)):
 				return init
 			setattr(cls,'__init__', wrap_init(dct.get('__init__',cls.__init__)))
 
+			setattr(cls,'mimetype', MIMEproperty("pybble+obj/"+name.lower()))
+	
 			@event.listens_for(cls, 'load')
 			def receive_load(target, context):
 			    target._init()
@@ -700,42 +747,3 @@ def obj_get(oid):
 		raise ValueError("This object does not exist: " % (oid,))
 	return obj
 
-class Renderer(Loadable,Base):
-	"""Render method for object content"""
-	name = Column(Unicode(30), nullable=False)
-	doc = Column(Unicode(250), nullable=True)
-
-class renderObject(Object):
-	"""\
-		An object with render().
-		You do need to add a renderer_id foreign key, and a data field.
-		"""
-
-	__abstract__ = True
-	renderer_id = Column(Integer, nullable=True)
-	renderer = relationship(Renderer, primaryjoin=renderer_id==Renderer.id)
-
-	def __init__(self,renderer = None):
-		super(renderObject,self).__init__()
-		if renderer is not None:
-			if not isinstance(renderer,Renderer):
-				renderer = Renderer.q.get_by(name=renderer)
-			self.renderer = renderer
-	
-	@property
-	def render(self):
-		if self.renderer_id is None:
-			return None
-		def _wrap(r):
-			def _call(*a,**k):
-				r(self,*a,**k)
-			return _call
-		try:
-			return _wrap(Renderer.q.get_by(id=self.renderer_id)._module)
-		except NoData:
-			def _wr(*a,**k):
-				return "<pre>"+Markup.escape(self.data)+"<pre>\n"
-			return _wr
-
-# TemplateMatch
-TemplateMatch = None

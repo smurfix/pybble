@@ -21,7 +21,9 @@ class D(dict):
 	_doc = {}
 	def __call__(self,i,n, doc=None):
 		self[i]=n
-		setattr(self,n.rsplit(".")[-1],i)
+		nn=n.rsplit(".")[-1]
+		setattr(self,nn,i)
+		setattr(self,nn.lower(),i)
 		if doc:
 			self._doc[i] = doc
 D=D()
@@ -50,5 +52,51 @@ D(26,"site.Blueprint", "Code which displays a domain's content")
 D(24,"site.SiteBlueprint", "Attaches a blueprint to a site")
 D(27,"site.ConfigVar", "System-wide (default) configuration")
 D(28,"site.SiteConfigVar", "Site-or-whatever-specific configuration")
+D(33,"types.MIMEtype", "A known MIME type")
+D(34,"types.MIMEtranslator", "A registered MIME translator")
+D(35,"types.MIMEadapter", "Link between translators and templates")
 
 D(9,"x.WikiPage")
+
+## MIME property
+## This would belong in .types, but we'd run in to a very ugly cyclic dependency
+## because MIMEtype is a subclass of ObjectRef,
+## which needs MIMEproperty when it instantiates classes
+
+_MIMEtype = None
+class MIMEproperty(object):
+	"""\
+		A referral to a MIME property. Use as:
+
+			class Whatever(Object):
+				mimetype = MIMEproperty("pybble/whatever")
+		"""
+	def __init__(self, name):
+		self.name = name
+
+	def __get__(self, obj, type=None):
+		if obj is None:
+			return self
+
+		if _MIMEtype is None:
+			from .types import MIMEtype
+			_MIMEtype = MIMEtype
+
+		if not isinstance(obj,type):
+			obj = type(obj)
+
+		t = getattr(obj,'_mimetype',None)
+		if t is None:
+			t = MIMEtype.get(self.name)
+			setattr(obj,'_mimetype',t)
+			return t
+		else:
+			return refresh(t)
+
+	def __set__(self, obj, value):
+		raise RuntimeError("You can't do this")
+	def __delete__(self, obj):
+		raise RuntimeError("You can't do this")
+
+		
+

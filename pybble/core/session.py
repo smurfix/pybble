@@ -27,6 +27,7 @@ from flask import Flask, current_app,request,session, flash
 from flask._compat import string_types,text_type
 from werkzeug import cookie_date, get_host
 from werkzeug.contrib.securecookie import SecureCookie
+from werkzeug.debug import DebuggedApplication
 
 from .. import ROOT_SITE_NAME
 from .models.user import User
@@ -143,7 +144,7 @@ class SubdomainDispatcher(object):
 				# Note that this assumes that a site's app cannot change
 				# TODO: this is not actually enforced anywhere
 
-			return app
+			return DebuggedApplication(app)
 
 	def __call__(self, environ, start_response):
 		"""Standard WSGI"""

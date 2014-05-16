@@ -19,7 +19,7 @@ import logging
 from time import time
 from itertools import chain
 
-from flask import Flask, request, render_template, g, session, Markup, Response, current_app
+from flask import Flask, request, render_template, g, session, Markup, Response as BaseResponse, current_app
 from flask.config import Config
 from flask.templating import DispatchingJinjaLoader
 from flask.ext.script import Server
@@ -27,21 +27,17 @@ from flask._compat import text_type
 from flask.wrappers import Request
 
 from hamlish_jinja import HamlishExtension
-from jinja2 import Template,BaseLoader, TemplateNotFound
 from werkzeug import import_string
-from blinker import Signal
 
 from .. import FROM_SCRIPT,ROOT_SITE_NAME,ROOT_USER_NAME
 from ..core.db import db, NoData, init_db, refresh
 from ..core.signal import all_apps
-from ..core.models.template import Template as DBTemplate, TemplateMatch
 from ..core.models.site import Site,App,SiteBlueprint,Blueprint
 from ..core.models.config import ConfigVar
 from ..core.models.user import User
 from ..manager import Manager,Command
+from ..render import ContentData
 from ..blueprint import load_app_blueprints
-from ..render import load_app_renderer
-from ..render.app import JinjaApp
 
 logger = logging.getLogger('pybble.app')
 
@@ -102,9 +98,19 @@ class WrapperApp(object):
 	__repr__=__str__
 	__unicode__=__str__
 
-class BaseApp(JinjaApp,WrapperApp,Flask):
+class Response(BaseResponse):
+	@classmethod
+	def force_type(cls,req,env=None):
+		if isinstance(req,ContentData):
+			resp = cls(req.content, content_type=str(req.from_mime))
+			return resp
+		else:
+			return super(cls,Response).force_type(req,env)
+
+class BaseApp(WrapperApp,Flask):
 	"""Pybble's basic WSGI application"""
 	config = None
+	response_class = Response
 
 	def __init__(self, site, testing=False, **kw):
 		super(BaseApp,self).__init__(site=site,testing=testing, import_name="pybble", template_folder=None, static_folder=None, **kw)
@@ -115,7 +121,6 @@ class BaseApp(JinjaApp,WrapperApp,Flask):
 			site.signal.connect(self._reload)
 		all_apps.connect(self._reload)
 
-		load_app_renderer(self)
 		load_app_blueprints(self)
 		self.setup()
 

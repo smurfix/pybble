@@ -15,16 +15,18 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from datetime import datetime
 
-from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
+from flask._compat import text_type
+
+from sqlalchemy import Integer, Unicode, ForeignKey, DateTime, or_, UniqueConstraint
 from sqlalchemy.orm import relationship,backref
 from sqlalchemy import event
 
 from ...compat import py2_unicode
 from .. import config
-from ..db import Base, Column, db, NoData
+from ..db import Base, Column, db, NoData, refresh, check_unique
 from ..json import register_object
-from . import ObjectRef
-from ._descr import D
+from . import ObjectRef,Loadable, Discriminator
+from ._descr import D,MIMEproperty
 
 def add_mime(name,typ,subtyp,ext):
 	ext = unicode(ext)
@@ -50,20 +52,15 @@ def add_mime(name,typ,subtyp,ext):
 				tt.mime = t
 				tt.ext = ext
 				db.add(tt)
-				db.flush()
+				db.flush((tt,))
 		return t
-
-def mime_ext(ext):
-	try:
-		return MIMEtype.q.get_by(ext=ext)
-	except NoData:
-		return MIMEext.q.get_by(ext=ext).mime
 
 ## MIME type
 
 @py2_unicode
-class MIMEtype(Base):
+class MIMEtype(Loadable, ObjectRef):
 	"""Known MIME Types"""
+	_descr = D.MIMEtype
 	__tablename__ = "mimetype"
 
 	name = Column(Unicode(30), nullable=False)
@@ -72,18 +69,45 @@ class MIMEtype(Base):
 	doc = Column(Unicode(1000), nullable=True)
 	ext = Column(Unicode(10), nullable=True) # primary extension
 	
-	@property
-	def mimetype(self):
-		return "%s/%s" % (self.typ,self.subtyp)
+	to_discr_id = Column(Integer, ForeignKey(Discriminator.id), nullable=True, unique=True)
+	to_discr = relationship(Discriminator, primaryjoin=to_discr_id==Discriminator.id)
+	__table_args__ = (UniqueConstraint(typ,subtyp),)
+
+	def __init__(self, typ,subtyp, name=None,**k):
+		if typ == "pybble":
+			discr = getattr(D,subtyp,None)
+		else:
+			discr = None
+		if name is None:
+			name = typ+'/'+subtyp
+		super(MIMEtype,self).__init__(typ=typ,subtyp=subtyp,name=name,to_discr_id=discr,**k)
+
+	@classmethod
+	def get(cls, typ,subtyp=None, add=False):
+		if subtyp is None:
+			if isinstance(typ,MIMEtype):
+				return typ
+			typ = text_type(typ)
+			try:
+				typ,subtyp = typ.split('/')
+			except ValueError:
+				try:
+					return cls.q.get(or_(cls.name==typ, cls.ext==typ))
+				except NoData:
+					return MIMEext.q.get_by(ext=typ).mime
+		else:
+			subtyp = text_type(subtyp)
+		try:
+			return cls.q.get_by(typ=typ,subtyp=subtyp)
+		except NoData:
+			if not add:
+				raise
+			return cls(typ=typ,subtyp=subtyp)
 
 	def __str__(self):
-		return u"‹%s %s: .%s %s›" % (self.__class__.__name__, self.id,self.ext,self.mimetype)
-	__repr__ = __str__
-
-def find_mimetype(typ,subtyp=None):
-	if subtyp is None:
-		typ,subtyp = typ.split("/")
-	return MIMEtype.q.get_by(typ=typ, subtyp=subtyp)
+		return self.typ+'/'+self.subtyp
+	def __repr__(self):
+		return u"‹%s %s: .%s %s›" % (self.__class__.__name__, self.id,self.ext,str(self))
 
 ## additional MIME filename extensions
 
@@ -100,8 +124,91 @@ class MIMEext(Base):
 		return u"‹%s %s: %s %s›" % (self.__class__.__name__, self.id,self.ext,unicode(self.mime))
 	__repr__ = __str__
 
+## A translator is code which interprets a template.
+
+@py2_unicode
+class MIMEtranslator(Loadable, ObjectRef):
+	"""\
+		Describes a translator of one type to another.
+
+		`mime` is the type for the template's content (need an editor for that …).
+		"""
+	__tablename__ = "mimetrans"
+	_descr = D.MIMEtranslator
+	@classmethod
+	def __declare_last__(cls):
+		if not hasattr(cls,'mime'):
+			cls.mime = cls.owner
+		check_unique(cls, "mime")
+
+	name = Column(Unicode(30), unique=True, nullable=False)
+	weight = Column(Integer, nullable=False,default=0, doc="Used when translating from A to B to C. Less is better.")
+
+	@classmethod
+	def get(cls, mime, from_mime,to_mime):
+		try:
+			return cls.q.get_by(mime=mime,from_mime=from_mime,to_mime=to_mime)
+		except NoData:
+			if from_mime.subtyp != '*':
+				from_mime=MIMEtype.get(from_mime.typ,"*")
+				return cls.q.get_by(mime=mime,from_mime=from_mime,to_mime=to_mime)
+			raise
+
+	def __call__(self,*a,**k):
+		"""Call the underlying translator"""
+		return self.mod().__call__(*a,**k)
+
+	def __str__(self):
+		return u"‹%s %s: %s➙%s›" % (self.__class__.__name__, self.id,unicode(self.from_mime),unicode(self.to_mime))
+	__repr__ = __str__
+
+## An adapter links a translator to a specific type combination.
+
+@py2_unicode
+class MIMEadapter(ObjectRef):
+	"""\
+		Describes an adapter of one type to another.
+
+		`from_mime` and `to_mime` are the managed types.
+		"""
+	__tablename__ = "mimeadapt"
+	_descr = D.MIMEadapter
+	@classmethod
+	def __declare_last__(cls):
+		if not hasattr(cls,'from_mime'):
+			cls.from_mime = cls.parent
+		if not hasattr(cls,'to_mime'):
+			cls.to_mime = cls.superparent
+		if not hasattr(cls,'translator'):
+			cls.translator = cls.owner
+		check_unique(cls, "from_mime to_mime translator")
+
+	name = Column(Unicode(30), unique=True, nullable=False)
+	doc = Column(Unicode(1000), nullable=True)
+	weight = Column(Integer, nullable=False,default=0, doc="Used when translating from A to B to C. Less is better.")
+
+	@classmethod
+	def get(cls, mime, from_mime,to_mime):
+		try:
+			return cls.q.get_by(mime=mime,from_mime=from_mime,to_mime=to_mime)
+		except NoData:
+			if from_mime.subtyp != '*':
+				from_mime=MIMEtype.get(from_mime.typ,"*")
+				return cls.q.get_by(mime=mime,from_mime=from_mime,to_mime=to_mime)
+			raise
+
+	def __call__(self,*a,**k):
+		"""Call the underlying translator"""
+		return self.mod().__call__(*a,**k)
+
+	def __str__(self):
+		return u"‹%s %s: %s➙%s›" % (self.__class__.__name__, self.id,unicode(self.from_mime),unicode(self.to_mime))
+	__repr__ = __str__
+
+## Serializer for MIME type to JSON
+
 @register_object
-class _MIMEtype(object):
+class _serialize_mimetype(object):
 	cls = MIMEtype
 	clsname = "mime"
 
@@ -115,4 +222,32 @@ class _MIMEtype(object):
 	@staticmethod
 	def decode(t=None,s=None,x=None,**_):
 		return MIMEtype.q.get_by(typ=t[0],subtyp=t[1])
+
+@register_object
+class _serialize_mimetranslator(object):
+	cls = MIMEtranslator
+	clsname = "mimetrans"
+
+	@staticmethod
+	def encode(obj):
+		res = {"i":(obj.id), "s":str(obj)}
+		return res
+
+	@staticmethod
+	def decode(i,s=None,x=None,**_):
+		return MIMEtranslator.q.get_by(id=i)
+
+@register_object
+class _serialize_mimeadapter(object):
+	cls = MIMEadapter
+	clsname = "mimeadapt"
+
+	@staticmethod
+	def encode(obj):
+		res = {"i":(obj.id), "s":str(obj)}
+		return res
+
+	@staticmethod
+	def decode(i,s=None,**_):
+		return MIMEadapter.q.get_by(id=i)
 

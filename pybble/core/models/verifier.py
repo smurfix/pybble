@@ -15,8 +15,6 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from flask import current_app,g, request
 
-from werkzeug import import_string
-
 from datetime import datetime,timedelta
 
 from sqlalchemy import Integer, Unicode, DateTime, ForeignKey
