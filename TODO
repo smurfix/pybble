@@ -1,4 +1,11 @@
-migrate passwords
+move request.site to g.site, auto-added at app-context init time
+add g.context and current_app.context, for variables to add to all translators
+
+translators: add config variables
+	* ConfigVar at the translator
+	* SiteConfigVar on any node between anchor and site (not just the template attachment point)
+
+rename "translator" to "renderer"
 
 multi language
 
