@@ -41,6 +41,7 @@ V=
 TRACE=
 NOTEST=
 DBG=
+DBGENV=
 export POSIXLY_CORRECT=1
 while getopts "dhkKnNprtv" i ; do
         case "$i"
@@ -48,6 +49,7 @@ while getopts "dhkKnNprtv" i ; do
                 d)
                         DEBUG=y
 						DBG=-d
+						DBGENV=PYBBLE_DEBUG_WEB=True
 						;;
                 h)
                         usage 0 ;;
@@ -167,9 +169,9 @@ if [ "$*" = "" ] ; then
 
 	[ -z "$V" ] || echo "Starting test run"
 	#PYTHONPATH=$(pwd) test/run.py -x
-	PYTHONPATH=$(pwd) py.test $ASS -x
+	env PYTHONPATH=$(pwd) $DBGENV py.test $ASS -x
 else
 	[ -z "$V" ] || echo "# ./manage.py -t $*"
-	PYTHONPATH=$(pwd) $PY ./manage.py -t "$@"
+	env PYTHONPATH=$(pwd) $DBGENV $PY ./manage.py -t "$@"
 fi
 

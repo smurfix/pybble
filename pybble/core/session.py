@@ -144,11 +144,26 @@ class SubdomainDispatcher(object):
 				# Note that this assumes that a site's app cannot change
 				# TODO: this is not actually enforced anywhere
 
-			return DebuggedApplication(app)
+			if not app.config.DEBUG_WEB:
+				app = DebuggedApplication(app)
+			return app
 
 	def __call__(self, environ, start_response):
 		"""Standard WSGI"""
-		app = self.get_application(environ['HTTP_HOST'], testing=environ.get('testing', None))
+		app = None
+		try:
+			app = self.get_application(environ['HTTP_HOST'], testing=environ.get('testing', None))
+			return app(environ, start_response)
 
-		return app(environ, start_response)
+		except Exception as e:
+			if not app or not app.config.DEBUG_WEB:
+				raise
+
+			x=sys.exc_info()
+			try:
+				print("ERROR:",str(e))
+			except Exception:
+				print("ERROR: ‹error message could not be printed›")
+			import pdb
+			pdb.post_mortem(x[2])
 

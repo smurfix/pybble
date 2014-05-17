@@ -26,6 +26,8 @@ DEBUG=False
 d_DEBUG="Emit debug information"
 DEBUG_ACCESS=False
 d_DEBUG_ACCESS="Trace access control tests"
+DEBUG_WEB=False
+d_DEBUG_WEB="Start a debugger on exceptions while serving?"
 JSON_AS_ASCII=True
 JSONIFY_PRETTYPRINT_REGULAR=False
 JSON_SORT_KEYS=False
@@ -53,6 +55,7 @@ TRAP_HTTP_EXCEPTIONS=False
 USE_X_SENDFILE=False
 LEGACY_PASSWORDS=True
 d_LEGACY_PASSWORDS="If True, allow cleartext passwords in the database"
+
 
 ## used when logging is on.
 LOGGER_NAME='pybble'
