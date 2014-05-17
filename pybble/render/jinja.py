@@ -16,6 +16,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from jinja2 import Markup, contextfunction
 from flask import request,current_app
 from flask.helpers import locked_cached_property
+from flask.templating import Environment as BaseEnvironment
 
 from ..utils import AuthError
 from ..core.models import PERM, PERM_NONE, PERM_ADD, obj_get, \
@@ -33,20 +34,17 @@ from time import time
 import logging
 logger = logging.getLogger('pybble.render')
 
-class JinjaApp(object):
-	"""This is a mix-in for Flask which overwrites a couple of things with Pybble-specific extensions"""
+class Environment(BaseEnvironment):
+	"""Set up the Jinja environment"""
 
-	@locked_cached_property
-	def jinja_loader(self):
-		return SiteTemplateLoader()
+	def __init__(self, app):
+		super(Environment,self).__init__(app, loader=SiteTemplateLoader(app.site))
 
-	def create_jinja_environment(self):
-		jinja_env = super(JinjaApp,self).create_jinja_environment()
- 
-		jinja_env.globals['site'] = self.site
+		self.globals['site'] = app.site
 
 		## setup template loader
-		jinja_env.loader = SiteTemplateLoader(self.site)
+		app.jinja_loader = self.loader = SiteTemplateLoader(app.site)
+
 		## TODO: do the same thing with static files
 
 		def render(obj, *a,**kw):
@@ -54,46 +52,46 @@ class JinjaApp(object):
 				return obj.render(*a,**kw)
 			else:
 				return Markup.escape(unicode(obj))
-		jinja_env.filters['render'] = render
+		self.filters['render'] = render
 
 		def cdata(data): ## [[[[
 			return Markup("<![CDATA[")+data.replace("]]>","]] >")+Markup("]]>")
-		jinja_env.filters['cdata'] = cdata
+		self.filters['cdata'] = cdata
 
 		def datetimeformat(value, format='%Y-%m-%d %H:%M'):
 			return value.strftime(format)
-		jinja_env.filters['date'] = datetimeformat
-		jinja_env.filters['datetime'] = datetimeformat
+		self.filters['date'] = datetimeformat
+		self.filters['datetime'] = datetimeformat
 
-		jinja_env.globals['url'] = lambda: request.url
+		self.globals['url'] = lambda: request.url
 
 		def name_discr(id):
 			if id is None or id == "None":
 				return "*"
 			return Discriminator.q.get_by(id=int(id)).name
-		jinja_env.globals['name_discr'] = name_discr
+		self.globals['name_discr'] = name_discr
 
 		def name_detail(id):
 			from pybble.models import TM_DETAIL_name
 			return TM_DETAIL_name(id)
-		jinja_env.globals['name_detail'] = name_detail
+		self.globals['name_detail'] = name_detail
 
 		def name_permission(id):
 			from pybble.models import PERM_name
 			return PERM_name(id).lower()
-		jinja_env.globals['name_permission'] = name_permission
+		self.globals['name_permission'] = name_permission
 
-		jinja_env.globals['diff'] = textDiff
-		jinja_env.globals['textdiff'] = textOnlyDiff
+		self.globals['diff'] = textDiff
+		self.globals['textdiff'] = textOnlyDiff
 
 		for did,dname in D.items():
 			i = dname.rindex(".")
 			if i > 0:
 				dname = dname[i+1:]
-			jinja_env.globals[str("d_"+dname.lower())] = did
+			self.globals[str("d_"+dname.lower())] = did
 
 		for tm,name in TM_DETAIL.items():
-			jinja_env.globals[str("tm_"+name.lower())] = tm
+			self.globals[str("tm_"+name.lower())] = tm
 
 		def addables(obj):
 			u = request.user
@@ -111,11 +109,11 @@ class JinjaApp(object):
 						g.append((d.id,d.display_name or d.name, d.infotext))
 				u[obj.id] = g
 			return g
-		jinja_env.globals['addables'] = addables
+		self.globals['addables'] = addables
 
-		jinja_env.globals['subpage'] = render_subpage
-		jinja_env.globals['subline'] = render_subline
-		jinja_env.globals['subrss'] = render_subrss
+		self.globals['subpage'] = render_subpage
+		self.globals['subline'] = render_subline
+		self.globals['subrss'] = render_subrss
 
 		# Permission checks for templates: {% if can_edit() %} -- menu -- {% endif %}
 		for a,b in PERM.iteritems():
@@ -162,9 +160,8 @@ class JinjaApp(object):
 
 				return can_do,will_do
 			c,d = can_do_closure(a,b)
-			jinja_env.globals['can_' + b.lower()] = c
-			jinja_env.globals['will_' + b.lower()] = d
-		return jinja_env
+			self.globals['can_' + b.lower()] = c
+			self.globals['will_' + b.lower()] = d
 
 	def select_jinja_autoescape(self, filename):
 		"""\

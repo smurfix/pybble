@@ -17,26 +17,28 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 This module contains the filter which translates from HAML to HTML templates.
 """
 
+import sys
+
 from jinja2 import Markup, contextfunction
 from flask import request,current_app
 from flask.helpers import locked_cached_property
 
+from flask.templating import Environment as BaseEnvironment
+
 from pybble.translator import BaseTranslator
 from pybble.utils import AuthError
 from pybble.core.models import PERM, PERM_NONE, PERM_ADD, obj_get, \
-    Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, obj_get, TM_DETAIL, \
-	    TM_DETAIL_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name
+	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, obj_get, TM_DETAIL, \
+		TM_DETAIL_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name
 from pybble.core.models._descr import D
 from pybble.core.models.user import access_logger
 from pybble.core.db import db,NoData
 from pybble.utils.diff import textDiff,textOnlyDiff
 from pybble.render import render_subpage,render_subline,render_subrss
-from .loader import SiteTemplateLoader
-
-from time import time
+from pybble.render.loader import SiteTemplateLoader
 
 import logging
-logger = logging.getLogger('pybble.render')
+logger = logging.getLogger('pybble.translator.jinja')
 
 from jinja2 import __version__ as jinja_version
 _version = 1
@@ -49,21 +51,6 @@ class Translator(BaseTranslator):
 	WEIGHT = 10
 	CONTENT="template/jinja"
 	
-	def __init__(self, db_template):
-		self.env = self.create_jinja_environment()
-		self.db_template = template
-
-	def __call__(self, c, **params):
-		super(Translator,self).__init__()
-		"""\
-			Run this template.
-			"""
-		params['c'] = c
-        current_app.update_template_context(params)
-		c.content = self.get_template().render(**params)
-		c.to_mime = self.template.adapter.to_mime
-        return c
-
 	@property
 	def bytecode(self):
 		"""\
@@ -72,7 +59,7 @@ class Translator(BaseTranslator):
 		dbt = self.db_template
 		c = dbt.get_cache(_version)
 		if c is None:
-			c = self.env.compile(dbt.data, dbt.filename, dbt.oid())
+			c = self.env.compile(dbt.content, dbt.source, dbt.oid())
 			dbt.set_cache(c, _version)
 		return c
 
@@ -83,79 +70,76 @@ class Translator(BaseTranslator):
 	def render(self,c,globals=None, *a,**k):
 		vars = dict(*a, **k)
 		ctx = self.new_context(vars)
-		template = self.get_template(
-		return self.template().render(**vars)
+		return self.template.render(**vars)
 
-	def create_jinja_environment(self):
-        options = dict(extensions=['jinja2.ext.autoescape', 'jinja2.ext.with_'])
-        if 'autoescape' not in options:
-            options['autoescape'] = True # self.select_jinja_autoescape
-        if 'auto_reload' not in options:
-            options['auto_reload'] = self.debug \
-                or self.config['TEMPLATES_AUTO_RELOAD']
-        rv = self.jinja2_environment(self, **options)
-        rv.globals.update(
-            url_for=url_for,
-            get_flashed_messages=get_flashed_messages,
-            config=self.config,
-            # request, session and g are normally added with the
-            # context processor for efficiency reasons but for imported
-            # templates we also want the proxies in there.
-            request=request,
-            session=session,
-            g=g
-        )
-        rv.filters['tojson'] = json.tojson_filter
+	@staticmethod
+	def init_app(app, global_only=False):
+		env = getattr(app,'jinja_env',None)
+		if env is None:
+			env = Environment(app)
+			app.jinja_env = env
+		if global_only:
+			return env
+		return Environment(app)
 
-		jinja_env = current_app.jinja_env
- 
-		jinja_env.loader = SiteTemplateLoader(self.site)
+class Environment(BaseEnvironment):
+	"""Set up the Jinja environment"""
+
+	def __init__(self, app):
+		super(Environment,self).__init__(app, loader=SiteTemplateLoader(app.site))
+
+		self.globals['site'] = app.site
+
+		## setup template loader
+		app.jinja_loader = self.loader = SiteTemplateLoader(app.site)
+
+		## TODO: do the same thing with static files
 
 		def render(obj, *a,**kw):
 			if hasattr(obj,"render"):
 				return obj.render(*a,**kw)
 			else:
 				return Markup.escape(unicode(obj))
-		jinja_env.filters['render'] = render
+		self.filters['render'] = render
 
 		def cdata(data): ## [[[[
 			return Markup("<![CDATA[")+data.replace("]]>","]] >")+Markup("]]>")
-		jinja_env.filters['cdata'] = cdata
+		self.filters['cdata'] = cdata
 
 		def datetimeformat(value, format='%Y-%m-%d %H:%M'):
 			return value.strftime(format)
-		jinja_env.filters['date'] = datetimeformat
-		jinja_env.filters['datetime'] = datetimeformat
+		self.filters['date'] = datetimeformat
+		self.filters['datetime'] = datetimeformat
 
-		jinja_env.globals['url'] = lambda: request.url
+		self.globals['url'] = lambda: request.url
 
 		def name_discr(id):
 			if id is None or id == "None":
 				return "*"
 			return Discriminator.q.get_by(id=int(id)).name
-		jinja_env.globals['name_discr'] = name_discr
+		self.globals['name_discr'] = name_discr
 
 		def name_detail(id):
 			from pybble.models import TM_DETAIL_name
 			return TM_DETAIL_name(id)
-		jinja_env.globals['name_detail'] = name_detail
+		self.globals['name_detail'] = name_detail
 
 		def name_permission(id):
 			from pybble.models import PERM_name
 			return PERM_name(id).lower()
-		jinja_env.globals['name_permission'] = name_permission
+		self.globals['name_permission'] = name_permission
 
-		jinja_env.globals['diff'] = textDiff
-		jinja_env.globals['textdiff'] = textOnlyDiff
+		self.globals['diff'] = textDiff
+		self.globals['textdiff'] = textOnlyDiff
 
 		for did,dname in D.items():
 			i = dname.rindex(".")
 			if i > 0:
 				dname = dname[i+1:]
-			jinja_env.globals[str("d_"+dname.lower())] = did
+			self.globals[str("d_"+dname.lower())] = did
 
 		for tm,name in TM_DETAIL.items():
-			jinja_env.globals[str("tm_"+name.lower())] = tm
+			self.globals[str("tm_"+name.lower())] = tm
 
 		def addables(obj):
 			u = request.user
@@ -173,11 +157,11 @@ class Translator(BaseTranslator):
 						g.append((d.id,d.display_name or d.name, d.infotext))
 				u[obj.id] = g
 			return g
-		jinja_env.globals['addables'] = addables
+		self.globals['addables'] = addables
 
-		jinja_env.globals['subpage'] = render_subpage
-		jinja_env.globals['subline'] = render_subline
-		jinja_env.globals['subrss'] = render_subrss
+		self.globals['subpage'] = render_subpage
+		self.globals['subline'] = render_subline
+		self.globals['subrss'] = render_subrss
 
 		# Permission checks for templates: {% if can_edit() %} -- menu -- {% endif %}
 		for a,b in PERM.iteritems():
@@ -224,8 +208,13 @@ class Translator(BaseTranslator):
 
 				return can_do,will_do
 			c,d = can_do_closure(a,b)
-			jinja_env.globals['can_' + b.lower()] = c
-			jinja_env.globals['will_' + b.lower()] = d
-		return jinja_env
+			self.globals['can_' + b.lower()] = c
+			self.globals['will_' + b.lower()] = d
 
+	def select_jinja_autoescape(self, filename):
+		"""\
+			Returns `True` if autoescaping should be active for the given template name.
+			We simply assume it is.
+			"""
+		return True
 

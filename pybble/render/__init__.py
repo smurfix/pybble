@@ -16,6 +16,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from jinja2 import Environment, BaseLoader, Markup, contextfunction, contextfilter
 from werkzeug.utils import reraise
 from flask import request,current_app, get_flashed_messages, Response
+from flask._compat import string_types
 
 from ..utils import random_string, AuthError, NotGiven
 from ..core.models import PERM, PERM_NONE, PERM_ADD, obj_get, \
@@ -23,6 +24,7 @@ from ..core.models import PERM, PERM_NONE, PERM_ADD, obj_get, \
 	TM_DETAIL_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_MIME, MissingDummy
 from ..core.models._descr import D
 from ..core.models.user import Permission
+from ..core.models.site import SiteBlueprint,Blueprint
 from ..core.models.template import TemplateMatch, Template
 from ..core.models.files import StaticFile
 from ..core.models.types import MIMEtype
@@ -49,13 +51,13 @@ class ContentData(object):
 			`from_mime`: Type of this content
 			`to_mime`: Type I want conversion to
 			`blueprint`: The current/named blueprint, which the search should also examine.
-			`template_name`: If looking for a named template
+			`name`: If looking for a named template
 			`template_in_blueprint`: Flag whether the template name may have the blueprint name as a prefix
 			`content`: the content `from_mime` applies to
 			`site`: the domain we're looking at. A template search proceeds from the `anchor` through its `parent` pointer, but when encountering `site`, the process is interrupted while the blueprint is examined.
 		
 		"""
-	def __init__(self, obj=None, content=None, anchor=None, site=None, from_mime=None,to_mime=None, template_name=None, blueprint=None, **params):
+	def __init__(self, obj=None, content=None, anchor=None, site=None, from_mime=None,to_mime=None, name=None, blueprint=None, **params):
 
 		if site is None:
 			site = request.site
@@ -70,13 +72,15 @@ class ContentData(object):
 			else:
 				raise RuntimeError("No source MIME type")
 		if to_mime is None:
-			best = request.accept_mimetypes.best()
+			best = request.accept_mimetypes.best
+			if best is None: ## no Accept header sent
+				best = "text/html"
 			try:
 				to_mime = MIMEtype.get(best)
 			except NoData as e:
 				exc_info = sys.exc_info()
 				for k in ('text/html','text/plain','application/json'):
-					if request.accept_mimetypes[k]:
+					if request.accept_mimetypes(k):
 						try:
 							to_mime = MIMEtype.get(k)
 						except NoData:
@@ -94,8 +98,8 @@ class ContentData(object):
 
 		if blueprint is None:
 			blueprint = getattr(request,'bp',None)
-			if blueprint is None and template_name is not None and '/' in template_name:
-				bpname,tname = template_name.split('/',1)
+			if blueprint is None and name is not None and '/' in name:
+				bpname,tname = name.split('/',1)
 				try: # the name might refer to my SiteBlueprint
 					bp = SiteBlueprint.q.get_by(parent=site,name=bpname)
 				except NoData: # or to the Blueprint it points to
@@ -111,13 +115,19 @@ class ContentData(object):
 			self.from_mime = from_mime
 			self.to_mime = to_mime
 			self.blueprint = blueprint
-			self.template_name = template_name
+			self.name = name
 			self.template_in_blueprint = template_in_blueprint
 			self.content = content
 			self.site = site
 		
 	def environment(self):
 		return dict((k,v) for k,v in self.__dict__.items() if not k.startswith('_') and v is not None)
+	
+	def __call__(self, environ,start_response):
+		from pybble.app import Response
+		res = Response.force_type(self)
+		import pdb;pdb.set_trace()
+		return res(environ,start_response)
 
 	@property
 	def template(self):
@@ -198,10 +208,15 @@ class TaggedMarkup(Markup):
 	def text(self):
 		return self
 
-def render_template(template, mimetype=NotGiven, **context):
+def render_template(name, mimetype=NotGiven, **context):
 	#template = current_app.jinja_env.get_template(template)
+	if mimetype is NotGiven:
+		mimetype="text/html"
+	mimetype = MIMEtype.get(mimetype)
 	from .loader import get_template
-	template = get_template(template)
+
+	c = ContentData(name=name,to_mime=mimetype)
+	template = get_template(c)
 
 	user = getattr(request,"user",None)
 	msgs = []
@@ -219,12 +234,13 @@ def render_template(template, mimetype=NotGiven, **context):
 		NOW=datetime.utcnow(),
 	)
 
-	r = template.render(**context)
-	if mimetype:
-		if mimetype is NotGiven:
-			mimetype="text/html"
-		r = Response(r, mimetype=mimetype)
+	r = template.render(c,**context)
+	if isinstance(r,Response):
+		pass
+	elif isinstance(r,ContentData):
+		r = current_app.make_response(r)
 	else:
+		assert isinstance(r,string_types)
 		r = Markup(r)
 	return r
 

@@ -1,3 +1,9 @@
+##src pybble/site
+##dst application/rss+xml
+##typ text/jinja
+##named 1
+##inherit -
+##match root
 <?xml version="1.0" encoding="utf-8"?>
 <rss xmlns:content="http://purl.org/rss/1.0/modules/content/"
 	 xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"

@@ -30,6 +30,7 @@ from werkzeug.contrib.securecookie import SecureCookie
 from werkzeug.debug import DebuggedApplication
 
 from .. import ROOT_SITE_NAME
+from ..render import ContentData
 from .models.user import User
 from .models.site import Site
 from .db import db, NoData, refresh
@@ -153,7 +154,10 @@ class SubdomainDispatcher(object):
 		app = None
 		try:
 			app = self.get_application(environ['HTTP_HOST'], testing=environ.get('testing', None))
-			return app(environ, start_response)
+			res = app(environ, start_response)
+			if isinstance(res,ContentData):
+				res = res(environ, start_response)
+			return res
 
 		except Exception as e:
 			if not app or not app.config.DEBUG_WEB:

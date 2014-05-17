@@ -17,42 +17,43 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 This module contains the filter which translates from HAML to HTML templates.
 """
 
-from hamlish_jinja import Hamlish
+from hamlish_jinja import HamlishExtension
 
 from pybble.translator import BaseTranslator
 from ..jinja import Translator as JinjaTranslator
 
+class AlwaysHamlishExtension(HamlishExtension):
+	def preprocess(self, source, name, filename=None):
+		"""\
+			Don't regard filename extensions. We have none, here.
+			"""
+		h = self.get_preprocessor(self.environment.hamlish_mode)
+		try:
+			return h.convert_source(source)
+		except TemplateIndentationError as e:
+			raise TemplateSyntaxError(e.message, e.lineno, name=name, filename=filename)
+		except TemplateSyntaxError as e:
+			raise TemplateSyntaxError(e.message, e.lineno, name=name, filename=filename)
+
 class Translator(JinjaTranslator):
-	FROM_MIME=("pybble/*","json/*")
-	TO_MIME=("text/html","html/*")
-	WEIGHT = 10
 	CONTENT="template/haml"
 
-	def __call__(self, obj,template, from_mine,to_mime, **params):
-		placeholders = {
-			'block_start_string': self.environment.block_start_string,
-			'block_end_string': self.environment.block_end_string,
-			'variable_start_string': self.environment.variable_start_string,
-			'variable_end_string': self.environment.variable_end_string,
-		}
+	@classmethod
+	def init_app(cls,app):
+		# This sets up the Jinja app
+		env = super(Translator,cls).init_app(app, global_only=True)
+		env.extensions["jinja2.ext.HamlishExtension"] = HamlishExtension(env)
+		env.hamlish_file_extensions=('.haml',)
+		env.hamlish_mode='debug'
+		env.hamlish_enable_div_shortcut=True
 
-		if mode == 'compact':
-			output = Output(
-				indent_string='',
-				newline_string='',
-				**placeholders)
-		elif mode == 'debug':
-			output = Output(
-				indent_string='   ',
-				newline_string='\n',
-				debug=True,
-				**placeholders)
-		else:
-			output = Output(
-				indent_string=self.environment.hamlish_indent_string,
-				newline_string=self.environment.hamlish_newline_string,
-				debug=self.environment.hamlish_debug,
-				**placeholders)
+		env = super(Translator,cls).init_app(app, global_only=False)
+		# this ignores the global Jinja env because we already set that up
+		# so we get a local one back, which is usable for HAML-only
 
-		return Hamlish(output, self.environment.hamlish_enable_div_shortcut)
+		env.extensions["jinja2.ext.HamlishExtension"] = AlwaysHamlishExtension(env)
+		env.hamlish_mode='debug'
+		env.hamlish_enable_div_shortcut=True
+
+		return env
 

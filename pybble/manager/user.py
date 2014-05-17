@@ -36,7 +36,7 @@ class AddUser(Command):
 		if help or name is None:
 			self.parser.print_help()
 			sys.exit(not help)
-		create_user(request.site, name)
+		create_user(name=name, site=request.site)
 		
 class ListUsers(Command):
 	"""Show the list of known sites"""

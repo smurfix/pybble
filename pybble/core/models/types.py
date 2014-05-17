@@ -57,7 +57,6 @@ def add_mime(name,typ,subtyp,ext):
 
 ## MIME type
 
-@py2_unicode
 class MIMEtype(Loadable, ObjectRef):
 	"""Known MIME Types"""
 	_descr = D.MIMEtype
@@ -104,6 +103,9 @@ class MIMEtype(Loadable, ObjectRef):
 				raise
 			return cls(typ=typ,subtyp=subtyp)
 
+	@property
+	def as_str(self):
+		return str(self)
 	def __str__(self):
 		return self.typ+'/'+self.subtyp
 	def __repr__(self):
@@ -126,7 +128,6 @@ class MIMEext(Base):
 
 ## A translator is code which interprets a template.
 
-@py2_unicode
 class MIMEtranslator(Loadable, ObjectRef):
 	"""\
 		Describes a translator of one type to another.
@@ -158,13 +159,12 @@ class MIMEtranslator(Loadable, ObjectRef):
 		"""Call the underlying translator"""
 		return self.mod().__call__(*a,**k)
 
-	def __str__(self):
-		return u"‹%s %s: %s➙%s›" % (self.__class__.__name__, self.id,unicode(self.from_mime),unicode(self.to_mime))
-	__repr__ = __str__
+	@property
+	def as_str(self):
+		return u"%s: %s" % (self.name,self.mime)
 
 ## An adapter links a translator to a specific type combination.
 
-@py2_unicode
 class MIMEadapter(ObjectRef):
 	"""\
 		Describes an adapter of one type to another.

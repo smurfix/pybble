@@ -80,6 +80,7 @@ class PopulateCommand(Command):
 		from ..core.models.template import Template,TemplateMatch
 		from ..core.models.config import ConfigVar
 		from ..core.models.verifier import VerifierBase
+		from ..core.models.tracking import Delete
 		from ..core.users import create_user
 		from .. import ROOT_SITE_NAME,ROOT_USER_NAME, ANON_USER_NAME
 
@@ -121,7 +122,6 @@ class PopulateCommand(Command):
 				d = MIMEtype.q.get_by(typ="pybble",subtyp=name.lower())
 			except NoData:
 				d = MIMEtype(id=id,typ="pybble",subtyp=name.lower(), path=path, doc=doc)
-				db.add(d)
 				added += 1
 			else:
 				d.path = path
@@ -232,6 +232,10 @@ class PopulateCommand(Command):
 					mt.doc = doc
 		if not added:
 			logger.debug("No new MIME types necessary.")
+
+		for mt in MIMEtype.q.all():
+			if mt.superparent is None and Delete.q.filter_by(parent=mt).count() == 0:
+				mt.superparent = root
 		db.commit()
 		
 		## MIME translators
@@ -441,6 +445,8 @@ class PopulateCommand(Command):
 
 		## templates
 		def read_template(parent, filepath,webpath):
+			extmap = { 'haml':'template/haml', 'html':'template/jinja' }
+
 			added = 0
 			with file(filepath) as f:
 				try:
@@ -475,15 +481,15 @@ class PopulateCommand(Command):
 			if "typ" not in hdr:
 				try:
 					dot = filepath.rindex(".")
-					hdr.typ = MIMEtype.get(filepath[dot+1:])
-				except (ValueError,NoData):
+					hdr.typ = MIMEtype.get(extmap[filepath[dot+1:]])
+				except (ValueError,KeyError,NoData):
 					logger.error("Template ‘{}’ not loaded: unknown MIME type".format(filepath))
 					return added
 
 			hdr_src = MIMEtype.get(hdr.src)
 			hdr_dst = MIMEtype.get(hdr.dst)
 			hdr_typ = MIMEtype.get(hdr.typ)
-
+			n="{} from {} to {}".format(hdr_typ,hdr_src,hdr_dst)
 
 			try:
 				tr = MIMEtranslator.q.get_by(mime=hdr_typ)
@@ -493,7 +499,7 @@ class PopulateCommand(Command):
 			try:
 				a = MIMEadapter.q.get_by(from_mime=hdr_src, to_mime=hdr_dst, translator=tr)
 			except NoData:
-				a = MIMEadapter(from_mime=hdr_src, to_mime=hdr_dst, translator=tr)
+				a = MIMEadapter(from_mime=hdr_src, to_mime=hdr_dst, translator=tr, name=n)
 
 			try:
 				t = Template.q.get_by(source=filepath, parent=parent, adapter=a)

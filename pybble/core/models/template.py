@@ -25,7 +25,7 @@ from flask import request,current_app
 from werkzeug.utils import cached_property
 
 from .. import config
-from ..db import Base, Column, no_update,check_unique, db, refresh
+from ..db import Base, Column, no_update,check_unique, db, refresh, maybe_stale
 from . import Object,ObjectRef, TM_DETAIL, Discriminator
 from ._descr import D
 from .types import MIMEtype
@@ -56,10 +56,11 @@ class Template(_Content, Cached, ObjectRef):
 		# Drop cached data when the content changes
 		def _del_cache(target, value, oldvalue, initiator):
 			target.del_cache()
-        event.listen(cls.content, 'set', _del_cache)
+		event.listen(cls.content, 'set', _del_cache)
 
-	name = Column(Unicode(30), nullable=False)
+	name = Column(Unicode(30), nullable=False, index=True)
 	modified = Column(DateTime,default=datetime.utcnow)
+	weight = Column(Integer, nullable=False, default=0, doc="preference when there are conflicts. Less is better.")
 
 	source = Column(Unicode(1000), nullable=True, doc="original file this template was loaded from")
 	## so we can dump it back to the file system after editing
@@ -67,37 +68,36 @@ class Template(_Content, Cached, ObjectRef):
 	from_mime = property(lambda s: s.adapter.from_mime)
 	to_mime = property(lambda s: s.adapter.to_mime)
 
-	data = Column(Unicode(100000), nullable=False)
-
 	@cached_property
 	def mime(self):
 		return self.translator.mime
 
-	def __init__(self, name, translator, data, parent=None, **kw):
+	def __init__(self, adapter, data, source, name=None, parent=None, **kw):
 		super(Template,self).__init__(**kw)
+		if name is None:
+			name = source
+		if parent is None:
+			parent = request.site
 		self.name = name
-		self.data = data
-		self.translator = translator
+		self.source=source
+		self.content = data
+		self.adapter = adapter
 		self.owner = request.user
-		self.parent = parent or request.site
-		self.superparent = getattr(parent,"site",None) or request.site
-
-		dot = name.rindex(".")
-		self.mime = MIMEtype.get(name[dot+1:])
+		self.parent = parent
 
 	@property
+	def as_str(self):
+		return self.name+": "+str(self.adapter.translator.mime) if self.adapter and self.adapter.translator else "‽"
+
+	@property
+	@maybe_stale
 	def translator(self):
 		res = self.adapter.translator
 		return res.mod(self)
 
+	@maybe_stale
 	def render(self,c,**vars):
 		return self.translator(c,**vars)
-
-def _clear_cache(target, value, oldvalue, initiator):
-	target.cache = None
-	target.version = _not_cached
-
-event.listen(Template.data, 'set', _clear_cache)
 
 ## TemplateMatch
 

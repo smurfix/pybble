@@ -29,6 +29,7 @@ import sys
 import logging
 from time import time
 from importlib import import_module
+from flask import current_app
 
 from ..core.db import db
 from ..core.models.verifier import VerifierBase
@@ -47,18 +48,33 @@ class BaseTranslator(object):
 
 	CONTENT = "template/jinja"
 
-	def __call__(self, content,template, **params):
+	@property
+	def template(self):
+		raise NotImplementedError("You need to override the {}.template property".format(cls.__name__))
+
+	def __init__(self, db_template):
+		self.env = current_app.translators[db_template.adapter.translator.name]
+		self.db_template = db_template
+
+	def __call__(self, c, **params):
 		"""\
-			Translate something for me.
-
-			content: the source; assumed to be a ContentData object.
-
-			Template: The Template I'm translating. Read-only, except for
-			the cache+version attributes.
-
+			Run this template.
 			"""
-		raise NotImplementedError("You need to override {}.__call__".format(cls.__name__))
-	
+		params['c'] = c
+		current_app.update_template_context(params)
+		c.content = self.template.render(**params)
+		c.to_mime = self.db_template.adapter.to_mime
+		return c
+
+	@staticmethod
+	def init_app(app):
+		"""\
+			Register with this app. Typically you set up an environment and
+			store it to some attribute of the app so that __call__ can find
+			it.
+			"""
+		raise NotImplementedError("You need to override {}.init_app".format(cls.__name__))
+		
 class IdentityTranslator(object):
 	"""A translator which does not actually do anything"""
 	def __call__(self, obj,template, from_mine=None,to_mime=None, **params):

@@ -38,7 +38,7 @@ class _Content(object):
 		This is a Content version without "mime", assuming that this reference
 		is defined elsewhere.
 		"""
-	data = Column(Unicode(100000), nullable=False)
+	content = Column(Unicode(100000), nullable=False)
 	pass
 
 class Content(_Content):
@@ -70,10 +70,6 @@ class Cached(object):
 	_cache = Column("cache",PickleType(pickler=marshal), nullable=False, default="")
 	_version = Column("version",Unicode(30), nullable=False, default="")
 
-	@property
-	def this_version(self):
-		raise NotImplementedError("You need to override {}.this_version".format(self.__class__.__name__))
-
 	def get_cache(self,version):
 		if self._version != version:
 			self._version = ""
@@ -82,7 +78,7 @@ class Cached(object):
 		return self._cache
 	def set_cache(self,data,version):
 		self._cache = data
-		self._version = self.this_version
+		self._version = version
 	def del_cache(self):
 		self._cache = ""
 		self._version = ""

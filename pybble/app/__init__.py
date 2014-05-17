@@ -26,7 +26,6 @@ from flask.ext.script import Server
 from flask._compat import text_type
 from flask.wrappers import Request
 
-from hamlish_jinja import HamlishExtension
 from werkzeug import import_string
 
 from .. import FROM_SCRIPT,ROOT_SITE_NAME,ROOT_USER_NAME
@@ -35,6 +34,7 @@ from ..core.signal import all_apps
 from ..core.models.site import Site,App,SiteBlueprint,Blueprint
 from ..core.models.config import ConfigVar
 from ..core.models.user import User
+from ..core.models.types import MIMEtranslator
 from ..manager import Manager,Command
 from ..render import ContentData
 from ..blueprint import load_app_blueprints
@@ -111,6 +111,7 @@ class BaseApp(WrapperApp,Flask):
 	"""Pybble's basic WSGI application"""
 	config = None
 	response_class = Response
+	translators = {}
 
 	def __init__(self, site, testing=False, **kw):
 		super(BaseApp,self).__init__(site=site,testing=testing, import_name="pybble", template_folder=None, static_folder=None, **kw)
@@ -123,6 +124,9 @@ class BaseApp(WrapperApp,Flask):
 
 		load_app_blueprints(self)
 		self.setup()
+
+		for t in MIMEtranslator.q.all():
+			self.translators[t.name] = t.mod.init_app(self)
 
 		self.before_request(self._setup_site)
 		self.before_request(self._setup_user)

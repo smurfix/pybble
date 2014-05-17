@@ -47,7 +47,7 @@ except ImportError:
 
 class TM_DETAIL(dict):
 	_mime = {}
-	def _add(id,name, mime=None):
+	def _add(self,id,name, mime=None):
 		self[id] = name
 		globals()["TM_DETAIL_"+name.upper()] = id
 		if mime is None:
@@ -603,10 +603,6 @@ class Object(Dumpable, Base):
 			no_inherit = False
 
 		raise NoData("Template %d for %s" % (detail,str(self)))
-
-	@property
-	def data(self):
-		raise NotImplementedError("You need to override .data in «%s»" % (self.__class__.__name__,))
 
 	def uptree(self):
 		while self:

@@ -17,7 +17,9 @@ import os
 import sys
 import logging
 
-from flask import request
+from sqlalchemy import or_
+
+from flask import request, current_app
 from flask.config import Config
 from flask._compat import text_type
 
@@ -26,6 +28,7 @@ from jinja2 import Template,BaseLoader, TemplateNotFound
 from ..core.db import db, NoData, refresh
 from ..core.models.template import Template as DBTemplate, TemplateMatch
 from ..core.models.site import Site,SiteBlueprint,Blueprint
+from ..core.models.types import MIMEtype,MIMEtranslator,MIMEadapter
 from . import ContentData
 
 logger = logging.getLogger('pybble.render.loader')
@@ -66,8 +69,7 @@ def get_template(c, trace=None):
 	site = c.anchor
 	seen = set()
 
-	res = None
-	res_weight = None
+	res=[None,None]
 	def got(t,weight, doc=None):
 		weight += t.weight
 		a = t.adapter
@@ -76,9 +78,9 @@ def get_template(c, trace=None):
 		weight += tr.weight
 
 		if trace: trace(t,weight, doc)
-		if res is None or res_weight > weight:
-			res = t
-			res_weight = weight
+		if res[0] is None or res[1] > weight:
+			res[0] = t
+			res[1] = weight
 		
 	weight = 0
 	while site is not None:
@@ -87,14 +89,13 @@ def get_template(c, trace=None):
 		seen.add(site)
 
 		if site is c.site:
-			get_site_template(c,weight,trace)
+			get_site_template(c,weight,got)
 			if c.blueprint:
 				get_one_site(c,c.blueprint.blueprint,55+weight,got,q)
-				get_one_site(c,c.blueprint,got,53+weight,got,q)
+				get_one_site(c,c.blueprint,53+weight,got,q)
 		for t in q.filter(TemplateMatch.parent==site):
 			got(t.template,weight+t.weight)
 
-			break
 		if site.parent in seen:
 			site = site.superparent or site.parent.superparent
 			weight += 10
@@ -102,9 +103,9 @@ def get_template(c, trace=None):
 			site = site.parent
 			weight += 1
 
-	if not res:
+	if not res[0]:
 		raise TemplateNotFound(c)
-	return res
+	return res[0]
 
 def get_site_template(c,weight,got):
 	bn = None
@@ -137,38 +138,38 @@ def get_site_template(c,weight,got):
 			else: got(t,0+weight)
 
 		if c.site.name == bn:
-			try: t = DBTemplate.q.get_by(parent=site.app, name=sn)
+			try: t = DBTemplate.q.get_by(parent=c.site, name=sn)
 			except NoData: pass
 			else: got(t,5+weight)
 
 		if c.site.app.name == bn:
-			try: t = DBTemplate.q.get_by(parent=site.app, name=sn)
+			try: t = DBTemplate.q.get_by(parent=c.site.app, name=sn)
 			except NoData: pass
 			else: got(t,10+weight)
 
 	if c.name:
-		try: t = DBTemplate.q.get_by(parent=site.app, name=c.name)
+		try: t = DBTemplate.q.get_by(parent=c.site.app, name=c.name)
 		except NoData: pass
 		else: got(t,10)
 
 def gen_q(c):
 	from_wild = None
-	if from_mime.subtyp != "*":
-		try: from_wild = MIMEtype.get(from_mime.typ+'/*')
+	if c.from_mime.subtyp != "*":
+		try: from_wild = MIMEtype.get(c.from_mime.typ+'/*')
 		except NoData: pass
 	if from_wild is None:
-		from_mime = MIMEtranslator.from_mime == from_mime
+		from_mime = MIMEadapter.from_mime == c.from_mime
 	else:
-		from_mime = or_(MIMEtranslator.from_mime == from_mime, MIMEtranslator.from_mime == from_wild)
+		from_mime = or_(MIMEadapter.from_mime == c.from_mime, MIMEadapter.from_mime == from_wild)
 
 	to_wild = None
-	if to_mime.subtyp != "*":
-		try: to_wild = MIMEtype.get(to_mime.typ+'/*')
+	if c.to_mime.subtyp != "*":
+		try: to_wild = MIMEtype.get(c.to_mime.typ+'/*')
 		except NoData: pass
 	if to_wild is None:
-		to_mime = MIMEtranslator.to_mime == to_mime
+		to_mime = MIMEadapter.to_mime == c.to_mime
 	else:
-		to_mime = or_(MIMEtranslator.to_mime == to_mime, MIMEtranslator.to_mime == to_wild)
+		to_mime = or_(MIMEadapter.to_mime == c.to_mime, MIMEadapter.to_mime == to_wild)
 	
 	if c.name:
 		if c.blueprint: ## actually the SiteBlueprint, hence the chain
@@ -177,40 +178,22 @@ def gen_q(c):
 			names = (c.name,)
 	else:
 		names = ()
-	nf = tuple((Template.name == n) for n in names)
+	nf = tuple((DBTemplate.name == n) for n in names)
 	
-	q = TemplateMatch.q.join(Template, TemplateMatch.template).filter(*names).join(MIMEadapter,Template.adapter).filter(from_mime,to_mime).join(MIMEtranslator,MIMEadapter.translator).filter_by(mime=Template.mime)
+	q = TemplateMatch.q.join(DBTemplate, TemplateMatch.template).filter(*nf).join(MIMEadapter,DBTemplate.adapter).filter(from_mime,to_mime)
 	q._from_wild=from_wild
 	q._to_wild=to_wild
 	q._names = names
 	return q
 
 def get_one_site(c,site, weight,got, q):
-
-	while site is not None:
-		if site in seen:
-			break
-		seen.add(site)
-		for t in build_q(site):
-			m = t.template.translator
-			w = m.weight+m.adapter.weight+t.weight
-			if m.from_mime is from_wild: w += 100
-			if m.to_mime is to_wild: w += 100
-			if w_min is None or w_min > w:
-				w_min = w
-				res = t
-			if trace:
-				trace(t,site,w)
-
-		if not site.parent:
-			break
-		if res is not None and isinstance(site,Site):
-			break
-		if site.parent in seen:
-			site = site.superparent or site.parent.superparent
-		else:
-			site = site.parent
-	return res
+	for tm in q.filter(TemplateMatch.parent==site):
+		t = tm.template
+		a = t.adapter
+		w = weight+tm.weight
+		if a.from_mime is q._from_wild: w += 100
+		if a.to_mime is q._to_wild: w += 100
+		got(t,w)
 
 class SiteTemplateLoader(BaseLoader):
 	"""\
@@ -254,5 +237,5 @@ class SiteTemplateLoader(BaseLoader):
 		def t_is_current():
 			#db.refresh(refresh(t),('modified',))
 			return mtime == refresh(t).modified
-		return t.data, t.oid(), t_is_current
+		return t.content, t.oid(), t_is_current
 
