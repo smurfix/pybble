@@ -13,13 +13,13 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from flask import request, url_for, flash
+from flask import request, url_for, flash, render_template
 
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from wtforms import Form, BooleanField, TextField, SelectField, validators
 
-from pybble.render import render_template, valid_obj, valid_read, valid_admin_self
+from pybble.render import valid_obj, valid_read, valid_admin_self
 from pybble.core.models import Discriminator, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE, PERM_READ
 from pybble.core.models._descr import D
 from pybble.core.models.tracking import WantTracking

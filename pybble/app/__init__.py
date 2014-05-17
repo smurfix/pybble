@@ -36,7 +36,7 @@ from ..core.models.config import ConfigVar
 from ..core.models.user import User
 from ..core.models.types import MIMEtranslator
 from ..manager import Manager,Command
-from ..render import ContentData
+from ..render import ContentData,get_context
 from ..blueprint import load_app_blueprints
 
 logger = logging.getLogger('pybble.app')
@@ -130,6 +130,7 @@ class BaseApp(WrapperApp,Flask):
 
 		self.before_request(self._setup_site)
 		self.before_request(self._setup_user)
+		self.context_processor(get_context)
 	
 	def _setup_site(self, **kw):
 		if current_app.site is None:
@@ -291,7 +292,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 	@app.url_value_preprocessor
 	def bp_url_value_preprocessor(endpoint, values):
 		if values:
-			request.bp = values.pop('bp',None)
+			request.bp = refresh(values.pop('bp',None))
 
 	init_db(app)
 	return app

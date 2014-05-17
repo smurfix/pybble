@@ -13,14 +13,14 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from flask import request, url_for, flash
+from flask import request, url_for, flash, render_template
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from wtforms import Form, BooleanField, TextField, TextAreaField, \
 	SelectField, PasswordField, HiddenField, validators
 from wtforms.validators import ValidationError
 
-from pybble.render import render_template, render_my_template
+from pybble.render import render_my_template
 from pybble.core.db import db,NoData
 from pybble.core.models import TM_DETAIL_PAGE
 from pybble.core.models.site import Site

@@ -56,14 +56,13 @@ class BaseTranslator(object):
 		self.env = current_app.translators[db_template.adapter.translator.name]
 		self.db_template = db_template
 
-	def __call__(self, c, **params):
+	def __call__(self, c, params):
 		"""\
 			Run this template.
 			"""
-		params['c'] = c
 		current_app.update_template_context(params)
-		c.content = self.template.render(**params)
-		c.to_mime = self.db_template.adapter.to_mime
+		c.content = self.template.render(params)
+		c.from_mime = self.db_template.adapter.to_mime
 		return c
 
 	@staticmethod

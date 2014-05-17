@@ -15,7 +15,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from datetime import datetime
 
-from flask import request, url_for, flash
+from flask import request, url_for, flash, render_template
 
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
@@ -26,7 +26,7 @@ from wtforms.validators import ValidationError
 from pybble.core.db import db,NoData
 from pybble.core.session import logged_in
 from pybble.utils import random_string
-from pybble.render import render_template, valid_obj
+from pybble.render import valid_obj
 from pybble.core.models.template import Template, TemplateMatch
 from pybble.core.models import Discriminator, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE
 from pybble.core.models.user import Permission, User

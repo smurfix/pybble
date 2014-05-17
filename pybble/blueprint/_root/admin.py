@@ -13,8 +13,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from flask import request
-from pybble.render import render_template
+from flask import request, render_template
 from pybble.core.models import obj_get
 from pybble.core.models.template import Template
 from pybble.core.db import db

@@ -19,7 +19,6 @@ This module contains a few dummy URLs for testing.
 
 from pybble.blueprint import BaseBlueprint
 from flask import render_template, abort, request
-from pybble.render import render_template as pybble_render_template
 from jinja2 import TemplateNotFound
 from pybble.core.route import Exposer
 expose = Exposer()
@@ -49,22 +48,4 @@ def test_green():
 def test_blue():
 	"""Fetch template by SiteBlueprint name"""
 	return render_template('BlueTest/blue.html')
-
-@expose('/p/red')
-def test_p_red():
-	return "This is Red Color"
-
-@expose('/p/yellow')
-def test_p_yellow():
-	return "This is %s Color"%(request.bp.config['color'],)
-
-@expose('/p/green')
-def test_p_green():
-	"""Fetch template by blueprint name"""
-	return pybble_render_template('_test/green.haml')
-
-@expose('/p/blue')
-def test_p_blue():
-	"""Fetch template by SiteBlueprint name"""
-	return pybble_render_template('BlueTest/blue.html')
 

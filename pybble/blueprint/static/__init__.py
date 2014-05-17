@@ -53,11 +53,11 @@ def serve_path(file):
 			break
 
 	if parse_etags(request.environ.get('HTTP_IF_NONE_MATCH')).contains(sf.hash):
-		r = Response("", mimetype=sf.mimetype)
+		r = Response("", mimetype=str(sf.mimetype))
 		r.status_code = 304
 		remove_entity_headers(r.headers)
 	else:
-		r = Response(sf.content, mimetype=sf.mimetype)
+		r = Response(sf.content, mimetype=str(sf.mimetype))
 	r.set_etag(sf.hash)
 	r.headers[b'Cache-Control']='public'
 	r.headers[b'Expiry']=http_date(datetime.utcnow()+timedelta(0,current_app.config.STATIC_EXPIRE))

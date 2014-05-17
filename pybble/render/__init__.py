@@ -83,12 +83,12 @@ class ContentData(object):
 	from_mime = MIMEprop('from')
 	to_mime = MIMEprop('to')
 
-	def __init__(self, obj=None, content=None, anchor=None, site=None, from_mime=None,to_mime=None, name=None, blueprint=None, **params):
+	def __init__(self, obj=None, content=None, anchor=None, site=None, from_mime=NotGiven,to_mime=NotGiven, name=None, blueprint=None, **params):
 
 		if site is None:
 			site = request.site
 
-		if from_mime is None:
+		if from_mime is NotGiven:
 			if content is None:
 				content = obj
 			if content is None:
@@ -97,7 +97,7 @@ class ContentData(object):
 				from_mime = content.mime
 			else:
 				raise RuntimeError("No source MIME type")
-		if to_mime is None:
+		if to_mime is NotGiven:
 			best = request.accept_mimetypes.best
 			if best is None: ## no Accept header sent
 				best = "text/html"
@@ -161,7 +161,7 @@ class ContentData(object):
 		return get_template(self)
 		
 	def render(self, **vars):
-		return self.template.render(self, **vars)
+		return self.template.render(self, vars)
 
 def valid_obj(form, field):
 	"""Field verifier which checks that an object ID is valid"""
@@ -219,31 +219,13 @@ def render_my_template(obj, detail=None, mimetype=NotGiven, **context):
 	c = ContentData(obj=obj,from_mime=obj.mimetype, to_mime=TM_MIME(detail))
 	return c.render(**context)
 	
-	try:
-		t = obj.get_template(detail=detail)
-	except NoData:
-		t = "missing_%d.html" % (detail,)
-	except MissingDummy:
-		t = "missing_0.html"
-
-	return render_template(t, mimetype=mimetype, **context)
-
 class TaggedMarkup(Markup):
 	success = None
 	@property
 	def text(self):
 		return self
 
-def render_template(name, mimetype=NotGiven, **context):
-	#template = current_app.jinja_env.get_template(template)
-	if mimetype is NotGiven:
-		mimetype="text/html"
-	mimetype = MIMEtype.get(mimetype)
-	from .loader import get_template
-
-	c = ContentData(name=name,to_mime=mimetype)
-	template = get_template(c)
-
+def get_context():
 	user = getattr(request,"user",None)
 	msgs = []
 	for c,m in get_flashed_messages(with_categories=True):
@@ -251,7 +233,7 @@ def render_template(name, mimetype=NotGiven, **context):
 		m.success = c
 		msgs.append(m)
 
-	context.update(
+	return dict(
 		# CURRENT_URL=request.build_absolute_uri(),
 		USER=getattr(request,"user",None),
 		MESSAGES=msgs,
@@ -259,16 +241,6 @@ def render_template(name, mimetype=NotGiven, **context):
 		CRUMBS=(user.groups+list(p.parent for p in user.all_visited()[0:20])) if user else None,
 		NOW=datetime.utcnow(),
 	)
-
-	r = template.render(c,**context)
-	if isinstance(r,Response):
-		pass
-	elif isinstance(r,ContentData):
-		r = current_app.make_response(r)
-	else:
-		assert isinstance(r,string_types)
-		r = Markup(r)
-	return r
 
 @contextfunction
 def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE, to_typ="html"):
@@ -281,9 +253,9 @@ def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE, to_typ="html"):
 	ctx["obj_deleted"] = d
 	ctx["detail"] = detail
 
-	if discr is not None:
-		ctx["sub"] = Discriminator.get(discr).mod.q.fiter_by(parent=obj).count()
-	return render_my_template(obj=obj, detail=detail, **ctx)
+	#if discr is not None:
+	#	ctx["sub"] = Discriminator.get(discr).mod.q.fiter_by(parent=obj).count()
+	return render_my_template(**ctx)
 
 @contextfunction
 def render_subline(ctx,obj):

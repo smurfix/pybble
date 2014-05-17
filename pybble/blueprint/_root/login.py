@@ -13,11 +13,10 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from flask import request, flash, current_app, url_for, session
+from flask import request, flash, current_app, url_for, session, render_template
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 
-from pybble.render import render_template
 from pybble.core.db import db,NoData
 from pybble.core.models.user import User
 from pybble.core.models.verifier import Verifier, VerifierBase

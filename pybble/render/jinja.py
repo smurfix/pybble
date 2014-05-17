@@ -13,21 +13,23 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from jinja2 import Markup, contextfunction
-from flask import request,current_app
+from jinja2 import Markup, contextfunction, BaseLoader
+from flask import request,current_app,g,get_flashed_messages,session,g,url_for
 from flask.helpers import locked_cached_property
 from flask.templating import Environment as BaseEnvironment
+from flask._compat import text_type
 
 from ..utils import AuthError
 from ..core.models import PERM, PERM_NONE, PERM_ADD, obj_get, \
-    Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, obj_get, TM_DETAIL, \
-	    TM_DETAIL_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name
+                          Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, obj_get, TM_DETAIL, \
+                          TM_DETAIL_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name
 from ..core.models._descr import D
 from ..core.models.user import access_logger
-from ..core.db import db,NoData
+from ..core.models.template import TemplateMatch, Template as DBTemplate
+from ..core.db import db,NoData, refresh
 from ..utils.diff import textDiff,textOnlyDiff
-from . import render_subpage,render_subline,render_subrss
-from .loader import SiteTemplateLoader
+from . import render_subpage,render_subline,render_subrss, ContentData
+from .loader import get_template
 
 from time import time
 
@@ -35,15 +37,25 @@ import logging
 logger = logging.getLogger('pybble.render')
 
 class Environment(BaseEnvironment):
-	"""Set up the Jinja environment"""
+	"""Set up our Jinja environment"""
 
 	def __init__(self, app):
 		super(Environment,self).__init__(app, loader=SiteTemplateLoader(app.site))
-
-		self.globals['site'] = app.site
+		self.globals.update(
+			url_for=url_for,
+			get_flashed_messages=get_flashed_messages,
+			config=app.config,
+			request=request,
+			session=session,
+			g=g,
+		)
+		# off since we'll do our own JSON handling
+		#self.filters['tojson'] = json.tojson_filter
+		# off since this needs to be app-context specific
+		#self.globals['site'] = app.site
 
 		## setup template loader
-		app.jinja_loader = self.loader = SiteTemplateLoader(app.site)
+		app.jinja_loader = self.loader
 
 		## TODO: do the same thing with static files
 
@@ -169,4 +181,48 @@ class Environment(BaseEnvironment):
 			We simply assume it is.
 			"""
 		return True
+
+class SiteTemplateLoader(BaseLoader):
+	"""\
+		This loader is used for loading named Jinja includes.
+		"""
+	def __init__(self, site):
+		self.site = site
+
+	def get_source(self, environment, template):
+		"""\
+			Find a template.
+
+			* attached to "self"
+			* if this is a site:
+			  * if the template name contains a slash,
+			    * attached to the SiteBlueprint
+			    * attached to the Blueprint
+			  * attached to the app
+			* recurse to my parent
+			"""
+
+		if isinstance(template,TemplateMatch):
+			template = template.template
+		if isinstance(template,DBTemplate):
+			mtime = template.modified
+			def t_is_current():
+					#db.refresh(refresh(t),('modified',))
+					return mtime == refresh(template).modified
+			return template
+
+		c = ContentData(site=refresh(self.site), name=text_type(template), from_mime=None,to_mime=None)
+		if current_app.debug:
+			trace = []
+			def tracer(*t):
+				trace.append(t)
+			t = get_template(c, tracer)
+			#g.context.setdefault('LOADER_TRACE',[]).append((c,trace))
+		else:
+			t = get_template(c)
+		mtime = t.modified
+		def t_is_current():
+			#db.refresh(refresh(t),('modified',))
+			return mtime == refresh(t).modified
+		return t.content, t.oid(), t_is_current
 

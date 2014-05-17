@@ -96,8 +96,8 @@ class Template(_Content, Cached, ObjectRef):
 		return res.mod(self)
 
 	@maybe_stale
-	def render(self,c,**vars):
-		return self.translator(c,**vars)
+	def render(self,c,params):
+		return self.translator(c,params)
 
 ## TemplateMatch
 
@@ -148,12 +148,9 @@ class TemplateMatch(ObjectRef):
 	def as_str(self):
 		p,s,o,d = self.pso
 		if self._rec_str or not p: return "‽"
-		k = ""
-		if self.for_discr:
-			k = " for "+self.for_discr.name
 		try:
 			self._rec_str += 1
-			return u'%s%s on %s %s shows %s' % (self.for_discr.name,k,p, "*" if self.inherit is None else "Y" if self.inherit else "N", s)
+			return u'%s on %s %s shows %s' % (self.for_discr.name if self.for_discr else "*",p, "*" if self.inherit is None else "Y" if self.inherit else "N", s)
 		finally:
 			self._rec_str -= 1
  

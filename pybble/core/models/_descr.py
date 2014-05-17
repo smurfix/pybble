@@ -88,10 +88,11 @@ class MIMEproperty(object):
 
 		t = getattr(obj,'_mimetype',None)
 		if t is None:
-			t = MIMEtype.get(self.name)
+			t = _MIMEtype.get(self.name)
 			setattr(obj,'_mimetype',t)
 			return t
 		else:
+			from ..db import refresh
 			return refresh(t)
 
 	def __set__(self, obj, value):
