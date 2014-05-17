@@ -34,7 +34,7 @@ from . import Manager,Command,Option
 
 logger = logging.getLogger('pybble.manager.populate')
 
-_metadata = re.compile('##:(\S+):(.*)\n') # re.U ?
+_metadata = re.compile('##:?(\S+) *[ :] *(.*)\n') # re.U ?
 
 content_types = [
 	## MIME type,subtype, file extension, name, description
