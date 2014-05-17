@@ -89,6 +89,7 @@ class CmdGET(PrepCommand):
 		self.add_option(Option("typ", nargs='?', action="store",help="The item's type; if missing: list types"))
 		self.add_option(Option("id", type=int, nargs='?', action="store",help="The item's ID; if missing: list entries of that type"))
 	def run(self,args, help=False, id=None,typ=None):
+		quiet = current_app._manager_quiet
 		json = current_app._manager_json
 		exp = current_app._manager_expand
 		if help or exp and json:
@@ -112,7 +113,9 @@ class CmdGET(PrepCommand):
 			data = [getsubattr(data,a) for a in args]
 			if exp is None and len(args) == 1:
 				exp = "-"
-			
+
+		if quiet:
+			return
 		cache=Cache()
 		for d in data:
 			if json:
@@ -130,6 +133,7 @@ class CmdDIR(PrepCommand):
 		super(CmdDIR,self).__init__()
 		self.add_option(Option("typ", nargs='?', action="store",help="The item's type; if missing: list types"))
 	def run(self, args, help=False, typ=None):
+		quiet = current_app._manager_quiet
 		json = current_app._manager_json
 		exp = current_app._manager_expand
 		if help:
@@ -141,6 +145,8 @@ class CmdDIR(PrepCommand):
 		else:
 			data = RESTend(json).list(typ)
 
+		if quiet:
+			return
 		for d in data:
 			if json:
 				print(encode(d))
@@ -156,12 +162,16 @@ class CmdDELETE(PrepCommand):
 		self.add_option(Option("typ", nargs='?', action="store",help="The item's type; if missing: list types"))
 		self.add_option(Option("id", type=int, nargs='?', action="store",help="The item's ID; if missing: list entries of that type"))
 	def run(self, help=False, id=None,typ=None, comment=None):
+		quiet = current_app._manager_quiet
 		json = current_app._manager_json
 		exp = current_app._manager_expand
 		if help or not id:
 			self.parser.print_help()
 			sys.exit(not help)
 		res = RESTend(json).delete(int(id),typ, comment=comment)
+
+		if quiet:
+			return
 		if json:
 			print(encode(res))
 		else:
@@ -176,14 +186,17 @@ class CmdPOST(PrepCommand):
 		self.add_option(Option("-c", "--comment", dest="comment", action="store", required=False, help="Reason for this change"))
 		self.add_option(Option("typ", nargs='?', action="store",help="The item's type"))
 	def run(self, args, typ=None,help=False,comment=None):
+		quiet = current_app._manager_quiet
 		json = current_app._manager_json
 		exp = current_app._manager_expand
 		if help or not args:
 			self.parser.print_help()
 			sys.exit(not help)
 		data = _parse(args)
-		import pdb;pdb.set_trace()
 		res = RESTend(json).post(descr=typ, comment=comment, **data)
+
+		if quiet:
+			return
 		if json:
 			print(encode(res))
 		else:
@@ -199,6 +212,7 @@ class CmdPUT(PrepCommand):
 		self.add_option(Option("typ", nargs='?', action="store",help="The item's type"))
 		self.add_option(Option("id", type=int, nargs='?', action="store",help="The item's ID"))
 	def run(self, args, typ=None,id=None,help=False,comment=None):
+		quiet = current_app._manager_quiet
 		json = current_app._manager_json
 		exp = current_app._manager_expand
 		if help or not args or not id:
@@ -206,6 +220,9 @@ class CmdPUT(PrepCommand):
 			sys.exit(not help)
 		data = _parse(args)
 		res = RESTend(json).put(id=id, descr=typ, comment=comment, **data)
+
+		if quiet:
+			return
 		if json:
 			print(encode(res))
 		else:
@@ -221,6 +238,7 @@ class CmdPATCH(PrepCommand):
 		self.add_option(Option("typ", nargs='?', action="store",help="The item's type"))
 		self.add_option(Option("id", nargs='?', action="store",help="The item's ID"))
 	def run(self, args, typ=None,id=None,help=False,comment=None):
+		quiet = current_app._manager_quiet
 		json = current_app._manager_json
 		exp = current_app._manager_expand
 		if help or not args or not id:
@@ -228,6 +246,9 @@ class CmdPATCH(PrepCommand):
 			sys.exit(not help)
 		data = _parse(args)
 		res = RESTend(json).patch(id=id, descr=typ, comment=comment, **data)
+
+		if quiet:
+			return
 		if json:
 			print(encode(res))
 		else:
@@ -240,6 +261,7 @@ class RESTManager(Manager):
 		super(RESTManager,self).__init__()
 		self.add_option("-j", "--json", dest="json", action="store_true", required=False, help="emit JSON (input is TODO)")
 		self.add_option("-x","--expand",action="append", dest="exp", help="additional detail to print")
+		self.add_option("-q","--quiet",action="store_true", dest="quiet", required=False, help="do not print anything on success")
 
 		self.add_command("get", CmdGET())
 		self.add_command("replace", CmdPUT())
@@ -248,8 +270,10 @@ class RESTManager(Manager):
 		self.add_command("delete", CmdDELETE())
 		self.add_command("list", CmdDIR())
 
-	def __call__(self, app, json=False, exp=None):
+	def __call__(self, app, json=False, exp=None, quiet=False):
+		app._manager_quiet = quiet
 		app._manager_json = json
+		app._manager_quiet = quiet
 		if exp:
 			exp = ",".join(exp)
 		app._manager_expand = exp
