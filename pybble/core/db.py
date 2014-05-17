@@ -234,7 +234,7 @@ def check_unique(cls, *vars):
 		if obj.id is not None:
 			q.append(cls.id != obj.id)
 		if cls.q.filter(*q).count() > 0:
-			raise ManyDataExc("Duplicate:{}:{}".format(",".join(vars), str(obj)))
+			raise ManyDataExc("Duplicate:{}:{} = {}".format(",".join(vars), str(obj), str(list(cls.q.filter(*q).all()))))
 	event.listen(cls,"before_insert",check)
 	event.listen(cls,"before_update",check)
 

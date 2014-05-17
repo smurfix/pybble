@@ -66,6 +66,11 @@ def show_(k,v,expand=None,cache=None):
 	if seen:
 		expand=None
 
+	items="items"
+	if isinstance(v,string_types) and '\n' in v:
+		v = v.split('\n')
+		items = "lines"
+
 	if expand is not None:
 		if hasattr(v,'_dump'):
 			qref(k,v, seen)
@@ -101,7 +106,7 @@ def show_(k,v,expand=None,cache=None):
 			return
 
 	if isinstance(v,(list,tuple)):
-		v = "[%d items]" % len(v)
+		v = "[%d %s]" % (len(v),items)
 	elif isinstance(v,dict):
 		v = "{%d entries}" % len(v)
 	elif v is not None:

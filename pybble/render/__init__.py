@@ -21,7 +21,7 @@ from flask._compat import string_types
 from ..utils import random_string, AuthError, NotGiven
 from ..core.models import PERM, PERM_NONE, PERM_ADD, obj_get, \
 	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, obj_get, TM_DETAIL, \
-	TM_DETAIL_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_MIME, MissingDummy
+	TM_DETAIL_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_MIME, TM_DETAIL_name, MissingDummy
 from ..core.models._descr import D
 from ..core.models.user import Permission
 from ..core.models.site import SiteBlueprint,Blueprint
@@ -37,6 +37,29 @@ import sys,os
 
 import logging
 logger = logging.getLogger('pybble.render')
+
+class MIMEprop(object):
+	"""\
+		A referral to a MIME property. Use as:
+
+			class Whatever(Object):
+				mimetype = MIMEprop()
+		"""
+	def __init__(self, name):
+		self.name = '_'+name+'_mime'
+
+	def __get__(self, obj, type=None):
+		global _MIMEtype
+		if obj is None:
+			return self
+		return getattr(obj,self.name)
+
+	def __set__(self, obj, value):
+		if value is not None:
+			value = MIMEtype.get(value)
+		setattr(obj,self.name,value)
+	def __delete__(self, obj):
+		setattr(obj,self.name,None)
 
 class ContentData(object):
 	"""\
@@ -57,6 +80,9 @@ class ContentData(object):
 			`site`: the domain we're looking at. A template search proceeds from the `anchor` through its `parent` pointer, but when encountering `site`, the process is interrupted while the blueprint is examined.
 		
 		"""
+	from_mime = MIMEprop('from')
+	to_mime = MIMEprop('to')
+
 	def __init__(self, obj=None, content=None, anchor=None, site=None, from_mime=None,to_mime=None, name=None, blueprint=None, **params):
 
 		if site is None:

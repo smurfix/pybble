@@ -75,6 +75,7 @@ class MIMEproperty(object):
 		self.name = name
 
 	def __get__(self, obj, type=None):
+		global _MIMEtype
 		if obj is None:
 			return self
 

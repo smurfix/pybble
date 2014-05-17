@@ -116,9 +116,15 @@ class TemplateMatch(ObjectRef):
 			cls.obj = cls.parent
 		if not hasattr(cls,'template'):
 			cls.template = cls.superparent
-		check_unique(cls, "obj template inherit")
+		check_unique(cls, "obj template inherit for_discr")
 		no_update(cls.obj)
 		no_update(cls.template)
+
+		def _ref_descr(mapper, connection, obj):
+			if obj.inherit is False and obj.parent is not None:
+				assert obj.for_discr == obj.parent.discr, (obj.for_discr,obj.parent.discr)
+		event.listen(cls, 'before_insert', _ref_descr)
+		event.listen(cls, 'before_update', _ref_descr)
 
 	inherit = Column(Boolean, nullable=True)
 	weight = Column(Integer, nullable=False, default=0, doc="preference when there are conflicts. Less is better.")
@@ -126,15 +132,15 @@ class TemplateMatch(ObjectRef):
 	from_mime = property(lambda s:s.template.from_mime)
 	to_mime = property(lambda s:s.template.to_mime)
 
-	def __init__(self, obj, detail, template, for_discr=None, **kw):
+	for_discr_id = Column('discr',Integer, ForeignKey(Discriminator.id), nullable=True)
+	for_discr = relationship(Discriminator, primaryjoin=for_discr_id==Discriminator.id)
+
+	def __init__(self, obj, template, for_discr=None, **kw):
 		assert "discr" not in kw
-		if for_discr is None:
-			for_discr = obj.discr
-		else:
+		if for_discr is not None:
 			for_discr = Discriminator.get(for_discr)
 		super(TemplateMatch,self).__init__(**kw)
 		self.for_discr = for_discr
-		self.detail = detail
 		self.template = template
 		self.obj = obj
 	
@@ -142,9 +148,12 @@ class TemplateMatch(ObjectRef):
 	def as_str(self):
 		p,s,o,d = self.pso
 		if self._rec_str or not p: return "‽"
+		k = ""
+		if self.for_discr:
+			k = " for "+self.for_discr.name
 		try:
 			self._rec_str += 1
-			return u'%s of %s on %s %s shows %s' % (TM_DETAIL[self.detail],self.for_discr.name,p, "*" if self.inherit is None else "Y" if self.inherit else "N", s)
+			return u'%s%s on %s %s shows %s' % (self.for_discr.name,k,p, "*" if self.inherit is None else "Y" if self.inherit else "N", s)
 		finally:
 			self._rec_str -= 1
  
@@ -152,9 +161,4 @@ class TemplateMatch(ObjectRef):
 	def data(self):
 		return self.template.data
 
-def _ref_descr(mapper, connection, obj):
-	if obj.inherit is False and obj.parent is not None:
-		assert obj.for_discr == obj.parent.discr
-event.listen(TemplateMatch, 'before_insert', _ref_descr)
-event.listen(TemplateMatch, 'before_update', _ref_descr)
 

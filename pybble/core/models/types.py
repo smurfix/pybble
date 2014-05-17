@@ -93,14 +93,17 @@ class MIMEtype(Loadable, ObjectRef):
 				try:
 					return cls.q.get(or_(cls.name==typ, cls.ext==typ))
 				except NoData:
-					return MIMEext.q.get_by(ext=typ).mime
+					try:
+						return MIMEext.q.get_by(ext=typ).mime
+					except NoData:
+						raise KeyError("Could not find MIME type "+typ)
 		else:
 			subtyp = text_type(subtyp)
 		try:
 			return cls.q.get_by(typ=typ,subtyp=subtyp)
 		except NoData:
 			if not add:
-				raise
+				raise KeyError("Could not find MIME type "+typ+'/'+subtyp)
 			return cls(typ=typ,subtyp=subtyp)
 
 	@property

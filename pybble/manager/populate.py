@@ -81,7 +81,7 @@ class PopulateCommand(Command):
 	def main(self,app, force=False):
 		from ..core.models import Discriminator
 		from ..core.models import PERM_ADMIN,PERM_READ,PERM_ADD
-		from ..core.models import TM_DETAIL_SUBPAGE,TM_DETAIL_DETAIL,TM_DETAIL_HIERARCHY,TM_DETAIL_RSS,TM_DETAIL_STRING,TM_DETAIL_EMAIL,TM_DETAIL_SNIPPET,TM_DETAIL_PREVIEW
+		from ..core.models import TM_DETAIL_SUBPAGE,TM_DETAIL_DETAIL,TM_DETAIL_HIERARCHY,TM_DETAIL_RSS,TM_DETAIL_STRING,TM_DETAIL_EMAIL,TM_DETAIL_SNIPPET,TM_DETAIL_PREVIEW,TM_DETAIL_id
 		from ..core.models._descr import D
 		from ..core.models.site import Site
 		from ..core.models.storage import Storage
@@ -474,7 +474,7 @@ class PopulateCommand(Command):
 				if ov is None:
 					if v == "-":
 						v = None
-					if '/' in v:
+					elif '/' in v:
 						v = MIMEtype.get(v)
 					elif v in ("True False 0 1 None".split()):
 						v = eval(v)
@@ -489,6 +489,7 @@ class PopulateCommand(Command):
 			if "src" not in hdr: hdr.src = "pybble/_empty"
 			if "dst" not in hdr: hdr.dst = "html/*"
 			if "named" not in hdr: hdr.named = True
+			if "dsc" not in hdr: hdr.dsc = None
 			if "typ" not in hdr:
 				try:
 					dot = filepath.rindex(".")
@@ -500,6 +501,7 @@ class PopulateCommand(Command):
 			hdr_src = MIMEtype.get(hdr.src)
 			hdr_dst = MIMEtype.get(hdr.dst)
 			hdr_typ = MIMEtype.get(hdr.typ)
+			hdr_dsc = TM_DETAIL_id(hdr.dsc) if hdr.dsc is not None else None
 			n="{} from {} to {}".format(hdr_typ,hdr_src,hdr_dst)
 
 			try:
@@ -528,7 +530,7 @@ class PopulateCommand(Command):
 						t.adapter = a
 						chg = 1
 
-				if t.data != data:
+				if t.content != data:
 					logger.warn(u"Template {} ‘{}’ differs.".format(t.id,filepath))
 					if force:
 						t.data = data
@@ -547,9 +549,9 @@ class PopulateCommand(Command):
 					logger.warn("Template {} ‘{}’: I don't know how to attach to {}".format(t.id, filepath, m))
 
 				try:
-					tm = TemplateMatch.q.filter_by(template=t,obj=m).filter(or_(TemplateMatch.inherit == None,TemplateMatch.inherit==inherit)).one()
+					tm = TemplateMatch.q.filter_by(template=t,obj=m,for_discr=hdr_dsc).filter(or_(TemplateMatch.inherit == None,TemplateMatch.inherit==inherit)).one()
 				except NoData:
-					tm = TemplateMatch(template=t,obj=m, )
+					tm = TemplateMatch(template=t,obj=m,for_discr=hdr_dsc)
 
 			db.commit()
 			return added

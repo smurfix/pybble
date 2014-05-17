@@ -47,16 +47,20 @@ except ImportError:
 
 class TM_DETAIL(dict):
 	_mime = {}
+	_name = {}
 	def _add(self,id,name, mime=None):
 		self[id] = name
 		globals()["TM_DETAIL_"+name.upper()] = id
 		if mime is None:
 			mime="html/"+name.lower()
-		self._mime[name]=mime
+		self._mime[id]=mime
+		self._name[name.lower()]=id
 def TM_DETAIL_name(id):
 	return TM_DETAIL[int(id)]
+def TM_DETAIL_id(name):
+	return TM_DETAIL._name[name.lower()]
 def TM_MIME(id):
-	return TM_DETAIL._mime[id]
+	return TM_DETAIL._mime[int(id)]
 TM_DETAIL=TM_DETAIL()
 
 for _x,_y,_z in (
@@ -688,7 +692,7 @@ class ObjectMeta(type(Object)):
 				return init
 			setattr(cls,'__init__', wrap_init(dct.get('__init__',cls.__init__)))
 
-			setattr(cls,'mimetype', MIMEproperty("pybble+obj/"+name.lower()))
+			setattr(cls,'mimetype', MIMEproperty("pybble/"+name.lower()))
 	
 			@event.listens_for(cls, 'load')
 			def receive_load(target, context):
