@@ -1,6 +1,6 @@
 ##src pybble/usertracker
 ##dst message/rfc822
-##typ text/jinja
+##typ template/jinja
 ##named 1
 ##inherit -
 ##match root

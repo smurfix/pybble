@@ -129,7 +129,7 @@ the file; anything not in this format terminates parsing.
 
 	##src pybble/site
 	##dst html/subpage
-	##typ text/jinja
+	##typ template/jinja
 	##named 0
 	##inherit -
 	##match root

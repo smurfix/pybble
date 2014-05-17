@@ -1,6 +1,6 @@
 ##src pybble/site
 ##dst application/rss+xml
-##typ text/jinja
+##typ template/jinja
 ##named 1
 ##inherit -
 ##match root

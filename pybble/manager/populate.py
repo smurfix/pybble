@@ -48,13 +48,24 @@ content_types = [
     ('image','gif','gif',"GIF image",None),
     ('application','binary','bin',"raw data",None),
     ('application','pdf','pdf',"PDF document",None),
+    ('application','rss+xml','rss',"RSS feed",None),
     ('text','xml','xml',"XML data",None),
+    ('message','rfc822',None,"Email message",None),
 
     ('pybble','_empty',None,"no data",None),
 
     ('pybble','*',None,"any pybble data",None),
     ('html','*',None,"any html data",None),
     ('text','*',None,"any text data",None),
+
+    ('html','subpage',None,"a (main) part of a webpage",None),
+    ('html','string',None,"a short string describing an object",None),
+    ('html','detail',None,"a tabular view of an object's internal state",None),
+    ('html','snippet',None,"a fragment for the explore view",None),
+    ('html','hierarchy',None,"a fragment for hierarchical view within a page",None),
+    ('html','hierarchy',None,"a fragment for hierarchical view within a page",None),
+    ('html','preview',None,"a view for previewing",None),
+    ('xml','rss',None,"a fragment for the RSS feed",None),
 ]
 
 class PopulateCommand(Command):
