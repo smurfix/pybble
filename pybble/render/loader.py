@@ -65,6 +65,10 @@ def get_template(c, trace=None):
 
 		TODO: Cache all of this. Heavily.
 		"""
+	if current_app.debug:
+		from pprint import pformat
+		TQ = pformat(c.__dict__)
+
 	q = gen_q(c)
 	site = c.anchor
 	seen = set()
@@ -178,9 +182,13 @@ def gen_q(c):
 			names = (c.name,)
 	else:
 		names = ()
+	
+	df = TemplateMatch.for_discr==None
+	if c.obj:
+		df = or_(TemplateMatch.for_discr==obj.discr, df)
 	nf = tuple((DBTemplate.name == n) for n in names)
 	
-	q = TemplateMatch.q.join(DBTemplate, TemplateMatch.template).filter(*nf).join(MIMEadapter,DBTemplate.adapter).filter(from_mime,to_mime)
+	q = TemplateMatch.q.filter(df).join(DBTemplate, TemplateMatch.template).filter(*nf).join(MIMEadapter,DBTemplate.adapter).filter(from_mime,to_mime)
 	q._from_wild=from_wild
 	q._to_wild=to_wild
 	q._names = names

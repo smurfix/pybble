@@ -146,7 +146,7 @@ class SubdomainDispatcher(object):
 				# TODO: this is not actually enforced anywhere
 
 			if not app.config.DEBUG_WEB:
-				app = DebuggedApplication(app)
+				app = DebuggedApplication(app, evalex=True)
 			return app
 
 	def __call__(self, environ, start_response):
