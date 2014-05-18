@@ -284,7 +284,8 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 					site = Site.q.get(Site.parent==None,Site.owner!=None)
 				except NoData:
 					raise RuntimeError("I cannot find your root site!")
-
+				except ManyData:
+					raise RuntimeError("You seem to have more than one root. Fix that (with mgr -S): "+"".join(x for x in Site.q.filter(Site.parent==None,Site.owner!=None)))
 			else:
 				try:
 					try:
@@ -293,8 +294,8 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 						site = Site.q.get_by(name=text_type(site))
 				except NoData:
 					raise RuntimeError("The site ‘%s’ does not exist."%(site,))
-			except ManyData:
-				raise RuntimeError("The site name ‘%s’ is not unique: %s"%(site," ".join(x.domain for x in Site.q.filter_by(name=name=text_type(site)))))
+				except ManyData:
+					raise RuntimeError("The site name ‘%s’ is not unique: %s"%(site," ".join(x.domain for x in Site.q.filter_by(name=text_type(site)))))
 
 		if site is not None:
 			site = refresh(site)
