@@ -279,13 +279,22 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 		if site is None:
 			pass
 		elif not isinstance(site,Site):
-			try:
-				site = Site.q.get_by(domain=text_type(site))
-			except NoData:
+			if site == ROOT_SITE_NAME:
 				try:
-					site = Site.q.get_by(name=text_type(site))
+					site = Site.q.get(Site.parent==None,Site.owner!=None)
 				except NoData:
-					raise RuntimeError("The site '%s' does not exist yet."%(site,))
+					raise RuntimeError("I cannot find your root site!")
+
+			else:
+				try:
+					try:
+						site = Site.q.get_by(domain=text_type(site))
+					except NoData:
+						site = Site.q.get_by(name=text_type(site))
+				except NoData:
+					raise RuntimeError("The site ‘%s’ does not exist."%(site,))
+			except ManyData:
+				raise RuntimeError("The site name ‘%s’ is not unique: %s"%(site," ".join(x.domain for x in Site.q.filter_by(name=name=text_type(site)))))
 
 		if site is not None:
 			site = refresh(site)

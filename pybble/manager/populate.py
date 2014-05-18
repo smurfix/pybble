@@ -148,7 +148,10 @@ class PopulateCommand(Command):
 
 		## main site
 		try:
-			root = Site.q.get_by(name=ROOT_SITE_NAME)
+			try:
+				root = Site.q.get(Site.parent==None,Site.owner!=None)
+			except NoData:
+				root = Site.q.get(name=ROOT_SITE_NAME)
 		except NoData:
 			root = Site(domain="localhost", name=ROOT_SITE_NAME)
 			logger.debug("The root site has been created.")
