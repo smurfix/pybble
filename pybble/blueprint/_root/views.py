@@ -80,7 +80,7 @@ def view_tree(oid=None):
 	return render_template('tree.html', obj=obj, obj_parent=p, obj_superparent=s, obj_owner=o, obj_deleted=d,
 	                                    title_trace=title_trace)
 
-@expose('/edit/<oid>')
+@expose('/edit/<oid>', methods=('POST','GET'))
 def edit_oid(oid):
 	obj=obj_get(oid)
 
@@ -92,9 +92,9 @@ def edit_oid(oid):
 		request.user.will_write(obj)
 	return v(obj)
 
-@expose('/new/<oid>')
-@expose('/new/<oid>/<discr>')
-@expose('/new/<oid>/<discr>/<name>')
+@expose('/new/<oid>', methods=('POST','GET'))
+@expose('/new/<oid>/<discr>', methods=('POST','GET'))
+@expose('/new/<oid>/<discr>/<name>', methods=('POST','GET'))
 def new_oid(oid, discr=None, name=None):
 	obj=obj_get(oid)
 	if discr is None:
@@ -135,7 +135,7 @@ class DeleteForm(Form):
 	next = HiddenField("next URL")
 	comment = TextField('Grund', [validators.required(u"Grund der Löschung?"), validators.length(min=3, max=200)])
 
-@expose('/delete/<oid>')
+@expose('/delete/<oid>', methods=('POST','GET'))
 def delete_oid(oid):
 	obj=obj_get(oid)
 	request.user.will_delete(obj)
