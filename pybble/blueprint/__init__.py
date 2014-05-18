@@ -78,6 +78,7 @@ class BaseBlueprint(FlaskBlueprint):
 			config = getattr(request, 'bp', None)
 			if config is not None:
 				values.setdefault('bp', config)
+		bp_url_defaults._no_urlfor = True
 
 	def add_url_rule(self, rule, endpoint=None, view_func=None, **options):
 		"""Like :meth:`Flask.add_url_rule` but for a blueprint.  The endpoint for

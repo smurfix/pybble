@@ -150,7 +150,8 @@ class BaseApp(WrapperApp,Flask):
 			bp = endpoint.split('.', 1)[0]
 			funcs = chain(funcs, self.url_default_functions.get(bp, ()))
 		for func in funcs:
-			func(endpoint, values)
+			if not getattr(func,'_no_urlfor',False):
+				func(endpoint, values)
 
 	def _setup_user(self, **kw):
 		## TODO convert to Flask.login
