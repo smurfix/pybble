@@ -65,6 +65,7 @@ content_types = [
     ('html','hierarchy',None,"a fragment for hierarchical view within a page",None),
     ('html','hierarchy',None,"a fragment for hierarchical view within a page",None),
     ('html','preview',None,"a view for previewing",None),
+    ('html','edit',None,"the form for editing",None),
     ('xml','rss',None,"a fragment for the RSS feed",None),
 ]
 
@@ -455,13 +456,13 @@ class PopulateCommand(Command):
 		logger.debug("{} files changed.".format(added))
 
 		## templates
-		def read_template(parent, filepath,webpath):
+		def read_template(parent, filepath,webpath, inferred=""):
 			extmap = { 'haml':'template/haml', 'html':'template/jinja' }
 
 			added = 0
 			with file(filepath) as f:
 				try:
-					data = f.read().decode("utf-8")
+					data = inferred + f.read().decode("utf-8")
 				except Exception:
 					print("While reading",filepath,file=sys.stderr)
 					raise
@@ -560,12 +561,12 @@ class PopulateCommand(Command):
 				try:
 					tm = TemplateMatch.q.filter_by(template=t,obj=m,for_discr=hdr_dsc).filter(or_(TemplateMatch.inherit == None,TemplateMatch.inherit==inherit)).one()
 				except NoData:
-					tm = TemplateMatch(template=t,obj=m,for_discr=hdr_dsc)
+					tm = TemplateMatch(template=t,obj=m,for_discr=hdr_dsc,inherit=inherit)
 
 			db.commit()
 			return added
 
-		def find_templates(parent, dirpath,webpath=""):
+		def find_templates(parent, dirpath,webpath="",mapper=""):
 			if not os.path.isdir(dirpath):
 				return 0
 
@@ -575,13 +576,45 @@ class PopulateCommand(Command):
 					continue
 				newdirpath = os.path.join(dirpath,fn)
 				newwebpath = "{}/{}".format(webpath,fn) if webpath else fn
+				m=mapper
 				if os.path.isdir(newdirpath):
-					added += find_templates(parent, newdirpath,newwebpath)
+					if m: m=m.do_dir(fn)
+					added += find_templates(parent, newdirpath,newwebpath,m)
 				else:
-					added += read_template(parent, newdirpath,newwebpath)
+					if m: m=m.do_file(fn)
+					added += read_template(parent, newdirpath,newwebpath,m)
 			return added
 
-		added = find_templates(root, TEMPLATE_PATH)
+		class M(object):
+			def __init__(self,path=()):
+				self.path=path
+			def do_dir(self,fn):
+				return M(self.path+(fn,))
+			def do_file(self,fn):
+				if len(self.path) != 1: return ""
+				fn,ext = fn.split('.',1)
+				if ext == "html": ext = "jinja"
+				elif ext != "haml": return ""
+				p = self.path[0]
+				if p == "details": p = "html/detail"
+				elif p == "email": p = "text/plain"
+				elif p == "linktext": p = "html/string"
+				elif p == "rss": p = "xml/rss"
+				elif p == "preview": p = "html/preview"
+				elif p == "hierarchy": p = "html/hierarchy"
+				elif p == "snippet": p = "html/snippet"
+				elif p == "edit": p = "html/edit"
+				else: return ""
+				return """\
+##src pybble/{}
+##dst {}
+##typ template/{}
+##named 1
+##inherit -
+##match root
+##weight 0
+""".format(fn,p,ext)
+		added = find_templates(root, TEMPLATE_PATH,mapper=M())
 		logger.debug("{} templates changed.".format(added))
 
 		## Set default variables
