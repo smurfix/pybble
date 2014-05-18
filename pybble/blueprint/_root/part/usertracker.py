@@ -20,7 +20,6 @@ from pybble.core.db import db
 from .._base import expose
 expose = expose.sub("part.usertracker")
 
-from storm.locals import And,Desc
 from datetime import datetime,timedelta
 from time import time
 
@@ -35,12 +34,9 @@ def view_all():
 	last = session.get("chg_",None)
 	if last and time()-last[0] < 2*60:
 		pass
-#		if last[1]:
-#			f = And(f,UserTracker.tracker.timestamp < last[1])
 	else:
 		session["chg_"] = (int(time()), user.feed_read)
 		user.feed_read = datetime.utcnow()
 
-	return render_template("changelist.html",
-	                       changes=db.filter(UserTracker, f).order_by(Desc(UserTracker.id))[0:30])
+	return render_template("changelist.html", changes=UserTracker.q.filter(f).order_by(UserTracker.id.desc())[0:30])
 	
