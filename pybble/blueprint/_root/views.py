@@ -258,7 +258,7 @@ def last_visited():
 	return render_template("last_visited.html", q=request.user.all_visited(), title_trace=[u"zuletzt besucht"])
 	
 
-@expose('/snippet/<t>')
+@expose('/snippet/<t>',methods=("GET","POST"))
 def view_snippet(t):
 	oid = request.values["dir"]
 	if '/' in oid:
@@ -286,7 +286,7 @@ def view_snippet(t):
 			sub = db.filter_by(c, parent=obj)
 			return render_my_template(obj, detail=TM_DETAIL_SNIPPET, discr=t, sub=sub)
 
-@expose('/snippet/<t>/<oid>')
+@expose('/snippet/<t>/<oid>',methods=("GET","POST"))
 def view_snippet1(t, oid):
 	obj = obj_get(oid)
 	if t == "parent":
@@ -294,7 +294,7 @@ def view_snippet1(t, oid):
 	elif t == "superparent":
 		sub = obj.discr_superchildren
 	elif t == "owner":
-		sub = obj.discr_slaves
+		sub = obj.discr_owned
 	elif t == "hierarchy":
 		return render_my_template(obj, detail=TM_DETAIL_HIERARCHY)
 		
@@ -303,19 +303,19 @@ def view_snippet1(t, oid):
 
 	return render_template("snippet1.html", obj=obj, t=t, sub=list(sub))
 
-@expose('/snippet/<t>/<oid>/<discr>')
+@expose('/snippet/<t>/<oid>/<discr>',methods=("GET","POST"))
 def view_snippet2(t, oid, discr):
 	c = obj_class(discr)
 	obj = obj_get(oid)
 	if t == "parent":
-		sub = db.filter_by(c, parent=obj)
+		sub = c.q.filter_by(parent=obj)
 		what = "has_children"
 	elif t == "superparent":
-		sub = db.filter_by(c, superparent=obj)
+		sub = c.q.filter_by(superparent=obj)
 		what = "has_superchildren"
 	elif t == "owner":
-		sub = db.filter_by(c, owner=obj)
-		what = "has_slaves"
+		sub = c.q.filter_by(owner=obj)
+		what = "has_owned"
 	else:
 		raise NotFound()
 	return render_template("snippet2.html", obj=obj, t=t, discr=discr, sub=sub, what=what, cls=c, count=sub.count())

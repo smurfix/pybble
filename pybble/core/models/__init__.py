@@ -163,6 +163,10 @@ class Discriminator(Loadable, Dumpable, Base):
 	def __repr__(self):
 		return '<D:%s %s>' % (self.id, self.name)
 
+	@property
+	def display_name(self):
+		return self.name
+
 	@cached_property
 	def mimetype(self):
 		from .types import MIMEtype
@@ -210,6 +214,13 @@ class Discriminator(Loadable, Dumpable, Base):
 			return discr
 		else:
 			return discr._discriminator
+
+	def cls_discr(self):
+		"Compatibility nonsense"
+		return self.id
+	def cls_name(self):
+		"Compatibility nonsense"
+		return self.name
 
 @register_object
 class _discr(object):
