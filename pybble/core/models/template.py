@@ -28,7 +28,7 @@ from .. import config
 from ..db import Base, Column, no_update,check_unique, db, refresh, maybe_stale
 from . import Object,ObjectRef, TM_DETAIL, Discriminator
 from ._descr import D
-from .types import MIMEtype
+from .types import MIMEtype,MIMEadapter,MIMEtranslator
 from ._content import Cached,_Content
 
 ## Template
@@ -87,7 +87,7 @@ class Template(_Content, Cached, ObjectRef):
 
 	@property
 	def as_str(self):
-		return self.name+": "+str(self.adapter.translator.mime) if self.adapter and self.adapter.translator else "‽"
+		return self.name+": "+(str(self.adapter.translator.mime) if isinstance(self.adapter,MIMEadapter) and isinstance(self.adapter.translator,MIMEtranslator) else "‽")
 
 	@property
 	@maybe_stale
