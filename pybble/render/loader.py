@@ -111,6 +111,8 @@ def get_template(c, trace=None):
 			weight += 1
 
 	if not res[0]:
+		if current_app.config.DEBUG_WEB:
+			import pdb;pdb.set_trace()
 		raise TemplateNotFound(c)
 	return res[0]
 
