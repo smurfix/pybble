@@ -48,7 +48,8 @@ class Storage(ObjectRef):
 		self.name = unicode(name)
 		self.path = unicode(path)
 		self.url = unicode(url)
-		self.superparent = request.site
+		if self.superparent is None:
+			self.superparent = request.site
 		try: os.makedirs(path)
 		except OSError: pass
 

@@ -172,12 +172,14 @@ class PopulateCommand(Command):
 
 		## storage
 		try:
-			st = Storage.q.get_by(name=u"Pybble")
-		except NoData:
 			try:
-				st = Storage.q.get_by(name=u"Test")
+				st = Storage.q.get_by(name=u"Pybble")
 			except NoData:
-				st = Storage("Test",app.config.MEDIA_PATH,"localhost:5000/static")
+				st = Storage.q.get_by(name=u"Test")
+		except NoData:
+			st = Storage("Test",app.config.MEDIA_PATH,"localhost:5000/static")
+			if Storage.q.filter_by(superparent=root,default=True).count() == 0:
+				st.default = True
 		else:
 			st.superparent = root
 		db.commit()

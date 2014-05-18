@@ -35,6 +35,8 @@ from werkzeug.utils import cached_property
 from jinja2.utils import Markup
 from copy import copy
 
+Storage=None ## imported if necessary
+
 """Max ID of built-in tables; the rest are extensions"""
 MAX_BUILTIN = 42
 
@@ -647,13 +649,16 @@ class Object(Dumpable, Base):
 
 	@property
 	def default_storage(self):
-		"""Some objects may have a 'storage' attribute."""
-		s = getattr(self,"storage",None)
-		if s:
-			return s
-		if self.parent is None:
-			return None
-		return self.parent.default_storage
+		global Storage
+		if Storage is None:
+			from .storage import Storage
+		try:
+			s = Storage.q.get_by(default=True,superparent=self)
+		except NoData:
+			if site.parent is None:
+				return 
+			return self.parent.default_storage
+		return s
 
 ## TODO: does not work yet
 @event.listens_for(Object.id, 'set')
