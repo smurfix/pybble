@@ -131,18 +131,21 @@ the file; anything not in this format terminates parsing.
 	##dst html/subpage
 	##typ template/jinja
 	##named 0
+	##weight 10000
 	##inherit -
 	##match root
 
-This tells Pybble that this is an unnamed template which translates your site
-to an HTML pagelet, using the Jinja template engine, and that it shall be
-attached to the system's root.
+This tells Pybble that this is an unnamed default template which translates
+your site to an HTML pagelet, using the Jinja template engine, and that it
+shall be attached to the system's root.
 
 `src `dst` and `typ` are MIME types; the source may use a wildcad subtype.
 `named` is a Boolean denoting that the template shall be findable by name.
 `match` is the datum the template is to be attached to and can be given
 more than once, though so far the only recognized values are "root" and
 "superuser".
+`weight` is the template's priority. Lower is better, so this example
+serves as a default page.
 `inherit` defaults to "-" alias None; it affects the following matches and
 says whether the template applies to the attached to the destination only
 (False), to all of its children (True), or both (None).

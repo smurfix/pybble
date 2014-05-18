@@ -478,6 +478,8 @@ class PopulateCommand(Command):
 						v = MIMEtype.get(v)
 					elif v in ("True False 0 1 None".split()):
 						v = eval(v)
+					elif k == "weight":
+						v = int(v)
 					hdr[k] = v
 				elif k == "match":
 					hdr[k].append((v,hdr.inherit))
@@ -490,6 +492,7 @@ class PopulateCommand(Command):
 			if "dst" not in hdr: hdr.dst = "html/*"
 			if "named" not in hdr: hdr.named = True
 			if "dsc" not in hdr: hdr.dsc = None
+			if "weight" not in hdr: hdr.weight = 0
 			if "typ" not in hdr:
 				try:
 					dot = filepath.rindex(".")
@@ -515,15 +518,21 @@ class PopulateCommand(Command):
 				a = MIMEadapter(from_mime=hdr_src, to_mime=hdr_dst, translator=tr, name=n)
 
 			try:
-				t = Template.q.get_by(source=filepath, parent=parent, adapter=a)
+				t = Template.q.get_by(source=filepath)
 			except NoData:
-				t = Template(source=filepath, data=data, parent=parent, adapter=a)
+				t = Template(source=filepath, data=data, parent=parent, adapter=a, weight=hdr.weight or 0)
 				t.owner = superuser
 				if hdr.named:
 					t.name = webpath
 				added += 1
 			else:
 				chg = 0
+				if t.parent is not parent:
+					logger.warn("Template {} ‘{}’: changed parent from {} to {}".format(t.id, filepath, t.parent,parent))
+					if force:
+						t.parent = parent
+						chg = 1
+
 				if t.adapter is not a:
 					logger.warn("Template {} ‘{}’: changed adapter from {} to {}".format(t.id, filepath, t.adapter,a))
 					if force:
@@ -537,8 +546,8 @@ class PopulateCommand(Command):
 						chg = 1
 
 				if force:
-					t.superparent = parent
 					t.owner = superuser
+					t.weight = hdr.weight
 					added += chg
 			for m,inherit in hdr.match:
 				if m == "root":
