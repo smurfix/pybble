@@ -41,6 +41,8 @@ class Storage(ObjectRef):
 	default = Column(Boolean, default=False, nullable=False)
 	@classmethod
 	def __declare_last__(cls):
+		if not hasattr(cls,'site'):
+			cls.site = cls.superparent
 		check_unique(cls,"superparent default")
 
 	def __init__(self, name,path,url, **kw):
