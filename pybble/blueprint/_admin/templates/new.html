@@ -1,0 +1,29 @@
+{% extends "_admin/base.html" %}
+
+{% block content %}
+    <h2>Create a New {{ model_slug.title() }} Object</h2>
+    <form method="POST">
+        <table>
+            <tbody>
+                {% for field_name in field_names %}
+                    <tr>
+                        <th>{{ field_name.title() }}</th>
+                        <td>{{ fields[field_name].render()|safe }}
+                            {% if fields[field_name].errors %}
+                                <ul>
+                                    {% for error_msg in fields[field_name].errors %}
+                                        <li>{{ error_msg }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                <tr>
+                    <th>&nbsp;</th>
+                    <td><input type="submit" value="Create {{ model_slug.title() }}" /></td>
+                </tr>
+            </tbody>
+        </table>
+    </form>
+{% endblock %}

@@ -153,7 +153,7 @@ class PopulateCommand(Command):
 			try:
 				root = Site.q.get(Site.parent==None,Site.owner!=None)
 			except NoData:
-				root = Site.q.get(name=ROOT_SITE_NAME)
+				root = Site.q.get_by(name=ROOT_SITE_NAME)
 		except NoData:
 			root = Site(domain="localhost", name=ROOT_SITE_NAME)
 			logger.debug("The root site has been created.")
@@ -550,7 +550,7 @@ class PopulateCommand(Command):
 				if t.content != data:
 					logger.warn(u"Template {} ‘{}’ differs.".format(t.id,filepath))
 					if force:
-						t.data = data
+						t.content = data
 						chg = 1
 
 				if force:
