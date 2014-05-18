@@ -162,6 +162,11 @@ class ContentData(object):
 		
 	def render(self, **vars):
 		return self.template.render(self, vars)
+	
+	def __str__(self):
+		if self.content:
+			return self.content
+		return ("{}({})".format(self.__class__.__name,",".join( str(k)+'='+repr(v) for k,v in self.__dict__ if k[0] != '_' and v is not None)))
 
 def valid_obj(form, field):
 	"""Field verifier which checks that an object ID is valid"""
