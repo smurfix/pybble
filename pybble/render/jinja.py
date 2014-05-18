@@ -117,8 +117,8 @@ class Environment(BaseEnvironment):
 				for d in Discriminator.q.all():
 #			if getattr(obj_class(d.id),"_no_crumbs",False):
 #				continue
-					if request.user.can_add(obj, discr=obj.discriminator, new_discr=d.id):
-						g.append((d.id,d.display_name or d.name, d.infotext))
+					if request.user.can_add(obj, discr=obj.discr, new_discr=d.id):
+						g.append((d.id,d.display_name or d.name, d.doc))
 				u[obj.id] = g
 			return g
 		self.globals['addables'] = addables
