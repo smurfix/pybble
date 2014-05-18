@@ -102,11 +102,12 @@ def get_template(c, trace=None):
 		for t in q.filter(TemplateMatch.parent==site):
 			got(t.template,weight+t.weight)
 
-		if site.parent in seen:
-			site = site.superparent or site.parent.superparent
+		parent = site.parent or site.superparent
+		if parent in seen:
+			site = site.superparent or parent.superparent
 			weight += 10
 		else:
-			site = site.parent
+			site = parent
 			weight += 1
 
 	if not res[0]:
