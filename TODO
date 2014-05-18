@@ -1,3 +1,11 @@
+Limit MIME types for storage
+	* assign permissions for adding (mimetype+storage+site)
+	* only types with ADD permission are shown
+
+Use foreign keys for permission handling
+
+Cache the damn permissions
+
 move request.site to g.site, auto-added at app-context init time
 add g.context and current_app.context, for variables to add to all translators
 

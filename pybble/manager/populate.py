@@ -36,7 +36,7 @@ logger = logging.getLogger('pybble.manager.populate')
 
 _metadata = re.compile('##:?(\S+) *[ :] *(.*)\n') # re.U ?
 
-content_types = [
+upload_content_types = [
 	## MIME type,subtype, file extension, name, description
 	('text','html','html','Web page',"A complete HTML-rendered web page"),
 	('text','plain','txt','Plain text',"raw text, no formatting"),
@@ -48,6 +48,8 @@ content_types = [
     ('image','gif','gif',"GIF image",None),
     ('application','binary','bin',"raw data",None),
     ('application','pdf','pdf',"PDF document",None),
+]
+content_types = upload_content_types+[
     ('application','rss+xml','rss',"RSS feed",None),
     ('text','xml','xml',"XML data",None),
     ('message','rfc822',None,"Email message",None),
@@ -725,6 +727,18 @@ class PopulateCommand(Command):
 			#		p.superparent=s
 
 			db.flush()
+
+		## Add uplaod permissions
+		#for typ,subtyp,ext,name,doc in upload_content_types:
+		#	mt = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
+		#	if Permission.q.filter(Permission.new_discr==e,Permission.for_discr==d, Permission.parent==s).count():
+		#		continue
+		#	p=Permission(u, s, d, PERM_ADD)
+		#	p.new_discr=e
+		#	p.superparent=s
+#
+#			/perm
+
 
 		## possible root app fix-ups
 		rapp = App.q.get_by(name='_root')
