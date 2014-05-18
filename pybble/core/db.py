@@ -229,6 +229,9 @@ def check_unique(cls, *vars):
 			if v == "inherit":
 				if obj.inherit is not None:
 					q.append(or_(cls.inherit == None, cls.inherit == obj.inherit))
+			elif v == "default":
+				if obj.default:
+					q.append(cls.default == True)
 			else:
 				q.append(getattr(cls,v)==getattr(obj,v))
 		if obj.id is not None:
