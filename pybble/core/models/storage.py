@@ -15,10 +15,10 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, DateTime
+from sqlalchemy import Integer, Unicode, DateTime, Boolean
 from sqlalchemy.orm import relationship,backref
 
-from ..db import Base, Column
+from ..db import Base, Column, check_unique
 
 from flask import request,current_app
 
@@ -38,6 +38,10 @@ class Storage(ObjectRef):
 	name = Column(Unicode(30), unique=True, nullable=False)
 	path = Column(Unicode(1000), unique=True, nullable=False)
 	url = Column(Unicode(200), unique=True, nullable=False)
+	default = Column(Boolean, default=False, nullable=False)
+	@classmethod
+	def __declare_last__(cls):
+		check_unique(cls,"superparent default")
 
 	def __init__(self, name,path,url, **kw):
 		super(Storage,self).__init__(**kw)
