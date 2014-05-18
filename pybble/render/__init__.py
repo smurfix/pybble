@@ -145,14 +145,14 @@ class ContentData(object):
 		self.template_in_blueprint = template_in_blueprint
 		self.content = content
 		self.site = site
-		
+
 	def environment(self):
 		return dict((k,v) for k,v in self.__dict__.items() if not k.startswith('_') and v is not None)
 	
 	def __call__(self, environ,start_response):
+		raise NotImplementedError("completely untested and probably wrong")
 		from pybble.app import Response
 		res = Response.force_type(self)
-		import pdb;pdb.set_trace()
 		return res(environ,start_response)
 
 	@property
