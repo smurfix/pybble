@@ -79,7 +79,7 @@ class Site(ObjectRef):
 	@classmethod
 	def __declare_last__(cls):
 		if not hasattr(cls,'superuser'):
-			cls.superuser = cls.parent
+			cls.superuser = cls.owner
 		if not hasattr(cls,'app'):
 			cls.app = cls.superparent
 		check_unique(cls, "name parent")
