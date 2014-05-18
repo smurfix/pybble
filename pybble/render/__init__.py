@@ -136,15 +136,15 @@ class ContentData(object):
 				if bp is not None:
 					blueprint = bp
 
-			self.obj = obj
-			self.anchor = anchor or obj or site
-			self.from_mime = from_mime
-			self.to_mime = to_mime
-			self.blueprint = blueprint
-			self.name = name
-			self.template_in_blueprint = template_in_blueprint
-			self.content = content
-			self.site = site
+		self.obj = obj
+		self.anchor = anchor or obj or site
+		self.from_mime = from_mime
+		self.to_mime = to_mime
+		self.blueprint = blueprint
+		self.name = name
+		self.template_in_blueprint = template_in_blueprint
+		self.content = content
+		self.site = site
 		
 	def environment(self):
 		return dict((k,v) for k,v in self.__dict__.items() if not k.startswith('_') and v is not None)

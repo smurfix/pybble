@@ -138,6 +138,10 @@ class BaseApp(WrapperApp,Flask):
 		else:
 			request.site = refresh(current_app.site)
 		
+	def create_jinja_environment(self):
+		from ..render.jinja import Environment
+		return Environment(self)
+
 	def inject_url_defaults(self, endpoint, values):
 		"""Injects the URL defaults for the given endpoint directly into
 		the values dictionary passed.  This is used internally and
