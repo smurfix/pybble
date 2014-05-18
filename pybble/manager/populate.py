@@ -321,8 +321,10 @@ class PopulateCommand(Command):
 								obj.name = n
 			if not found:
 				logger.warn("{}: None found".format(MIMEtranslator.__name__))
-			else:
+			elif added:
 				logger.info("{}: {} new".format(MIMEtranslator.__name__,added))
+			else:
+				logger.debug("{}: No new entries".format(MIMEtranslator.__name__,))
 			db.commit()
 
 		## Variable installer.
