@@ -317,6 +317,10 @@ class Object(Dumpable, Base):
 			s = " "+s
 		return u'‹%s%s:%s%s›' % (d,self.__class__.__name__, self.id, s)
 
+	def __html__(self):
+		## TODO
+		return '<a href="%s">%s</a>' % (url_for('pybble.views.view_oid', oid=self.oid()), escape(self._name))
+
 	def __repr__(self):
 		s = self._stale
 		if s or self._rec_str>1: return '<%s:%s %s>' % (self.__class__.__name__, self.id, s)

@@ -151,7 +151,7 @@ class Base(object):
 		return "%s" % (self._name)
 	def __html__(self):
 		#return '<a href="%s">%s</a>' % (url_for('admin.show', table=self.__class__.__name__.lower(), id=self.id), escape(self._name))
-		return '<a href="%s">%s</a>' % (url_for('pybble.views.view_oid', oid=self.oid()), escape(self._name))
+		return (self.id)+":"+escape(self._name)
 
 	q = db.query_property(query_cls=GetQuery)
 
