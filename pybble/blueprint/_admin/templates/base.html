@@ -3,12 +3,12 @@
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 		<title>{% block title %}Prototype Flask Admin{% endblock %}</title>
-		<link rel="shortcut icon" type="image/ico" href="{{ url_for('.static', filename='images/favicon.ico') }}" />
-		<link href="{{ url_for('.static', filename='css/admin.css') }}" rel="stylesheet" type="text/css" media="screen" />
+		{# <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('.static', filename='images/favicon.ico') }}" /> #}
+		{# <link href="{{ url_for('.static', filename='css/admin.css') }}" rel="stylesheet" type="text/css" media="screen" /> #}
 		{% block extra_head %}{% endblock %}
 	</head>
 	<body id="{% block body_id %}{% endblock %}" class="{% block body_class %}{% endblock %}">
-	    <a href="{{ url_for('admin.index') }}">Admin Home</a>
+	    <a href="{{ url_for('_admin.index') }}">Admin Home</a>
 	    {% block content %}{% endblock %}
 	    {% block footer %}
     		<div id="footer">

@@ -19,66 +19,96 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## You typically add it under /admin.
 ## 
 
-import os
-from importlib import import_module
+from flask import Module, request, redirect, url_for, render_template, abort
+from formalchemy import FieldSet
 
-from flask import render_template, abort
-from jinja2 import TemplateNotFound
+from pybble.blueprint import BaseBlueprint
+from pybble.core.models import Discriminator
+from pybble.core.route import Exposer
+from pybble.core.db import NoData
+expose = Exposer()
 
-from flask.ext.admin import AdminIndexView, expose
-from flask.ext.admin import BaseView as AdminBaseView
-
-from .. import BaseBlueprint
-
-class TheView(AdminBaseView):
-	@expose('/')
-	def index(self):
-		#self._template_args['model'] = self.base.model
-		return self.render(['admin/index.haml','admin/index.html'])
-
-class FakeAdmin(object):
-	def __init__(self,bp):
-		self.url = bp.url_prefix
-	def menu(self):
-		return ()
-	def menu_links(self):
-		return ()
-	subdomain = None
-	static_url_path = "/static"
-	url = None
-	base_template="admin/base.html"
+models = {}
 
 class Blueprint(BaseBlueprint):
-	"""
-	Admin frontend for a specific document class.
-	Parameters:
-	* model   which model to process
-	* index   whether to generate an index page
-	"""
+	"""\
+This is a simple admin blueprint for Pybble's object view.
+"""
+	_name = "admin"
+
 	def setup(self):
 		super(Blueprint,self).setup()
-		try:
-			base,model = self.params['model'].rsplit('.',1)
-		except KeyError:
-			self.model = None
-		else:
-			self.model = getattr(import_module(base),model)
+		expose.add_to(self)
 
-		try:
-			base,view = self.params['view'].rsplit('.',1)
-		except KeyError:
-			view = TheView
-		else:
-			view = getattr(import_module(base), view)
+		for d in Discriminator.q.all():
+			try:
+				models[d.name] = d.mod
+			except Exception as e:
+				models[d.name] = str(e)
 
-		self.view = view(self.name+"_view", endpoint=self.name, url=self.url_prefix)
-		self.view.base = self
-		view_bp = self.view.create_blueprint(FakeAdmin(self))
-		view_bp.name = self.name+"_view"
-		self.app.register_blueprint(view_bp)
+@expose('/')
+def index():
+	return render_template('_admin/index.html', models=models)
 
-		static_folder=os.path.join(os.path.dirname(os.path.abspath(os.path.dirname(__name__))),'static')
-		def send_file(filename):
-			return send_from_directory(static_folder, filename)
-		self.app.add_url_rule(self.url_prefix + '/static/<path:filename>', endpoint='admin.static', view_func=send_file)
+@expose('/<model_slug>')
+def object_list(model_slug):
+	if model_slug not in models:
+		abort(404)
+	model = models[model_slug]
+	field_names = model.__table__.columns.keys()
+	primary_key = model.__table__.primary_key.columns.keys()[0]
+	objects = model.q.all()
+	context = {
+		'model_slug': model_slug,
+		'field_names': field_names,
+		'primary_key': primary_key,
+		'objects': objects,
+	}
+	return render_template('_admin/list.html', **context)
+
+def _fixup_fs(fs,id,attrs):
+	"""Change all fields that have been passed in **attrs to read-only"""
+	opts = [fs.id.readonly(),fs.discr.readonly()]
+	hide = [fs.children,fs.superchildren,fs.owned]
+	if id:
+		fs.configure(pk=True)
+	for k in attrs:
+		opts.append(getattr(fs,k).readonly())
+	fs.configure(options=opts, exclude=hide)
+
+@expose('/<model_slug>/edit/<int:model_key>', methods=['GET', 'POST'])
+@expose('/<model_slug>/new', methods=['GET', 'POST'], endpoint='object_new')
+def object_edit(model_slug, model_key=None, **attrs):
+	if model_slug not in models:
+		abort(404)
+	model = models[model_slug]
+	if model_key:
+		try: data = model.q.get_by(id=model_key)
+		except NoData: abort(404)
+	else:
+		data = model
+
+	if model_key:
+		obj = model.q.get_by(id=int(model_key))
+		fields = FieldSet(obj)
+	else:
+		obj = None
+		fields = FieldSet(model)
+
+	fields = FieldSet(data)
+	_fixup_fs(fields,int(model_key),attrs)
+
+	if request.method == 'POST':
+		fields.rebind(data=request.form)
+		if fields.validate():
+			fields.sync()
+			next_url = url_for('_admin.object_list', model_slug=model_slug)
+			return redirect(next_url)
+	context = {
+		'model_slug': model_slug,
+		'model': model,
+		'fields': fields,
+	}
+	template_name = '_admin/edit.html' if model_key else '_admin/new.html'
+	return render_template(template_name, **context)
 

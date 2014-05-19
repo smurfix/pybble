@@ -4,7 +4,7 @@
     <h2>Administrative Tasks</h2>
     <ul>
         {% for model_slug in models %}
-            <li><a href="{{ url_for('admin.object_list', model_slug=model_slug) }}">{{ model_slug.title() }}</a></li>
+            <li><a href="{{ url_for('_admin.object_list', model_slug=model_slug) }}">{{ model_slug.title() }}</a></li>
         {% endfor %}
     </ul>
 {% endblock %}
