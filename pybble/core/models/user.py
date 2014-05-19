@@ -711,7 +711,7 @@ class Permission(ObjectRef):
 			return "‽"
 		try:
 			self._rec_str += 1
-			return u'%s can %s %s %s %s %s' % (unicode(o),PERM[self.right],self.for_discr.name,unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N", self.new_discr.name if self.new_discr is not None else "-")
+			return u'%s can %s %s %s %s %s' % (unicode(o),PERM[self.right],self.for_discr.name if self.for_discr else "‽",unicode(p), "*" if self.inherit is None else "Y" if self.inherit else "N", self.new_discr.name if self.new_discr is not None else "-")
 		finally:
 			self._rec_str -= 1
 
