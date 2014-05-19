@@ -19,7 +19,7 @@ import logging
 from time import time
 from itertools import chain
 
-from flask import Flask, request, render_template, g, session, Markup, Response as BaseResponse, current_app
+from flask import Flask, request, render_template, g, session, Markup, Response as BaseResponse, current_app, Markup
 from flask.config import Config
 from flask.templating import DispatchingJinjaLoader
 from flask.ext.script import Server
@@ -308,6 +308,13 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 	def bp_url_value_preprocessor(endpoint, values):
 		if values:
 			request.bp = refresh(values.pop('bp',None))
+
+	if app.config.URLFOR_ERROR_FATAL is None:
+		app.config.URLFOR_ERROR_FATAL = app.debug
+	if not app.config.URLFOR_ERROR_FATAL:
+		def build_err(error, endpoint, values):
+			return Markup('<a href="#" class="build_error" title="%s (%s)">Bad link</a>') % (endpoint,repr(values))
+		app.url_build_error_handlers.append(build_err)
 
 	init_db(app)
 	return app

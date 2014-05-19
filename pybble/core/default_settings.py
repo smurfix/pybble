@@ -55,6 +55,8 @@ TRAP_HTTP_EXCEPTIONS=False
 USE_X_SENDFILE=False
 LEGACY_PASSWORDS=True
 d_LEGACY_PASSWORDS="If True, allow cleartext passwords in the database"
+URLFOR_ERROR_FATAL=None
+d_URLFOR_ERROR_FATAL="Die on BuildError? defaults to DEBUG"
 
 
 ## used when logging is on.
