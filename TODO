@@ -1,3 +1,5 @@
+Test: Add support for coverage
+
 Limit MIME types for storage
 	* assign permissions for adding (mimetype+storage+site)
 	* only types with ADD permission are shown
