@@ -121,12 +121,14 @@ class ConfigDict(Config,attrdict):
 						seen.add(v.var.name)
 				else:
 					self.setdefault(v.var.name, v.value)
-			vf = ConfigVar.q.filter_by(parent=(getattr(s,vars) if vars else s))
-			if name is not None:
-				vf = vf.filter_by(name=name)
-			for v in vf:
-				self.setdefault(v.name, v.value)
-				self._vars.setdefault(v.name,v)
+			p = getattr(s,vars,None) if vars else s
+			if p:
+				vf = ConfigVar.q.filter_by(parent=p)
+				if name is not None:
+					vf = vf.filter_by(name=name)
+				for v in vf:
+					self.setdefault(v.name, v.value)
+					self._vars.setdefault(v.name,v)
 
 			if recurse:
 				s = getattr(s,recurse)

@@ -114,6 +114,8 @@ class Site(ObjectRef):
 		if name is None:
 			name=u"Here be "+domain
 		self.domain=unicode(domain)
+		if isinstance(app,string_types):
+		    app = App.q.get_by(name=text_type(app))
 		self.name=name
 		self.parent=parent
 		self.app=app
@@ -122,7 +124,19 @@ class Site(ObjectRef):
 	
 	def before_insert(self):
 		if self.name == ROOT_SITE_NAME:
-			self.parent = None
+			if self.parent is not None:
+				raise RuntimeError("The new root site must be named ‘{}’, not ‘{}’.".format(ROOT_SITE_NAME,name))
+			try:
+				r = self.parent = Site.q.get(Site.parent==None,Site.owner!=None)
+			except NoData:
+				pass
+			else:
+				raise RuntimeError("There already is a root site: {}.".format(r))
+		elif self.parent is None:
+			try:
+				self.parent = Site.q.get(Site.parent==None,Site.owner!=None)
+			except NoData:
+				raise RuntimeError("The new root site must be named ‘{}’, not ‘{}’.".format(ROOT_SITE_NAME,name))
 		elif self.parent is None:
 			self.parent = Site.q.get_by(name=ROOT_SITE_NAME)
 
@@ -134,6 +148,7 @@ class Site(ObjectRef):
 
 	def after_insert(self):
 		super(Site,self).after_insert()
+
 		app_list.send(NewSite)
 		self.signal.connect(self.config_changed, ConfigChanged)
 
@@ -168,7 +183,7 @@ domain: %s
 		res = ConfigDict(self)
 		res._load(vars="GLOBALS")
 		res._load(recurse="parent")
-		res._load(recurse="parent",vars="superparent")
+		res._load(recurse="parent",vars="app")
 		return res
 	
 	@maybe_stale

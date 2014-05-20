@@ -25,7 +25,7 @@ from sqlalchemy.inspection import inspect
 from ...compat import py2_unicode
 from ..json import register_object
 
-from ..db import Base, Column, IDrenderer, db, NoData, maybe_stale, no_autoflush, refresh
+from ..db import Base, Column, IDrenderer, db, NoData, maybe_stale, no_autoflush, refresh, setup_events
 from ..signal import ObjSignal
 
 from flask import request,current_app
@@ -268,6 +268,11 @@ class Object(Dumpable, Base):
 
 	_rec_str = 0 ## marker for possibly-recursive __str__ calls
 	_deleting = False ## marker for skipping some do-not-modify tests
+
+	def before_insert(self):
+		if self.superparent is None:
+			self.superparent = getattr(request,'site',None)
+		super(Object,self).before_insert()
 
 	@property
 	def mimetype(self):
@@ -698,6 +703,8 @@ class ObjectMeta(type(Object)):
 				setattr(cls,'__tablename__',name.lower())
 			if "modified" in dct:
 				event.listen(cls,'before_update',update_modified)
+
+			setup_events(cls)
 
 			setattr(cls,'mimetype', MIMEproperty("pybble/"+name.lower()))
 	

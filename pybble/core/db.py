@@ -162,6 +162,21 @@ def call_event(cls,method):
 		getattr(obj,method)()
 	event.listen(cls,method, helper)
 		
+def setup_events(cls):
+	"""\
+		Add the standard event listeners.
+
+		Note that the "insert" calls are not performed when new records are
+		created via a generic form, REST, et al.; you need to call them
+		there manually.
+		"""
+	#call_event(cls,"before_insert")
+	call_event(cls,"before_update")
+	#call_event(cls,"after_insert")
+	call_event(cls,"after_update")
+	@event.listens_for(cls, 'load')
+	def receive_load(target, context):
+		target.after_load()
 
 @py2_unicode
 class Base(object):
@@ -179,7 +194,8 @@ class Base(object):
 			* .after_insert()/update() will run automatically
 			  - dito .after_update()
 			  - use these to insert additional tracking, permissions, or whatever
-			  
+			* .after_load() will run after a record has been loaded from the database
+
 		"""
 	@declared_attr
 	def __tablename__(cls):
@@ -187,13 +203,7 @@ class Base(object):
 	
 	@classmethod
 	def __declare_last__(cls):
-		call_event(cls,"before_insert")
-		call_event(cls,"before_update")
-		call_event(cls,"after_insert")
-		call_event(cls,"after_update")
-		@event.listens_for(cls, 'load')
-		def receive_load(target, context):
-			target.after_load()
+		setup_events(cls)
 
 
 	id = Column(Integer, primary_key=True, label="ID", renderer=IDrenderer)
@@ -239,8 +249,16 @@ class Base(object):
 		with new_protect():
 			self = cls()
 		self.setup(*a,**kw)
+		self.add_db()
+
+	def add_db(self):
+		"""\
+			Add this record to the database.
+			"""
+		self.before_insert()
 		db.add(self)
 		db.flush((self,))
+		self.after_insert()
 		return self
 
 	def setup(self):
@@ -256,21 +274,24 @@ class Base(object):
 			Do not add any other dependent database entries here: 
 			this record does not yet have an ID. Use after_insert() for that.
 			"""
-		if self.superparent is None:
-			self.superparent = getattr(request,'site',None)
-	
+		pass
+
 	def before_insert(self):
 		"""Called after finalizing the object but before writing to the database"""
 		pass
+
 	def after_insert(self):
 		"""Called after inserting into the database; the ID is valid"""
 		pass
+
 	def after_load(self):
 		"""Called after loading a record from the database"""
 		pass
+
 	def before_update(self):
 		"""Called after finalizing the object but before updating the database"""
 		pass
+
 	def after_update(self):
 		"""Called after writing to the database"""
 		pass
