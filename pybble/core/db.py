@@ -250,6 +250,7 @@ class Base(object):
 			self = cls()
 		self.setup(*a,**kw)
 		self.add_db()
+		return self
 
 	def add_db(self):
 		"""\
@@ -259,7 +260,6 @@ class Base(object):
 		db.add(self)
 		db.flush((self,))
 		self.after_insert()
-		return self
 
 	def setup(self):
 		"""\
