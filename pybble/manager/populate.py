@@ -21,7 +21,7 @@ from traceback import print_exc,format_exc
 
 from sqlalchemy import or_
 
-from flask import request,current_app,g
+from flask import request,current_app,g, _app_ctx_stack
 from flask._compat import text_type,string_types
 from werkzeug import import_string
 
@@ -168,7 +168,8 @@ class PopulateCommand(Command):
 			else:
 				logger.debug("The root site exists. Good.")
 		db.commit()
-		current_site = root
+		_app_ctx_stack.top.site = root
+		_app_ctx_stack.top.app = root.app
 
 		## storage
 		try:
