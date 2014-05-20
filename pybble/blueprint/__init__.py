@@ -130,7 +130,7 @@ def create_blueprint(site, blueprint, path, name=None,endpoint=None):
 	
 	if name is None:
 		name = getattr(blueprint.mod,"_name",blueprint.name)
-	bp = SiteBlueprint(site=site, path=path, blueprint=blueprint, name=name,endpoint=endpoint)
+	bp = SiteBlueprint.new(site=site, path=path, blueprint=blueprint, name=name,endpoint=endpoint)
 	db.flush()
 	return bp
 
@@ -142,7 +142,7 @@ def drop_blueprint(blueprint,site=None):
 		blueprint = Blueprint.q.get_by(name=text_type(blueprint))
 	
 	bp = SiteBlueprint.q.get_by(site=site, name=text_type(name))
-	Delete(bp)
+	Delete.new(bp)
 
 def list_blueprints():
 	path = os.path.dirname(os.path.abspath(__file__))

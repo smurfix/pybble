@@ -34,7 +34,7 @@ def add_mime(name,typ,subtyp,ext):
 	try:
 		t = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
 	except NoData:
-		t=MIMEtype()
+		t=MIMEtype.new()
 		t.name = unicode(name)
 		t.typ = typ
 		t.subtyp = subtyp

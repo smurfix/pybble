@@ -125,7 +125,7 @@ def lostpw():
 def register():
 	form = RegisterForm(request.form, prefix='register')
 	if request.method == 'POST' and form.validate():
-		u = User(form.username.data, form.password.data, anon=True) ## needs verification
+		u = User.new(form.username.data, form.password.data, anon=True) ## needs verification
 		u.email = form.email.data
 		u.parent = request.site
 		u.record_creation()

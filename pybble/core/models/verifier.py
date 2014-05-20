@@ -49,7 +49,7 @@ class VerifierBase(Loadable, ObjectRef):
 		if user is None:
 			user = request.user
 		obj = self.mod.new(obj=obj, user=user, *a,**k) or obj
-		return Verifier(user=user or request.user, base=self, obj=obj)
+		return Verifier.new(user=user or request.user, base=self, obj=obj)
 
 ## Verifier
 

@@ -42,7 +42,7 @@ logger = logging.getLogger('pybble.core.users')
 def create_user(name,password=None,site=None):
 	if site is None:
 		site = request.site
-	user = User(username=name,password=password,parent=site)
+	user = User.new(username=name,password=password,parent=site)
 	db.flush((user,))
 	return user
 
@@ -55,5 +55,5 @@ def drop_user(name):
 	else:
 		assert isinstance(user,User)
 		user=name
-	Delete(user)
+	Delete.new(user)
 

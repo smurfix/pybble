@@ -135,7 +135,7 @@ class PopulateCommand(Command):
 			try:
 				d = MIMEtype.q.get_by(typ="pybble",subtyp=name.lower())
 			except NoData:
-				d = MIMEtype(id=id,typ="pybble",subtyp=name.lower(), path=path, doc=doc)
+				d = MIMEtype.new(id=id,typ="pybble",subtyp=name.lower(), path=path, doc=doc)
 				added += 1
 			else:
 				d.path = path
@@ -155,7 +155,7 @@ class PopulateCommand(Command):
 			except NoData:
 				root = Site.q.get_by(name=ROOT_SITE_NAME)
 		except NoData:
-			root = Site(domain="localhost", name=ROOT_SITE_NAME)
+			root = Site.new(domain="localhost", name=ROOT_SITE_NAME)
 			logger.debug("The root site has been created.")
 		else:
 			if root.parent is not None:
@@ -177,7 +177,7 @@ class PopulateCommand(Command):
 			except NoData:
 				st = Storage.q.get_by(name=u"Test")
 		except NoData:
-			st = Storage("Test",app.config.MEDIA_PATH,"localhost:5000/static")
+			st = Storage.new("Test",app.config.MEDIA_PATH,"localhost:5000/static")
 			if Storage.q.filter_by(superparent=root,default=True).count() == 0:
 				st.default = True
 		else:
@@ -188,7 +188,7 @@ class PopulateCommand(Command):
 		if User.q.filter_by(parent=root, username=ANON_USER_NAME).count():
 			logger.debug("An anon user exists. Good.")
 		else:
-			User(ANON_USER_NAME, parent=root)
+			User.new(ANON_USER_NAME, parent=root)
 			logger.debug("An initial anon user has been created.")
 		db.commit()
 
@@ -196,7 +196,7 @@ class PopulateCommand(Command):
 		try:
 			anon = Group.q.get_by(parent=root, owner=root, name=ANON_USER_NAME)
 		except NoData:
-			anon = Group(parent=root, owner=root, name=ANON_USER_NAME)
+			anon = Group.new(parent=root, owner=root, name=ANON_USER_NAME)
 			logger.debug("An anon user group has been created.")
 		else:
 			logger.debug("The anon user group exists. Good.")
@@ -206,7 +206,7 @@ class PopulateCommand(Command):
 			try:
 				Member.q.get_by(parent=anon, owner=a)
 			except NoData:
-				Member(parent=anon, owner=a)
+				Member.new(parent=anon, owner=a)
 				logger.warn("{} was added to the anon group".format(a))
 			else:
 				logger.debug("{} is an anon-group member".format(a))
@@ -243,7 +243,7 @@ class PopulateCommand(Command):
 			try:
 				mt = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
 			except NoData:
-				mt = MIMEtype(typ=typ, subtyp=subtyp, ext=ext, name=name, doc=doc)
+				mt = MIMEtype.new(typ=typ, subtyp=subtyp, ext=ext, name=name, doc=doc)
 				logger.info("MIME type ‘{}’ ({}) created.".format(mt,name))
 				added += 1
 			else:
@@ -297,7 +297,7 @@ class PopulateCommand(Command):
 				try:
 					trans = MIMEtranslator.q.get_by(path=mpath)
 				except NoData:
-					trans = MIMEtranslator(path=mpath,mime=mt,weight=w,name=mpath)
+					trans = MIMEtranslator.new(path=mpath,mime=mt,weight=w,name=mpath)
 				else:
 					if trans.mime != mt:
 						logger.warn("{} has a broken type: {} instead of {}".format(mod,trans.mime,mt))
@@ -313,7 +313,7 @@ class PopulateCommand(Command):
 						try:
 							obj = MIMEadapter.q.get_by(from_mime=s,to_mime=d,translator=trans)
 						except NoData:
-							obj = MIMEadapter(from_mime=s,to_mime=d,translator=trans,name=n,weight=w)
+							obj = MIMEadapter.new(from_mime=s,to_mime=d,translator=trans,name=n,weight=w)
 							added += 1
 						else:
 							if force:
@@ -337,7 +337,7 @@ class PopulateCommand(Command):
 				try:
 					cf = ConfigVar.q.get_by(name=k, parent=parent)
 				except NoData:
-					cf = ConfigVar(parent=parent, name=k, value=v, doc=d)
+					cf = ConfigVar.new(parent=parent, name=k, value=v, doc=d)
 					db.flush()
 					added.append(k)
 				else:
@@ -423,7 +423,7 @@ class PopulateCommand(Command):
 					try:
 						sb = BinData.lookup(content)
 					except NoData:
-						sb = BinData(f[:dot],ext=f[dot+1:],content=content, storage=st)
+						sb = BinData.new(f[:dot],ext=f[dot+1:],content=content, storage=st)
 
 					try:
 						try:
@@ -431,7 +431,7 @@ class PopulateCommand(Command):
 						except NoData:
 							sf = StaticFile.q.get_by(path='/'+webpath,superparent=root)
 					except NoData:
-						sf = StaticFile(webpath,sb)
+						sf = StaticFile.new(webpath,sb)
 					else:
 						if sf.path.startswith('/'):
 							sf.path = sf.path[1:] # silently fix this
@@ -447,7 +447,7 @@ class PopulateCommand(Command):
 							sf.bindata.record_deletion("file vanished")
 							db.flush()
 
-							sb = BinData(f[:dot],ext=f[dot+1:],content=content, storage=st)
+							sb = BinData.new(f[:dot],ext=f[dot+1:],content=content, storage=st)
 							osb = sf.bindata
 							sf.bindata = sb
 							sf.record_change({"bindata":[osb,sb]},"file vanished")
@@ -458,7 +458,7 @@ class PopulateCommand(Command):
 							if force:
 								sf.bindata.record_deletion("replaced by update")
 								sf.record_deletion("replaced by update")
-								sf = StaticFile(webpath,sb)
+								sf = StaticFile.new(webpath,sb)
 					db.commit()
 			return added
 		added = add_files(STATIC_PATH, u"")
@@ -525,12 +525,12 @@ class PopulateCommand(Command):
 			try:
 				a = MIMEadapter.q.get_by(from_mime=hdr_src, to_mime=hdr_dst, translator=tr)
 			except NoData:
-				a = MIMEadapter(from_mime=hdr_src, to_mime=hdr_dst, translator=tr, name=n)
+				a = MIMEadapter.new(from_mime=hdr_src, to_mime=hdr_dst, translator=tr, name=n)
 
 			try:
 				t = Template.q.get_by(source=filepath)
 			except NoData:
-				t = Template(source=filepath, data=data, parent=parent, adapter=a, weight=hdr.weight or 0)
+				t = Template.new(source=filepath, data=data, parent=parent, adapter=a, weight=hdr.weight or 0)
 				t.owner = superuser
 				if hdr.named:
 					t.name = webpath
@@ -570,7 +570,7 @@ class PopulateCommand(Command):
 				try:
 					tm = TemplateMatch.q.filter_by(template=t,obj=m,for_discr=hdr_dsc).filter(or_(TemplateMatch.inherit == None,TemplateMatch.inherit==inherit)).one()
 				except NoData:
-					tm = TemplateMatch(template=t,obj=m,for_discr=hdr_dsc,inherit=inherit)
+					tm = TemplateMatch.new(template=t,obj=m,for_discr=hdr_dsc,inherit=inherit)
 
 			db.commit()
 			return added
@@ -685,7 +685,7 @@ class PopulateCommand(Command):
 		for d in Discriminator.q.all():
 			if Permission.q.filter(Permission.for_discr==d,Permission.right>=PERM_ADMIN, Permission.parent==root).count():
 				continue
-			p=Permission(u, s, d, PERM_ADMIN)
+			p=Permission.new(u, s, d, PERM_ADMIN)
 			p.superparent=s
 		db.flush()
 
@@ -699,16 +699,16 @@ class PopulateCommand(Command):
 		a = anon
 		for d in (dw,ds,dt,dd):
 			if not Permission.q.filter(Permission.for_discr==d,Permission.right>=0,Permission.owner==a, Permission.parent==s).count():
-				p=Permission(a, s, d, PERM_READ)
+				p=Permission.new(a, s, d, PERM_READ)
 				p.superparent=s
 			if not Permission.q.filter(Permission.for_discr==d,Permission.right>=0,Permission.owner==s, Permission.parent==s).count():
-				p=Permission(s, s, d, PERM_READ)
+				p=Permission.new(s, s, d, PERM_READ)
 				p.superparent=s
 
 		for d,e in ((ds,dd),(dw,dd),(ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk),(ds,dt)):
 			if Permission.q.filter(Permission.new_discr==e,Permission.for_discr==d, Permission.parent==s).count():
 				continue
-			p=Permission(u, s, d, PERM_ADD)
+			p=Permission.new(u, s, d, PERM_ADD)
 			p.new_discr=e
 			p.superparent=s
 
@@ -721,12 +721,12 @@ class PopulateCommand(Command):
 			#			continue
 			#		if db.filter_by(Permission, discr=cls.cls_discr()).count():
 			#			continue
-			#		p=Permission(u, s, ds, PERM_ADMIN)
+			#		p=Permission.new(u, s, ds, PERM_ADMIN)
 			#		p.new_discr=cls.cls_discr()
 			#		p.superparent=s
 			#		db.store.add(p)
 			#
-			#		p=Permission(u, s, ds, PERM_ADD)
+			#		p=Permission.new(u, s, ds, PERM_ADD)
 			#		p.new_discr=cls.cls_discr()
 			#		p.superparent=s
 
@@ -737,7 +737,7 @@ class PopulateCommand(Command):
 		#	mt = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
 		#	if Permission.q.filter(Permission.new_discr==e,Permission.for_discr==d, Permission.parent==s).count():
 		#		continue
-		#	p=Permission(u, s, d, PERM_ADD)
+		#	p=Permission.new(u, s, d, PERM_ADD)
 		#	p.new_discr=e
 		#	p.superparent=s
 #
@@ -758,7 +758,7 @@ class PopulateCommand(Command):
 		try:
 			asite = Site.q.get_by(domain=hostname)
 		except NoData:
-			asite = Site(name="root alias", domain=hostname)
+			asite = Site.new(name="root alias", domain=hostname)
 			asite.app = aapp
 			logger.info("Root site aliased ‘{}’ created.".format(hostname))
 		db.commit()
@@ -771,7 +771,7 @@ class PopulateCommand(Command):
 			try:
 				rbp = SiteBlueprint.q.get_by(site=root,blueprint=root_bp,path="/")
 			except NoData:
-				rbp = SiteBlueprint(site=root,blueprint=root_bp,path="/",name="pybble")
+				rbp = SiteBlueprint.new(site=root,blueprint=root_bp,path="/",name="pybble")
 				logger.debug("Root site's content blueprint created.")
 			else:
 				if rbp.name != "pybble" and force:
@@ -790,7 +790,7 @@ class PopulateCommand(Command):
 			try:
 				rbp = SiteBlueprint.q.get_by(site=root,blueprint=static_bp,path="/")
 			except NoData:
-				rbp = SiteBlueprint(site=root,blueprint=static_bp,path="/",name="static",endpoint="")
+				rbp = SiteBlueprint.new(site=root,blueprint=static_bp,path="/",name="static",endpoint="")
 				logger.debug("Root site's static blueprint created.")
 			else:
 				if rbp.name != "static" and force:

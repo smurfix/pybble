@@ -99,7 +99,7 @@ class TC(unittest.TestCase):
 			try:
 				s = Site.q.get_by(name=self.testsite)
 			except NoData:
-				s = Site(name=self.testsite, domain=self.testsite)
+				s = Site.new(name=self.testsite, domain=self.testsite)
 				db.flush()
 			flask.current_app.site = s
 		else:

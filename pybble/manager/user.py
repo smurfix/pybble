@@ -113,7 +113,7 @@ class ParamUser(Command):
 			if v is not None:
 				db.delete(v)
 		elif v is None:
-			SiteConfigVar(var=var,owner=user,value=value)
+			SiteConfigVar.new(var=var,owner=user,value=value)
 		else:
 			v.value=value
 		db.commit()

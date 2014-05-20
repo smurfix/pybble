@@ -633,7 +633,7 @@ class Object(Dumpable, Base):
 	def record_creation(self):
 		"""Record the fact that a user created this object"""
 		from .tracking import Tracker
-		Tracker(self)
+		Tracker.new(self)
 
 	def record_change(self,content=None,comment=None):
 		"""Record the fact that a user changed this object, and why"""
@@ -641,12 +641,12 @@ class Object(Dumpable, Base):
 
 		if content is None:
 			content = self.data
-		Change(self,data=content,comment=comment)
+		Change.new(self,data=content,comment=comment)
 
 	def record_deletion(self,comment=None):
 		"""Record the fact that a user killed this object, and why"""
 		from .tracking import Delete
-		Delete(self,comment=comment)
+		Delete.new(self,comment=comment)
 
 	@property
 	def default_storage(self):

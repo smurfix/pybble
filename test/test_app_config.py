@@ -31,20 +31,20 @@ class AppConfigTestCase(TC):
 
 		app = App.q.get_by(name="_test")
 		try: site = Site.q.get_by(domain='test.example.com')
-		except NoData: site = Site(name='root', domain='test.example.com', app=app)
+		except NoData: site = Site.new(name='root', domain='test.example.com', app=app)
 		try: site2 = Site.q.get_by(domain='foo.example.com')
-		except NoData: site2 = Site(name='foo', domain='foo.example.com', parent=site, app=app)
+		except NoData: site2 = Site.new(name='foo', domain='foo.example.com', parent=site, app=app)
 		try: site3 = Site.q.get_by(domain='bar.example.com')
-		except NoData: site3 = Site(name='bar', domain='bar.example.com', parent=site, app=app)
+		except NoData: site3 = Site.new(name='bar', domain='bar.example.com', parent=site, app=app)
 		try: site21 = Site.q.get_by(domain='foo.foo.example.com')
-		except NoData: site21 = Site(name='foofoo', domain='foo.foo.example.com', parent=site2, app=app)
+		except NoData: site21 = Site.new(name='foofoo', domain='foo.foo.example.com', parent=site2, app=app)
 		db.commit()
 
 		with pytest.raises(ManyData):
-			site21a = Site(name='foofoo', domain='foo2.foo.example.com', parent=site2)
+			site21a = Site.new(name='foofoo', domain='foo2.foo.example.com', parent=site2)
 		db.rollback()
 		with pytest.raises(ManyData):
-			site21a = Site(name='foofoo3', domain='foo.foo.example.com', parent=site2)
+			site21a = Site.new(name='foofoo3', domain='foo.foo.example.com', parent=site2)
 		db.rollback()
 
 		ConfigVar.exists(site,"test1","Test One",-1)

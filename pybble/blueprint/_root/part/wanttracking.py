@@ -72,7 +72,7 @@ def editor(obj=None, parent=None):
 		track_del = bool(form.track_del.data)
 
 		if parent:
-			obj = WantTracking(user, dest, discr)
+			obj = WantTracking.new(user, dest, discr)
 			obj.record_creation()
 		else:
 			obj.record_change()

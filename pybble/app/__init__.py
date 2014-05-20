@@ -321,7 +321,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 
 def create_site(parent,domain,app,name):
 	app = App.q.get_by(name=app)
-	site = Site(parent=parent, name=name, domain=domain, app=app)
+	site = Site.new(parent=parent, name=name, domain=domain, app=app)
 	db.flush()
 	return site
 
@@ -333,7 +333,7 @@ def drop_site(site=None):
 			site = Site.q.get_by(name=text_type(site),parent=request.site)
 		except NoData:
 			site = Site.q.get_by(domain=text_type(site))
-	Delete(site)
+	Delete.new(site)
 
 def list_apps():
 	path = os.path.dirname(os.path.abspath(__file__))

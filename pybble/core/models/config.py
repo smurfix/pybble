@@ -145,7 +145,7 @@ class ConfigDict(Config,attrdict):
 			try:
 				cf = SiteConfigVar.q.get_by(parent=self._parent, var=cfv)
 			except NoData:
-				cf = SiteConfigVar(parent=self._parent, var=cfv, value=v)
+				cf = SiteConfigVar.new(parent=self._parent, var=cfv, value=v)
 			else:
 				cf.value=v
 			db.flush()
@@ -233,7 +233,7 @@ class ConfigVar(ObjectRef, JsonValue):
 		try:
 			return ConfigVar.get(parent,name)
 		except NoData:
-			return ConfigVar(parent=parent, name=name,doc=doc,value=default)
+			return ConfigVar.new(parent=parent, name=name,doc=doc,value=default)
 
 	@property
 	def as_str(self):

@@ -27,11 +27,11 @@ from pybble import ROOT_SITE_NAME
 class SiteTestCase(TC):
 
 	def test_create_multi(self):
-		site = Site(name='sroot', domain='test.site.example.com')
-		site1 = Site(name='sfoo', domain='foo.site.example.com', parent=site)
-		site2 = Site(name='sbar', domain='bar.site.example.com', parent=site)
-		site11 = Site(name='sfoofoo', domain='foo.foo.site.example.com', parent=site1)
-		site111 = Site(name='sfoofoofoo', domain='foo.foo.foo.site.example.com', parent=site11)
+		site = Site.new(name='sroot', domain='test.site.example.com')
+		site1 = Site.new(name='sfoo', domain='foo.site.example.com', parent=site)
+		site2 = Site.new(name='sbar', domain='bar.site.example.com', parent=site)
+		site11 = Site.new(name='sfoofoo', domain='foo.foo.site.example.com', parent=site1)
+		site111 = Site.new(name='sfoofoofoo', domain='foo.foo.foo.site.example.com', parent=site11)
 		self.assertEqual(len(site.children), 2)
 		self.assertEqual(len([x for x in site.all_sites]), 5)
 		self.assertEqual(len([x for x in site1.all_sites]), 3)
@@ -70,8 +70,8 @@ class SiteTestCase(TC):
 		self.assertNotIn("sbar",c)
 
 	def test_config(self):
-		site = Site(name='s2root', domain='test.site2.example.com')
-		site1 = Site(name='s2foo', domain='foo.site2.example.com', parent=site)
+		site = Site.new(name='s2root', domain='test.site2.example.com')
+		site1 = Site.new(name='s2foo', domain='foo.site2.example.com', parent=site)
 
 		n = ConfigVar.q.count()
 		v1 = ConfigVar.exists(site,"TEST","testing 123",123)
@@ -115,10 +115,10 @@ class SiteTestCase(TC):
 		assert site1.config.TEST == [56,67]
 
 #	def test_user(self):
-#		site = Site(name='root', domain='test.example.com')
-#		site1 = Site(name='foo', domain='foo.test.example.com', parent=site)
-#		site2 = Site(name='bar', domain='bar.test.example.com', parent=site)
-#		site21 = Site(name='barf', domain='barf.test.example.com', parent=site2)
+#		site = Site.new(name='root', domain='test.example.com')
+#		site1 = Site.new(name='foo', domain='foo.test.example.com', parent=site)
+#		site2 = Site.new(name='bar', domain='bar.test.example.com', parent=site)
+#		site21 = Site.new(name='barf', domain='barf.test.example.com', parent=site2)
 #
 #		u1 = User.add(username="U1",email="u1@example.com",password="U1_PW", site=site)
 #		u2 = User.add(username="U2",email="u2@example.com",password="U2_PW", site=site1)

@@ -89,7 +89,7 @@ def editor(obj, name=None, parent=None):
 def newer(parent, name=None):
 	form = SiteEditForm(request.form, prefix="site")
 	if request.method == 'POST' and form.validate():
-		obj = Site(form.domain.data, form.name.data)
+		obj = Site.new(form.domain.data, form.name.data)
 		obj.parent = parent
 		obj.record_creation()
 		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))

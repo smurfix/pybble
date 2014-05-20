@@ -355,7 +355,7 @@ class User(PasswordValue,ObjectRef):
 		try:
 			s = Breadcrumb.q.get_by(parent=obj, **q)
 		except NoData:
-			Breadcrumb(self,obj)
+			Breadcrumb.new(self,obj)
 		else:
 			s.visit()
 			if not s.superparent: # bugfix
@@ -524,7 +524,7 @@ class User(PasswordValue,ObjectRef):
 		if p:
 			p.right = right
 		else:
-			p = Permission(user,obj,discr,right,inherit)
+			p = Permission.new(user,obj,discr,right,inherit)
 
 	def forbid(user,obj, discr=None, inherit=None):
 		discr = Discriminator.get(discr,obj).id
@@ -640,7 +640,7 @@ class Member(ObjectRef):
 				raise ManyDataExc("{} is not a member of {}".format(user,group))
 			return M
 		else:
-			return Delete(M)
+			return Delete.new(M)
 
 	@property
 	def data(self):

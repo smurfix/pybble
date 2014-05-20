@@ -51,7 +51,7 @@ class RESTend(object):
 				setattr(obj,k,None)
 				changed[data] = (ov,None)
 		if changed:
-			Change(obj, data=encode(changed), comment=comment)
+			Change.new(obj, data=encode(changed), comment=comment)
 		if self.json:
 			obj = obj.as_dict
 		return { "obj":obj, "changed":changed }
@@ -62,7 +62,7 @@ class RESTend(object):
 			obj = D(**data)
 		except TypeError as e:
 			raise TypeError("{}: {}".format(D,e)) ## SIGH
-		res = Tracker(request.user,obj, comment=comment)
+		res = Tracker.new(request.user,obj, comment=comment)
 		if self.json:
 			res = res.as_dict
 		return res
@@ -80,7 +80,7 @@ class RESTend(object):
 				setattr(obj,k,v)
 				changed[k] = (ov,v)
 		if changed:
-			res = Change(obj, data=encode(changed), comment=comment)
+			res = Change.new(obj, data=encode(changed), comment=comment)
 			if self.json:
 				res = res.as_dict
 		else:
@@ -92,7 +92,7 @@ class RESTend(object):
 		if descr is not None:
 			D = Discriminator.get(descr).mod
 			assert D is type(obj), "{} is not a {}".format(str(obj),str(D))
-		Delete(obj, comment=comment)
+		Delete.new(obj, comment=comment)
 		if self.json:
 			obj = obj.as_dict
 		return { "obj":obj, "deleted":True }
