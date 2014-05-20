@@ -129,7 +129,6 @@ class BaseApp(WrapperApp,Flask):
 		for t in MIMEtranslator.q.all():
 			self.translators[t.name] = t.mod.init_app(self)
 
-		self.before_request(self._setup_site)
 		self.before_request(self._setup_user)
 		self.context_processor(get_context)
 	
