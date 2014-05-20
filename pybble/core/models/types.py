@@ -72,18 +72,20 @@ class MIMEtype(Loadable, ObjectRef):
 	to_discr = relationship(Discriminator, primaryjoin=to_discr_id==Discriminator.id)
 	__table_args__ = (UniqueConstraint(typ,subtyp),)
 
-	def setup(self, typ,subtyp, name=None, ext=None,doc=None):
+	def setup(self, typ,subtyp, id=None,name=None, ext=None,doc=None,path=None):
 		if typ == "pybble":
 			discr = getattr(D,subtyp,None)
 		else:
 			discr = None
 		if name is None:
 			name = typ+'/'+subtyp
+		if id: self.id=id ## Linked to Discriminator
 		self.typ = typ
 		self.subtyp = subtyp
 		self.name = name
 		self.ext = ext
 		self.doc = doc
+		self.path = path
 		self.to_discr_id = discr
 		super(MIMEtype,self).setup()
 
@@ -110,7 +112,7 @@ class MIMEtype(Loadable, ObjectRef):
 		except NoData:
 			if not add:
 				raise KeyError("Could not find MIME type "+typ+'/'+subtyp)
-			return cls(typ=typ,subtyp=subtyp)
+			return cls.new(typ=typ,subtyp=subtyp)
 
 	@property
 	def as_str(self):
@@ -154,6 +156,14 @@ class MIMEtranslator(Loadable, ObjectRef):
 	name = Column(Unicode(30), unique=True, nullable=False)
 	weight = Column(Integer, nullable=False,default=0, doc="Used when translating from A to B to C. Less is better.")
 
+	def setup(self, mime,name,path,weight=None):
+		self.mime = mime
+		self.name = name
+		self.path = path
+		if weight is not None: self.weight = weight
+		super(MIMEtranslator,self).setup()
+		
+
 	@classmethod
 	def get(cls, mime, from_mime,to_mime):
 		try:
@@ -195,6 +205,14 @@ class MIMEadapter(ObjectRef):
 	name = Column(Unicode(30), unique=True, nullable=False)
 	doc = Column(Unicode(1000), nullable=True)
 	weight = Column(Integer, nullable=False,default=0, doc="Used when translating from A to B to C. Less is better.")
+
+	def setup(self, translator,from_mime,to_mime, name,weight=None,doc=None):
+		self.translator = translator
+		self.from_mime = from_mime
+		self.to_mime = to_mime
+		if name is not None: self.name = name
+		if weight is not None: self.weight = weight
+		super(MIMEadapter,self).setup()
 
 	@classmethod
 	def get(cls, mime, from_mime,to_mime):

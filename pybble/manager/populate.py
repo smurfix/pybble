@@ -21,7 +21,7 @@ from traceback import print_exc,format_exc
 
 from sqlalchemy import or_
 
-from flask import request,current_app
+from flask import request,current_app,g
 from flask._compat import text_type,string_types
 from werkzeug import import_string
 
@@ -95,7 +95,6 @@ class PopulateCommand(Command):
 		from ..core.models.config import ConfigVar
 		from ..core.models.verifier import VerifierBase
 		from ..core.models.tracking import Delete
-		from ..core.users import create_user
 		from .. import ROOT_SITE_NAME,ROOT_USER_NAME, ANON_USER_NAME
 
 		if 'MEDIA_PATH' not in config:
@@ -188,7 +187,7 @@ class PopulateCommand(Command):
 		if User.q.filter_by(parent=root, username=ANON_USER_NAME).count():
 			logger.debug("An anon user exists. Good.")
 		else:
-			User.new(ANON_USER_NAME, parent=root)
+			User.new(ANON_USER_NAME, site=root)
 			logger.debug("An initial anon user has been created.")
 		db.commit()
 
@@ -204,9 +203,9 @@ class PopulateCommand(Command):
 		## check membership
 		for a in User.q.filter_by(parent=root, username=ANON_USER_NAME):
 			try:
-				Member.q.get_by(parent=anon, owner=a)
+				Member.q.get_by(group=anon, member=a)
 			except NoData:
-				Member.new(parent=anon, owner=a)
+				Member.new(group=anon, member=a)
 				logger.warn("{} was added to the anon group".format(a))
 			else:
 				logger.debug("{} is an anon-group member".format(a))
@@ -218,7 +217,7 @@ class PopulateCommand(Command):
 				superuser = User.q.get_by(username=ROOT_USER_NAME, parent=root)
 			except NoData:
 				password = random_string()
-				superuser = create_user(site=root,name=ROOT_USER_NAME,password=password)
+				superuser = User.new(site=root,username=ROOT_USER_NAME,password=password)
 				db.commit()
 				logger.info(u"The root user has been created. Password: ‘{}’.".format(password))
 			else:
@@ -232,7 +231,7 @@ class PopulateCommand(Command):
 			logger.debug("The root user exists. Good.")
 		if superuser.email is None or force:
 			if superuser.email is not None:
-				logger.info(u"The main admin email changed from ‘{}’ ro ‘{}’".format(superuser.email,config.ADMIN_EMAIL))
+				logger.info(u"The main admin email changed from ‘{}’ to ‘{}’".format(superuser.email,config.ADMIN_EMAIL))
 			superuser.email = text_type(config.ADMIN_EMAIL)
 		db.commit()
 		request.user = superuser

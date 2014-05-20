@@ -572,12 +572,11 @@ class Group(ObjectRef):
 	        
 	name = Column(Unicode(30))
 
-	def setup(self,name,owner,site=None, **kw):
-		self.owner = owner
+	def setup(self,name,parent,owner=None):
+		self.owner = owner or getattr(request,'user',None)
 		self.name = name
-		if site:
-			self.superparent = site
-		super(Group,self).setup(**kw)
+		self.parent = parent
+		super(Group,self).setup()
 	
 ## Membership
 
@@ -587,57 +586,48 @@ class Member(ObjectRef):
 		owner: the individual who's the member.
 		parent: the group
 
-		TODO: parent=member, superparent=group, owner=whodunit
+		OLD PYBBLE: parent=group, owner=member
 		"""
 	__tablename__ = "groupmembers"
 	_descr = D.Member
 	_no_crumbs = True
 	@classmethod
 	def __declare_last__(cls):
-		if not hasattr(cls,'user'):
-			cls.user = cls.owner
+		if not hasattr(cls,'member'):
+			cls.member = cls.parent
 		if not hasattr(cls,'group'):
-			cls.group = cls.parent
-		check_unique(cls,"user group")
+			cls.group = cls.superparent
+		check_unique(cls,"member group")
 
 	excluded = Column(Boolean, nullable=False,default=False)
 
-	def setup(self,user=None,group=None, **kw):
-		super(Member,self).setup(**kw)
-		if self.owner is None:
-			self.owner = user
-		else:
-			assert user is None
-		if self.parent is None:
-			self.parent = group
-		else:
-			assert group is None
-		assert self.owner and self.parent
+	def setup(self,member,group, excluded=False):
+		self.member = member
+		self.group = group
+		self.excluded = excluded
 
-		self.excluded = False
-		try: del self._memberships
-		except AttributeError: pass
+		super(Member,self).setup()
 
 	@classmethod
-	def add_to(cls,user,group,fail=False):
+	def add_to(cls,member,group,fail=False):
 		"""Adds the user to the group"""
 		try:
-			M = cls.q.get_by(user=user,group=group)
+			M = cls.q.get_by(member=member,group=group)
 		except NoData:
-			M = cls(user=user,group=group)
+			M = cls.new(member=member,group=group)
 		else:
 			if fail:
-				raise ManyDataExc("{} is already a member of {}".format(user,group))
+				raise ManyDataExc("{} is already a member of {}".format(member,group))
 		return M
 
 	@classmethod
-	def drop_from(cls,user,group,fail=False):
+	def drop_from(cls,member,group,fail=False):
 		"""Remove the user from the group"""
 		try:
-			M = cls.q.get_by(user=user,group=group)
+			M = cls.q.get_by(member=member,group=group)
 		except NoData:
 			if fail:
-				raise ManyDataExc("{} is not a member of {}".format(user,group))
+				raise NoData("{} is not a member of {}".format(member,group))
 			return M
 		else:
 			return Delete.new(M)
@@ -645,10 +635,9 @@ class Member(ObjectRef):
 	@property
 	def data(self):
 		return """\
-User: %s
 Group: %s
 Member: %s
-""" % (self.owner, self.parent, "Yes" if not self.excluded else "No")
+""" % (self.group, self.member, "Yes" if not self.excluded else "No")
 
 	@property
 	def as_str(self):
@@ -684,6 +673,10 @@ class Permission(ObjectRef):
 	@classmethod
 	def __declare_last__(cls):
 		#check_unique(cls, 'owner parent ???')
+		if not hasattr(cls,'user'):
+			cls.user = cls.owner
+		if not hasattr(cls,'target'):
+			cls.target = cls.superparent
 		no_update(cls.parent)
 		no_update(cls.owner)
 
@@ -696,28 +689,21 @@ class Permission(ObjectRef):
 	new_discr_id = Column("new_discr", Integer, ForeignKey(Discriminator.id), nullable=True)
 	new_discr = relationship(Discriminator, primaryjoin=new_discr_id==Discriminator.id)
 
-	def setup(self, user=None, obj=None, for_discr=None, right=None, inherit=None, new_discr=None, **kw):
-		assert "discr" not in kw
+	def setup(self, user, target, for_discr=None, right=None, inherit=None, new_discr=None):
 		assert right is not None
 		if for_discr is not None:
 			for_discr = Discriminator.get(for_discr)
-		super(Permission,self).setup(**kw)
 		self.for_discr = for_discr
 		self.right = right
 		self.inherit = inherit
-		if self.owner is None:
-			self.owner = user
-		else:
-			assert user is None
-		if self.parent is None:
-			self.parent = obj
-		else:
-			assert obj is None
-		assert self.owner and self.parent
+		self.user = user
+		self.target = target
 
 		if right == PERM_ADD:
 			try: del user._can_add
 			except AttributeError: pass
+
+		super(Permission,self).setup()
 	
 	@property
 	def as_str(self):

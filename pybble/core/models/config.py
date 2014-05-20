@@ -18,7 +18,7 @@ import datetime
 import random
 import os
 
-from flask import url_for, current_app, g
+from flask import url_for, current_app, g,request
 from flask.config import Config
 from flask._compat import string_types,text_type
 
@@ -215,11 +215,12 @@ class ConfigVar(ObjectRef, JsonValue):
 	name = Column(Unicode(30), index=True)
 	doc = Column(Unicode(1000))
 
-	def setup(self, parent, name,value, **kw):
-		super(ConfigVar,self).setup(**kw)
+	def setup(self, parent, name,value, doc=None):
 		self.parent = parent
 		self.name = name
 		self.value = value
+		if doc is not None: self.doc = doc
+		super(ConfigVar,self).setup()
 
 	@staticmethod
 	def get(parent,name):
@@ -254,15 +255,14 @@ class SiteConfigVar(ObjectRef, JsonValue):
 		no_update(cls.superparent)
 	# Owner: the user who last set the variable
 
-	def setup(self,parent,var=None,superparent=None,**kw):
+	def setup(self,parent,var,value):
 		# assert that exactly one of var or superparent is set
-		if var is None:
-			var = superparent
-		else:
-			assert superparent is None
-		assert var is not None
+		self.parent = parent
+		self.var = var
+		self.value = value
+		self.owner = getattr(request,'user',None)
 
-		super(SiteConfigVar,self).setup(var=var,parent=parent,**kw)
+		super(SiteConfigVar,self).setup()
 
 	@property
 	def as_str(self):

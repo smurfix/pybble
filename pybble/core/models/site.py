@@ -110,13 +110,15 @@ class Site(ObjectRef):
 				yield ss
 	# we don't have "yield from" in PY2
 
-	def setup(self,domain, name=None, **kw):
+	def setup(self,domain, name=None, parent=None,app=None):
 		if name is None:
 			name=u"Here be "+domain
 		self.domain=unicode(domain)
 		self.name=name
+		self.parent=parent
+		self.app=app
 
-		super(Site,self).setup(**kw)
+		super(Site,self).setup()
 	
 	def before_insert(self):
 		if self.name == ROOT_SITE_NAME:

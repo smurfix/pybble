@@ -30,7 +30,7 @@ from sqlalchemy.pool import AssertionPool
 from formalchemy import Column, helpers
 from formalchemy.fields import IntegerFieldRenderer
 
-from flask import Markup, url_for, escape, g
+from flask import Markup, url_for, escape, g, request
 from flask._compat import implements_to_string as py2_unicode, text_type
 
 import logging
@@ -220,7 +220,7 @@ class Base(object):
 
 			Do not call directly.
 			"""
-		if not _new and not getattr(g,'naked_new',False):
+		if getattr(g,'naked_new',False):
 			raise RuntimeError("Either use ‘.new’, or wrap your code with ‘with external_input:’")
 		for k,v in kw.items():
 			setattr(self,k,v)
@@ -236,7 +236,8 @@ class Base(object):
 				# do not use User(username="fred_flintstone")
 				# that's reserved for form and REST handling
 			"""
-		self = cls(_new=True)
+		with new_protect():
+			self = cls()
 		self.setup(*a,**kw)
 		db.add(self)
 		db.flush((self,))
@@ -256,7 +257,7 @@ class Base(object):
 			this record does not yet have an ID. Use after_insert() for that.
 			"""
 		if self.superparent is None:
-			self.superparent = request.site
+			self.superparent = getattr(request,'site',None)
 	
 	def before_insert(self):
 		"""Called after finalizing the object but before writing to the database"""
@@ -280,14 +281,14 @@ Base = declarative_base(cls=Base)
 Base.super_readonly = False
 #logged_session(db,Base)
 
-class external_input(object):
+class new_protect(object):
 	"""\
 		This is a ‘with’ wrapper to allow instantiation of an
 		object without calling "new" on it, which does all kinds of input
 		checks.
 		"""
 	def __enter__(self):
-		self.named_new = getattr(g,'naked_new',False)
+		self.naked_new = getattr(g,'naked_new',False)
 		g.naked_new = True
 	def __exit__(self, a,b,c):
 		g.naked_new = self.naked_new

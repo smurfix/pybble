@@ -140,7 +140,6 @@ class TemplateMatch(ObjectRef):
 	for_discr = relationship(Discriminator, primaryjoin=for_discr_id==Discriminator.id)
 
 	def setup(self, obj, template, inherit=None,weight=None, for_discr=None):
-		assert "discr" not in kw
 		if for_discr is not None:
 			for_discr = Discriminator.get(for_discr)
 
