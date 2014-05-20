@@ -23,7 +23,6 @@ from flask._compat import text_type
 from . import PrepCommand as Command
 from . import Option, Manager
 from ..core.models.user import User
-from ..core.users import create_user,drop_user
 from ..globals import current_site
 from ..utils import random_string
 
@@ -37,7 +36,7 @@ class AddUser(Command):
 		if help or name is None:
 			self.parser.print_help()
 			sys.exit(not help)
-		create_user(name=name, site=current_site)
+		User.new(username=name)
 		
 class ListUsers(Command):
 	"""Show the list of known sites"""

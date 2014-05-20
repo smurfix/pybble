@@ -40,21 +40,4 @@ logger = logging.getLogger('pybble.core.users')
 ###################################################
 # User management
 
-def create_user(name,password=None,site=None):
-	if site is None:
-		site = current_site
-	user = User.new(username=name,password=password,parent=site)
-	db.flush((user,))
-	return user
-
-def drop_user(name):
-	if isinstance(name,string_types):
-		try:
-			user = User.q.get_by(name=name)
-		except NoData:
-			user = User.q.get_by(email=name)
-	else:
-		assert isinstance(user,User)
-		user=name
-	Delete.new(user)
-
+## everything in models.user, for now
