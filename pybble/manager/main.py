@@ -121,6 +121,7 @@ class ShowUrls(Command):
 class RootManager(Manager):
 	_pdb = False
 	_dump = False
+	_ctx = False
 	def __init__(self, app=None, *a,**kw):
 		super(RootManager, self).__init__(*a,**kw)
 		self.add_root_options()
@@ -185,11 +186,16 @@ class RootManager(Manager):
 		self._pdb = pdb
 		self._dump = dump
 		if self.app is not None:
+			self._ctx = self.app.app_context()
+			self._ctx.push()
 			# this can't happen in production
 			assert self.app.testing, self.app
 			return self.app
 		from ..app import create_app
-		return create_app(**kw)
+		app = create_app(**kw)
+		self._ctx = app.app_context()
+		self._ctx.push()
+		return app
 
 ############################### Accessing sub-sites by domain
 
