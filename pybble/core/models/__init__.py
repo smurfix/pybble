@@ -27,7 +27,7 @@ from ..json import register_object
 
 from ..db import Base, Column, IDrenderer, db, NoData, maybe_stale, no_autoflush, refresh, setup_events
 from ..signal import ObjSignal
-from .globals import current_site
+from ...globals import current_site
 
 from flask import request,current_app
 from flask._compat import text_type, string_types

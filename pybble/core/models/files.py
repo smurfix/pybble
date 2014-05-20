@@ -23,7 +23,7 @@ from sqlalchemy.orm import relationship,backref
 from sqlalchemy import event
 
 from ...core import config
-from ..globals import current_site
+from ...globals import current_site
 from ...utils import hash_data
 from ..db import Base, Column, db, check_unique,no_update
 from . import Object,ObjectRef, update_modified

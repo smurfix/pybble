@@ -32,7 +32,7 @@ from .models.site import Site,App
 from .models.config import ConfigVar
 from .models.user import User
 from .models.tracking import Delete
-from .globals import current_site
+from ..globals import current_site
 from ..manager import Manager,Command
 
 logger = logging.getLogger('pybble.core.users')

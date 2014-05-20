@@ -34,7 +34,7 @@ from ..render import ContentData
 from .models.user import User
 from .models.site import Site
 from .db import db, NoData, refresh
-from .globals import current_site
+from ..globals import current_site
 from .signal import all_apps,app_list
 
 def add_session():

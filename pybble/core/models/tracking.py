@@ -27,7 +27,7 @@ from flask import request, current_app
 from . import Object,ObjectRef, Discriminator
 from ._descr import D
 from ..db import Base, Column, check_unique, db
-from ..globals import current_site
+from ...globals import current_site
 from ...core import config
 from ...core.signal import ObjDeleted
 

@@ -26,7 +26,7 @@ from werkzeug.utils import cached_property
 
 from .. import config
 from ..db import Base, Column, no_update,check_unique, db, refresh, maybe_stale
-from ..globals import current_site
+from ...globals import current_site
 from . import Object,ObjectRef, TM_DETAIL, Discriminator
 from ._descr import D
 from .types import MIMEtype,MIMEadapter,MIMEtranslator
