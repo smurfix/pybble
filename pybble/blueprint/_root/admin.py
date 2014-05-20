@@ -17,6 +17,7 @@ from flask import request, render_template
 from pybble.core.models import obj_get
 from pybble.core.models.template import Template
 from pybble.core.db import db
+from pybble.globals import current_site
 from ._base import expose
 expose = expose.sub("admin")
 
@@ -28,13 +29,13 @@ expose = expose.sub("admin")
 @expose("/admin/template/<oid>")
 def list_templates(oid=None):
 	"""List all named templates"""
-	obj = obj_get(oid) if oid else request.site
+	obj = obj_get(oid) if oid else current_site
 	s = obj
 	t = []
 	while s:
 		t.extend(Template.q.filter_by(superparent_id == s).order_by(Template.name))
 		s = s.parent
-	return render_template('templates.html', templates=t, obj=obj, title_trace=["Templates",request.site.name])
+	return render_template('templates.html', templates=t, obj=obj, title_trace=["Templates",current_site.name])
 	
 @expose("/admin/template_for/<oid>")
 def show_templates(oid):

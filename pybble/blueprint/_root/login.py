@@ -21,6 +21,7 @@ from pybble.core.db import db,NoData
 from pybble.core.models.user import User
 from pybble.core.models.verifier import Verifier, VerifierBase
 from pybble.core.session import logged_in
+from pybble.globals import current_site
 from wtforms import Form, BooleanField, TextField, PasswordField, HiddenField, validators
 from wtforms.validators import ValidationError
 from jinja2 import Markup
@@ -57,15 +58,15 @@ def do_login():
 		try:
 			u = User.q.get_by(username=form.username.data)
 		except NoData:
-			logger.warn("No user {} in {}".format(form.username.data,request.site))
+			logger.warn("No user {} in {}".format(form.username.data,current_site))
 			u = None
 		else:
 			if not u.check_password(form.password.data):
-				logger.warn("Wrong password of {} in {}".format(u,request.site))
+				logger.warn("Wrong password of {} in {}".format(u,current_site))
 				u = None
 			else:
-				if not u.member_of(request.site) and not u.anon:
-					logger.warn("Wrong user {} in {}".format(u,request.site))
+				if not u.member_of(current_site) and not u.anon:
+					logger.warn("Wrong user {} in {}".format(u,current_site))
 					u = None
 		if u:
 			logged_in(u)
@@ -127,11 +128,11 @@ def register():
 	if request.method == 'POST' and form.validate():
 		u = User.new(form.username.data, form.password.data, anon=True) ## needs verification
 		u.email = form.email.data
-		u.parent = request.site
+		u.parent = current_site
 		u.record_creation()
 
 		verifier = VerifierBase.q.get_by(name="register")
-		v = verifier.new(obj=request.site, user=u)
+		v = verifier.new(obj=current_site, user=u)
 		v.send()
 
 		flash(Markup(u"Wir haben soeben eine Email an dich geschickt. <br />" + \
@@ -147,7 +148,7 @@ def do_logout():
 		flash(u'Du warst nicht eingeloggt', False)
 		return redirect(request.args.get("next",None) or url_for("pybble.views.mainpage"))
 	else:
-		request.user = u = request.site.anon_user
+		request.user = u = current_site.anon_user
 		session['uid'] = u.id
 		flash(u'Du hast dich erfolgreich abgemeldet.', True)
 		return redirect(url_for("pybble.views.mainpage"))

@@ -26,6 +26,7 @@ from werkzeug.utils import cached_property
 
 from .. import config
 from ..db import Base, Column, no_update,check_unique, db, refresh, maybe_stale
+from ..globals import current_site
 from . import Object,ObjectRef, TM_DETAIL, Discriminator
 from ._descr import D
 from .types import MIMEtype,MIMEadapter,MIMEtranslator
@@ -76,7 +77,7 @@ class Template(_Content, Cached, ObjectRef):
 		if name is None:
 			name = source
 		if parent is None:
-			parent = request.site
+			parent = current_site
 
 		self.name = name
 		self.source = source

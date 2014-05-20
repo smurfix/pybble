@@ -29,6 +29,7 @@ from ..core.models.template import TemplateMatch, Template
 from ..core.models.files import StaticFile
 from ..core.models.types import MIMEtype
 from ..core.db import db,NoData
+from ..globals import current_site
 
 from wtforms.validators import ValidationError
 from time import time
@@ -86,7 +87,7 @@ class ContentData(object):
 	def __init__(self, obj=None, content=None, anchor=None, site=None, from_mime=NotGiven,to_mime=NotGiven, name=None, blueprint=None, **params):
 
 		if site is None:
-			site = request.site
+			site = current_site
 
 		if from_mime is NotGiven:
 			if content is None:
@@ -242,7 +243,7 @@ def get_context():
 		# CURRENT_URL=request.build_absolute_uri(),
 		USER=getattr(request,"user",None),
 		MESSAGES=msgs,
-		SITE=request.site,
+		SITE=current_site,
 		CRUMBS=(user.groups+list(p.parent for p in user.all_visited()[0:20])) if user else None,
 		NOW=datetime.utcnow(),
 	)
@@ -290,12 +291,12 @@ import email.Message
 
 def send_mail(to='', template='', server=None, **context):
 	if "site" not in context:
-		context["site"] = request.site
+		context["site"] = current_site
 	if "user" not in context:
 		context["user"] = request.user
 	rand = random_string(8)
 	for x in range(3):
-		context["id"+str(x)] = "%d.%s%d@%s" % (time(),random_string(10),x,request.site.domain)
+		context["id"+str(x)] = "%d.%s%d@%s" % (time(),random_string(10),x,current_site.domain)
 	
 	if server:
 		mailServer = server

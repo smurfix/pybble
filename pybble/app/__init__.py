@@ -35,6 +35,7 @@ from ..core.models.site import Site,App,SiteBlueprint,Blueprint
 from ..core.models.config import ConfigVar
 from ..core.models.user import User
 from ..core.models.types import MIMEtranslator
+from ..globals import current_site
 from ..manager import Manager,Command
 from ..render import ContentData,get_context
 from ..blueprint import load_app_blueprints
@@ -132,12 +133,6 @@ class BaseApp(WrapperApp,Flask):
 		self.before_request(self._setup_user)
 		self.context_processor(get_context)
 	
-	def _setup_site(self, **kw):
-		if current_app.site is None:
-			request.site = None
-		else:
-			request.site = refresh(current_app.site)
-		
 	def create_jinja_environment(self):
 		from ..render.jinja import Environment
 		return Environment(self)
@@ -160,7 +155,7 @@ class BaseApp(WrapperApp,Flask):
 	def _setup_user(self, **kw):
 		## TODO convert to Flask.login
 		if current_app.config.TESTING:
-			request.user = request.site.owner
+			request.user = current_site.owner
 		elif 'user' in session:
 			request.user = User.q.get_by(id=session.user)
 		elif FROM_SCRIPT:
@@ -176,7 +171,7 @@ class BaseApp(WrapperApp,Flask):
 					logger.warn("No root user was found.")
 					request.user = None
 		else:
-			request.user = User.q.get_by(name="",site=request.site)
+			request.user = User.q.get_by(name="",site=current_site)
 	
 	@property
 	def preserve_context_on_exception(self):
@@ -327,10 +322,10 @@ def create_site(parent,domain,app,name):
 
 def drop_site(site=None):
 	if site is None:
-		site = request.site
+		site = current_site
 	elif isinstance(site,string_types):
 		try:
-			site = Site.q.get_by(name=text_type(site),parent=request.site)
+			site = Site.q.get_by(name=text_type(site),parent=current_site)
 		except NoData:
 			site = Site.q.get_by(domain=text_type(site))
 	Delete.new(site)

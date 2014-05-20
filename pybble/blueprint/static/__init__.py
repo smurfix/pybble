@@ -25,6 +25,7 @@ from pybble.core.route import Exposer
 from pybble.blueprint import BaseBlueprint
 from pybble.core.db import NoData
 from pybble.core.models.files import StaticFile
+from pybble.globals import current_site
 
 from datetime import datetime,timedelta
 
@@ -41,7 +42,7 @@ class Blueprint(BaseBlueprint):
 
 @expose("/static/<path:file>", endpoint="static")
 def serve_path(file):
-	site = request.site
+	site = current_site
 	while site:
 		try:
 			sf = StaticFile.q.get_by(superparent=site, path=file)

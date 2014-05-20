@@ -27,6 +27,7 @@ from flask import request, current_app
 from . import Object,ObjectRef, Discriminator
 from ._descr import D
 from ..db import Base, Column, check_unique, db
+from ..globals import current_site
 from ...core import config
 from ...core.signal import ObjDeleted
 
@@ -230,7 +231,7 @@ class Tracker(TrackingObjectRef):
 	def after_insert(self):
 		db.flush((self.owner,)) # required to guard against cycles
 		self.parent = self._obj
-		self.superparent = self._site or request.site
+		self.superparent = self._site or current_site
 
 	@property
 	def as_str(self):

@@ -24,6 +24,7 @@ from . import PrepCommand as Command
 from . import Option, Manager
 from ..core.models.user import User
 from ..core.users import create_user,drop_user
+from ..globals import current_site
 from ..utils import random_string
 
 class AddUser(Command):
@@ -36,7 +37,7 @@ class AddUser(Command):
 		if help or name is None:
 			self.parser.print_help()
 			sys.exit(not help)
-		create_user(name=name, site=request.site)
+		create_user(name=name, site=current_site)
 		
 class ListUsers(Command):
 	"""Show the list of known sites"""
@@ -50,7 +51,7 @@ class ListUsers(Command):
 		if help:
 			self.parser.print_help()
 			sys.exit(0)
-		u = User.q.filter_by(parent=request.site)
+		u = User.q.filter_by(parent=current_site)
 		if name is not None:
 			u = u.filter_by(username=name)
 		for user in u:
@@ -82,7 +83,7 @@ class ParamUser(Command):
 		if help:
 			self.parser.print_help()
 			sys.exit(0)
-		site = request.site
+		site = current_site
 		if bp is not None:
 			site = SiteBlueprint.q.get_by(site=site, name=name).blueprint
 		else:
@@ -92,8 +93,8 @@ class ParamUser(Command):
 				print(var.name,var.value, sep="\t")
 			return
 		user = User.q.get_by(name=key)
-		if user.parent != request.site and not force:
-			raise InvalidCommand("This user's main site is ‘{}’.\nYou're changing settings for ‘{}’.\nUse the ‘--force’ option if you mean it.".format(user.parent.name,request.site.name))
+		if user.parent != current_site and not force:
+			raise InvalidCommand("This user's main site is ‘{}’.\nYou're changing settings for ‘{}’.\nUse the ‘--force’ option if you mean it.".format(user.parent.name,current_site.name))
 		if key is None:
 			for v in SiteConfigVar.q.filter(SiteConfigVar.owner.parent==site, SiteConfigVar.parent==user):
 				print(v.var.name,v.value, sep="\t")

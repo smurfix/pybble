@@ -34,6 +34,7 @@ from ..render import ContentData
 from .models.user import User
 from .models.site import Site
 from .db import db, NoData, refresh
+from .globals import current_site
 from .signal import all_apps,app_list
 
 def add_session():
@@ -63,7 +64,7 @@ def add_user():
 				## Last login was too long ago.
 				user = None
 	if user is None:
-		user = request.site.anon_user
+		user = current_site.anon_user
 		session['uid'] = user.id
 
 #	# check for bann
@@ -73,7 +74,7 @@ def add_user():
 #				session=session)
 #
 #		session.pop('uid', None)
-#		user = request.site.anon_user
+#		user = current_site.anon_user
 #		session['uid'] = user.id
 
 	user.cur_login = datetime.now()

@@ -31,6 +31,7 @@ from ... import ANON_USER_NAME
 from ...utils import random_string, AuthError
 from ...core import config
 from ..db import Base, Column, db, NoData, check_unique,no_update
+from ..globals import current_site
 from . import Object,ObjectRef, PERM,PERM_NONE,PERM_ADMIN,PERM_READ,PERM_ADD,PERM_name, Discriminator
 from .site import Site
 from .tracking import Breadcrumb,Delete
@@ -116,7 +117,7 @@ def log_access(*args):
 #
 #		username = username or cls.generate_username(email)
 #		if site is None:
-#			site = request.site
+#			site = current_site
 #		return cls.objects.create(
 #			name=name,
 #			email=email,
@@ -235,7 +236,7 @@ class User(PasswordValue,ObjectRef):
 	@classmethod
 	def new_anon_user(cls,site=None):
 		if site is None:
-			site = request.site
+			site = current_site
 		try:
 			g = Group.q.get_by(name=ANON_USER_NAME,owner=site,parent=site)
 		except NoData:
@@ -296,10 +297,10 @@ class User(PasswordValue,ObjectRef):
 			except (AttributeError,NoData):
 				pass
 			else:
-				raise RuntimeError(u"User '%s' already exists in %s" % (username,request.site))
+				raise RuntimeError(u"User '%s' already exists in %s" % (username,current_site))
 
 		if self.site is None:
-			self.site = request.site
+			self.site = current_site
 	
 	def after_insert(self):
 		if self._anon:
@@ -330,7 +331,7 @@ class User(PasswordValue,ObjectRef):
 		if self.username == ANON_USER_NAME:
 			return True
 		if site is None:
-			site = request.site
+			site = current_site
 		anon = Group.q.get_by(name=ANON_USER_NAME,owner=site,parent=site)
 		return self.member_of(anon)
 
@@ -359,10 +360,10 @@ class User(PasswordValue,ObjectRef):
 		else:
 			s.visit()
 			if not s.superparent: # bugfix
-				s.superparent = request.site
+				s.superparent = current_site
 	
 	def last_visited(self,cls=None):
-		q = { "owner":self, "superparent":request.site }
+		q = { "owner":self, "superparent":current_site }
 		if cls:
 			q["discr"] = cls.cls_discr()
 		try:
@@ -373,14 +374,14 @@ class User(PasswordValue,ObjectRef):
 			return r.parent
 	
 	def all_visited(self, cls=None):
-		q = { "owner":self, "superparent":request.site }
+		q = { "owner":self, "superparent":current_site }
 		if cls:
 			q["discr"] = cls.cls_discr()
 		return Breadcrumb.q.filter_by(**q).order_by(Breadcrumb.visited.desc())
 
 	def is_verified(self, site=None):
 		if site is None:
-			site = request.site
+			site = current_site
 		try:
 			m = Member.q.get_by(user=self,group=site)
 		except NoData:
@@ -390,10 +391,10 @@ class User(PasswordValue,ObjectRef):
 
 	def add_verified(self,v,site=None):
 		if site is None:
-			site = request.site
+			site = current_site
 		anon = Group.q.get_by(name=ANON_USER_NAME,owner=site,parent=site)
 		if site is None:
-			site = request.site
+			site = current_site
 		Member.add_to(self,site)
 		Member.drop_from(self,anon)
 	verified = property(is_verified,add_verified)
@@ -433,8 +434,8 @@ class User(PasswordValue,ObjectRef):
 		"""Recursively get the permission of this user for that (type of) object."""
 
 		ru = getattr(request,"user",None)
-		if obj is not request.site and \
-		   ru and ru.can_admin(request.site, discr=request.site.classdiscr):
+		if obj is not current_site and \
+		   ru and ru.can_admin(current_site, discr=current_site.classdiscr):
 			if current_app.config.DEBUG_ACCESS:
 				log_access("ADMIN",obj)
 			return want if want and want < 0 else PERM_ADMIN
@@ -445,7 +446,7 @@ class User(PasswordValue,ObjectRef):
 			return want
 
 		if current_app.config.DEBUG_ACCESS:
-			log_access("PERM", Discriminator.get(discr).name if discr else "-", Discriminator.get(new_discr) if new_discr else "-", (PERM_name(want) if want else "-")+":",obj,"FOR",user,"AT",request.site, u"⇒")
+			log_access("PERM", Discriminator.get(discr).name if discr else "-", Discriminator.get(new_discr) if new_discr else "-", (PERM_name(want) if want else "-")+":",obj,"FOR",user,"AT",current_site, u"⇒")
 
 		pq = []
 		if want is not None:

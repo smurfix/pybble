@@ -27,6 +27,7 @@ from ..json import register_object
 
 from ..db import Base, Column, IDrenderer, db, NoData, maybe_stale, no_autoflush, refresh, setup_events
 from ..signal import ObjSignal
+from .globals import current_site
 
 from flask import request,current_app
 from flask._compat import text_type, string_types
@@ -618,8 +619,8 @@ class Object(Dumpable, Base):
 				obj = s
 			elif got_site:
 				break
-			elif request.site not in seen:
-				obj = request.site # last resort
+			elif current_site not in seen:
+				obj = current_site # last resort
 			else:
 				break
 

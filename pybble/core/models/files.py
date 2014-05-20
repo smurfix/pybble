@@ -23,6 +23,7 @@ from sqlalchemy.orm import relationship,backref
 from sqlalchemy import event
 
 from ...core import config
+from ..globals import current_site
 from ...utils import hash_data
 from ..db import Base, Column, db, check_unique,no_update
 from . import Object,ObjectRef, update_modified
@@ -70,7 +71,7 @@ class BinData(ObjectRef):
 			
 	def setup(self,name, ext=None,mimetype=None, content=None, parent=None, storage=None, **kw):
 		super(BinData,self).setup(**kw)
-		if not parent: parent = request.site
+		if not parent: parent = current_site
 		if not storage: storage = parent.default_storage
 		if mimetype:
 			self.mime = mimetype
@@ -299,7 +300,7 @@ class StaticFile(ObjectRef):
 	def setup(self, path, bin, **kw):
 		super(StaticFile,self).setup(**kw)
 		self.path = path
-		self.superparent = request.site
+		self.superparent = current_site
 		self.parent = bin
 		
 	@property

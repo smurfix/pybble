@@ -27,6 +27,7 @@ from pybble.core.models.template import TemplateMatch
 from pybble.core.models.tracking import Breadcrumb
 from pybble.core.models.site import Site
 from pybble.core.db import db,NoData
+from pybble.globals import current_site
 from ._base import expose
 expose = expose.sub("views")
 
@@ -60,18 +61,18 @@ def tryAddOn(obj,req, **kw):
 
 @expose("/")
 def mainpage():
-	return render_my_template(request.site)
+	return render_my_template(current_site)
 
 @expose('/tree')
 @expose('/tree/<oid>')
 def view_tree(oid=None):
 	if oid is None:
-		obj = request.site
+		obj = current_site
 	else:
 		obj = obj_get(oid)
 
 	request.user.will_admin(obj)
-	if obj is request.site:
+	if obj is current_site:
 		title_trace=["Objects"]
 	else:
 		title_trace=[unicode(obj),"Objects"]
@@ -233,7 +234,7 @@ def view_oid(oid, **args):
 		return render_my_template(obj=obj, detail=TM_DETAIL_PAGE, **args);
 	else:
 		try:
-			if not args and (not isinstance(obj,Site) or obj == request.site):
+			if not args and (not isinstance(obj,Site) or obj == current_site):
 				return redirect(url_for('.part.%s.viewer' % (obj.classname.lower(),),**args))
 		except BuildError:
 			pass

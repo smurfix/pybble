@@ -23,6 +23,7 @@ from flask._compat import text_type
 from . import PrepCommand as Command
 from . import Option, Manager
 from ..core.models.site import Site,App
+from ..globals import current_site
 from ..app import create_site
 
 def list_sites(site,level=0):
@@ -50,14 +51,14 @@ class AddSite(Command):
 		if help or domain is None:
 			self.parser.print_help()
 			sys.exit(not help)
-		create_site(request.site, domain,app_name,site_name)
+		create_site(current_site, domain,app_name,site_name)
 		
 class ListSites(Command):
 	"""Show the list of known sites"""
 	add_help = False
 
 	def run(self):
-		list_sites(request.site)
+		list_sites(current_site)
 		
 class DirSites(Command):
 	"""List available apps, or app details."""
@@ -101,7 +102,7 @@ class ParamSite(Command):
 		if help:
 			self.parser.print_help()
 			sys.exit(0)
-		site = request.site
+		site = current_site
 		if key is None:
 			for k,v in site.config.items():
 				print(k,v)

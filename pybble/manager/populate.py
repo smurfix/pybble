@@ -30,6 +30,7 @@ from ..utils import random_string
 from ..core import config
 from ..core.utils import attrdict
 from ..core.db import db, NoData
+from ..globals import current_site
 from . import Manager,Command,Option
 
 logger = logging.getLogger('pybble.manager.populate')
@@ -167,7 +168,7 @@ class PopulateCommand(Command):
 			else:
 				logger.debug("The root site exists. Good.")
 		db.commit()
-		request.site = root
+		current_site = root
 
 		## storage
 		try:

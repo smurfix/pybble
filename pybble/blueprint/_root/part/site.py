@@ -25,6 +25,7 @@ from pybble.core.db import db,NoData
 from pybble.core.models import TM_DETAIL_PAGE
 from pybble.core.models.site import Site
 from pybble.core.session import logged_in
+from pybble.globals import current_site
 from ..views import view_oid
 from .._base import expose
 expose = expose.sub("part.site")
@@ -98,5 +99,5 @@ def newer(parent, name=None):
 
 @expose("/")
 def viewer(**args):
-	return render_my_template(obj=request.site, detail=TM_DETAIL_PAGE, **args)
+	return render_my_template(obj=current_site, detail=TM_DETAIL_PAGE, **args)
 

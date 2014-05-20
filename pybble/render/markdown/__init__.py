@@ -20,6 +20,7 @@ try:
 	from markdown import Markdown
 	from .md_quotes import makeExtension as md_quotes
 	from jinja2 import contextfunction
+	from ...globals import current_site
 
 	marker = Markdown(
     	extensions = ['wikilinks','headerid',md_quotes()], 
@@ -36,7 +37,7 @@ try:
 	def convert(ctx,s,extern=False):
 		b = ""
 		if extern:
-			b = "http://"+request.site.domain
+			b = "http://"+current_site.domain
 		b += "/wiki/"
 		obj = ctx.get("obj",None)
 		if obj and isinstance(obj,WikiPage):

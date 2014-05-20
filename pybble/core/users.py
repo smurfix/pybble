@@ -27,11 +27,12 @@ from flask._compat import text_type
 from hamlish_jinja import HamlishExtension
 
 from .. import FROM_SCRIPT,ROOT_SITE_NAME,ROOT_USER_NAME
-from ..core.db import db, NoData
-from ..core.models.site import Site,App
-from ..core.models.config import ConfigVar
-from ..core.models.user import User
-from ..core.models.tracking import Delete
+from .db import db, NoData
+from .models.site import Site,App
+from .models.config import ConfigVar
+from .models.user import User
+from .models.tracking import Delete
+from .globals import current_site
 from ..manager import Manager,Command
 
 logger = logging.getLogger('pybble.core.users')
@@ -41,7 +42,7 @@ logger = logging.getLogger('pybble.core.users')
 
 def create_user(name,password=None,site=None):
 	if site is None:
-		site = request.site
+		site = current_site
 	user = User.new(username=name,password=password,parent=site)
 	db.flush((user,))
 	return user
