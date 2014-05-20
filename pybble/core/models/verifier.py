@@ -78,29 +78,20 @@ class Verifier(ObjectRef):
 	repeated = Column(DateTime,nullable=True)
 	timeout = Column(DateTime,nullable=False)
 
-	def __init__(self,base=None, obj=None, user=None, code=None, days=None, **kw):
-		super(Verifier,self).__init__(**kw)
+	def setup(self,base, obj, user=None, code=None, days=None):
 
 		if isinstance(base, basestring):
 			base = VerifierBase.q.get_by(name=unicode(base))
 
-		if self.superparent is None:
-			self.superparent = base
-		else:
-			assert base is None
-
-		if self.parent is None:
-			self.parent = obj
-		else:
-			assert obj is None
-
-		if self.owner is None:
-			self.owner = user or obj
-		else:
-			assert user is None
+		self.base = base
+		self.obj = obj
+		self.user = user or obj
 		assert self.owner and self.parent and self.superparent
+
 		self.code = code or random_string(20,dash="-",dash_step=5)
 		self.timeout = datetime.utcnow() + timedelta((days or 10),0) ## ten days
+
+		super(Verifier,self).setup()
 
 	@property
 	def as_str(self):

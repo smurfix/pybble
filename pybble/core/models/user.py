@@ -185,20 +185,35 @@ class PasswordValue(object):
 
 class User(PasswordValue,ObjectRef):
 	"""\
-		Authorized users.
-		Owner: Managing user; some sort of root for anon users.
-		Parent: the site they first logged in on.
-		SuperParent: for anon users, the site they're used with.
+		Users.
+
+		Anonymous users are named ANON_USER_NAME, have no password,
+		and are members of a group named ANON_USER_NAME associated with the
+		current site.
+
+		Non-anonymous users are named … well … something else, should have
+		a password, and will be members of the site they're allowed on as
+		soon as they are verified.
+
+		TODO: verification is fixed by Pybble code. It may or may not be
+		actually necessary, this should be configurable.
+
+		TODO: cleanup users who register but then do not verify themselves.
 		"""
 	__tablename__ = "users"
 	_descr = D.User
+	_links = { ## this is an example. It's not used yet.
+		"parent": {'site': "the site which this user initially registered at"},
+
+		"owned": {'*': "any content this user created"},
+	}
 	@classmethod
 	def __declare_last__(cls):
 		if not hasattr(cls,'site'):
 			cls.site = cls.parent
 		no_update(cls.username)
 		no_update(cls.parent)
-		# Uniqueness of username+site is handled in __init__,
+		# Uniqueness of username+site is handled in before_insert,
 		# which works because none of these may be updated
 	        
 	# A simple way to make 'username' read-only
@@ -224,7 +239,7 @@ class User(PasswordValue,ObjectRef):
 		try:
 			g = Group.q.get_by(name=ANON_USER_NAME,owner=site,parent=site)
 		except NoData:
-			g = Group(name=ANON_USER_NAME,owner=site,parent=site,superparent=site)
+			g = Group.new(name=ANON_USER_NAME,owner=site,parent=site,superparent=site)
 
 		now = datetime.now()
 		old = now - timedelta(0,current_app.config.SESSION_COOKIE_AGE)
@@ -232,8 +247,8 @@ class User(PasswordValue,ObjectRef):
 		u = User.q.filter(User.site==site, or_(User.cur_login == None, User.cur_login < old)).order_by(cls.cur_login).join(Member,Member.parent_id==User.id).filter(Member.owner==site).first()
 		#u = cls.q.filter_by(username=ANON_USER_NAME, site=site).order_by(cls.cur_login).first()
 		if u is None:
-			u = cls(username=ANON_USER_NAME, site=site)
-			Member(group=g,user=u)
+			u = cls.new(username=ANON_USER_NAME, site=site)
+			Member.new(group=g,user=u)
 			logger.info("New anon user {} for {}".format(u,site))
 			u.first_login = now
 		else:
@@ -241,13 +256,13 @@ class User(PasswordValue,ObjectRef):
 			from .tracking import Delete, TrackingObjectRef
 			for c in u.all_children(want=None):
 				if not isinstance(c,TrackingObjectRef):
-					Delete(c,comment="ANON user cleanup")
+					Delete.new(c,comment="ANON user cleanup")
 			for c in u.all_superchildren(want=None):
 				if not isinstance(c,TrackingObjectRef):
-					Delete(c,comment="ANON user cleanup")
+					Delete.new(c,comment="ANON user cleanup")
 			for c in u.all_owned(want=None):
 				if not isinstance(c,TrackingObjectRef):
-					Delete(c,comment="ANON user cleanup")
+					Delete.new(c,comment="ANON user cleanup")
 			u.last_login = u.this_login
 		u.cur_login = now
 		u.this_login = now
@@ -264,38 +279,38 @@ class User(PasswordValue,ObjectRef):
 		res += "First login: %s\nLast login: %s\n" % (self.first_login,self.last_login)
 		return res
 
-	def __init__(self, username=ANON_USER_NAME, password=None, site=None, anon=False, **kw):
-		super(User,self).__init__(**kw)
-		if username == ANON_USER_NAME:
-			if password is None:
-				password = ""
-			assert password == ""
-		else:
+	_anon = None
+	def setup(self, username=ANON_USER_NAME, password=None, site=None, anon=False, **kw):
+		self._anon = anon
+		self.username=username
+		self.password=password
+		self.site=site
+		super(User,self).setup(**kw)
+
+	def before_insert(self):
+		super(User,self).before_insert()
+		if self.username != ANON_USER_NAME:
 			## there may be more than one anon user
 			try:
-				User.q.get_by(parent=request.site, username=username)
+				User.q.get_by(parent=self.site, username=self.username)
 			except (AttributeError,NoData):
 				pass
 			else:
 				raise RuntimeError(u"User '%s' already exists in %s" % (username,request.site))
-		self.username=username
-		self.password=password
 
-		db.flush()
-		if site is None:
-			site = self.parent or request.site
-		if self.parent is None:
-			self.parent = request.site
-		db.flush()
-
-		if anon:
+		if self.site is None:
+			self.site = request.site
+	
+	def after_insert(self):
+		if self._anon:
 			anon = Group.q.get_by(name=ANON_USER_NAME,owner=site,parent=site)
 			Member.add_to(self,anon)
 		else:
 			Member.add_to(self,site)
 
-		if username != ANON_USER_NAME:
-			Permission(self,self, right=PERM_READ, inherit=False)
+		if self.username != ANON_USER_NAME:
+			# you can look at your own user record
+			Permission.new(self,self, right=PERM_READ, inherit=False)
 	
 	@property
 	def tracks(self):
@@ -557,12 +572,12 @@ class Group(ObjectRef):
 	        
 	name = Column(Unicode(30))
 
-	def __init__(self,name,owner,site=None, **kw):
-		super(Group,self).__init__(**kw)
-		if self.superparent is None:
-			self.superparent = site or owner
+	def setup(self,name,owner,site=None, **kw):
 		self.owner = owner
 		self.name = name
+		if site:
+			self.superparent = site
+		super(Group,self).setup(**kw)
 	
 ## Membership
 
@@ -587,8 +602,8 @@ class Member(ObjectRef):
 
 	excluded = Column(Boolean, nullable=False,default=False)
 
-	def __init__(self,user=None,group=None, **kw):
-		super(Member,self).__init__(**kw)
+	def setup(self,user=None,group=None, **kw):
+		super(Member,self).setup(**kw)
 		if self.owner is None:
 			self.owner = user
 		else:
@@ -681,12 +696,12 @@ class Permission(ObjectRef):
 	new_discr_id = Column("new_discr", Integer, ForeignKey(Discriminator.id), nullable=True)
 	new_discr = relationship(Discriminator, primaryjoin=new_discr_id==Discriminator.id)
 
-	def __init__(self, user=None, obj=None, for_discr=None, right=None, inherit=None, new_discr=None, **kw):
+	def setup(self, user=None, obj=None, for_discr=None, right=None, inherit=None, new_discr=None, **kw):
 		assert "discr" not in kw
 		assert right is not None
 		if for_discr is not None:
 			for_discr = Discriminator.get(for_discr)
-		super(Permission,self).__init__(**kw)
+		super(Permission,self).setup(**kw)
 		self.for_discr = for_discr
 		self.right = right
 		self.inherit = inherit

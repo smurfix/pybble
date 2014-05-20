@@ -29,7 +29,7 @@ from flask.wrappers import Request
 from werkzeug import import_string
 
 from .. import FROM_SCRIPT,ROOT_SITE_NAME,ROOT_USER_NAME
-from ..core.db import db, NoData, init_db, refresh
+from ..core.db import db, NoData,ManyData, init_db, refresh
 from ..core.signal import all_apps
 from ..core.models.site import Site,App,SiteBlueprint,Blueprint
 from ..core.models.config import ConfigVar

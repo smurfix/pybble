@@ -110,31 +110,33 @@ class Site(ObjectRef):
 				yield ss
 	# we don't have "yield from" in PY2
 
-	def __init__(self,domain, name=None, **kw):
-		self._is_new = True
-		super(Site,self).__init__(**kw)
+	def setup(self,domain, name=None, **kw):
 		if name is None:
 			name=u"Here be "+domain
 		self.domain=unicode(domain)
 		self.name=name
 
-		if name == ROOT_SITE_NAME:
-			s = None
+		super(Site,self).setup(**kw)
+	
+	def before_insert(self):
+		if self.name == ROOT_SITE_NAME:
+			self.parent = None
 		elif self.parent is None:
-			s = Site.q.get_by(name=ROOT_SITE_NAME)
-			self.parent = s
+			self.parent = Site.q.get_by(name=ROOT_SITE_NAME)
 
 		if self.owner is None:
 			try:
 				self.owner = request.user
 			except (AttributeError,RuntimeError):
 				self.owner = None if self.parent is None else self.parent.owner
-		db.flush()
 
-	def _init(self):
-		super(Site,self)._init()
-		if self._is_new:
-			app_list.send(NewSite)
+	def after_insert(self):
+		super(Site,self).after_insert()
+		app_list.send(NewSite)
+		self.signal.connect(self.config_changed, ConfigChanged)
+
+	def after_update(self):
+		super(Site,self).after_update()
 		self.signal.connect(self.config_changed, ConfigChanged)
 
 	@property
@@ -192,36 +194,37 @@ class SiteBlueprint(ObjectRef):
 	endpoint = Column(Unicode(30), nullable=False, default="", doc="Endpoint to attach as. May be empty.")
 	path = Column(Unicode(1000), nullable=False, default="", doc="URL path where to attach this ")
 
-	def __init__(self,site=None,blueprint=None,name=None,endpoint=None,**kw):
-		super(SiteBlueprint,self).__init__(**kw)
-
-		if self.superparent is not None:
-			assert blueprint is None
-		else:
-			assert blueprint is not None
-			if isinstance(blueprint,string_types):
-				blueprint = Blueprint.q.get_by(name=text_type(blueprint))
-			self.blueprint = blueprint
-
-		if name is None:
-			name = self.blueprint.name
-		if endpoint is None:
-			endpoint = name
-		self.name = name
-		self.endpoint = endpoint
-
-		if self.parent is not None:
-			assert site is None
-		elif site is None:
-			self.parent = request.site
+	def setup(self, site,blueprint, endpoint=None, name=None,path=None):
+		if isinstance(blueprint,string_types):
+			blueprint = Blueprint.q.get_by(name=text_type(blueprint))
+		if site is None:
+			self.site = request.site
 		else:
 			if isinstance(site,string_types):
 				try:
 					site = Site.q.get_by(name=text_type(site))
 				except NoData:
 					site = Site.q.get_by(domain=text_type(site))
-			self.parent = site
+			self.site = site
 
+		if name is None:
+			name = blueprint.name
+		if endpoint is None:
+			endpoint = name
+
+		self.blueprint = blueprint
+		self.name = name
+		self.path = path
+		self.endpoint = endpoint
+
+		super(SiteBlueprint,self).setup()
+
+	def after_insert(self):
+		super(SiteBlueprint,self).after_insert()
+		self.blueprint.signal.connect(self.config_changed, ConfigChanged)
+		self.signal.connect(self.config_changed, ConfigChanged)
+	def after_load(self):
+		super(SiteBlueprint,self).after_insert()
 		self.blueprint.signal.connect(self.config_changed, ConfigChanged)
 		self.signal.connect(self.config_changed, ConfigChanged)
 

@@ -215,8 +215,8 @@ class ConfigVar(ObjectRef, JsonValue):
 	name = Column(Unicode(30), index=True)
 	doc = Column(Unicode(1000))
 
-	def __init__(self, parent, name,value, **kw):
-		super(ConfigVar,self).__init__(**kw)
+	def setup(self, parent, name,value, **kw):
+		super(ConfigVar,self).setup(**kw)
 		self.parent = parent
 		self.name = name
 		self.value = value
@@ -254,7 +254,7 @@ class SiteConfigVar(ObjectRef, JsonValue):
 		no_update(cls.superparent)
 	# Owner: the user who last set the variable
 
-	def __init__(self,parent,var=None,superparent=None,**kw):
+	def setup(self,parent,var=None,superparent=None,**kw):
 		# assert that exactly one of var or superparent is set
 		if var is None:
 			var = superparent
@@ -262,7 +262,7 @@ class SiteConfigVar(ObjectRef, JsonValue):
 			assert superparent is None
 		assert var is not None
 
-		super(SiteConfigVar,self).__init__(var=var,parent=parent,**kw)
+		super(SiteConfigVar,self).setup(var=var,parent=parent,**kw)
 
 	@property
 	def as_str(self):

@@ -19,31 +19,27 @@ from sqlalchemy import Column,Unicode,Boolean,DateTime
 
 from pybble.core.models import ObjectRef
 from pybble.core.models._descr import D
+from pybble.core.models._content import Content
 
-class WikiPage(ObjectRef):
+class Page(Content, ObjectRef):
 	"""\
-		A wiki (or similar) page.
+		A page (or whatever) of content.
 		Parent: The "main" wikipage we're a parent of, or whatever parent there is
 		Superparent: Our site (main page) or empty (subpage)
 		Owner: Whoever created the page
-
-		Wiki pages are not (yet?) nested.
 		"""
-	_descr = D.WikiPage
+	_descr = D.Page
 
 	name = Column(Unicode, nullable=False)
-	data = Column(Unicode)
-	mainpage = Column(Boolean, default=True, nullable=False) # main-linked page?
 	modified = Column(DateTime, default=datetime.utcnow)
+	order = Column(Integer, nullable=True, doc="Include on parent page? if so, in what order?")
 
-	def __init__(self, name, data):
-		super(WikiPage,self).__init__()
-		self.name = name
-		self.data = data
-	
-	def url_html_view(self):
-		if self.mainpage:
-			return url_for("root.wikipage.viewer", name=self.name)
-		if isinstance(self.parent,WikiPage) and self.parent.mainpage:
-			return url_for("root.wikipage.viewer", name=self.name, parent=self.parent.name)
+	@classmethod
+	def new(cls, name, content, order=None):
+		self = cls(True)
 
+		self.name=name
+		self.order=order
+
+		content.to(self)
+		self._add()

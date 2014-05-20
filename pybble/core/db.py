@@ -31,7 +31,7 @@ from formalchemy import Column, helpers
 from formalchemy.fields import IntegerFieldRenderer
 
 from flask import Markup, url_for, escape, g
-from flask._compat import implements_to_string as py2_unicode
+from flask._compat import implements_to_string as py2_unicode, text_type
 
 import logging
 logger = logging.getLogger('pybble.core.db')
@@ -85,7 +85,7 @@ db = scoped_session(sessionmaker(autocommit=False,
                                  bind=engine))
 
 class IDrenderer(IntegerFieldRenderer):
-	"""An integer which, when readonly, displays the record"""
+	"""A renderer which, when readonly, returns a URL pointing at the admin page"""
 	
 	def render_readonly(self,**kwargs):
 		## this is fragile (it uses _property), but I don't see how else to get to the mapper
@@ -96,7 +96,13 @@ class IDrenderer(IntegerFieldRenderer):
 			return self.value
 
 class GetQuery(query.Query):
-	"""A query which allows .get and .get_by"""
+	"""\
+		A query which provides `get` and `get_by` methods.
+
+		These work like `filter` and `filter_by`, respectively, but
+		expect exactly one row to be returned, otherwise they'll throw
+		`NoData` / `ManyData` exceptions.
+		"""
 	def get(self,*a,**k):
 		return self.filter(*a,**k).one()
 		#return self._one(self.filter(*a,**k))
@@ -120,6 +126,26 @@ class GetQuery(query.Query):
 		else:
 			return  res
 
+def no_autoflush(fn):
+	"""\
+		Decorator to prevent database auto-flushing when the code
+		thus decorated does database queries.
+
+			@no_autoflush
+			def check_if_new_record_is_ok(data):
+				…
+
+		"""
+	def go(*args, **kw):
+		autoflush = db.autoflush
+		db.autoflush = False
+		try:
+			return fn(*args, **kw)
+		finally:
+			db.autoflush = autoflush
+
+	return update_wrapper(go, fn)
+
 #def limitedQuery(mapper,session):
 #	return session.query(mapper)
 
@@ -128,13 +154,48 @@ class GetQuery(query.Query):
 #		q = mapper.class_._q(q)
 #	return q
 
+def call_event(cls,method):
+	"""\
+		A helper which registers callbacks to `method` on `cls`
+		"""
+	def helper(mapper,connection,obj):
+		getattr(obj,method)()
+	event.listen(cls,method, helper)
+		
+
 @py2_unicode
 class Base(object):
-	"""Base object for the system's tables; sets table name and ID automagically"""
+	"""\
+		Base object for the system's tables; sets table name and adds ID column automagically
+
+		Initialization of a new object proceeds in steps:
+			* From a form, __init__() is called
+			  - the form or whatever is responsible for adding the object to the database
+			* From code, class_.new() is used (because of descriptive/mandatory parameters)
+			  - new() will do the add-to-the-database step itself
+			* .before_insert() will run automatically
+			  - similarly, before an update, .before_update()
+			  - use these to verify multi-table consistency etc.
+			* .after_insert()/update() will run automatically
+			  - dito .after_update()
+			  - use these to insert additional tracking, permissions, or whatever
+			  
+		"""
 	@declared_attr
 	def __tablename__(cls):
 		return cls.__name__.lower()
 	
+	@classmethod
+	def __declare_last__(cls):
+		call_event(cls,"before_insert")
+		call_event(cls,"before_update")
+		call_event(cls,"after_insert")
+		call_event(cls,"after_update")
+		@event.listens_for(cls, 'load')
+		def receive_load(target, context):
+			target.after_load()
+
+
 	id = Column(Integer, primary_key=True, label="ID", renderer=IDrenderer)
 
 	# canonical representation
@@ -151,13 +212,85 @@ class Base(object):
 		return "%s" % (self._name)
 	def __html__(self):
 		#return '<a href="%s">%s</a>' % (url_for('admin.show', table=self.__class__.__name__.lower(), id=self.id), escape(self._name))
-		return (self.id)+":"+escape(self._name)
+		return escape(self._name)+'_'+text_type(self.id)
+
+	def __init__(self, _new=False, **kw):
+		"""\
+			Basic record initialization.
+
+			Do not call directly.
+			"""
+		if not _new and not getattr(g,'naked_new',False):
+			raise RuntimeError("Either use ‘.new’, or wrap your code with ‘with external_input:’")
+		for k,v in kw.items():
+			setattr(self,k,v)
+
+	@classmethod
+	@no_autoflush
+	def new(cls,*a,**kw):
+		"""\
+			Add a new record. Override `setup` instead of this method.
+
+			Usage:
+				new_user = User.new(username="fred_flintstone")
+				# do not use User(username="fred_flintstone")
+				# that's reserved for form and REST handling
+			"""
+		self = cls(_new=True)
+		self.setup(*a,**kw)
+		db.add(self)
+		db.flush((self,))
+		return self
+
+	def setup(self):
+		"""\
+			Fill a newly-created record.
+
+			If you override this, consume any parameters you accept and
+			pass the rest of the keywords along.
+
+			This code sets `superparent` if it is not set, so that the new
+			record is not marked as deleted.
+
+			Do not add any other dependent database entries here: 
+			this record does not yet have an ID. Use after_insert() for that.
+			"""
+		if self.superparent is None:
+			self.superparent = request.site
+	
+	def before_insert(self):
+		"""Called after finalizing the object but before writing to the database"""
+		pass
+	def after_insert(self):
+		"""Called after inserting into the database; the ID is valid"""
+		pass
+	def after_load(self):
+		"""Called after loading a record from the database"""
+		pass
+	def before_update(self):
+		"""Called after finalizing the object but before updating the database"""
+		pass
+	def after_update(self):
+		"""Called after writing to the database"""
+		pass
 
 	q = db.query_property(query_cls=GetQuery)
 
 Base = declarative_base(cls=Base)
 Base.super_readonly = False
 #logged_session(db,Base)
+
+class external_input(object):
+	"""\
+		This is a ‘with’ wrapper to allow instantiation of an
+		object without calling "new" on it, which does all kinds of input
+		checks.
+		"""
+	def __enter__(self):
+		self.named_new = getattr(g,'naked_new',False)
+		g.naked_new = True
+	def __exit__(self, a,b,c):
+		g.naked_new = self.naked_new
 
 def init_db(app):
 	@app.teardown_request
@@ -167,17 +300,6 @@ def init_db(app):
 		else:
 			db.commit()
 		db.close()
-
-def no_autoflush(fn):
-	def go(*args, **kw):
-		autoflush = db.autoflush
-		db.autoflush = False
-		try:
-			return fn(*args, **kw)
-		finally:
-			db.autoflush = autoflush
-
-	return update_wrapper(go, fn)
 
 def refresh(obj):
 	"""\

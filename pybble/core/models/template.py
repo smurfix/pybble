@@ -72,18 +72,22 @@ class Template(_Content, Cached, ObjectRef):
 	def mime(self):
 		return self.translator.mime
 
-	def __init__(self, adapter, data, source, name=None, parent=None, **kw):
-		super(Template,self).__init__(**kw)
+	def setup(self, adapter, data, source, parent, name=None, weight=None):
 		if name is None:
 			name = source
 		if parent is None:
 			parent = request.site
+
 		self.name = name
-		self.source=source
+		self.source = source
 		self.content = data
 		self.adapter = adapter
 		self.owner = request.user
 		self.parent = parent
+		if weight is not None:
+			self.weight = weight
+
+		super(Template,self).setup()
 
 	@property
 	def as_str(self):
@@ -135,14 +139,19 @@ class TemplateMatch(ObjectRef):
 	for_discr_id = Column('discr',Integer, ForeignKey(Discriminator.id), nullable=True)
 	for_discr = relationship(Discriminator, primaryjoin=for_discr_id==Discriminator.id)
 
-	def __init__(self, obj, template, for_discr=None, **kw):
+	def setup(self, obj, template, inherit=None,weight=None, for_discr=None):
 		assert "discr" not in kw
 		if for_discr is not None:
 			for_discr = Discriminator.get(for_discr)
-		super(TemplateMatch,self).__init__(**kw)
+
 		self.for_discr = for_discr
 		self.template = template
 		self.obj = obj
+		self.inherit = inherit
+		if weight is not None:
+			self.weight = weight
+
+		super(TemplateMatch,self).setup()
 	
 	@property
 	def as_str(self):

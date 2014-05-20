@@ -43,15 +43,15 @@ class Storage(ObjectRef):
 	def __declare_last__(cls):
 		check_unique(cls,"superparent default")
 
-	def __init__(self, name,path,url, **kw):
-		super(Storage,self).__init__(**kw)
+	def setup(self, name,path,url, site=None):
 		self.name = unicode(name)
 		self.path = unicode(path)
 		self.url = unicode(url)
-		if self.superparent is None:
-			self.superparent = request.site
+
 		try: os.makedirs(path)
 		except OSError: pass
+
+		super(Storage,self).setup()
 
 	@property
 	def as_str(self):

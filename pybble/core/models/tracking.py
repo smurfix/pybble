@@ -48,19 +48,21 @@ class Breadcrumb(TrackingObjectRef):
 	_descr = D.Breadcrumb
 	_no_crumbs = True
 
+	# for_discr is saved here because of faster lookups
 	for_discr_id = Column("discr", Integer, ForeignKey(Discriminator.id), nullable=False)
 	for_discr = relationship(Discriminator, primaryjoin=for_discr_id==Discriminator.id)
+
 	#seq = Column(Integer)
 	visited = Column(DateTime,default=datetime.utcnow)
 	last_visited = Column(DateTime,nullable=True)
 	cur_visited = Column(DateTime,default=datetime.utcnow, nullable=True)
 
-	def __init__(self, user, obj):
-		super(Breadcrumb,self).__init__()
+	def setup(self, user, obj):
 		self.for_discr = obj.discr
 		self.owner = user
 		self.parent = obj
-		self.superparent = request.site
+
+		super(Breadcrumb,self).setup()
 
 	@property
 	def as_str(self):
@@ -94,13 +96,16 @@ class Change(TrackingObjectRef):
 	timestamp = Column(DateTime,default=datetime.utcnow)
 	data = Column(Unicode(100000))
 
-	def __init__(self, obj, user=None, data=None, comment=None):
-		super(Change,self).__init__()
+	def setup(self, obj, user=None, data=None, comment=None):
 		self.owner = user or request.user
 		self.parent = obj
 		self.data = data
+		self._comment = comment
 
-		Tracker(self, user=user, comment=comment)
+		super(Change,self).setup()
+
+	def after_insert(self):
+		Tracker.new(self, user=self.owner, comment=self._comment)
 
 	@property
 	def as_str(self):
@@ -158,22 +163,26 @@ class Delete(TrackingObjectRef):
 
 	timestamp = Column(DateTime,default=datetime.utcnow)
 
-	def __init__(self, obj, user=None, comment=None):
+	def setup(self, obj, user=None, comment=None):
 		assert obj and not isinstance(obj,TrackingObjectRef)
 		obj._deleting = True
-		super(Delete,self).__init__()
 		self.owner = user or request.user
 		self.parent = obj
 		self.old_owner = obj.owner
 		self.superparent = obj.parent
 		self.old_superparent = obj.superparent
+		self._comment = comment
 
 		obj.owner = None
 		obj.parent = None
 		obj.superparent = None
-		Tracker(self, user=user, comment=comment)
-		obj.signal.send(ObjDeleted)
-		obj.signal.dispose()
+		super(Delete,self).setup()
+	
+	def after_insert(self):
+		Tracker.new(self, user=user, comment=self._comment)
+		self.parent.signal.send(ObjDeleted)
+		self.parent.signal.dispose()
+
 
 	@property
 	def as_str(self):
@@ -208,16 +217,20 @@ class Tracker(TrackingObjectRef):
 	comment = Column(Unicode(1000), nullable=True)
 	timestamp = Column(DateTime,default=datetime.utcnow)
 
-	def __init__(self, obj, user=None,site=None, comment=None):
+	def setup(self, obj, user=None,site=None, comment=None):
 		# You can track Change and Delete objects, but not e.g. a Tracker or a Breadcrumb
 		assert obj and (isinstance(obj,(Change,Delete)) or not isinstance(obj,TrackingObjectRef))
 
-		super(Tracker,self).__init__()
 		self.owner = user or request.user
-		db.flush((self,self.owner)) # required to guard against cycles
-		self.parent = obj
-		self.superparent = site or request.site
 		self.comment = comment
+		self._obj = obj
+		self._site = site
+		super(Tracker,self).setup()
+
+	def after_insert(self):
+		db.flush((self.owner,)) # required to guard against cycles
+		self.parent = self._obj
+		self.superparent = self._site or request.site
 
 	@property
 	def as_str(self):
@@ -265,11 +278,11 @@ class UserTracker(TrackingObjectRef):
 		if not hasattr(cls,'want_tracking'):
 			cls.want_tracking = cls.superparent
 
-	def __init__(self, user, tracker, want):
-		super(UserTracker,self).__init__()
-		self.owner = user
-		self.superparent = want
-		self.parent = tracker
+	def setup(self, user, tracker, want):
+		self.user = user
+		self.want_tracking = want
+		self.tracker = tracker
+		super(UserTracker,self).setup()
 
 	@property
 	def as_str(self):
@@ -313,8 +326,7 @@ class WantTracking(ObjectRef):
 	track_mod = Column(Boolean, nullable=False) # alert for modifications?
 	track_del = Column(Boolean, nullable=False) # alert for deletions?
 
-	def __init__(self, user,obj, for_discr=None):
-		super(WantTracking,self).__init__()
+	def setup(self, user,obj, for_discr=None):
 		self.parent = obj
 		self.owner = user
 		self.for_discr = for_discr
@@ -322,6 +334,7 @@ class WantTracking(ObjectRef):
 		self.track_new = False
 		self.track_mod = False
 		self.track_del = False
+		super(WantTracking,self).setup()
 	
 	@property
 	def as_str(self):

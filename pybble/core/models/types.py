@@ -72,14 +72,20 @@ class MIMEtype(Loadable, ObjectRef):
 	to_discr = relationship(Discriminator, primaryjoin=to_discr_id==Discriminator.id)
 	__table_args__ = (UniqueConstraint(typ,subtyp),)
 
-	def __init__(self, typ,subtyp, name=None,**k):
+	def setup(self, typ,subtyp, name=None, ext=None,doc=None):
 		if typ == "pybble":
 			discr = getattr(D,subtyp,None)
 		else:
 			discr = None
 		if name is None:
 			name = typ+'/'+subtyp
-		super(MIMEtype,self).__init__(typ=typ,subtyp=subtyp,name=name,to_discr_id=discr,**k)
+		self.typ = typ
+		self.subtyp = subtyp
+		self.name = name
+		self.ext = ext
+		self.doc = doc
+		self.to_discr_id = discr
+		super(MIMEtype,self).setup()
 
 	@classmethod
 	def get(cls, typ,subtyp=None, add=False):
