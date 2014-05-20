@@ -240,7 +240,7 @@ class User(PasswordValue,ObjectRef):
 		try:
 			g = Group.q.get_by(name=ANON_USER_NAME,owner=site,parent=site)
 		except NoData:
-			g = Group.new(name=ANON_USER_NAME,owner=site,parent=site,superparent=site)
+			g = Group.new(name=ANON_USER_NAME,owner=site,parent=site)
 
 		now = datetime.now()
 		old = now - timedelta(0,current_app.config.SESSION_COOKIE_AGE)
@@ -249,7 +249,7 @@ class User(PasswordValue,ObjectRef):
 		#u = cls.q.filter_by(username=ANON_USER_NAME, site=site).order_by(cls.cur_login).first()
 		if u is None:
 			u = cls.new(username=ANON_USER_NAME, site=site)
-			Member.new(group=g,user=u)
+			Member.new(group=g,member=u)
 			logger.info("New anon user {} for {}".format(u,site))
 			u.first_login = now
 		else:
@@ -285,7 +285,7 @@ class User(PasswordValue,ObjectRef):
 		self._anon = anon
 		self.username=username
 		self.password=password
-		self.site=site
+		self.site=site or current_site
 		super(User,self).setup(**kw)
 
 	def before_insert(self):
