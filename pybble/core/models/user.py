@@ -305,9 +305,9 @@ class User(PasswordValue,ObjectRef):
 	def after_insert(self):
 		if self._anon:
 			anon = Group.q.get_by(name=ANON_USER_NAME,owner=site,parent=site)
-			Member.add_to(self,anon)
+			Member.add_to(self, anon)
 		else:
-			Member.add_to(self,site)
+			Member.add_to(self, self.site)
 
 		if self.username != ANON_USER_NAME:
 			# you can look at your own user record
