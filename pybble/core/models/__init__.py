@@ -666,7 +666,7 @@ class Object(Dumpable, Base):
 		try:
 			s = Storage.q.get_by(default=True,superparent=self)
 		except NoData:
-			if site.parent is None:
+			if self.parent is None:
 				return 
 			return self.parent.default_storage
 		return s
