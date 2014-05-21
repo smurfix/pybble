@@ -167,7 +167,7 @@ class ContentData(object):
 	def __str__(self):
 		if self.content:
 			return self.content
-		return ("{}({})".format(self.__class__.__name,",".join( str(k)+'='+repr(v) for k,v in self.__dict__ if k[0] != '_' and v is not None)))
+		return ("{}({})".format(self.__class__.__name__,",".join( str(k)+'='+repr(v) for k,v in self.__dict__.items() if k[0] != '_' and v is not None)))
 
 def valid_obj(form, field):
 	"""Field verifier which checks that an object ID is valid"""
