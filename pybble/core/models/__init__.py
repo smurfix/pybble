@@ -188,6 +188,8 @@ class Discriminator(Loadable, Dumpable, Base):
 			discr = Discriminator.get(discr)
 			assert obj.discr is discr, (obj.discr,discr)
 			return discr
+		if hasattr(discr,'_get_current_object'):
+			discr = discr._get_current_object()
 		if isinstance(discr, string_types):
 			try: discr = int(discr)
 			except ValueError: pass
@@ -199,8 +201,10 @@ class Discriminator(Loadable, Dumpable, Base):
 			return Discriminator.q.get_by(name=text_type(discr))
 		elif isinstance(discr, (int,long)):
 			return Discriminator.q.get_by(id=discr)
+		elif isinstance(discr, Object):
+			return discr.discr
 		else:
-			return Discriminator.q.get_by(id=discr._discriminator)
+			raise RuntimeError("No known way to get a discriminator for "+str(discr))
 
 	@staticmethod
 	def num(discr):
