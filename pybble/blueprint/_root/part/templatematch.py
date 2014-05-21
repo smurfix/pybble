@@ -64,7 +64,7 @@ def editor(request, obj=None, parent=None):
 		dest = obj_get(form.oid.data)
 
 		if parent:
-			obj = TemplateMatch(parent,int(form.discr.data),int(form.detail.data),form.page.data.replace("\r",""))
+			obj = TemplateMatch.new(parent,int(form.discr.data),int(form.detail.data),form.page.data.replace("\r",""))
 			obj.record_creation()
 		else:
 			obj.record_change()

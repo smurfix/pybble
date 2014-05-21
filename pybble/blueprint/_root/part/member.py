@@ -33,7 +33,7 @@ def editor(request, obj=None, parent=None):
 		excluded = bool(form.excluded.data)
 
 		if parent:
-			obj = Member(user, group)
+			obj = Member.new(user, group)
 			obj.record_creation()
 		else:
 			data = obj.data

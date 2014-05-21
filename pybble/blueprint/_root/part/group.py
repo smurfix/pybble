@@ -29,9 +29,9 @@ def editor(request, obj=None, parent=None):
 
 		if parent:
 			if isinstance(parent,Site):
-				obj = Group(name, request.user, parent)
+				obj = Group.new(name, request.user, parent)
 			else:
-				obj = Group(name, parent, request.site)
+				obj = Group.new(name, parent, request.site)
 			obj.record_creation()
 		else:
 			data = obj.data

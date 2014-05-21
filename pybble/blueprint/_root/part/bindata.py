@@ -53,7 +53,7 @@ def newer(parent, name=None):
 	if request.method == 'POST' and form.validate():
 		f = request.files['bindata']
 		data = f.read()
-		obj = BinData(parent=parent, storage=parent.default_storage, name=form.name.data, content=data, mimetype=form.mimetype)
+		obj = BinData.new(parent=parent, storage=parent.default_storage, name=form.name.data, content=data, mimetype=form.mimetype)
 		obj.record_creation()
 		flash(u"Daten '%s' gespeichert." % (obj.name), True)
 		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))

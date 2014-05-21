@@ -41,7 +41,7 @@ def editor(request, obj, parent=None):
 	form.id = obj.id
 	if request.method == 'POST' and form.validate():
 		if parent:
-			obj = Template(form.name.data, form.page.data.replace("\r",""), parent=obj_get(form.site.data))
+			obj = Template.new(form.name.data, form.page.data.replace("\r",""), parent=obj_get(form.site.data))
 			obj.record_creation()
 			obj.name = form.name.data
 		else:
