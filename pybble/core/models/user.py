@@ -584,10 +584,7 @@ class Group(ObjectRef):
 class Member(ObjectRef):
 	"""\
 		Indicates membership of one object of another.
-		owner: the individual who's the member.
-		parent: the group
-
-		OLD PYBBLE: parent=group, owner=member
+		parent=group, owner=member
 		"""
 	__tablename__ = "groupmembers"
 	_descr = D.Member
@@ -595,9 +592,9 @@ class Member(ObjectRef):
 	@classmethod
 	def __declare_last__(cls):
 		if not hasattr(cls,'member'):
-			cls.member = cls.parent
+			cls.member = cls.owner
 		if not hasattr(cls,'group'):
-			cls.group = cls.superparent
+			cls.group = cls.parent
 		check_unique(cls,"member group")
 
 	excluded = Column(Boolean, nullable=False,default=False)
@@ -677,7 +674,7 @@ class Permission(ObjectRef):
 		if not hasattr(cls,'user'):
 			cls.user = cls.owner
 		if not hasattr(cls,'target'):
-			cls.target = cls.superparent
+			cls.target = cls.parent
 		no_update(cls.parent)
 		no_update(cls.owner)
 
@@ -692,8 +689,7 @@ class Permission(ObjectRef):
 
 	def setup(self, user, target, for_discr=None, right=None, inherit=None, new_discr=None):
 		assert right is not None
-		if for_discr is not None:
-			for_discr = Discriminator.get(for_discr)
+		for_discr = Discriminator.get(target if for_discr is None else for_discr)
 		self.for_discr = for_discr
 		self.right = right
 		self.inherit = inherit
