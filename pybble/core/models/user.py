@@ -383,7 +383,7 @@ class User(PasswordValue,ObjectRef):
 		if site is None:
 			site = current_site
 		try:
-			m = Member.q.get_by(user=self,group=site)
+			m = Member.q.get_by(member=self,group=site)
 		except NoData:
 			return False
 		else:
