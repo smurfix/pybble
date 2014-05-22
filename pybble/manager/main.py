@@ -141,6 +141,7 @@ class RootManager(Manager):
 		from .blueprint import BlueprintManager
 		from .app import AppCommand
 		from .populate import PopulateCommand
+		from .add import AddCommand
 		from .schema import SchemaCommand
 		from .mime import MIMEManager
 		from .descr import DisManager
@@ -156,6 +157,7 @@ class RootManager(Manager):
 		coremanager.add_command("mime",MIMEManager())
 		coremanager.add_command("url",ShowUrls())
 		coremanager.add_command("populate",PopulateCommand())
+		coremanager.add_command("add",AddCommand())
 		coremanager.add_command("schema",SchemaCommand())
 
 		self.add_command("site",SiteManager())
