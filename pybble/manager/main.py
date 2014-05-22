@@ -155,10 +155,10 @@ class RootManager(Manager):
 		coremanager.add_command("descr",DisManager())
 		coremanager.add_command("mime",MIMEManager())
 		coremanager.add_command("url",ShowUrls())
+		coremanager.add_command("populate",PopulateCommand())
+		coremanager.add_command("schema",SchemaCommand())
 
 		self.add_command("site",SiteManager())
-		self.add_command("populate",PopulateCommand())
-		self.add_command("schema",SchemaCommand())
 		#self.add_command("app",AppCommand())
 		self.add_command("blueprint",BlueprintManager())
 		self.add_command("obj",RESTManager())

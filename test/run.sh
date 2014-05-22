@@ -119,9 +119,9 @@ if [ $redo = Y ] ; then
 	PYBBLE_SQL_DATABASE="$D/$NREV".db
 
 	mkdir -p "$PYBBLE_MEDIA_PATH"
-	./manage.py -t -S $DBG schema -x
+	./manage.py -t -S $DBG core schema -x
 	[ -z "$V" ] || echo "Populating database $NREV"
-	./manage.py -t -S $DBG populate
+	./manage.py -t -S $DBG core populate
 	echo "$NREV" > $rev
 else
 	[ -z "$V" ] || echo "Re-using database $OREV"
