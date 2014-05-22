@@ -32,7 +32,6 @@ class PermTestCase(TC):
 		app = create_app(testing=True)
 		with app.app_context():
 			anon = current_site.anon_user
-			import pdb;pdb.set_trace()
 			assert anon.can_read(current_site)
 			assert not anon.can_write(current_site)
 			assert not anon.can_add(current_site)
