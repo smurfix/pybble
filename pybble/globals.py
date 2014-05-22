@@ -17,6 +17,7 @@ from flask import _app_ctx_stack, g, current_app
 from werkzeug.local import LocalProxy
 
 from .core.db import refresh
+from .core.models.site import Site
 
 class _NotThere: pass
 
@@ -27,4 +28,8 @@ def _get_site():
 		ctx.site = site = None if current_app.site is None else refresh(current_app.site)
 	return site
 current_site = LocalProxy(_get_site)
+
+def _root_site():
+	return Site.q.get(Site.owner != None, Site.parent == None)
+root_site = LocalProxy(_root_site)
 
