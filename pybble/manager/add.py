@@ -32,12 +32,11 @@ from ..core.utils import attrdict
 from ..core.db import db, NoData
 from . import Manager,Command,Option
 
-from .add import add_mimes
-
 logger = logging.getLogger('pybble.manager.populate')
 
 _metadata = re.compile('##:?(\S+) *[ :] *(.*)\n') # re.U ?
 
+def add_mime(
 upload_content_types = [
 	## MIME type,subtype, file extension, name, description
 	('text','html','html','Web page',"A complete HTML-rendered web page"),
@@ -240,7 +239,24 @@ class PopulateCommand(Command):
 		request.user = superuser
 
 		## more MIME types
-		add_mimes(content_types)
+		added=0
+		for typ,subtyp,ext,name,doc in content_types:
+			try:
+				mt = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
+			except NoData:
+				mt = MIMEtype(typ=typ, subtyp=subtyp, ext=ext, name=name, doc=doc)
+				logger.info("MIME type ‘{}’ ({}) created.".format(mt,name))
+				added += 1
+			else:
+				if mt.doc is None or force:
+					mt.doc = doc
+		if not added:
+			logger.debug("No new MIME types necessary.")
+
+		for mt in MIMEtype.q.all():
+			if mt.superparent is None and Delete.q.filter_by(parent=mt).count() == 0:
+				mt.superparent = root
+		db.commit()
 		
 		## MIME translators
 		def get_them(types, add=False):
