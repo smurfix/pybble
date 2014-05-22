@@ -740,16 +740,6 @@ class ObjectMeta(type(Object)):
 				setattr(cls,'__tablename__',name.lower())
 			if "modified" in dct:
 				event.listen(cls,'before_update',update_modified)
-			def wrap_init(old_init):
-				@no_autoflush
-				def init(self,*a,**k):
-					old_init(self,*a,**k)
-					db.add(self)
-					db.flush((self,))
-					self._init()
-				update_wrapper(init,old_init)
-				return init
-			setattr(cls,'__init__', wrap_init(dct.get('__init__',cls.__init__)))
 
 			setattr(cls,'mimetype', MIMEproperty("pybble/"+name.lower()))
 	
