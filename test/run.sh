@@ -5,6 +5,7 @@ fi
 
 test -n "$*" || set -x
 set -e
+printenv
 
 test -d test || cd ..
 test -d test
@@ -68,7 +69,7 @@ while getopts "dhkKnNprtv" i ; do
                 t)
                         TRACE=y ;;
                 v)
-                        V=y ;;
+                        set -x; V=y; printenv ;;
                 *)
                         usage 1 ;;
                 --)
@@ -169,9 +170,9 @@ if [ "$*" = "" ] ; then
 
 	[ -z "$V" ] || echo "Starting test run"
 	#PYTHONPATH=$(pwd) test/run.py -x
-	env PYTHONPATH=$(pwd):$PYTHONPATH $DBGENV py.test $ASS -x
+	env $DBGENV py.test $ASS -x
 else
 	[ -z "$V" ] || echo "# ./manage.py -t $*"
-	env PYTHONPATH=$(pwd):$PYTHONPATH $DBGENV $PY ./manage.py -t "$@"
+	env $DBGENV $PY ./manage.py -t "$@"
 fi
 
