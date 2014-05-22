@@ -37,7 +37,7 @@ logger = logging.getLogger('pybble.manager.add')
 
 _metadata = re.compile('##:?(\S+) *[ :] *(.*)\n') # re.U ?
 
-def _upd(obj,attr,data,force):
+def _upd(obj,attr,data, force=False):
 	"""\
 		Set attribute `attr` of `obj` to `data`.
 
@@ -56,7 +56,7 @@ def _upd(obj,attr,data,force):
 		logger.info("{}: updated {}.".format(obj,attr))
 	setattr(obj,attr,data)
 
-def add_mime(typ,subtyp,ext,name,doc):
+def add_mime(typ,subtyp,ext,name,doc, force=False):
 	"""Add a single MIME type."""
 	from pybble.core.models.types import MIMEtype
 
@@ -68,10 +68,10 @@ def add_mime(typ,subtyp,ext,name,doc):
 	else:
 		_upd(mt,'doc',doc,force)
 
-def add_mimes(content_types):
+def add_mimes(content_types, force=False):
 	"""Add a list of MIME types."""
 	for typ,subtyp,ext,name,doc in content_types:
-		add_mime(typ,subtyp,ext,name,doc)
+		add_mime(typ,subtyp,ext,name,doc, force)
 
 def fixup():
 	"""Run a couple of cleanup tasks"""

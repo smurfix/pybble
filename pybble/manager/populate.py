@@ -33,6 +33,8 @@ from ..core.db import db, NoData
 from ..globals import current_site
 from . import Manager,Command,Option
 
+from .add import add_mimes
+
 logger = logging.getLogger('pybble.manager.populate')
 
 _metadata = re.compile('##:?(\S+) *[ :] *(.*)\n') # re.U ?
@@ -239,24 +241,7 @@ class PopulateCommand(Command):
 		request.user = superuser
 
 		## more MIME types
-		added=0
-		for typ,subtyp,ext,name,doc in content_types:
-			try:
-				mt = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
-			except NoData:
-				mt = MIMEtype.new(typ=typ, subtyp=subtyp, ext=ext, name=name, doc=doc)
-				logger.info("MIME type ‘{}’ ({}) created.".format(mt,name))
-				added += 1
-			else:
-				if mt.doc is None or force:
-					mt.doc = doc
-		if not added:
-			logger.debug("No new MIME types necessary.")
-
-		for mt in MIMEtype.q.all():
-			if mt.superparent is None and Delete.q.filter_by(parent=mt).count() == 0:
-				mt.superparent = root
-		db.commit()
+		add_mimes(content_types)
 		
 		## MIME translators
 		def get_them(types, add=False):

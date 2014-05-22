@@ -26,7 +26,6 @@ from ... import ROOT_SITE_NAME,ANON_USER_NAME
 from .. import config
 from ..db import Base, Column, db, NoData, maybe_stale, no_update,check_unique
 from ..signal import app_list, ConfigChanged,NewSite
-from ...globals import current_site
 from . import Object, ObjectRef, TM_DETAIL_PAGE, Loadable
 from ._descr import D
 
@@ -216,6 +215,7 @@ class SiteBlueprint(ObjectRef):
 		if isinstance(blueprint,string_types):
 			blueprint = Blueprint.q.get_by(name=text_type(blueprint))
 		if site is None:
+			from ...globals import current_site
 			self.site = current_site
 		else:
 			if isinstance(site,string_types):

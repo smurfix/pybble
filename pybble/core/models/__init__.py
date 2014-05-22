@@ -27,7 +27,6 @@ from ..json import register_object
 
 from ..db import Base, Column, IDrenderer, db, NoData, maybe_stale, no_autoflush, refresh, setup_events
 from ..signal import ObjSignal
-from ...globals import current_site
 
 from flask import request,current_app
 from flask._compat import text_type, string_types
@@ -180,8 +179,20 @@ class Discriminator(Loadable, Dumpable, Base):
 		from .types import MIMEtype
 		return MIMEtype.get("pybble+obj/"+self.name.lower())
 
+	def setup(self, name,path, doc=None):
+		self.name = name
+		self.path = path
+		if doc is not None:
+			self.doc = doc
+		super(Discriminator,self).setup()
+
 	@staticmethod
 	def get(discr, obj=None):
+		"""\
+			Find a discriminator by whatever means necessary.
+
+			If an object path is given, insert if not found.
+			"""
 		if discr is None and obj is None:
 			return None
 		if discr is not None and obj is not None:
@@ -191,6 +202,22 @@ class Discriminator(Loadable, Dumpable, Base):
 		if hasattr(discr,'_get_current_object'):
 			discr = discr._get_current_object()
 		if isinstance(discr, string_types):
+			assert obj is None
+			if '.' in discr:
+				path = discr
+				discr = path.rsplit('.',1)[1]
+			else:
+				path = None
+			try:
+				discr = Discriminator.q.get_by(name=discr)
+			except NoData:
+				if path:
+					discr = Discriminator.new(name=discr,path=path)
+				else:
+					raise
+			else:
+				assert path is None or discr.path == path
+				return discr
 			try: discr = int(discr)
 			except ValueError: pass
 		if isinstance(discr, Discriminator):
@@ -587,6 +614,7 @@ class Object(Dumpable, Base):
 			if seen on standard parent/child path).
 			"""
 		from .site import Site
+		from ...globals import current_site
 		discr = self.discr
 
 		global TemplateMatch
@@ -688,9 +716,28 @@ def block_super_updates(target, value, oldvalue, initiator):
 #		raise RuntimeError("You cannot change an object's ID".format(target,oldvalue))
 
 class ObjectMeta(type(Object)):
+	"""\
+		This metaclass handles the setup for all tables inheriting from Object.
+
+		Specifically:
+			* look up (or create) the descriptor entry for its polymorphic identity
+			* set up the dependant primary key and the inheritance condition
+			  (necessary because Object is self-referential and the connection therefore ambiguous)
+			* set the table name, if not specified
+			* hook up event listeners
+			* create a pseudo MIME type for the table
+		"""
 	def __init__(cls, name, bases, dct):
 		if '_descr' in dct:
-			from ._descr import MIMEproperty
+			from ._descr import D,MIMEproperty
+			descr = dct['_descr']
+			if not isinstance(descr,int):
+				if descr is None:
+					descr = cls.__path__+'.'+cls.__name__
+				try:
+					descr = getattr(D,descr)
+				except AttributeError:
+					descr = Discriminator.get(descr)
 
 			xid = dct.get('id',None)
 			if xid is None:
