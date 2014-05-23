@@ -25,12 +25,12 @@ class SupD(dict):
 
 type2cls = SupD()
 name2cls = {}
-def register_object(cls):
+def json_adapter(cls):
 	type2cls[cls.cls.__module__+"."+cls.cls.__name__] = cls
 	name2cls[cls.clsname] = cls
 	return cls
 
-@register_object
+@json_adapter
 class _datetime(object):
 	cls = dt.datetime
 	clsname = "datetime"
@@ -48,7 +48,7 @@ class _datetime(object):
 			assert a
 			return dt.datetime(*a).replace(tzinfo=TZ)
 
-@register_object
+@json_adapter
 class _timedelta(object):
 	cls = dt.timedelta
 	clsname = "timedelta"
@@ -62,7 +62,7 @@ class _timedelta(object):
 	def decode(t,s=None,**_):
 		return dt.timedelta(0,t)
 
-@register_object
+@json_adapter
 class _date(object):
 	cls = dt.date
 	clsname = "date"
@@ -78,7 +78,7 @@ class _date(object):
 		## historic
 		return dt.date(*a)
 
-@register_object
+@json_adapter
 class _time(object):
 	cls = dt.time
 	clsname = "time"
