@@ -42,6 +42,7 @@ TRACE=
 NOTEST=
 DBG=
 DBGENV=
+PY="env python"
 export POSIXLY_CORRECT=1
 while getopts "dhkKnNprtv" i ; do
         case "$i"
@@ -119,9 +120,9 @@ if [ $redo = Y ] ; then
 	PYBBLE_SQL_DATABASE="$D/$NREV".db
 
 	mkdir -p "$PYBBLE_MEDIA_PATH"
-	./manage.py -t -S $DBG core schema -x
+	$PY ./manage.py -t -S $DBG core schema -x
 	[ -z "$V" ] || echo "Populating database $NREV"
-	./manage.py -t -S $DBG core populate
+	$PY ./manage.py -t -S $DBG core populate
 	echo "$NREV" > $rev
 else
 	[ -z "$V" ] || echo "Re-using database $OREV"
@@ -148,22 +149,21 @@ else
 fi
 
 SHELL=
-PY=python
 ASS=
 if [ -n "$PLAIN" ] ; then
 	ASS="$ASS --assert=plain"
 fi
 if [ -n "$DEBUG" ] ; then
-	PY=pdb
+	PY=env pdb
 	ASS="$ASS -s --pdb"
 fi
 
 if [ "$*" = "" ] ; then
 	if [ -z "$NOTEST" ] ; then
 		[ -z "$V" ] || echo "Consistency check"
-		./manage.py -t $DBG core check
+		$PY ./manage.py -t $DBG core check
 		[ -z "$V" ] || echo "Config dump"
-		./manage.py -t core config | fgrep -qs 'SESSION_COOKIE_DOMAIN=None'
+		$PY ./manage.py -t core config | fgrep -qs 'SESSION_COOKIE_DOMAIN=None'
 		# can't drop into pdb here, stdout is redirected
 	fi
 
