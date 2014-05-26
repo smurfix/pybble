@@ -244,7 +244,7 @@ def get_context():
 		USER=getattr(request,"user",None),
 		MESSAGES=msgs,
 		SITE=current_site,
-		CRUMBS=(user.groups+list(p.parent for p in user.all_visited()[0:20])) if user else None,
+		CRUMBS=(user.groups+list(p.obj for p in user.all_visited()[0:20])) if user else None,
 		NOW=datetime.utcnow(),
 	)
 
@@ -252,11 +252,10 @@ def get_context():
 def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE, to_typ="html"):
 	ctx = ctx.get_all()
 	ctx["obj"] = obj
-	p,s,o,d = obj.pso
-	ctx["obj_parent"] = p
-	ctx["obj_superparent"] = s
-	ctx["obj_owner"] = o
-	ctx["obj_deleted"] = d
+	ctx["obj_parent"] = getattr(obj,'parent',None)
+	ctx["obj_superparent"] = None
+	ctx["obj_owner"] = None
+	ctx["obj_deleted"] = obj.deleted
 	ctx["detail"] = detail
 
 	#if objtyp is not None:

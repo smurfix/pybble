@@ -106,11 +106,11 @@ class CmdGET(PrepCommand):
 			if exp is not None:
 				data = [data]
 		elif not args:
-			data = RESTend(json).get(int(id),typ)
+			data = RESTend(json).get(id=int(id),objtyp=typ)
 			if not exp: exp = "-"
 			data = [data]
 		else:
-			data = RESTend(json).get(int(id),typ)
+			data = RESTend(json).get(typ,int(id))
 			data = [getsubattr(data,a) for a in args]
 			if exp is None and len(args) == 1:
 				exp = "-"
@@ -169,7 +169,7 @@ class CmdDELETE(PrepCommand):
 		if help or not id:
 			self.parser.print_help()
 			sys.exit(not help)
-		res = RESTend(json).delete(int(id),typ, comment=comment)
+		res = RESTend(json).delete(id=int(id),objtyp=typ, comment=comment)
 
 		if quiet:
 			return

@@ -23,6 +23,7 @@ from wtforms.validators import ValidationError
 from pybble.render import render_my_template
 from pybble.core.db import db,NoData
 from pybble.core.models._const import TM_DETAIL_PAGE
+from pybble.core.models.object import Object
 from pybble.core.models.site import Site
 from pybble.core.session import logged_in
 from pybble.globals import current_site
@@ -69,30 +70,40 @@ def free_domain(form, field):
 class SiteEditForm(Form):
 	name = TextField('Name', [validators.required(u"Das Kind braucht einen Namen."), validators.length(min=3, max=30), free_name])
 	domain = TextField('Domain', [validators.required(u"Ohne Domain habe ich ein Problem, das Kind wiederzufinden."), validators.length(min=3, max=100), free_domain])
+	app = SelectField('App')
+	parent = SelectField('Parent')
 
 def editor(obj, name=None, parent=None):
 	assert parent is None
+	from pybble.core.models.site import App
 
-	form = SiteEditForm(request.form, prefix="site")
+	import pdb;pdb.set_trace()
+	form = SiteEditForm(request.form, obj, prefix="site", app=current_site.app.oid, parent=parent.oid if parent else current_site.oid)
 	form.id = obj.id
+	form.app.choices = tuple((o.oid,str(o)) for o in App.q.all())
+	kids = set(obj.all_sites)
+	form.parent.choices = tuple((o.oid,str(o)) for o in Site.q.all() if o not in kids)
 	if request.method == 'POST' and form.validate():
-		if obj.name != form.name.data or obj.domain != form.domain.data:
-			obj.record_change()
-			obj.name = form.name.data
-			obj.domain = form.domain.data
+		obj.name = form.name.data
+		obj.domain = form.domain.data
+		obj.app = Object.by_oid(form.app.data)
+		obj.parent = Object.by_oid(form.parent.data)
 		return redirect(url_for("pybble.views.view_oid", oid=obj.oid))
 	
 	elif request.method == 'GET':
 		form.name.data = obj.name
 		form.domain.data = obj.domain
+		form.app.data = obj.app.oid
+		form.parent.data = obj.parent.oid
 	return render_template('edit/site.html', obj=obj, form=form, name=form.name.data, title_trace=["globale Einstellungen"])
 
 def newer(parent, name=None):
-	form = SiteEditForm(request.form, prefix="site")
+	from pybble.core.models.site import App
+	form = SiteEditForm(request.form, prefix="site", app=current_site.app.oid, parent=parent.oid if parent else current_site.oid)
+	form.app.choices = tuple((o.oid,str(o)) for o in App.q.all())
+	form.parent.choices = tuple((o.oid,str(o)) for o in Site.q.all())
 	if request.method == 'POST' and form.validate():
-		obj = Site.new(form.domain.data, form.name.data)
-		obj.parent = parent
-		obj.record_creation()
+		obj = Site.new(form.domain.data, form.name.data, parent=Object.by_oid(form.parent.data), app=Object.by_oid(form.app.data))
 		return redirect(url_for("pybble.views.view_oid", oid=obj.oid))
 	
 	return render_template('edit/site.html', obj=None, form=form, title_trace=["neue Website"])

@@ -180,7 +180,7 @@ class RootManager(Manager):
 				print("ERROR:",str(e))
 			except Exception:
 				print("ERROR: ‹error message could not be printed›")
-			if self._pdb:
+			if True: # self._pdb:
 				import pdb
 				pdb.post_mortem(x[2])
 

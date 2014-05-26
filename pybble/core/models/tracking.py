@@ -49,10 +49,6 @@ class Breadcrumb(TrackingObject):
 	__tablename__ = "breadcrumbs"
 	_no_crumbs = True
 
-	# for_objtyp is saved here because of faster lookups
-	for_objtyp_id = Column("objtyp", Integer, ForeignKey(ObjType.id), nullable=False)
-	for_objtyp = relationship(ObjType, primaryjoin=for_objtyp_id==ObjType.id)
-
 	user = ObjectRef(User, doc="The user whodunit")
 	obj = ObjectRef(doc="accessed page")
 	site = ObjectRef(Site)
@@ -61,11 +57,12 @@ class Breadcrumb(TrackingObject):
 	visited = Column(DateTime,default=datetime.utcnow)
 	last_visited = Column(DateTime,nullable=True)
 	cur_visited = Column(DateTime,default=datetime.utcnow, nullable=True)
+	counter = Column(Integer, default=0)
 
 	def setup(self, user, obj):
-		self.for_objtyp = obj.objtyp
-		self.owner = user
-		self.parent = obj
+		self.user = user
+		self.obj = obj
+		self.site = current_site
 
 		super(Breadcrumb,self).setup()
 
@@ -75,9 +72,10 @@ class Breadcrumb(TrackingObject):
 
 	def visit(self):
 		now = datetime.utcnow()
-		if self.cur_visited is None or self.cur_visited < now-timedelta(0,600):
+		if self.cur_visited is None or self.cur_visited < now-timedelta(0,60):
 			self.last_visited = self.visited
 			self.visited = now
+			self.counter += 1
 		self.cur_visited = now
 
 ## Change

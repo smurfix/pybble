@@ -13,7 +13,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from jinja2 import Markup, contextfunction, BaseLoader
+from jinja2 import Markup, contextfunction, BaseLoader, is_undefined
 from flask import request,current_app,g,get_flashed_messages,session,g,url_for
 from flask.helpers import locked_cached_property
 from flask.templating import Environment as BaseEnvironment
@@ -108,6 +108,7 @@ class Environment(BaseEnvironment):
 			self.globals[str("tm_"+name.lower())] = tm
 
 		def addables(obj):
+			"""Cache a list of object types the user can add to this object"""
 			u = request.user
 			if not hasattr(u,"_can_add"):
 				u._can_add = {}
@@ -119,8 +120,8 @@ class Environment(BaseEnvironment):
 				for d in ObjType.q.all():
 #			if getattr(obj_class(d.id),"_no_crumbs",False):
 #				continue
-					if request.user.can_add(obj, objtyp=obj.objtyp, new_objtyp=d.id):
-						g.append((d.id,d.display_name or d.name, d.doc))
+					if request.user.can_add(obj, objtyp=obj.type, new_objtyp=d):
+						g.append((d.id, d.name, d.doc))
 				u[obj.id] = g
 			return g
 		self.globals['addables'] = addables
@@ -144,7 +145,7 @@ class Environment(BaseEnvironment):
 					u = getattr(request,"user",None)
 					if current_app.config.DEBUG_ACCESS:
 						access_logger.debug("can_do_{}: {} {} {} {}".format(b, u,obj,objtyp,a))
-					if not u:
+					if not u or is_undefined(obj):
 						return False
 					if a > PERM_NONE:
 						return u.can_do(obj, objtyp=objtyp) >= a

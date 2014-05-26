@@ -24,6 +24,7 @@ from wtforms import Form, HiddenField, TextField, validators
 from pybble.render import render_my_template
 from pybble.core.models._const import TM_DETAIL_PAGE, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY
 from pybble.core.models.object import Object
+from pybble.core.models.objtyp import ObjType
 from pybble.core.models.template import TemplateMatch
 from pybble.core.models.tracking import Breadcrumb
 from pybble.core.models.site import Site
@@ -89,7 +90,7 @@ def edit_oid(oid):
 	try: return tryAddOn(obj,"html_edit")
 	except NoRedir: pass
 
-	v = import_string("pybble.blueprint._root.part.%s.editor" % (obj.classname.lower(),))
+	v = import_string("pybble.blueprint._root.part.%s.editor" % (obj.type.name.lower(),))
 	if not getattr(v,"no_check_perm",None):
 		request.user.will_write(obj)
 	return v(obj)
@@ -102,12 +103,12 @@ def new_oid(oid, objtyp=None, name=None):
 	if objtyp is None:
 		objtyp = obj.objtyp
 	request.user.will_add(obj,new_objtyp=objtyp)
-	cls = obj_class(objtyp)
+	cls = ObjType.get(objtyp)
 	if hasattr(cls,"html_new"):
 		v = cls.html_new
 		vc = v
 	else:
-		v = import_string("pybble.blueprint._root.part.%s.newer" % (cls.__name__.lower(),))
+		v = import_string("pybble.blueprint._root.part.%s.newer" % (cls.name.lower(),))
 		def vc(**args):
 			return v(**args)
 
@@ -130,7 +131,7 @@ def copy_oid(oid, parent):
 	if hasattr(obj,"html_edit"):
 		return cls.html_edit(parent=parent)
 	else:
-		v = import_string("pybble.blueprint._root.part.%s.editor" % (obj.classname.lower(),))
+		v = import_string("pybble.blueprint._root.part.%s.editor" % (obj.type.name.lower(),))
 		return v(obj=obj,parent=parent)
 
 class DeleteForm(Form):

@@ -26,6 +26,11 @@ try:
 	from hashlib import md5
 except ImportError:
 	from md5 import md5
+try:
+	from jinja2 import is_undefined
+except ImportError:
+	def is_undefined(x):
+		return False
 
 from datetime import datetime,timedelta
 from functools import update_wrapper
@@ -40,8 +45,8 @@ from ...compat import py2_unicode
 from ..json import json_adapter
 from ..signal import ObjSignal
 
-from ..db import Base, Column, IDrenderer, db, NoData, maybe_stale, no_autoflush, refresh, setup_events, Dumpable
-from ._const import PERM_ADD,PERM_READ
+from ..db import Base, Column, IDrenderer, db, NoData,NoDataExc, maybe_stale, no_autoflush, refresh, setup_events, Dumpable
+from ._const import PERM_ADD,PERM_READ,PERM_ADMIN
 
 from flask import current_app
 from flask._compat import text_type, string_types
@@ -63,6 +68,7 @@ class _serialize_object(object):
 
 	@staticmethod
 	def decode(t=None,s=None,x=None,**_):
+		from .objtyp import ObjType
 		return ObjType.q.get_by(typ=t[0],subtyp=t[1])
 
 _tables = [] # A list of new tables
@@ -103,10 +109,10 @@ class ObjectMeta(type(Base)):
 
 					## Create a new composite.
 					if v.declared_attr:
-						col_typ = declared_attr((lambda k,v: lambda cls: Column(k+'_typ_id',Integer, ForeignKey(ObjType.id),nullable=v.nullable, doc=v.doc))(k,v))
+						col_typ = declared_attr((lambda k,v: lambda cls: Column(k+'_typ_id',Integer, ForeignKey(ObjType.id),nullable=v.nullable, doc=v.doc, unique=v.unique))(k,v))
 						col_id = declared_attr((lambda k,v: lambda cls: Column(k+'_id',Integer, nullable=v.nullable))(k,v))
 					else:
-						col_typ = Column(k+'_typ_id',Integer, ForeignKey(ObjType.id),nullable=v.nullable, doc=v.doc)
+						col_typ = Column(k+'_typ_id',Integer, ForeignKey(ObjType.id),nullable=v.nullable, doc=v.doc, unique=v.unique)
 						col_id = Column(k+'_id',Integer, nullable=v.nullable)
 					setattr(cls,k+"_typ_id", col_typ)
 					setattr(cls,k+"_id", col_id)
@@ -125,14 +131,14 @@ class ObjectMeta(type(Base)):
 						v.typ_id = v.typ.id
 					elif isinstance(v.typ,string_types):
 						if v.typ == "self":
-							col_typ = Column(k+'_id',Integer, ForeignKey(cls.__tablename__+'.id'),nullable=v.nullable, doc=v.doc)
+							col_typ = Column(k+'_id',Integer, ForeignKey(cls.__tablename__+'.id'),nullable=v.nullable, doc=v.doc, unique=v.unique)
 							col_ref = relationship(cls, remote_side=[cls.id], foreign_keys=(col_typ,), **rem)
 							setattr(cls,k+"_id", col_typ)
 							setattr(cls,k, col_ref)
 							cls._refs.append((cls,k))
 							cls.__table_args__.append(Index("i_%s_%s"%(name,k),col_typ))
 							if v.backref:
-								setattr(cls,v.backref, relationship(cls, primaryjoin = col_typ==cls.id, back_populates=k))
+								setattr(cls,v.backref, relationship(cls, primaryjoin = col_typ==cls.id, back_populates=k, uselist=not v.unique))
 							continue
 						else:
 							v.typ = ObjType.q.get(path=typ).mod
@@ -141,10 +147,10 @@ class ObjectMeta(type(Base)):
 						v.typ_id = v.typ.id
 						rem['remote_side'] = v.typ.__name__+'.id'
 					if v.declared_attr:
-						col_typ = declared_attr((lambda k,v: lambda cls: Column(k+'_id',Integer, ForeignKey(v.typ_id),nullable=v.nullable, doc=v.doc))(k,v))
+						col_typ = declared_attr((lambda k,v: lambda cls: Column(k+'_id',Integer, ForeignKey(v.typ_id),nullable=v.nullable, doc=v.doc, unique=v.unique))(k,v))
 						col_ref = declared_attr((lambda k,v,r: lambda cls: relationship(v.typ, primaryjoin = col_typ==v.typ_id, **r))(k,v,rem))
 					else:
-						col_typ = Column(k+'_id',Integer, ForeignKey(v.typ_id),nullable=v.nullable, doc=v.doc)
+						col_typ = Column(k+'_id',Integer, ForeignKey(v.typ_id),nullable=v.nullable, doc=v.doc, unique=v.unique)
 						col_ref = relationship(v.typ, primaryjoin = col_typ==v.typ_id, **rem)
 					setattr(cls,k+"_id", col_typ)
 					setattr(cls,k, col_ref)
@@ -154,7 +160,7 @@ class ObjectMeta(type(Base)):
 						if isinstance(v.typ,string_types):
 							setattr(v.typ,v.backref, relationship(cls, primaryjoin = "%s_id==%s" % (k,v.typ_id), back_populates=k))
 						else:
-							setattr(v.typ,v.backref, relationship(cls, primaryjoin = col_typ==v.typ.id, back_populates=k))
+							setattr(v.typ,v.backref, relationship(cls, primaryjoin = col_typ==v.typ.id, back_populates=k, uselist=not v.unique))
 				
 			elif k == 'modified':
 				event.listen(cls,'before_update',update_modified)
@@ -187,8 +193,17 @@ class Object(Base):
 
 	## Default permissions
 	_site_perm=None
+	_site_add_perm=()
 	_anon_perm=None
-	_admin_perm=PERM_ADD
+	_anon_add_perm=()
+	_admin_perm=PERM_ADMIN
+	_admin_add_perm=()
+	## The *_add_perm entries denote to which objects the user can add this type,
+	## so
+	##		class Comment(Object):
+	##		_site_add_perm=('Site','Wikipage',)
+	## means that anybody may by default add comments to these objects
+	## This only applies when initially setting up the root site
 
 	def __composite_values__(self):
 		return self.type.id, self.id
@@ -208,6 +223,10 @@ class Object(Base):
 			return t
 		else:
 			return refresh(t)
+	
+	@property
+	def mimetype(self):
+		return self.type.mimetype
 		
 	@classmethod
 	def get(cls,id):
@@ -229,20 +248,28 @@ class Object(Base):
 	@staticmethod
 	def by_oid(oid):
 		"""Given an object ID, return the object"""
+		from .objtyp import ObjType
+
 		try:
 			cid,id,hash = oid.split(".")
+			cid=int(cid)
+			id=int(id)
+			obj = ObjType.q.get_by(id=cid).mod.q.get_by(id=id)
 		except ValueError:
-			raise ValueError("bad OID: '%s'" % (oid,))
-		cls = Discriminator.get(cid).mod
-		obj = cls.q.get_by(id=int(id))
-		if oid != obj.oid:
-			raise ValueError("This object does not exist: " % (oid,))
-		return obj
+			pass
+		except NoData:
+			pass
+		else:
+			if oid == obj.oid:
+				return obj
+		# Intentionally does not distinguish between format and value errors
+		raise ValueError("This object does not exist: ‘{}’".format(oid))
 
 	## membership, somewhat generalized
 
 	_member_rules = []
 	class _rules(object):
+		"""Storage object"""
 		def __init__(self, table,src,dst, args):
 			self.table = table
 			self.src = src
@@ -251,6 +278,8 @@ class Object(Base):
 
 	def all_memberships(self, typ=None):
 		"""Return all objects (of some type?) I am a member of."""
+		from .objtyp import ObjType
+
 		if typ is not None:
 			typ = ObjTyp.get(typ)
 		for t in self._member_rules:
@@ -260,6 +289,17 @@ class Object(Base):
 				mm = getattr(m,t.dst)
 				if typ is None or mm.type is typ:
 					yield m,mm
+
+	def has_children(self,typ):
+		return self.all_children(typ).count()
+
+	def all_children(self,typ):
+		from .objtyp import ObjType
+
+		if is_undefined(typ):
+			from sqlalchemy.sql import false
+			return ObjType.q.filter(false())
+		return ObjType.get(typ).mod.q.filter_by(parent=self)
 
 	@property
 	def memberships(self):
@@ -282,8 +322,28 @@ class Object(Base):
 				if objtyp is None or mm.type == objtyp:
 					yield m,mm
 
+	def member_of(self,obj):
+		"""Am I a member of this?"""
+		for t in self._member_rules:
+			q = dict(t.args)
+			q[t.src] = self
+			q[t.dst] = obj
+			for m in t.table.q.filter_by(**q):
+				return not getattr(m,"excluded",False)
+
+		# Not directly. See if there's any group with self in it
+		from .user import Group
+
+		for g in Group.q.filter_by(parent=obj):
+			r = self.member_of(g)
+			if r is not None:
+				return r
+			
+		return None
+
 	@property
 	def all_refs(self, typ=None):
+		from .objtyp import ObjType
 		"""\
 			Return all (obj,attr) tuples where getattr(obj,attr)==self.
 			if typ != None, also limit to isinstance(obj,typ).
@@ -341,25 +401,24 @@ class Object(Base):
 			return None
 
 class ObjectRef(object):
-	def __init__(self, typ=None,backref=None, nullable=False, doc=None, declared_attr=False):
+	def __init__(self, typ=None,backref=None, nullable=False, doc=None, declared_attr=False, unique=False):
 		self.typ = typ
 		self.backref = backref
 		self.nullable = nullable
+		self.unique = unique
 		self.doc = doc
 		self.declared_attr = declared_attr
-
 
 @event.listens_for(mapper, "after_configured")
 def add_objtypes():
 	"""Initialize ObjType and MIMEtype entries for our tables"""
 	from .objtyp import ObjType
 	global _tables
-	for t in _tables:
+	tt = _tables
+	_tables = []
+	for t in tt:
 		typ = ObjType.get(t)
-		for pm in ('site','admin','anon'):
-			if getattr(typ,pm+'_permission',None) is not None:
-				continue
-			setattr(typ,pm+'_permission', getattr(t,'_'+pm+'_perm',None))
+		# This creates the ObjType
 
 	_tables = []
 	

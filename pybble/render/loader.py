@@ -208,7 +208,7 @@ def gen_q(c):
 	
 	df = TemplateMatch.for_objtyp==None
 	if c.obj:
-		df = or_(TemplateMatch.for_objtyp==c.obj.objtyp, df)
+		df = or_(TemplateMatch.for_objtyp==c.obj.type, df)
 	
 	q = TemplateMatch.q.filter(df).join(_DBTemplate, TemplateMatch.template).filter(*nf).join(_MIMEadapter,_DBTemplate.adapter).filter(*mf)
 	q._from_wild=from_wild

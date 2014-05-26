@@ -46,7 +46,7 @@ def serve_path(file):
 	site = current_site
 	while site:
 		try:
-			sf = StaticFile.q.get_by(superparent=site, path=file)
+			sf = StaticFile.q.get_by(site=site, path=file)
 		except NoData:
 			site = site.parent
 			if not site:

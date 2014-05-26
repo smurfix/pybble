@@ -218,7 +218,7 @@ class User(PasswordValue,Object):
 			return True
 		if site is None:
 			site = current_site
-		anon = Group.q.get_by(name=ANON_USER_NAME,owner=site,parent=site)
+		anon = Group.q.get_by(name=ANON_USER_NAME,parent=site)
 		return self.member_of(anon)
 
 	@property
@@ -240,22 +240,18 @@ class User(PasswordValue,Object):
 
 		if getattr(obj,"_no_crumbs",False):
 			return # no recursive or similar nonsense, please
-		q = { "owner":self, "objtyp":obj.objtyp }
 		try:
-			s = Breadcrumb.q.get_by(parent=obj, **q)
+			s = Breadcrumb.q.get_by(user=self, obj=obj)
 		except NoData:
-			Breadcrumb.new(self,obj)
-		else:
-			s.visit()
-			if not s.superparent: # bugfix
-				s.superparent = current_site
+			s = Breadcrumb.new(self,obj)
+		s.visit()
 	
 	def last_visited(self,cls=None):
 		from .tracking import Breadcrumb
 
-		q = { "owner":self, "superparent":current_site }
+		q = { "user":self, "site":current_site }
 		if cls:
-			q["objtyp"] = cls.cls_objtyp()
+			q["obj_type_id"] = cls.cls_objtyp().id
 		try:
 			r = Breadcrumb.q.filter_by(**q).order_by(Breadcrumb.visited.desc()).first()
 		except NoData:

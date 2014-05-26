@@ -67,7 +67,7 @@ class MIMEtype(Object):
 	doc = Column(Unicode(1000), nullable=True)
 	ext = Column(Unicode(10), nullable=True) # primary extension
 	
-	to_objtyp = ObjectRef(ObjType, nullable=True)
+	to_objtyp = ObjectRef(ObjType, "mimetype", nullable=True,unique=True)
 	__table_args__ = (UniqueConstraint(typ,subtyp),)
 
 	def setup(self, typ,subtyp, name=None, ext=None,doc=None,add=None,**kw):
@@ -109,6 +109,7 @@ class MIMEtype(Object):
 			return cls.q.get_by(typ=typ,subtyp=subtyp)
 		except NoData:
 			if not add:
+				import pdb;pdb.set_trace()
 				raise KeyError("Could not find MIME type "+typ+'/'+subtyp)
 			return cls.new(typ=typ,subtyp=subtyp, add=add)
 

@@ -31,7 +31,7 @@ from ._module import Module
 from .object import Object,ObjectRef
 from .objtyp import ObjType
 from .config import ConfigData
-from ._const import PERM_SUB_ADMIN,PERM_READ,PERM_ADMIN
+from ._const import PERM_SUB_ADMIN,PERM_READ,PERM_ADMIN,PERM_ADD
 
 logger = logging.getLogger('pybble.core.models.site')
 
@@ -66,8 +66,12 @@ class Site(Object):
 	"""A web domain / app."""
 	__tablename__ = "sites"
 	_is_new = False
+
+	# default permissions
 	_site_perm=PERM_READ
 	_anon_perm=PERM_READ
+	_admin_perm=PERM_ADMIN
+	_admin_add_perm="Site"
 
 	@classmethod
 	def __declare_last__(cls):
@@ -166,10 +170,42 @@ class Site(Object):
 				else:
 					perm = PERM_SUB_ADMIN
 			permit(who,self,perm,typ)
+		if self.parent is None:
+			self._setup_root_perms()
+		else:
+			self.copy_perms(self.parent)
+
+	def _setup_root_perms(self):
+		from .permit import permit
+		from .user import Group
+
+		admin = Group.q.get_by(parent=self, name=ROOT_USER_NAME)
+		anon = Group.q.get_by(parent=self, name=ANON_USER_NAME)
+
 		for typ in ObjType.q.all():
-			gen(typ,typ.site_permission,self)
-			gen(typ,typ.admin_permission,admin)
-			gen(typ,typ.anon_permission,anon)
+			for pm,actor in (('site',self),('admin',admin),('anon',anon)):
+				perm = getattr(typ.mod,'_'+pm+'_perm',None)
+				if perm is not None:
+					permit(actor,self, objtyp=typ, right=perm,inherit=None)
+
+				nts = getattr(typ.mod,'_'+pm+'_add_perm',())
+				if isinstance(nts,string_types):
+					nts = nts.split(" ")
+				for nt in nts:
+					nt = ObjType.get(nt)
+					permit(actor,self, objtyp=nt,new_objtyp=typ, right=PERM_ADD,inherit=None)
+
+
+	def copy_perms(self,parent):
+		import pdb;pdb.set_trace()
+		from .permit import Permission
+		admin = Group.q.get_by(parent=self, name=ROOT_USER_NAME)
+		anon = Group.q.get_by(parent=self, name=ANON_USER_NAME)
+		oadmin = Group.q.get_by(parent=parent, name=ROOT_USER_NAME)
+		oanon = Group.q.get_by(parent=parent, name=ANON_USER_NAME)
+		for src,dst in ((oadmin,admin),(oanon,anon),(parent,self)):
+			for p in Permission.q.filter_by(user=src):
+				Permission.new(user=dst, target=p.target, objtyp=p.objtyp, inherit=p.inherit, right=p.right, new_objtyp=p.new_objtyp)
 
 	def after_update(self):
 		super(Site,self).after_update()

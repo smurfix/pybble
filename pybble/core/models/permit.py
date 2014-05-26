@@ -80,12 +80,17 @@ class Permission(Object):
 
 	def setup(self, user, target, for_objtyp=None, right=None, inherit=None, new_objtyp=None):
 		assert right is not None
+		if right < 0:
+			assert new_objtyp is not None
+		else:
+			assert new_objtyp is None
 		for_objtyp = ObjType.get(target if for_objtyp is None else for_objtyp)
 		self.for_objtyp = for_objtyp
 		self.right = right
 		self.inherit = inherit
 		self.user = user
 		self.target = target
+		self.new_objtyp = new_objtyp
 
 		if right == PERM_ADD:
 			try: del user._can_add
@@ -201,7 +206,7 @@ def can_do(user,obj, objtyp=None, new_objtyp=None, want=None):
 
 	ru = getattr(request,"user",None)
 	if obj is not current_site and \
-		ru and ru.can_admin(current_site, objtyp=current_site.classobjtyp):
+		ru and ru.can_admin(current_site, objtyp=current_site.type):
 		if current_app.config.DEBUG_ACCESS:
 			log_access("ADMIN",obj)
 		return want if want and want < 0 else PERM_ADMIN

@@ -31,11 +31,6 @@ class ObjType(Loadable, Object):
 	name = Column(Unicode(30), nullable=False, unique=True)
 	doc = Column(Unicode(1000), nullable=True)
 
-	# Default permissions for this content on new sites
-	site_permission = Column(Integer, nullable=True)
-	admin_permission = Column(Integer, nullable=True)
-	anon_permission = Column(Integer, nullable=True)
-
 	def __str__(self):
 		return u'‹T:%s %s›' % (self.id, self.name)
 	def __repr__(self):
