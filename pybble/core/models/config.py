@@ -135,11 +135,14 @@ class ConfigData(Object):
 		return ConfigVar.q.get_by(name=k).count()
 
 	def __getitem__(self,k):
-		k = text_type(k)
-		if k in pybble_config:
-			return pybble_config[k]
+		if isinstance(k,ConfigVar):
+			var = k
+		else:
+			k = text_type(k)
+			if k in pybble_config:
+				return pybble_config[k]
+			var = ConfigVar.q.get_by(name=k)
 
-		var = ConfigVar.q.get_by(name=k)
 		try:
 			return SiteConfigVar.q.get_by(parent=self, var=var).value
 		except NoData:
@@ -148,12 +151,15 @@ class ConfigData(Object):
 			return self.parent[k]
 	
 	def __setitem__(self,k,v):
-		k = text_type(k)
-		if k in pybble_config:
-			pybble_config[k] = v
-			return
+		if isinstance(k,ConfigVar):
+			var = k
+		else:
+			k = text_type(k)
+			if k in pybble_config:
+				pybble_config[k] = v
+				return
 
-		var = ConfigVar.q.get_by(name=k)
+			var = ConfigVar.q.get_by(name=k)
 		try:
 			ov = SiteConfigVar.q.get_by(parent=self, var=var)
 		except NoData:
@@ -173,6 +179,21 @@ class ConfigData(Object):
 		else:
 			db.delete(ov)
 
+	def keys(self):
+		for k in pybble_config.keys():
+			yield k
+		for k in ConfigVar.q.all():
+			yield k.name
+	def values(self):
+		for k in pybble_config.values():
+			yield k
+		for k in ConfigVar.q.all():
+			yield self[k]
+	def items(self):
+		for k in pybble_config.items():
+			yield k
+		for k in ConfigVar.q.all():
+			yield (k.name,self[k])
 
 ## SiteConfigVar
 
