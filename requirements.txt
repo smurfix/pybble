@@ -13,6 +13,7 @@ https://github.com/smurfix/formalchemy/tarball/master
 https://github.com/smurfix/yapps/tarball/master
 Flask-Security
 WTForms
+pytz
 #python-texttable
 #Flask-Assets
 #Flask-Babel
