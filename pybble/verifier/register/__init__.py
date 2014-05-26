@@ -50,7 +50,7 @@ class Verifier(BaseVerifier):
 		u = verifier.user
 		if not u.is_verified(verifier.parent):
 			u.add_verified(True,verifier.parent)
-			return redirect(url_for("pybble.confirm.confirmed",oid=verifier.oid()))
+			return redirect(url_for("pybble.confirm.confirmed",oid=verifier.oid))
 
 		if request.user == u:
 			flash(u"Du bist bereits verifiziert.")

@@ -2,12 +2,12 @@
     <table>
 	  <tbody>
 		<tr><th>Zugang:</th><td>{{ obj }}</td></tr>
-		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid()) }}">{{ obj.oid() }}</a></td></tr>
-		<tr><th>User:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_owner.oid()) }}">{{ obj_owner }}</a> ({{ obj_owner.oid() }})</td></tr>
-		<tr><th>Objekt:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_parent.oid()) }}">{{ obj_parent }}</a> ({{ obj_parent.oid() }})</td></tr>
-		<tr><th>für Typ:</th><td>{{ name_discr(obj.discr) }} ({{ obj.discr }})</td></tr>
-		{%- if obj.new_discr is not none %}
-		<tr><th>Typ neu:</th><td>{{ name_discr(obj.new_discr) }} ({{ obj.new_discr }})</td></tr>
+		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid) }}">{{ obj.oid }}</a></td></tr>
+		<tr><th>User:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_owner.oid) }}">{{ obj_owner }}</a> ({{ obj_owner.oid }})</td></tr>
+		<tr><th>Objekt:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_parent.oid) }}">{{ obj_parent }}</a> ({{ obj_parent.oid }})</td></tr>
+		<tr><th>für Typ:</th><td>{{ name_objtyp(obj.objtyp) }} ({{ obj.objtyp }})</td></tr>
+		{%- if obj.new_objtyp is not none %}
+		<tr><th>Typ neu:</th><td>{{ name_objtyp(obj.new_objtyp) }} ({{ obj.new_objtyp }})</td></tr>
 		{%- endif %}
 		<tr><th>Recht:</th><td>{{ name_permission(obj.right) }} ({{ obj.right }})</td></tr>
 		<tr><th>vererbt:</th><td>{% if obj.inherit is none %}*{%elif obj.inherit%}Ja{%else%}Nein{%endif%}</td></tr>

@@ -3,7 +3,7 @@
 {% block body %}
   <h1>Keine Berechtigung</h1>
   <p>
-    Sie können auf das Objekt {{ obj }} ({{ obj.oid() }}) nicht zugreifen.<br />
+    Sie können auf das Objekt {{ obj }} ({{ obj.oid }}) nicht zugreifen.<br />
     <span style="font-size: 0.6em;">You can't {{ name_permission(perm) if perm else "even think about" }} it.</span>
 	</p><p>
 	{% if USER.anon %}

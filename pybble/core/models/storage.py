@@ -15,45 +15,48 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, DateTime, Boolean
+from sqlalchemy import Integer, Unicode, DateTime, Boolean, Column
 from sqlalchemy.orm import relationship,backref
 
-from ..db import Base, Column, check_unique
+from ...globals import current_site
+from ..db import check_unique
+from .object import Object,ObjectRef
+from .site import Site
 
 from flask import request,current_app
 
 from pybble.core import config
 import os
 
-from . import ObjectRef
-from ._descr import D
-
 ## Storage
 
-class Storage(ObjectRef):
+class Storage(Object):
 	"""A box for binary data files"""
-	_descr = D.Storage
-	_no_crumbs = True
 
+	site = ObjectRef(Site)
 	name = Column(Unicode(30), unique=True, nullable=False)
 	path = Column(Unicode(1000), unique=True, nullable=False)
 	url = Column(Unicode(200), unique=True, nullable=False)
 	default = Column(Boolean, default=False, nullable=False)
+
 	@classmethod
 	def __declare_last__(cls):
-		if not hasattr(cls,'site'):
-			cls.site = cls.superparent
-		check_unique(cls,"superparent default")
+		check_unique(cls, "name site")
+		check_unique(cls, "default site")
+		super(Storage,cls).__declare_last__()
 
-	def setup(self, name,path,url, site=None):
+	def setup(self, name,path,url, site=None, **kw):
 		self.name = unicode(name)
 		self.path = unicode(path)
 		self.url = unicode(url)
+		if site is None:
+			site = current_site
+		self.site = site
 
 		try: os.makedirs(path)
 		except OSError: pass
 
-		super(Storage,self).setup()
+		super(Storage,self).setup(**kw)
 
 	@property
 	def as_str(self):

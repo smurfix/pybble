@@ -1,9 +1,0 @@
-{{ subline(user) }} ({{ url_for("pybble.views.detail_oid", _external=True, oid=user.oid()) }})
-hat eine neue Wiki-Seite „{{ obj.name }}“
-({{ url_for("pybble.views.view_oid", _external=True, oid=obj.oid()) }})
-verfasst:
------
-{{ obj.data|safe }}
------
-PS: Der Tracker, der diese Mail generiert hat, ist hier:
-{{ url_for("pybble.views.view_oid", _external=True, oid=tracker.oid()) }}

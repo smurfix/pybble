@@ -16,8 +16,6 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from datetime import datetime
 import logging
 
-from flask import request,current_app
-
 from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
 from sqlalchemy.orm import relationship,backref
 from sqlalchemy import event
@@ -26,9 +24,11 @@ from ...core import config
 from ...globals import current_site
 from ...utils import hash_data
 from ..db import Base, Column, db, check_unique,no_update
-from . import Object,ObjectRef, update_modified
-from ._descr import D
+from .object import Object,ObjectRef, update_modified
 from .types import MIMEtype
+from .storage import Storage
+from .user import User
+from .site import Site
 
 import os
 
@@ -36,30 +36,25 @@ logger = logging.getLogger('pybble.core.models.files')
 
 ## BinData
 
-class BinData(ObjectRef):
+class BinData(Object):
 	"""
 		Stores (a reference to) one data file
-		owner: whoever uploaded the thing
 		parent: the object this is attached to
-		superparent: the storage
 
 		This object implements a content-based file system: the hash of the
 		file contents is an index.
 		"""
-	_descr = D.BinData
 	_no_crumbs = True
 	@classmethod
 	def __declare_last__(cls):
-		if not hasattr(cls,'storage'):
-			cls.storage = cls.superparent
 		no_update(cls.hash)
+		super(BinData,cls).__declare_last__()
 
-	storage_seq = Column(Integer, autoincrement=True, unique=True)
-	## The mysql driver ignores autoincrement on non-primary-key columns.
-	## Workaround: see end of file.
+	storage = ObjectRef(Storage)
 
-	mime_id = Column(Integer, ForeignKey(MIMEtype.id), nullable=False, index=True)
-	mime = relationship(MIMEtype, primaryjoin=mime_id==MIMEtype.id)
+	parent = ObjectRef()
+	mime = ObjectRef(MIMEtype)
+
 	name = Column(Unicode(30), nullable=False)
 	hash = Column(Unicode(33), nullable=True, unique=True) ## NULL if deleted
 	timestamp = Column(DateTime,default=datetime.utcnow)
@@ -67,7 +62,7 @@ class BinData(ObjectRef):
 
 	@staticmethod
 	def lookup(content):
-		return BinData.q.filter(BinData.hash == hash_data(content), BinData.superparent != None).one()
+		return BinData.q.filter(BinData.hash == hash_data(content), BinData.storage != None).one()
 			
 	def setup(self,name, ext=None,mimetype=None, content=None, parent=None, storage=None, **kw):
 		super(BinData,self).setup(**kw)
@@ -85,9 +80,9 @@ class BinData(ObjectRef):
 		self._content = content
 		self.hash = hash_data(content)
 		self.size = len(content)
-		self.owner = request.user
 		self.parent = parent
-		self.superparent = storage
+		self.storage = storage
+		db.add(self)
 		self._save_content()
 
 	@property
@@ -99,18 +94,15 @@ class BinData(ObjectRef):
 
 	@property
 	def content(self):
+		## DANGER this can be pretty big; TODO: stream
 		if not hasattr(self,"_content"):
-			try:
-				self._content = open(self.path).read()
-			except IOError:
-				try:
-					self._content = open(self.old_path_1).read()
-				except IOError:
-					self._content = open(self.old_path_2).read()
-					self._move_old_2()
-				else:
-					self._move_old_1()
+			self._content = open(self.path).read()
 		return self._content
+
+	@property
+	def content_reader(self):
+		"""Returns a file handle for reading the data"""
+		return open(self.path)
 
 	@property
 	def mimetype(self):
@@ -126,71 +118,12 @@ class BinData(ObjectRef):
 		except Exception:
 			return "???"
 
-	def _old1_get_chars(self):
-		"""
-		Broken: like _old2_get_chars(), and
-		* id-based, thus was very sparse
-		"""
-		if self.id is None:
-			db.flush()
-			if self.id is None:
-				return "???"
-		id = self.id-1
-		chars = "23456789abcdefghjkmnopqrstuvwxyz"
-		midchars = "abcdefghjkmnopq"
-		fc = []
-		flast = chars[id % len(chars)]
-		id = id // len(chars)
-		while id:
-			c = chars[id % len(midchars)]
-			id = id // len(midchars)
-			c = chars[id % len(midchars)] + c
-			id = id // len(midchars)
-			fc.insert(0,c)
-		fc.append("_")
-		fc.append(self.name+"_"+self.hash[0:10]+flast)
-		if self.mime.ext:
-			fc[-1] += "."+self.mime.ext
-		return fc
-
-	def _old2_get_chars(self):
-		"""
-		Broken:
-		* chars[id % len(midchars)] instead of midchars[id % len(midchars)]
-		* missing "id -= 1" after "while id", so there was never an ‘aa’
-		  (or ‘22’ …) subdirectory
-		"""
-		assert self.storage_seq is not None, repr(self)
-		id = self.storage_seq-1
-		chars = "23456789abcdefghjkmnopqrstuvwxyz"
-		midchars = "abcdefghjkmnopq"
-		fc = []
-		flast = chars[id % len(chars)]
-		id = id // len(chars)
-		while id:
-			c = chars[id % len(midchars)]
-			id = id // len(midchars)
-			c = chars[id % len(midchars)] + c
-			id = id // len(midchars)
-			fc.insert(0,c)
-		fc.append("_")
-		fc.append(self.name+"_"+self.hash[0:10]+flast)
-		if self.mime.ext:
-			fc[-1] += "."+self.mime.ext
-		return fc
-
 	def _get_chars(self):
-		if self.storage_seq is None:
-			db.flush()
-			db.refresh(self,('storage_seq',))
-			if self.storage_seq is None: ## sqlite, probably
-				from sqlalchemy import func
-				self.storage_seq = (db.query(func.max(BinData.storage_seq)).scalar() or 0) +1
-				db.flush()
-		assert self.storage_seq, repr(self)
-		id = self.storage_seq-1
-		chars = "abcdefghjk" ## 100 files per end directory (long names)
-		midchars = "abcdefghjkmnopqr" ## 256 subdirectories (short names)
+		if self.id is None:
+			db.flush((self,))
+		id = self.id-1
+		chars = "bcdfghjkmn" ## 100 files per end directory (long names)
+		midchars = "bcdfghjkmnopqrst" ## 256 subdirectories (short names)
 		fc = []
 		flast = chars[id % len(chars)]
 		id = id // len(chars)
@@ -209,27 +142,9 @@ class BinData(ObjectRef):
 			fc[-1] += "."+self.mime.ext
 		return fc
 
-	def _move_old_1(self):
-		op = self.old_path_1
-		np = self.path
-		if op != np:
-			try:
-				os.rename(op,np)
-			except OSError:
-				logger.warn(u"Could not rename ‘{}’ to ‘{}’".format(op,np))
-
-	def _move_old_2(self):
-		op = self.old_path_2
-		np = self.path
-		if op != np:
-			try:
-				os.rename(op,np)
-			except OSError:
-				logger.warn(u"Could not rename ‘{}’ to ‘{}’".format(op,np))
-
 	@property
 	def path(self):
-		fn = self.superparent.path
+		fn = self.storage.path
 		fc = self._get_chars()
 		dir = os.path.join(fn,*fc[:-1])
 		if not os.path.isdir(dir):
@@ -237,21 +152,9 @@ class BinData(ObjectRef):
 		fn = os.path.join(dir,fc[-1])
 		return fn
 
-	@property
-	def old_path_1(self):
-		fn = self.superparent.path
-		fc = self._old1_get_chars()
-		return os.path.join(fn,*fc)
-
-	@property
-	def old_path_2(self):
-		fn = self.superparent.path
-		fc = self._old2_get_chars()
-		return os.path.join(fn,*fc)
-
 	def get_absolute_url(self):
 		fc = self._get_chars()
-		fn = self.superparent.url + "/".join(fc)
+		fn = self.storage.url + "/".join(fc)
 		return fn
 	
 	def delete(self):
@@ -279,55 +182,52 @@ class BinData(ObjectRef):
 
 ## StaticFile
 
-class StaticFile(ObjectRef):
+class StaticFile(Object):
 	"""\
 		Record that a static file belongs to a specific site.
 		Superparent: The site.
 		Parent: The file.
 		"""
 	__tablename__ = "staticfile"
-	_descr = D.StaticFile
 	_no_crumbs = True
 	@classmethod
 	def __declare_last__(cls):
-		if not hasattr(cls,'bindata'):
-			cls.bindata = cls.parent
-		check_unique(cls, "superparent path")
+		check_unique(cls, "site path")
+		super(StaticFile,cls).__declare_last__()
+
+	file = ObjectRef(BinData)
+	parent = ObjectRef(doc="wherever this has been uploaded into")
+	site = ObjectRef(Site)
 
 	path = Column(Unicode(1000), nullable=False)
 	modified = Column(DateTime,default=datetime.utcnow)
 
-	def setup(self, path, bin, **kw):
-		super(StaticFile,self).setup(**kw)
+	def setup(self, path, bin, site=None, **kw):
 		self.path = path
-		self.superparent = current_site
 		self.parent = bin
+		if site is None:
+			site = current_site
+		self.site = site
+		self.file = bin
+
+		super(StaticFile,self).setup(**kw)
 		
 	@property
 	def as_str(self):
-		if self._rec_str or not self.superparent or not self.parent: return "‽"
+		if self._rec_str or not self.site or not self.parent: return "‽"
 		try:
 			self._rec_str += 1
-			return u'%s in %s' % (self.path, self.superparent.as_str)
+			return u'%s in %s' % (self.path, self.site.as_str)
 		finally:
 			self._rec_str -= 1
 
 	@property
 	def hash(self):
-		return self.bindata.hash
+		return self.file.hash
 	@property
 	def content(self):
-		return self.bindata.content
+		return self.file.content
 	@property
 	def mimetype(self):
-		return self.bindata.mimetype
-
-event.listen(StaticFile, 'before_insert', update_modified)
-
-## The mysql driver ignores autoincrement on non-primary-key columns.
-## Workaround:
-from sqlalchemy import event
-from sqlalchemy.schema import DDL
-event.listen(BinData.__table__, 'after_create',
-	    DDL("ALTER TABLE bindata CHANGE storage_seq storage_seq INT AUTO_INCREMENT NOT NULL", on="mysql"))
+		return self.file.mimetype
 

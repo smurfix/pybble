@@ -28,8 +28,7 @@ from pybble.core.session import logged_in
 from pybble.utils import random_string
 from pybble.render import valid_obj
 from pybble.core.models.template import Template, TemplateMatch
-from pybble.core.models import Discriminator, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE
-from pybble.core.models.user import Permission, User
+from pybble.core.models.user import User
 from ._base import expose
 expose = expose.sub("rss")
 

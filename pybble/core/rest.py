@@ -15,7 +15,8 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from flask import request
 from .db import db
-from .models import Object,Discriminator
+from .models.object import Object
+from .models.objtyp import ObjType
 from .models.tracking import Tracker,Change,Delete
 from .json import encode
 
@@ -25,20 +26,20 @@ class RESTend(object):
 		self.json = json
 
 	## TODO: permissions
-	def get(self,id,descr=None):
-		obj = Object.q.get_by(id=id)
-		if descr is not None:
-			D = Discriminator.get(descr).mod
+	def get(self,objtyp,id):
+		obj = ObjType.get(objtyp,id)
+		if objtyp is not None:
+			D = ObjType.get(objtyp).mod
 			assert type(obj) is D, "{} is not a {}".format(str(obj),str(D))
 		if self.json:
 			obj = obj.as_dict
 		return obj
 
-	def put(self,id,descr=None, comment=None,**data):
-		obj = Object.q.get_by(id=id)
+	def put(self,objtyp,id, comment=None,**data):
+		obj = ObjType.get(objtyp,id)
 		changed = {}
-		if descr is not None:
-			D = Discriminator.get(descr).mod
+		if objtyp is not None:
+			D = ObjType.get(objtyp).mod
 			assert D is type(obj), "{} is not a {}".format(str(obj),str(D))
 		old = obj.as_dict
 		for k,v in data.items():
@@ -56,10 +57,10 @@ class RESTend(object):
 			obj = obj.as_dict
 		return { "obj":obj, "changed":changed }
 	
-	def post(self,descr, comment=None,**data):
-		D = Discriminator.get(descr).mod
+	def post(self,objtyp, comment=None,**data):
+		objtyp = ObjType.get(objtyp)
 		try:
-			obj = D(**data)
+			obj = objtyp.mod.new(**data)
 		except TypeError as e:
 			raise TypeError("{}: {}".format(D,e)) ## SIGH
 		res = Tracker.new(request.user,obj, comment=comment)
@@ -67,11 +68,11 @@ class RESTend(object):
 			res = res.as_dict
 		return res
 
-	def patch(self,id,descr=None, comment=None,**data):
-		obj = Object.q.get_by(id=id)
+	def patch(self,objtyp,id, comment=None,**data):
+		obj = ObjType.get(objtyp,id)
 		changed = {}
-		if descr is not None:
-			D = Discriminator.get(descr).mod
+		if objtyp is not None:
+			D = ObjType.get(objtyp).mod
 			assert D is type(obj), "{} is not a {}".format(str(obj),str(D))
 		old = obj.as_dict
 		for k,v in data.items():
@@ -87,23 +88,20 @@ class RESTend(object):
 			res = { 'obj': obj}
 		return res
 	
-	def delete(self,id,descr=None, comment=None):
-		obj = Object.q.get_by(id=id)
-		if descr is not None:
-			D = Discriminator.get(descr).mod
+	def delete(self,typ,id, comment=None):
+		obj = ObjType.get(typ,id)
+		if objtyp is not None:
+			D = ObjType.get(objtyp).mod
 			assert D is type(obj), "{} is not a {}".format(str(obj),str(D))
 		Delete.new(obj, comment=comment)
 		if self.json:
 			obj = obj.as_dict
 		return { "obj":obj, "deleted":True }
 
-	def list(self,descr=None):
-		D = Discriminator
-		if descr is not None:
-			D = D.get(descr).mod
+	def list(self,typ=None):
 
 		res = []
-		for obj in D.q.all():
+		for obj in ObjType.get(typ).mod.q.all():
 			if self.json:
 				obj = obj.as_dict
 			res.append(obj)
@@ -111,9 +109,9 @@ class RESTend(object):
 		
 	def types(self):
 		res = []
-		for descr in Discriminator.q.all():
+		for objtyp in ObjType.q.all():
 			if self.json:
-				descr = descr.as_dict
-			res.append(descr)
+				objtyp = objtyp.as_dict
+			res.append(objtyp)
 		return res
 

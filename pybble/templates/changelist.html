@@ -13,17 +13,17 @@
 		{% set tp = t.parent -%}
 		{% if tp -%}
     	<tr>
-			<td><a href="{{url_for("pybble.views.view_oid", oid=o.change_obj.oid()) }}">{{ subline(o.change_obj) }}</a></td>
+			<td><a href="{{url_for("pybble.views.view_oid", oid=o.change_obj.oid) }}">{{ subline(o.change_obj) }}</a></td>
 			<td>
-			{%- if tp.classdiscr == d_change %}
-			<a href="{{url_for("pybble.views.view_oid", oid=t.parent.oid())}}">Details</a>
-			{%- elif tp.classdiscr == d_delete %}
+			{%- if tp.classobjtyp == d_change %}
+			<a href="{{url_for("pybble.views.view_oid", oid=t.parent.oid)}}">Details</a>
+			{%- elif tp.classobjtyp == d_delete %}
 			gelöscht
 			{%- else %}
 			neu angelegt
 			{%- endif -%}
 			</td>
-			<td><a href="{{url_for("pybble.views.view_oid", oid=t.owner.oid())}}">{{ t.owner }}</a></td>
+			<td><a href="{{url_for("pybble.views.view_oid", oid=t.owner.oid)}}">{{ t.owner }}</a></td>
 			<td>{{ o.parent.timestamp|date }}</td>
 		</tr>
 		{%- endif %}

@@ -4,9 +4,11 @@ from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from pybble.utils import current_request, make_permanent
 from pybble.render import url_for, expose, render_template, valid_obj, \
-	discr_list, valid_admin,valid_access,valid_read,valid_write
-from pybble.models import Template, TemplateMatch, Discriminator, \
-	Member, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE, PERM_NONE
+	objtyp_list, valid_admin,valid_access,valid_read,valid_write
+from pybble.core.models.template import Template, TemplateMatch
+from pybble.core.models.objtyp import ObjType
+from pybble.core.models.user import Member
+from pybble.core.models.object import Object
 
 from pybble.database import db,NoResult
 from pybble.flashing import flash
@@ -28,8 +30,8 @@ def newer(request, parent, name=None):
 def editor(request, obj=None, parent=None):
 	form = MemberForm(request.form, prefix="perm")
 	if request.method == 'POST' and form.validate():
-		user = obj_get(form.user.data)
-		group = obj_get(form.group.data)
+		user = Object.by_oid(form.user.data)
+		group = Object.by_oid(form.group.data)
 		excluded = bool(form.excluded.data)
 
 		if parent:
@@ -44,17 +46,17 @@ def editor(request, obj=None, parent=None):
 
 		flash(u"Gespeichert.",True)
 
-		return redirect(url_for("pybble.views.view_oid", oid=user.oid()))
+		return redirect(url_for("pybble.views.view_oid", oid=user.oid))
 
 	
 	elif request.method == 'GET':
 		if obj:
-			form.group.data = parent.oid() if parent else obj.parent.oid()
-			form.user.data = obj.owner.oid()
+			form.group.data = parent.oid if parent else obj.parent.oid
+			form.user.data = obj.owner.oid
 			form.excluded.data = obj.excluded
 		else:
-			form.user.data = request.user.oid()
-			form.group.data = parent.oid()
+			form.user.data = request.user.oid
+			form.group.data = parent.oid
 			form.excluded.data = False
 
 	return render_template('edit/member.html', parent=parent, obj=obj, form=form, title_trace=["New Member" if parent else "Edit Member"])

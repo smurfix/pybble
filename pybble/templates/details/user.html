@@ -2,9 +2,9 @@
     <table>
 	  <tbody>
 		<tr><th>Benutzer:</th><td>{{ obj }}</td></tr>
-		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid()) }}">{{ obj.oid() }}</a></td></tr>
+		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid) }}">{{ obj.oid }}</a></td></tr>
 		{%- if obj.anon %}
-		<tr><th>Art:</th><td>anonymer Benutzer von <a href="{{ url_for("pybble.views.detail_oid", oid=obj_superparent.oid()) }}">{{ obj_superparent }}</a></td></tr>
+		<tr><th>Art:</th><td>anonymer Benutzer von <a href="{{ url_for("pybble.views.detail_oid", oid=obj_superparent.oid) }}">{{ obj_superparent }}</a></td></tr>
 		{%- else %}
 		<tr><th>Username:</th><td>{{ obj.username }}</td></tr>
 		<tr><th>Password:</th><td>(natürlich nicht angezeigt)</td></tr>

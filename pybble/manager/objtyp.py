@@ -20,35 +20,35 @@ from importlib import import_module
 
 from . import Manager,Command,Option
 from ..core.json import encode
-from ..core.models import Discriminator as Dis
+from ..core.models.objtyp import ObjType as Typ
 from ..core.db import db
 
-class AddDis(Command):
+class AddTyp(Command):
 	def __init__(self):
-		super(AddDis,self).__init__()
-		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
-		self.add_option(Option("name", nargs='?', action="store",help="The discriminator's name"))
+		super(AddTyp,self).__init__()
+		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Typplay this help text and exit"))
+		self.add_option(Option("name", nargs='?', action="store",help="The objtyp's name"))
 		self.add_option(Option("path", nargs='?', action="store",help="The class path"))
 	def __call__(self,app, help=False,name=None,path=None):
 		if help or path is None:
 			self.parser.print_help()
 			sys.exit(not help)
-		d = Dis(path=path,name=name)
+		d = Typ(path=path,name=name)
 		db.add(d)
 		db.commit()
 		
-class DocDis(Command):
+class DocTyp(Command):
 	def __init__(self):
-		super(DocDis,self).__init__()
-		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
-		self.add_option(Option("name", nargs='?', action="store",help="The discriminator to document"))
+		super(DocTyp,self).__init__()
+		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Typplay this help text and exit"))
+		self.add_option(Option("name", nargs='?', action="store",help="The objtyp to document"))
 		self.add_option(Option("doc", nargs='?', action="store",help="some text"))
 	def __call__(self,app, help=False,name=None,doc=None):
 		if help or name is None:
 			if help:
 				self.parser.print_help()
 			sys.exit(not help)
-		d = Dis.q.get_by(name=name)
+		d = Typ.q.get_by(name=name)
 		if doc is None:
 			if d.infotext is not None:
 				print(d.infotext)
@@ -58,42 +58,42 @@ class DocDis(Command):
 			d.infotext = doc
 			db.commit()
 		
-class DropDis(Command):
+class DropTyp(Command):
 	def __init__(self):
-		super(DropDis,self).__init__()
-		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
-		self.add_option(Option("name", nargs='?', action="store",help="The Discriminator to delete"))
+		super(DropTyp,self).__init__()
+		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Typplay this help text and exit"))
+		self.add_option(Option("name", nargs='?', action="store",help="The ObjType to delete"))
 	def __call__(self,app, help=False,name=None):
 		if help or name is None:
 			self.parser.print_help()
 			sys.exit(not help)
-		d = Dis.q.get_by(name=name)
+		d = Typ.q.get_by(name=name)
 		db.delete(d)
 		db.commit()
 		
-class ListDis(Command):
+class ListTyp(Command):
 	def __init__(self):
-		super(ListDis,self).__init__()
-		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
+		super(ListTyp,self).__init__()
+		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Typplay this help text and exit"))
 		self.add_option(Option("-d","--dump", dest="dump",action="store_true",help="Dump a complete object"))
 	def __call__(self,app, help=False, dump=False):
 		if help:
 			self.parser.print_help()
 			sys.exit(not help)
-		for d in Dis.q.all():
+		for d in Typ.q.all():
 			if dump:
 				print(encode(d._dump()))
 			else:
 				print("{}\t{}\t{}".format(d.id,d.name,d.path))
 		
-class DisManager(Manager):
+class TypManager(Manager):
 	"""Types of databse entries"""
 	def __init__(self):
-		super(DisManager,self).__init__()
-		self.add_command("add", AddDis())
-		self.add_command("delete", DropDis())
-		self.add_command("list", ListDis())
-		self.add_command("doc", DocDis())
+		super(TypManager,self).__init__()
+		self.add_command("add", AddTyp())
+		self.add_command("delete", DropTyp())
+		self.add_command("list", ListTyp())
+		self.add_command("doc", DocTyp())
 
 	def create_app(self, app):
 		return app

@@ -14,7 +14,7 @@
       {%- endif %}
 	  {{ show(form.user) }}
 	  {{ show(form.object) }}
-	  {{ show(form.discr) }}
+	  {{ show(form.objtyp) }}
 	  {{ showb(form.email) }}
 	  {{ showb(form.track_mod) }}
 	  {{ showb(form.track_new) }}
@@ -30,12 +30,12 @@
 	</thead><tbody>
   {%- for o in parent.uptree() %}
     {% for p in o.trackings %}
-    	<tr><td><a href="#nogo" class="pickup" oid="{{p.parent.oid()}}">{{ p.parent }}</a></td>
-			<td>{{ name_discr(p.discr) }}</td>
-			<td><a href="{{ url_for('pybble.views.edit_oid',oid=p.oid()) }}">Edit</a>
-			  | <a href="{{ url_for('pybble.views.delete_oid',oid=p.oid()) }}">Del</a></td></tr>
+    	<tr><td><a href="#nogo" class="pickup" oid="{{p.parent.oid}}">{{ p.parent }}</a></td>
+			<td>{{ name_objtyp(p.objtyp) }}</td>
+			<td><a href="{{ url_for('pybble.views.edit_oid',oid=p.oid) }}">Edit</a>
+			  | <a href="{{ url_for('pybble.views.delete_oid',oid=p.oid) }}">Del</a></td></tr>
 	{% else %}
-    	<tr><td><a href="#nogo" class="pickup" oid="{{o.oid()}}">{{ subline(o) }}</a></td><td>-</td><td>-</td><td>-</td></tr>
+    	<tr><td><a href="#nogo" class="pickup" oid="{{o.oid}}">{{ subline(o) }}</a></td><td>-</td><td>-</td><td>-</td></tr>
 	{% endfor -%}
   {% endfor -%}
     </tbody></table>

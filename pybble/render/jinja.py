@@ -20,10 +20,11 @@ from flask.templating import Environment as BaseEnvironment
 from flask._compat import text_type
 
 from ..utils import AuthError
-from ..core.models import PERM, PERM_NONE, PERM_ADD, obj_get, \
-                          Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, obj_get, TM_DETAIL, \
+from ..core.models._const import PERM, PERM_NONE, PERM_ADD, \
+                          TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, TM_DETAIL, \
                           TM_DETAIL_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name
-from ..core.models._descr import D
+from ..core.models.objtyp import ObjType
+from ..core.models.object import Object
 from ..core.models.user import access_logger
 from ..core.models.template import TemplateMatch, Template as DBTemplate
 from ..core.db import db,NoData, refresh
@@ -77,11 +78,11 @@ class Environment(BaseEnvironment):
 
 		self.globals['url'] = lambda: request.url
 
-		def name_discr(id):
+		def name_objtyp(id):
 			if id is None or id == "None":
 				return "*"
-			return Discriminator.q.get_by(id=int(id)).name
-		self.globals['name_discr'] = name_discr
+			return ObjType.q.get_by(id=int(id)).name
+		self.globals['name_objtyp'] = name_objtyp
 
 		def name_detail(id):
 			from pybble.models import TM_DETAIL_name
@@ -96,11 +97,12 @@ class Environment(BaseEnvironment):
 		self.globals['diff'] = textDiff
 		self.globals['textdiff'] = textOnlyDiff
 
-		for did,dname in D.items():
-			i = dname.rindex(".")
+		for typ in ObjType.q.all():
+			dname = typ.name
+			i = dname.rfind(".")
 			if i > 0:
 				dname = dname[i+1:]
-			self.globals[str("d_"+dname.lower())] = did
+			self.globals[str("d_"+dname.lower())] = typ.id
 
 		for tm,name in TM_DETAIL.items():
 			self.globals[str("tm_"+name.lower())] = tm
@@ -114,10 +116,10 @@ class Environment(BaseEnvironment):
 			g = u.get(obj.id,None)
 			if g is None:
 				g = []
-				for d in Discriminator.q.all():
+				for d in ObjType.q.all():
 #			if getattr(obj_class(d.id),"_no_crumbs",False):
 #				continue
-					if request.user.can_add(obj, discr=obj.discr, new_discr=d.id):
+					if request.user.can_add(obj, objtyp=obj.objtyp, new_objtyp=d.id):
 						g.append((d.id,d.display_name or d.name, d.doc))
 				u[obj.id] = g
 			return g
@@ -130,33 +132,33 @@ class Environment(BaseEnvironment):
 		# Permission checks for templates: {% if can_edit() %} -- menu -- {% endif %}
 		for a,b in PERM.iteritems():
 			def can_do_closure(a,b):
-				def can_do(env, obj=None, discr=None):
-					if discr is None:
+				def can_do(env, obj=None, objtyp=None):
+					if objtyp is None:
 						if isinstance(obj,(int,long)):
-							discr=obj
+							objtyp=obj
 							obj=None
 					if obj is None:
 						obj = env.get('obj',None)
 					if isinstance(obj,basestring):
-						obj = obj_get(obj)
+						obj = Object.by_oid(obj)
 					u = getattr(request,"user",None)
 					if current_app.config.DEBUG_ACCESS:
-						access_logger.debug("can_do_{}: {} {} {} {}".format(b, u,obj,discr,a))
+						access_logger.debug("can_do_{}: {} {} {} {}".format(b, u,obj,objtyp,a))
 					if not u:
 						return False
 					if a > PERM_NONE:
-						return u.can_do(obj, discr=discr) >= a
+						return u.can_do(obj, objtyp=objtyp) >= a
 					elif a == PERM_ADD:
-						return u.can_do(obj, discr=obj, new_discr=discr, want=a) == a
+						return u.can_do(obj, objtyp=obj, new_objtyp=objtyp, want=a) == a
 					else:
-						return u.can_do(obj, discr=discr, want=a) == a
+						return u.can_do(obj, objtyp=objtyp, want=a) == a
 				can_do.contextfunction = 1 # Jinja
 
 				def will_do(env, obj=None):
 					if obj is None:
 						obj = env.vars['obj']
 					if isinstance(obj,basestring):
-						obj = obj_get(obj)
+						obj = Object.by_oid(obj)
 					u = getattr(request,"user",None)
 					if current_app.config.DEBUG_ACCESS:
 						access_logger.debug("will_do_{} {} {} {}".format(b, u,obj,a))
@@ -224,5 +226,5 @@ class SiteTemplateLoader(BaseLoader):
 		def t_is_current():
 			#db.refresh(refresh(t),('modified',))
 			return mtime == refresh(t).modified
-		return t.content, t.oid(), t_is_current
+		return t.content, t.oid, t_is_current
 

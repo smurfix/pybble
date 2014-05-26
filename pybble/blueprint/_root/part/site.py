@@ -22,7 +22,7 @@ from wtforms.validators import ValidationError
 
 from pybble.render import render_my_template
 from pybble.core.db import db,NoData
-from pybble.core.models import TM_DETAIL_PAGE
+from pybble.core.models._const import TM_DETAIL_PAGE
 from pybble.core.models.site import Site
 from pybble.core.session import logged_in
 from pybble.globals import current_site
@@ -80,7 +80,7 @@ def editor(obj, name=None, parent=None):
 			obj.record_change()
 			obj.name = form.name.data
 			obj.domain = form.domain.data
-		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
+		return redirect(url_for("pybble.views.view_oid", oid=obj.oid))
 	
 	elif request.method == 'GET':
 		form.name.data = obj.name
@@ -93,7 +93,7 @@ def newer(parent, name=None):
 		obj = Site.new(form.domain.data, form.name.data)
 		obj.parent = parent
 		obj.record_creation()
-		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
+		return redirect(url_for("pybble.views.view_oid", oid=obj.oid))
 	
 	return render_template('edit/site.html', obj=None, form=form, title_trace=["neue Website"])
 

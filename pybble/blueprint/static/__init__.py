@@ -25,6 +25,7 @@ from pybble.core.route import Exposer
 from pybble.blueprint import BaseBlueprint
 from pybble.core.db import NoData
 from pybble.core.models.files import StaticFile
+from pybble.core.models.object import Object
 from pybble.globals import current_site
 
 from datetime import datetime,timedelta
@@ -68,7 +69,7 @@ def serve_path(file):
 @expose("/download/<oid>")
 @expose("/download/<oid>/<name>")
 def download(request,oid,name=None):
-	obj = obj_get(oid)
+	obj = Object.by_oid(oid)
 	r = Response(obj.content, mimetype=obj.mimetype)
 	if name:
 		n = obj.name

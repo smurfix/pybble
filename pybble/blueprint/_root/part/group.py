@@ -4,9 +4,11 @@ from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from pybble.utils import current_request, make_permanent
 from pybble.render import url_for, expose, render_template, valid_obj, \
-	discr_list, valid_admin,valid_access,valid_read,valid_write
-from pybble.models import Template, TemplateMatch, Discriminator, \
-	Group, Site, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE, PERM_NONE
+	objtyp_list, valid_admin,valid_access,valid_read,valid_write
+from pybble.core.models.template import Template, TemplateMatch
+from pybble.core.models.user import Group
+from pybble.core.models.site import Site
+from pybble.core.models.object import Object
 
 from pybble.database import db,NoResult
 from pybble.flashing import flash
@@ -39,7 +41,7 @@ def editor(request, obj=None, parent=None):
 			obj.record_change(data)
 
 		flash(u"Gespeichert.",True)
-		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
+		return redirect(url_for("pybble.views.view_oid", oid=obj.oid))
 	
 	elif request.method == 'GET':
 		if obj:

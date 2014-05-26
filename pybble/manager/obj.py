@@ -23,7 +23,8 @@ from flask import current_app
 from . import Manager,Command,Option,PrepCommand
 from ..core.rest import RESTend
 from ..core.db import db, NoData,ManyData
-from ..core.models import Discriminator, PERM_NAME, TM_DETAIL
+from ..core.models.objtyp import ObjType
+from ..core.models._const import PERM_NAME, TM_DETAIL
 from ..core.json import encode
 from ..utils import getsubattr
 from ..utils.show import show,Cache
@@ -55,22 +56,22 @@ def _parse(args):
 		elif v == "False":
 			v = False
 		elif v.startswith("="):
-			descr,oid = v[1:].split(":")
-			if descr == "D":
-				v = Discriminator.get(oid)
-			elif descr == "R":
+			objtyp,oid = v[1:].split(":")
+			if objtyp == "D":
+				v = ObjType.get(oid)
+			elif objtyp == "R":
 				v = PERM_NAME[oid]
-			elif descr == "T":
+			elif objtyp == "T":
 				v = TM_DETAIL[oid]
 			else:
 				try:
-					v = Discriminator.get(descr)
+					v = ObjType.get(objtyp)
 				except NoData:
-					raise RuntimeError("I do not know the type ‘{}’".format(descr))
+					raise RuntimeError("I do not know the type ‘{}’".format(objtyp))
 				try:
 					v = v.mod.q.get_by(id=int(oid))
 				except NoData:
-					raise RuntimeError("I do not know the item ‘{}:{}’".format(descr,oid))
+					raise RuntimeError("I do not know the item ‘{}:{}’".format(objtyp,oid))
 		else:
 			try:
 				v = int(v)
@@ -193,7 +194,7 @@ class CmdPOST(PrepCommand):
 			self.parser.print_help()
 			sys.exit(not help)
 		data = _parse(args)
-		res = RESTend(json).post(descr=typ, comment=comment, **data)
+		res = RESTend(json).post(objtyp=typ, comment=comment, **data)
 
 		if quiet:
 			return
@@ -219,7 +220,7 @@ class CmdPUT(PrepCommand):
 			self.parser.print_help()
 			sys.exit(not help)
 		data = _parse(args)
-		res = RESTend(json).put(id=id, descr=typ, comment=comment, **data)
+		res = RESTend(json).put(id=int(id), objtyp=typ, comment=comment, **data)
 
 		if quiet:
 			return
@@ -236,7 +237,7 @@ class CmdPATCH(PrepCommand):
 		super(CmdPATCH,self).__init__()
 		self.add_option(Option("-c", "--comment", dest="comment", action="store", required=False, help="Reason for this change"))
 		self.add_option(Option("typ", nargs='?', action="store",help="The item's type"))
-		self.add_option(Option("id", nargs='?', action="store",help="The item's ID"))
+		self.add_option(Option("id", nargs='?', type=int, action="store",help="The item's ID"))
 	def run(self, args, typ=None,id=None,help=False,comment=None):
 		quiet = current_app._manager_quiet
 		json = current_app._manager_json
@@ -244,8 +245,9 @@ class CmdPATCH(PrepCommand):
 		if help or not args or not id:
 			self.parser.print_help()
 			sys.exit(not help)
+		id = int(id)
 		data = _parse(args)
-		res = RESTend(json).patch(id=id, descr=typ, comment=comment, **data)
+		res = RESTend(json).patch(id=int(id), objtyp=typ, comment=comment, **data)
 
 		if quiet:
 			return

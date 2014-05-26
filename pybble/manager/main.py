@@ -144,7 +144,7 @@ class RootManager(Manager):
 		from .add import AddCommand
 		from .schema import SchemaCommand
 		from .mime import MIMEManager
-		from .descr import DisManager
+		from .objtyp import TypManager
 		from .obj import RESTManager
 		from .site import SiteManager
 		from .user import UserManager
@@ -153,7 +153,7 @@ class RootManager(Manager):
 		coremanager.__doc__ = "Examine and change Pybble's internal data"
 		coremanager.command(check)
 		coremanager.command(config)
-		coremanager.add_command("descr",DisManager())
+		coremanager.add_command("objtyp",TypManager())
 		coremanager.add_command("mime",MIMEManager())
 		coremanager.add_command("url",ShowUrls())
 		coremanager.add_command("populate",PopulateCommand())

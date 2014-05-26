@@ -64,7 +64,7 @@ content_types = upload_content_types+[
 	('text','*',None,"any text data",None),
 
 	('html','subpage',None,"a (main) part of a webpage",None),
-	('html','string',None,"a short string describing an object",None),
+	('html','string',None,"a short string objtypibing an object",None),
 	('html','detail',None,"a tabular view of an object's internal state",None),
 	('html','snippet',None,"a fragment for the explore view",None),
 	('html','hierarchy',None,"a fragment for hierarchical view within a page",None),
@@ -85,81 +85,107 @@ class PopulateCommand(Command):
 			self.main(app,force)
 
 	def main(self,app, force=False):
-		from ..core.models import Discriminator
-		from ..core.models import PERM_ADMIN,PERM_READ,PERM_ADD
-		from ..core.models import TM_DETAIL_SUBPAGE,TM_DETAIL_DETAIL,TM_DETAIL_HIERARCHY,TM_DETAIL_RSS,TM_DETAIL_STRING,TM_DETAIL_EMAIL,TM_DETAIL_SNIPPET,TM_DETAIL_PREVIEW,TM_DETAIL_id
-		from ..core.models._descr import D
+		from ..core.models.objtyp import ObjType
+		from ..core.models._const import PERM_ADMIN,PERM_READ,PERM_ADD
+		from ..core.models._const import TM_DETAIL_SUBPAGE,TM_DETAIL_DETAIL,TM_DETAIL_HIERARCHY,TM_DETAIL_RSS,TM_DETAIL_STRING,TM_DETAIL_EMAIL,TM_DETAIL_SNIPPET,TM_DETAIL_PREVIEW,TM_DETAIL_id
 		from ..core.models.site import Site
 		from ..core.models.storage import Storage
 		from ..core.models.files import BinData,StaticFile
-		from ..core.models.user import User,Permission,Group,Member
+		from ..core.models.user import User,Group,Member
+		from ..core.models.permit import Permission
 		from ..core.models.types import MIMEtype,MIMEtranslator,MIMEadapter
 		from ..core.models.template import Template,TemplateMatch
 		from ..core.models.config import ConfigVar
 		from ..core.models.verifier import VerifierBase
 		from ..core.models.tracking import Delete
 		from .. import ROOT_SITE_NAME,ROOT_USER_NAME, ANON_USER_NAME
+		from .add import _upd
+
+		from ..app import list_apps
+		from ..blueprint import list_blueprints
+		from ..core.models.site import App,Blueprint,SiteBlueprint
 
 		if 'MEDIA_PATH' not in config:
 			raise RuntimeError("You have to set MEDIA_PATH so that I can store my files somewhere")
 
-		## Object discriminators
-		count = added = updated = 0
-		for id,name in D.items():
-			count += 1
-			doc = D._doc.get(id,None)
-			path = "pybble.core.models."+name
-			name = name.rsplit(".")[-1]
-			try:
-				d = Discriminator.q.get_by(id=id)
-			except NoData:
-				d = Discriminator(id=id,name=name, path=path, doc=doc)
-				db.add(d)
-				added += 1
-			else:
-				d.path = path
-				if (doc and (d.doc is None or d.doc != doc)) or force:
-					d.doc = doc
-					updated += 1
-		db.commit()
-		if count == added:
-			logger.debug("Discriminators have been loaded.")
-		elif added or updated:
-			logger.debug("{}/{} discriminators updated/added.".format(updated,added))
+		## Variable installer.
+		## Generic code because it doesn't hurt and may be used for Blueprint vars later.
+		def add_vars(gen,parent):
+			"""Add variables. The generator yields (name,value,docstring) triples."""
+			
+			added=[]
+			for k,v,d in gen:
+				try:
+					cf = ConfigVar.q.get_by(name=k, parent=parent)
+				except NoData:
+					cf = ConfigVar.new(parent=parent, name=k, value=v, doc=d)
+					db.flush()
+					added.append(k)
+				else:
+					if not cf.doc or force:
+						cf.doc = d
+			if added:
+				logger.info("New variables for {}: ".format(str(parent))+",".join(added))
+			db.commit()
 
-		## MIME types for Pybble objects
-		count = added = updated = 0
-		for id,name in D.items():
-			count += 1
-			doc = D._doc.get(id,None)
-			path = "pybble.core.models."+name
-			name = name.rsplit(".")[-1]
-			try:
-				d = MIMEtype.q.get_by(typ="pybble",subtyp=name.lower())
-			except NoData:
-				d = MIMEtype.new(id=id,typ="pybble",subtyp=name.lower(), path=path, doc=doc)
-				added += 1
-			else:
-				d.path = path
-				if (doc and (d.doc is None or d.doc != doc)) or force:
-					d.doc = doc
-					updated += 1
-		db.commit()
-		if count == added:
-			logger.debug("PybbleMIME types have been loaded.")
-		elif added or updated:
-			logger.debug("{}/{} PybbleMIME types updated/added.".format(updated,added))
+		## helper to load known apps, blueprints
+		def loadables(lister,Obj,path, iname=None,add_vars=add_vars):
+			if iname is None:
+				iname = Obj.__name__
+			added=changed=found=0
+			for name in lister():
+				name = text_type(name)
+				found += 1
+				is_new = False
+				try:
+					obj = Obj.q.get_by(name=name)
+				except NoData:
+					obj = Obj.new(name=name, path="{}.{}.{}".format(path,name,iname))
+					is_new = True
+				try:
+					a = obj.mod
+				except Exception as e:
+					logger.warn("{} ({}) is not usable: {}\n{}".format(iname,obj.path,str(e), format_exc()))
+					if is_new:
+						# Dance 
+						db.flush((obj,))
+						db.delete(obj)
+				else:
+					if obj.doc is None or force:
+						try:
+							obj.doc = a.__doc__
+						except AttributeError:
+							pass
+
+					if hasattr(a,"PARAMS"):
+						## Set default variables
+						add_vars(a.PARAMS,obj)
+
+			if not found:
+				logger.warn("{}: None found".format(Obj.__name__))
+			elif changed or added:
+				logger.info("{}: {} new, {} updated".format(Obj.__name__,added,changed))
+			db.commit()
+
+		loadables(list_apps,App,"pybble.app")
+		loadables(list_blueprints,Blueprint,"pybble.blueprint")
 
 		## main site
+		rapp = App.q.get_by(name='_root')
 		try:
 			try:
-				root = Site.q.get(Site.parent==None,Site.owner!=None)
+				root = Site.q.get(Site.parent==None)
 			except NoData:
 				root = Site.q.get_by(name=ROOT_SITE_NAME)
 		except NoData:
-			root = Site.new(domain="localhost", name=ROOT_SITE_NAME)
+			root = Site.new(domain="localhost", name=ROOT_SITE_NAME, app=rapp)
 			logger.debug("The root site has been created.")
 		else:
+			if root.app is None or force:
+				if root.app is not rapp:
+					root.app = rapp
+					logger.debug("Root site's app set.")
+
 			if root.parent is not None:
 				if force:
 					root.parent = None
@@ -167,8 +193,6 @@ class PopulateCommand(Command):
 				else:
 					logger.error("The root site is not actually root. This is a problem.")
 
-			else:
-				logger.debug("The root site exists. Good.")
 		db.commit()
 		_app_ctx_stack.top.site = root
 		_app_ctx_stack.top.app = root.app
@@ -180,65 +204,34 @@ class PopulateCommand(Command):
 			except NoData:
 				st = Storage.q.get_by(name=u"Test")
 		except NoData:
-			st = Storage.new("Test",app.config.MEDIA_PATH,"localhost:5000/static")
-			if Storage.q.filter_by(superparent=root,default=True).count() == 0:
+			st = Storage.new("Test",app.config.MEDIA_PATH,"localhost:5000/static", site=root)
+			if Storage.q.filter_by(site=root,default=True).count() == 0:
 				st.default = True
 		else:
-			st.superparent = root
+			st.site = root
 		db.commit()
-
-		## anon user
-		if User.q.filter_by(parent=root, username=ANON_USER_NAME).count():
-			logger.debug("An anon user exists. Good.")
-		else:
-			User.new(ANON_USER_NAME, site=root)
-			logger.debug("An initial anon user has been created.")
-		db.commit()
-
-		## anon group
-		try:
-			anon = Group.q.get_by(parent=root, owner=root, name=ANON_USER_NAME)
-		except NoData:
-			anon = Group.new(parent=root, owner=root, name=ANON_USER_NAME)
-			logger.debug("An anon user group has been created.")
-		else:
-			logger.debug("The anon user group exists. Good.")
-
-		## check membership
-		for a in User.q.filter_by(parent=root, username=ANON_USER_NAME):
-			try:
-				Member.q.get_by(group=anon, member=a)
-			except NoData:
-				Member.new(group=anon, member=a)
-				logger.warn("{} was added to the anon group".format(a))
-			else:
-				logger.debug("{} is an anon-group member".format(a))
 
 		## main user
-		superuser = root.owner
-		if superuser is None or force:
-			try:
-				superuser = User.q.get_by(username=ROOT_USER_NAME, parent=root)
-			except NoData:
-				password = random_string()
-				superuser = User.new(site=root,username=ROOT_USER_NAME,password=password)
-				db.commit()
-				logger.info(u"The root user has been created. Password: ‘{}’.".format(password))
-			else:
-				if root.owner != superuser:
-					logger.warning(u"The root user is not ({}, not {}). This is strange.".format(root.owner,superuser))
-			root.owner = superuser
-			db.flush()
-		elif superuser.username != ROOT_USER_NAME:
-			logger.warn(u"The root site's owner is ‘{}’, not ‘{}’".format(superuser.username,ROOT_USER_NAME))
+		try:
+			superuser = User.q.get_by(username=ROOT_USER_NAME)
+		except NoData:
+			password = random_string()
+			superuser = User.new(site=root,username=ROOT_USER_NAME,password=password)
+			db.commit()
+			logger.info(u"The root user has been created. Password: ‘{}’.".format(password))
 		else:
-			logger.debug("The root user exists. Good.")
+			if superuser.site != root:
+				logger.warning(u"The root user's site is {}, not {}.".format(superuser.site,root))
+				if force:
+					superuser.site = root
+		db.flush()
 		if superuser.email is None or force:
 			if superuser.email is not None:
 				logger.info(u"The main admin email changed from ‘{}’ to ‘{}’".format(superuser.email,config.ADMIN_EMAIL))
 			superuser.email = text_type(config.ADMIN_EMAIL)
 		db.commit()
 		request.user = superuser
+		root.initial_permissions(superuser)
 
 		## more MIME types
 		add_mimes(content_types)
@@ -309,77 +302,10 @@ class PopulateCommand(Command):
 				logger.warn("{}: None found".format(MIMEtranslator.__name__))
 			elif added:
 				logger.info("{}: {} new".format(MIMEtranslator.__name__,added))
-			else:
-				logger.debug("{}: No new entries".format(MIMEtranslator.__name__,))
 			db.commit()
 
-		## Variable installer.
-		## Generic code because it doesn't hurt and may be used for Blueprint vars later.
-		def add_vars(gen,parent):
-			"""Add variables. The generator yields (name,value,docstring) triples."""
-			
-			added=[]
-			for k,v,d in gen:
-				try:
-					cf = ConfigVar.q.get_by(name=k, parent=parent)
-				except NoData:
-					cf = ConfigVar.new(parent=parent, name=k, value=v, doc=d)
-					db.flush()
-					added.append(k)
-				else:
-					if not cf.doc or force:
-						cf.doc = d
-			if added:
-				logger.info("New variables for {}: ".format(str(parent))+",".join(added))
-			else:
-				logger.debug("No new variables for {} necessary.".format(str(parent)))
-			db.commit()
 
 		## helper to load known apps, blueprints
-		def loadables(lister,Obj,path, iname=None,add_vars=add_vars,root=root):
-			if iname is None:
-				iname = Obj.__name__
-			added=changed=found=0
-			for name in lister():
-				name = text_type(name)
-				found += 1
-				is_new = False
-				try:
-					obj = Obj.q.get_by(name=name)
-				except NoData:
-					obj = Obj(name=name, path="{}.{}.{}".format(path,name,iname))
-					is_new = True
-				if force or obj.superparent is None:
-					obj.superparent = root
-				try:
-					a = obj.mod
-				except Exception as e:
-					logger.warn("{} ({}) is not usable: {}\n{}".format(iname,obj.path,str(e), format_exc()))
-					if is_new:
-						# Dance 
-						db.flush((obj,))
-						db.delete(obj)
-				else:
-					if obj.doc is None or force:
-						try:
-							obj.doc = a.__doc__
-						except AttributeError:
-							pass
-
-					if hasattr(a,"PARAMS"):
-						## Set default variables
-						add_vars(a.PARAMS,obj)
-
-					else:
-						logger.debug("No parameters in {}.".format(obj.path))
-				
-			if not found:
-				logger.warn("{}: None found".format(Obj.__name__))
-			elif not changed and not added:
-				logger.debug("{}: {} found, No changes".format(Obj.__name__,found))
-			else:
-				logger.info("{}: {} new, {} updated".format(Obj.__name__,added,changed))
-			db.commit()
 
 		from ..verifier import list_verifiers
 		loadables(list_verifiers,VerifierBase,"pybble.verifier","Verifier")
@@ -413,9 +339,9 @@ class PopulateCommand(Command):
 
 					try:
 						try:
-							sf = StaticFile.q.get_by(path=webpath,superparent=root)
+							sf = StaticFile.q.get_by(path=webpath,site=root)
 						except NoData:
-							sf = StaticFile.q.get_by(path='/'+webpath,superparent=root)
+							sf = StaticFile.q.get_by(path='/'+webpath,site=root)
 					except NoData:
 						sf = StaticFile.new(webpath,sb)
 					else:
@@ -448,7 +374,8 @@ class PopulateCommand(Command):
 					db.commit()
 			return added
 		added = add_files(STATIC_PATH, u"")
-		logger.debug("{} files changed.".format(added))
+		if added:
+			logger.debug("{} files changed.".format(added))
 
 		## templates
 		def read_template(parent, filepath,webpath, inferred=""):
@@ -471,7 +398,7 @@ class PopulateCommand(Command):
 					if v == "-":
 						v = None
 					elif '/' in v:
-						v = MIMEtype.get(v)
+						v = MIMEtype.get(v, add=True)
 					elif v in ("True False 0 1 None".split()):
 						v = eval(v)
 					elif k == "weight":
@@ -516,17 +443,17 @@ class PopulateCommand(Command):
 			try:
 				t = Template.q.get_by(source=filepath)
 			except NoData:
-				t = Template.new(source=filepath, data=data, parent=parent, adapter=a, weight=hdr.weight or 0)
+				t = Template.new(source=filepath, data=data, target=parent, adapter=a, weight=hdr.weight or 0)
 				t.owner = superuser
 				if hdr.named:
 					t.name = webpath
 				added += 1
 			else:
 				chg = 0
-				if t.parent is not parent:
-					logger.warn("Template {} ‘{}’: changed parent from {} to {}".format(t.id, filepath, t.parent,parent))
+				if t.target is not parent:
+					logger.warn("Template {} ‘{}’: changed target from {} to {}".format(t.id, filepath, t.target,parent))
 					if force:
-						t.parent = parent
+						t.target = parent
 						chg = 1
 
 				if t.adapter is not a:
@@ -554,9 +481,9 @@ class PopulateCommand(Command):
 					logger.warn("Template {} ‘{}’: I don't know how to attach to {}".format(t.id, filepath, m))
 
 				try:
-					tm = TemplateMatch.q.filter_by(template=t,obj=m,for_discr=hdr_dsc).filter(or_(TemplateMatch.inherit == None,TemplateMatch.inherit==inherit)).one()
+					tm = TemplateMatch.q.filter_by(template=t,target=m,for_objtyp=hdr_dsc).filter(or_(TemplateMatch.inherit == None,TemplateMatch.inherit==inherit)).one()
 				except NoData:
-					tm = TemplateMatch.new(template=t,obj=m,for_discr=hdr_dsc,inherit=inherit)
+					tm = TemplateMatch.new(template=t,target=m,for_objtyp=hdr_dsc,inherit=inherit)
 
 			db.commit()
 			return added
@@ -610,7 +537,8 @@ class PopulateCommand(Command):
 ##weight 0
 """.format(fn,p,ext)
 		added = find_templates(root, TEMPLATE_PATH,mapper=M())
-		logger.debug("{} templates changed.".format(added))
+		if added:
+			logger.debug("{} templates changed.".format(added))
 
 		## Set default variables
 		def gen_vars():
@@ -623,11 +551,7 @@ class PopulateCommand(Command):
 		add_vars(gen_vars(),root)
 
 		## built-in Apps and Blueprints
-		from ..app import list_apps
-		from ..blueprint import list_blueprints
-		from ..core.models.site import App,Blueprint,SiteBlueprint
 
-		loadables(list_apps,App,"pybble.app")
 		for app in App.q.all():
 			try:
 				mod = sys.modules[app.mod.__module__]
@@ -639,14 +563,11 @@ class PopulateCommand(Command):
 				added = find_templates(app, path)
 				if added:
 					logger.info("{} templates for app {} added/changed.".format(added,app.name))
-				else:
-					logger.debug("No new/changed templates for app {}.".format(app.name))
 			except Exception:
 				print("Error trying to load app ‘{}’".format(app.path), file=sys.stderr)
 				print_exc()
 				sys.exit(1)
 
-		loadables(list_blueprints,Blueprint,"pybble.blueprint")
 		for bp in Blueprint.q.all():
 			try:
 				mod = sys.modules[bp.mod.__module__]
@@ -658,94 +579,29 @@ class PopulateCommand(Command):
 				added = find_templates(bp, path)
 				if added:
 					logger.info("{} templates for blueprint {} added/changed.".format(added,bp.name))
-				else:
-					logger.debug("No new/changed templates for blueprint {}.".format(bp.name))
 			except Exception:
 				print("Error trying to load blueprint ‘{}’".format(bp.path), file=sys.stderr)
 				print_exc()
 				sys.exit(1)
 
-		## Basic permissions
-		s=root
-		u=root.owner
-		for d in Discriminator.q.all():
-			if Permission.q.filter(Permission.for_discr==d,Permission.right>=PERM_ADMIN, Permission.parent==root).count():
-				continue
-			p=Permission.new(u, s, d, PERM_ADMIN)
-			p.superparent=s
-		db.flush()
-
-		dw = Discriminator.q.get_by(name="WikiPage")
-		ds = Discriminator.q.get_by(name="Site")
-		dp = Discriminator.q.get_by(name="Permission")
-		dk = Discriminator.q.get_by(name="Comment")
-		dt = Discriminator.q.get_by(name="WantTracking")
-		dd = Discriminator.q.get_by(name="BinData")
-
-		a = anon
-		for d in (dw,ds,dt,dd):
-			if not Permission.q.filter(Permission.for_discr==d,Permission.right>=0,Permission.owner==a, Permission.parent==s).count():
-				p=Permission.new(a, s, d, PERM_READ)
-				p.superparent=s
-			if not Permission.q.filter(Permission.for_discr==d,Permission.right>=0,Permission.owner==s, Permission.parent==s).count():
-				p=Permission.new(s, s, d, PERM_READ)
-				p.superparent=s
-
-		for d,e in ((ds,dd),(dw,dd),(ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk),(ds,dt)):
-			if Permission.q.filter(Permission.new_discr==e,Permission.for_discr==d, Permission.parent==s).count():
-				continue
-			p=Permission.new(u, s, d, PERM_ADD)
-			p.new_discr=e
-			p.superparent=s
-
-			# View templates
-			#for addon in self.addons:
-			#	for cls in addon.__dict__.values():
-			#		if not(isinstance(cls,type) and issubclass(cls,Object)):
-			#			continue
-			#		if cls.__name__ not in addon.__ALL__:
-			#			continue
-			#		if db.filter_by(Permission, discr=cls.cls_discr()).count():
-			#			continue
-			#		p=Permission.new(u, s, ds, PERM_ADMIN)
-			#		p.new_discr=cls.cls_discr()
-			#		p.superparent=s
-			#		db.store.add(p)
-			#
-			#		p=Permission.new(u, s, ds, PERM_ADD)
-			#		p.new_discr=cls.cls_discr()
-			#		p.superparent=s
-
-			db.flush()
-
 		## Add uplaod permissions
 		#for typ,subtyp,ext,name,doc in upload_content_types:
 		#	mt = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
-		#	if Permission.q.filter(Permission.new_discr==e,Permission.for_discr==d, Permission.parent==s).count():
+		#	if Permission.q.filter(Permission.new_objtyp==e,Permission.for_objtyp==d, Permission.parent==s).count():
 		#		continue
 		#	p=Permission.new(u, s, d, PERM_ADD)
-		#	p.new_discr=e
-		#	p.superparent=s
+		#	p.new_objtyp=e
 #
 #			/perm
 
-
 		## possible root app fix-ups
-		rapp = App.q.get_by(name='_root')
-		if root.app is None or force:
-			if root.app is not rapp:
-				root.app = rapp
-				logger.debug("Root site's app set.")
-				db.commit()
-
 		aapp = App.q.get_by(name="_alias")
 		import socket
 		hostname = text_type(socket.gethostname())
 		try:
 			asite = Site.q.get_by(domain=hostname)
 		except NoData:
-			asite = Site.new(name="root alias", domain=hostname)
-			asite.app = aapp
+			asite = Site.new(name="root alias", domain=hostname, app=aapp)
 			logger.info("Root site aliased ‘{}’ created.".format(hostname))
 		db.commit()
 

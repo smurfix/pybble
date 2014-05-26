@@ -6,15 +6,15 @@
 	</thead><tbody>
   {%- for o in obj.uptree() %}
     {% for p in o.permissions %}
-    	<tr><td><a href="{{ url_for('pybble.views.detail_oid',oid=o.oid()) }}">{{ subline(o) }}</a></td>
-			<td><a href="{{ url_for('pybble.views.detail_oid',oid=p.owner.oid()) }}">{{ subline(p.owner) }}</a></td>
-			<td>{{ name_discr(p.discr) }}</td>
+    	<tr><td><a href="{{ url_for('pybble.views.detail_oid',oid=o.oid) }}">{{ subline(o) }}</a></td>
+			<td><a href="{{ url_for('pybble.views.detail_oid',oid=p.owner.oid) }}">{{ subline(p.owner) }}</a></td>
+			<td>{{ name_objtyp(p.objtyp) }}</td>
 			<td>{{ name_permission(p.right) }}</td>
-			<td>{{ name_discr(p.new_discr) if p.new_discr else "-" }}</td>
+			<td>{{ name_objtyp(p.new_objtyp) if p.new_objtyp else "-" }}</td>
 			<td>{% if p.inherit is none %}*{%elif p.inherit%}Y{%else%}N{%endif%}</td>
-			<td><a href="{{ url_for('pybble.views.edit_oid',oid=p.oid()) }}">Edit</a>
-			  | <a href="{{ url_for('pybble.views.copy_oid',oid=p.oid(),parent=obj.oid()) }}">New</a>
-			  | <a href="{{ url_for('pybble.views.delete_oid',oid=p.oid()) }}">Del</a></td></tr>
+			<td><a href="{{ url_for('pybble.views.edit_oid',oid=p.oid) }}">Edit</a>
+			  | <a href="{{ url_for('pybble.views.copy_oid',oid=p.oid,parent=obj.oid) }}">New</a>
+			  | <a href="{{ url_for('pybble.views.delete_oid',oid=p.oid) }}">Del</a></td></tr>
 	{% else %}
     	<tr><td>{{ o }}</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
 	{% endfor -%}

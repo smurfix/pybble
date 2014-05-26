@@ -5,9 +5,9 @@
 		<script type="text/javascript">
 			
 			$(document).ready( function() {
-				$('#jq_owner').objTree({ root: '{{obj.oid()}}', script: '/snippet/owner' });
-				$('#jq_parent').objTree({ root: '{{obj.oid()}}', script: '/snippet/parent' });
-				$('#jq_superparent').objTree({ root: '{{obj.oid()}}', script: '/snippet/superparent' });
+				$('#jq_owner').objTree({ root: '{{obj.oid}}', script: '/snippet/owner' });
+				$('#jq_parent').objTree({ root: '{{obj.oid}}', script: '/snippet/parent' });
+				$('#jq_superparent').objTree({ root: '{{obj.oid}}', script: '/snippet/superparent' });
 			});
 		</script>
 
@@ -36,13 +36,13 @@
   <table class="uplink">
   <tbody>
     {% if obj.owner -%}
-	  <tr><th>Owner:</th><td><a href="{{ url_for("pybble.views.view_tree", oid=obj.owner.oid()) }}">{{ obj.owner }}</a></td><td>{{ obj.owner.oid() }}</td></tr>
+	  <tr><th>Owner:</th><td><a href="{{ url_for("pybble.views.view_tree", oid=obj.owner.oid) }}">{{ obj.owner }}</a></td><td>{{ obj.owner.oid }}</td></tr>
 	{%- endif %}
     {% if obj.parent -%}
-	  <tr><th>Parent:</th><td><a href="{{ url_for("pybble.views.view_tree", oid=obj.parent.oid()) }}">{{ obj.parent }}</a></td><td>{{ obj.parent.oid() }}</td></tr>
+	  <tr><th>Parent:</th><td><a href="{{ url_for("pybble.views.view_tree", oid=obj.parent.oid) }}">{{ obj.parent }}</a></td><td>{{ obj.parent.oid }}</td></tr>
 	{%- endif %}
     {% if obj.superparent -%}
-	  <tr><th>SuperParent:</th><td><a href="{{ url_for("pybble.views.view_tree", oid=obj.superparent.oid()) }}">{{ obj.superparent }}</a></td><td>{{ obj.superparent.oid() }}</td></tr>
+	  <tr><th>SuperParent:</th><td><a href="{{ url_for("pybble.views.view_tree", oid=obj.superparent.oid) }}">{{ obj.superparent }}</a></td><td>{{ obj.superparent.oid }}</td></tr>
 	{%- endif %}
 	</tbody></table>
 	{% else %}

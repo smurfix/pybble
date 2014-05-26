@@ -51,9 +51,10 @@ def _upd(obj,attr,data, force=False):
 	elif odata is None:
 		logger.info("{}: set {}.".format(obj,attr))
 	else:
-		if mt.doc == doc or not force:
+		if odata == data or not force:
 			return
 		logger.info("{}: updated {}.".format(obj,attr))
+	Change.new(obj,{attr:(odata,data)})
 	setattr(obj,attr,data)
 
 def add_mime(typ,subtyp,ext,name,doc, force=False):
@@ -450,9 +451,9 @@ class AddCommand(Command):
 					logger.warn("Template {} ‘{}’: I don't know how to attach to {}".format(t.id, filepath, m))
 
 				try:
-					tm = TemplateMatch.q.filter_by(template=t,obj=m,for_discr=hdr_dsc).filter(or_(TemplateMatch.inherit == None,TemplateMatch.inherit==inherit)).one()
+					tm = TemplateMatch.q.filter_by(template=t,obj=m,for_objtyp=hdr_dsc).filter(or_(TemplateMatch.inherit == None,TemplateMatch.inherit==inherit)).one()
 				except NoData:
-					tm = TemplateMatch.new(template=t,obj=m,for_discr=hdr_dsc,inherit=inherit)
+					tm = TemplateMatch.new(template=t,obj=m,for_objtyp=hdr_dsc,inherit=inherit)
 
 			db.commit()
 			return added
@@ -564,34 +565,34 @@ class AddCommand(Command):
 		## Basic permissions
 		s=root
 		u=root.owner
-		for d in Discriminator.q.all():
-			if Permission.q.filter(Permission.for_discr==d,Permission.right>=PERM_ADMIN, Permission.parent==root).count():
+		for d in ObjType.q.all():
+			if Permission.q.filter(Permission.for_objtyp==d,Permission.right>=PERM_ADMIN, Permission.parent==root).count():
 				continue
 			p=Permission.new(u, s, d, PERM_ADMIN)
 			p.superparent=s
 		db.flush()
 
-		dw = Discriminator.q.get_by(name="WikiPage")
-		ds = Discriminator.q.get_by(name="Site")
-		dp = Discriminator.q.get_by(name="Permission")
-		dk = Discriminator.q.get_by(name="Comment")
-		dt = Discriminator.q.get_by(name="WantTracking")
-		dd = Discriminator.q.get_by(name="BinData")
+		dw = ObjType.q.get_by(name="WikiPage")
+		ds = ObjType.q.get_by(name="Site")
+		dp = ObjType.q.get_by(name="Permission")
+		dk = ObjType.q.get_by(name="Comment")
+		dt = ObjType.q.get_by(name="WantTracking")
+		dd = ObjType.q.get_by(name="BinData")
 
 		a = anon
 		for d in (dw,ds,dt,dd):
-			if not Permission.q.filter(Permission.for_discr==d,Permission.right>=0,Permission.owner==a, Permission.parent==s).count():
+			if not Permission.q.filter(Permission.for_objtyp==d,Permission.right>=0,Permission.owner==a, Permission.parent==s).count():
 				p=Permission.new(a, s, d, PERM_READ)
 				p.superparent=s
-			if not Permission.q.filter(Permission.for_discr==d,Permission.right>=0,Permission.owner==s, Permission.parent==s).count():
+			if not Permission.q.filter(Permission.for_objtyp==d,Permission.right>=0,Permission.owner==s, Permission.parent==s).count():
 				p=Permission.new(s, s, d, PERM_READ)
 				p.superparent=s
 
 		for d,e in ((ds,dd),(dw,dd),(ds,dw),(ds,dp),(dw,dw),(dw,dp),(dw,dk),(dk,dk),(ds,dt)):
-			if Permission.q.filter(Permission.new_discr==e,Permission.for_discr==d, Permission.parent==s).count():
+			if Permission.q.filter(Permission.new_objtyp==e,Permission.for_objtyp==d, Permission.parent==s).count():
 				continue
 			p=Permission.new(u, s, d, PERM_ADD)
-			p.new_discr=e
+			p.new_objtyp=e
 			p.superparent=s
 
 			# View templates
@@ -601,15 +602,15 @@ class AddCommand(Command):
 			#			continue
 			#		if cls.__name__ not in addon.__ALL__:
 			#			continue
-			#		if db.filter_by(Permission, discr=cls.cls_discr()).count():
+			#		if db.filter_by(Permission, objtyp=cls.cls_objtyp()).count():
 			#			continue
 			#		p=Permission.new(u, s, ds, PERM_ADMIN)
-			#		p.new_discr=cls.cls_discr()
+			#		p.new_objtyp=cls.cls_objtyp()
 			#		p.superparent=s
 			#		db.store.add(p)
 			#
 			#		p=Permission.new(u, s, ds, PERM_ADD)
-			#		p.new_discr=cls.cls_discr()
+			#		p.new_objtyp=cls.cls_objtyp()
 			#		p.superparent=s
 
 			db.flush()
@@ -617,10 +618,10 @@ class AddCommand(Command):
 		## Add uplaod permissions
 		#for typ,subtyp,ext,name,doc in upload_content_types:
 		#	mt = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
-		#	if Permission.q.filter(Permission.new_discr==e,Permission.for_discr==d, Permission.parent==s).count():
+		#	if Permission.q.filter(Permission.new_objtyp==e,Permission.for_objtyp==d, Permission.parent==s).count():
 		#		continue
 		#	p=Permission.new(u, s, d, PERM_ADD)
-		#	p.new_discr=e
+		#	p.new_objtyp=e
 		#	p.superparent=s
 #
 #			/perm

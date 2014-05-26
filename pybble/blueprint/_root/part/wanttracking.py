@@ -20,8 +20,8 @@ from werkzeug.exceptions import NotFound
 from wtforms import Form, BooleanField, TextField, SelectField, validators
 
 from pybble.render import valid_obj, valid_read, valid_admin_self
-from pybble.core.models import Discriminator, obj_get, TM_DETAIL, PERM, TM_DETAIL_PAGE, PERM_READ
-from pybble.core.models._descr import D
+from pybble.core.models.object import Object
+from pybble.core.models._const import PERM, PERM_READ
 from pybble.core.models.tracking import WantTracking
 from pybble.core.db import db
 from .._base import expose
@@ -37,7 +37,7 @@ def list_wanttracking():
 @expose("/admin/wanttracking/<oid>")
 def edit_wanttracking(oid=None):
 	"""Sub-list below the current object"""
-	obj = obj_get(oid)
+	obj = Object.by_oid(oid)
 	if isinstance(obj,WantTracking):
 		return editor(obj)
 	else:
@@ -51,7 +51,7 @@ class WantTrackingForm(Form):
 	user = TextField('User', [valid_obj, valid_admin_self])
 	object = TextField('Object', [valid_obj, valid_read])
 
-	discr = SelectField('Object type') ###TODO , choices=(("-","any object"),)+tuple((str(q.id),q.name) for q in D))
+	objtyp = SelectField('Object type') ###TODO , choices=(("-","any object"),)+tuple((str(q.id),q.name) for q in D))
 	email = BooleanField(u'Mail schicken')
 	track_new = BooleanField(u'Meldung bei neuen Einträgen')
 	track_mod = BooleanField(u'Meldung bei Änderungen')
@@ -63,22 +63,22 @@ def newer(parent, name=None):
 def editor(obj=None, parent=None):
 	form = WantTrackingForm(request.form, prefix="perm")
 	if request.method == 'POST' and form.validate():
-		user = obj_get(form.user.data)
-		dest = obj_get(form.object.data)
-		discr = None if form.discr.data == "-" else int(form.discr.data)
+		user = Object.by_oid(form.user.data)
+		dest = Object.by_oid(form.object.data)
+		objtyp = None if form.objtyp.data == "-" else int(form.objtyp.data)
 		email = bool(form.email.data)
 		track_new = bool(form.track_new.data)
 		track_mod = bool(form.track_mod.data)
 		track_del = bool(form.track_del.data)
 
 		if parent:
-			obj = WantTracking.new(user, dest, discr)
+			obj = WantTracking.new(user, dest, objtyp)
 			obj.record_creation()
 		else:
 			obj.record_change()
 			obj.owner = user
 			obj.parent = dest
-			obj.discr = discr
+			obj.objtyp = objtyp
 
 		obj.track_new=track_new
 		obj.track_mod=track_mod
@@ -87,21 +87,21 @@ def editor(obj=None, parent=None):
 
 		flash(u"Gespeichert.",True)
 
-		return redirect(url_for("pybble.views.view_oid", oid=(parent or dest).oid()))
+		return redirect(url_for("pybble.views.view_oid", oid=(parent or dest).oid))
 
 	elif request.method == 'GET':
 		if obj: # bearbeiten / kopieren
-			form.object.data = parent.oid() if parent else obj.parent.oid()
-			form.user.data = obj.owner.oid()
-			form.discr.data = str(obj.discr)
+			form.object.data = parent.oid if parent else obj.parent.oid
+			form.user.data = obj.owner.oid
+			form.objtyp.data = str(obj.objtyp)
 			form.track_new.data = obj.track_new
 			form.track_mod.data = obj.track_mod
 			form.track_del.data = obj.track_del
 			form.email.data = obj.email
 		else:
-			form.object.data = parent.oid()
-			form.user.data = request.user.oid()
-			form.discr.data = "-"
+			form.object.data = parent.oid
+			form.user.data = request.user.oid
+			form.objtyp.data = "-"
 			form.track_new.data = True
 			form.track_mod.data = False
 			form.track_del.data = False

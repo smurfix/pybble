@@ -2,11 +2,11 @@
 {% from 'form.html' import show, showoid %}
 
 {% block body %}
-  <h2>{% if not parent %}Edit{% else %}New{% endif %} template for {{ name_discr(form.discr.data) }} / {{ name_detail(form.detail.data) }}</h2>
+  <h2>{% if not parent %}Edit{% else %}New{% endif %} template for {{ name_objtyp(form.objtyp.data) }} / {{ name_detail(form.detail.data) }}</h2>
     <form method="post" action="{{ action }}">
     <table>
 	  {{ showoid(form.oid,CRUMBS) }}
-	  {{ show(form.discr) }}
+	  {{ show(form.objtyp) }}
 	  {{ show(form.detail) }}
 	  {{ show(form.inherit) }}
 	  {{ show(form.page, cols=80,rows=20) }}

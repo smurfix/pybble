@@ -23,7 +23,7 @@ from flask import Module, request, redirect, url_for, render_template, abort
 from formalchemy import FieldSet
 
 from pybble.blueprint import BaseBlueprint
-from pybble.core.models import Discriminator
+from pybble.core.models.objtyp import ObjType
 from pybble.core.route import Exposer
 from pybble.core.db import NoData
 expose = Exposer()
@@ -40,7 +40,7 @@ This is a simple admin blueprint for Pybble's object view.
 		super(Blueprint,self).setup()
 		expose.add_to(self)
 
-		for d in Discriminator.q.all():
+		for d in ObjType.q.all():
 			try:
 				models[d.name] = d.mod
 			except Exception as e:
@@ -68,7 +68,7 @@ def object_list(model_slug):
 
 def _fixup_fs(fs,id,attrs):
 	"""Change all fields that have been passed in **attrs to read-only"""
-	opts = [fs.id.readonly(),fs.discr.readonly()]
+	opts = [fs.id.readonly(),fs.objtyp.readonly()]
 	hide = [fs.children,fs.superchildren,fs.owned]
 	if id:
 		fs.configure(pk=True)

@@ -8,11 +8,11 @@
 	</thead><tbody>
       {% for o in q if o.parent %}
         <tr>
-		  <td><a href="{{url_for("pybble.views.view_oid", oid=o.parent.oid()) }}">{{ subline(o.parent) }}</a></td>
+		  <td><a href="{{url_for("pybble.views.view_oid", oid=o.parent.oid) }}">{{ subline(o.parent) }}</a></td>
 		  <td>{{ o.last_visited }}</td>
 		  <td>{{ o.visited }}</td>
 		  <td>{{ o.cur_visited }}</td>
-		  <td>{{ o.parent.oid() }}</td>
+		  <td>{{ o.parent.oid }}</td>
 		</tr>
       {% else %}
         <tr><td colspan="2"><strong>Das Protokoll scheint leer zu sein.</strong></td></tr>

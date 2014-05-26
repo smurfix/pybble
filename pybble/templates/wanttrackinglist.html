@@ -7,10 +7,10 @@
 	</thead><tbody>
   {%- for p in data %}
     	<tr><td><a href="{{
-			url_for('pybble.views.view_oid',oid=p.parent.oid()) }}">{{ subline(p.parent) }}</a></td>
-			<td>{{ name_discr(p.discr) }}</td>
-			<td><a href="{{ url_for('pybble.views.edit_oid',oid=p.oid()) }}">Edit</a>
-			  | <a href="{{ url_for('pybble.views.delete_oid',oid=p.oid()) }}">Del</a></td></tr>
+			url_for('pybble.views.view_oid',oid=p.parent.oid) }}">{{ subline(p.parent) }}</a></td>
+			<td>{{ name_objtyp(p.objtyp) }}</td>
+			<td><a href="{{ url_for('pybble.views.edit_oid',oid=p.oid) }}">Edit</a>
+			  | <a href="{{ url_for('pybble.views.delete_oid',oid=p.oid) }}">Del</a></td></tr>
   {% endfor -%}
     </tbody></table>
 {% endblock %}

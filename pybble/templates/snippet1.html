@@ -1,12 +1,12 @@
-<li rel="{{obj.oid()}}" class="{% if sub %}directory{% else %}file{% endif %} expanded t_{{obj.classname}}">
+<li rel="{{obj.oid}}" class="{% if sub %}directory{% else %}file{% endif %} expanded t_{{obj.classname}}">
 		<span class="image" />
-	    <a href="{{ url_for("pybble.views.detail_oid",oid=obj.oid()) }}">
+	    <a href="{{ url_for("pybble.views.detail_oid",oid=obj.oid) }}">
 			{{ subline(obj) }}
 		</a>
 {% if sub %}
 <ul style="display: none;">
 {% for cls,sel,count in sub %}
-	<li rel="{{obj.oid()}}/{{cls.cls_discr()}}" class="directory collapsed td_{{cls.cls_name()}}">
+	<li rel="{{obj.oid}}/{{cls.cls_objtyp()}}" class="directory collapsed td_{{cls.cls_name()}}">
 		<span class="image" />
 	    <a href="#nogo">{{ cls.cls_name() }} ({% if count > 1 %}{{count}} items{% else %}1 item{%endif%})</a>
 	</li>

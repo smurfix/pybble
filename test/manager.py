@@ -24,7 +24,7 @@ from flask.ext.script._compat import StringIO, text_type
 from flask.ext.script import Command, Option, prompt, prompt_bool
 from werkzeug.utils import cached_property
 
-from .script import Catcher,capture,run
+from .script import capture
 from .base import TC
 from pybble.manager.main import RootManager
 
@@ -38,7 +38,6 @@ class ManagerFlask(Flask):
 		@manager.command
 		def hello(foo=12,*what,**kw):
 			print("Oh hello",foo)
-	pass
 
 class ManagerTC(TC):
 	app_class = ManagerFlask
@@ -58,13 +57,6 @@ class ManagerTC(TC):
 		except SystemExit as e:
 			exit_code = e.code 
 		self.assertEqual(exit_code, kwargs.get('exit_code',0), " ".join(args))
-
-class TestManager(ManagerTC):
-	@capture
-	def test_simple_command_decorator(self, capsys):
-		code = self.run_manager('manage.py -t app hello --foo=fubar', app=self.app)
-		out, err = capsys.readouterr()
-		assert 'Oh hello' in out
 
 def run(*args):
 	mgr = RootManager()

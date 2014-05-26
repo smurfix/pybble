@@ -79,7 +79,7 @@ def show_(k,v,expand=None,cache=None):
 			try:
 				v = v._dump()
 				for kk in sorted(v.keys()):
-					if kk in ('id','discr'):
+					if kk in ('id','objtyp'):
 						continue # included in str(), don't clutter the output
 					vv = v[kk]
 					ned = expand[kk] if expand else None

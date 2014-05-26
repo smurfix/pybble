@@ -48,7 +48,7 @@ if(jQuery) (function($){
 					var t = c.attr('rel');
 					if( ! $(c).children('ul').length ) {
 						$(c).addClass('wait');
-						if (o.discr) t = t+"/"+o.discr;
+						if (o.objtyp) t = t+"/"+o.objtyp;
 						$.post(o.script, { dir: t }, function(data) {
 							var ul = document.createElement("ul")
 							$(c).removeClass('wait');

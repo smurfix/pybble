@@ -7,7 +7,7 @@ from flask import request,flash,url_for,render_template
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 
-from pybble.core.models.types import MIMEtype
+from pybble.core.models import MIMEtype
 from pybble.core.models.files import BinData
 from pybble.core.db import db,NoData
 from pybble.core.session import logged_in
@@ -56,7 +56,7 @@ def newer(parent, name=None):
 		obj = BinData.new(parent=parent, storage=parent.default_storage, name=form.name.data, content=data, mimetype=form.mimetype)
 		obj.record_creation()
 		flash(u"Daten '%s' gespeichert." % (obj.name), True)
-		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
+		return redirect(url_for("pybble.views.view_oid", oid=obj.oid))
 
 	elif request.method == 'GET':
 		pass
@@ -75,7 +75,7 @@ def editor(obj=None):
 		else:
 			flash(u"Datei-Info '%s' unverändert." % (obj.name))
 
-		return redirect(url_for("pybble.views.view_oid", oid=obj.oid()))
+		return redirect(url_for("pybble.views.view_oid", oid=obj.oid))
 
 	elif request.method == 'GET':
 		form.name.data = obj.name if obj else name

@@ -6,7 +6,7 @@
 		<li><a href="{{ url_for('pybble.login.do_login', next=url()) }}" title="für bereits registrierte Benutzer">Login</a></li>
 	  {%- else -%}
 		<li>
-		  <a href="{{ url_for('pybble.views.view_oid', oid=USER.oid()) }}" title="Status">Hallo, <strong>{{ USER.name }}</strong>!</a>
+		  <a href="{{ url_for('pybble.views.view_oid', oid=USER.oid) }}" title="Status">Hallo, <strong>{{ USER.name }}</strong>!</a>
 		  <ul>
 		    <li>
 			  <a href="{{ url_for('pybble.views.last_visited') }}" title="die letzten paar von dir besuchten Seiten bei uns">zuletzt besucht</a></li>
@@ -26,8 +26,8 @@
 				</li>
 
 				{% if obj %}
-					<li><a href="{{ url_for('pybble.views.new_oid',oid=obj.oid(),discr='WantTracking') }}">beobachten</a></li>
-						{# <li><a href="{{ url_for('pybble.part.wanttracking.edit_wanttracking',oid=obj.oid()) }}" title="relevante beobachtete Seiten">Liste</a></li> #}
+					<li><a href="{{ url_for('pybble.views.new_oid',oid=obj.oid,objtyp='WantTracking') }}">beobachten</a></li>
+						{# <li><a href="{{ url_for('pybble.part.wanttracking.edit_wanttracking',oid=obj.oid) }}" title="relevante beobachtete Seiten">Liste</a></li> #}
 					<li><a href="{{ url_for('pybble.part.wanttracking.list_wanttracking') }}" title="alle beobachteten Seiten">Gesamtliste</a></li>
 				{% endif %}
 			  </ul>

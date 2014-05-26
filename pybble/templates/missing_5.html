@@ -5,9 +5,9 @@
 ##named 0
 ##inherit -
 ##match root
-<li rel="{{obj.oid()}}" class="collapsed t_{{obj.classname}}">
+<li rel="{{obj.oid}}" class="collapsed t_{{obj.classname}}">
 		<span class="image"></span>
-	    <a class="content" href="{{ url_for("pybble.views.view_oid",oid=obj.oid()) }}">
+	    <a class="content" href="{{ url_for("pybble.views.view_oid",oid=obj.oid) }}">
 			{{ obj }}
 		</a>
 </li>

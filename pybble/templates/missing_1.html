@@ -15,7 +15,7 @@
 {% if obj.has_children(d_comment) %}
 <script type="text/javascript">
 	$(document).ready( function() {
-		$('div.comments ul li').subTree({ script: '/snippet/{{d_comment}}', discr: '{{d_comment}}', cscript: '/snippet/hierarchy'});
+		$('div.comments ul li').subTree({ script: '/snippet/{{d_comment}}', objtyp: '{{d_comment}}', cscript: '/snippet/hierarchy'});
 	});
 </script>
 {% endif %}
@@ -25,16 +25,16 @@
   <div class="shortcuts_right">
   {% if obj != SITE and obj.parent%}
   <div>
-  zurück zu <a href="{{ url_for("pybble.views.view_oid",oid=obj.parent.oid()) }}">{{ subline(obj.parent) }}</a>
+  zurück zu <a href="{{ url_for("pybble.views.view_oid",oid=obj.parent.oid) }}">{{ subline(obj.parent) }}</a>
   </div>
   {% endif %}
   {% if can_add(d_comment) %}
   <div>
-  <a href="{{ url_for("pybble.views.new_oid",oid=obj.oid(),discr=d_comment) }}">{% if obj.discriminator == d_comment %}antworten{% else %}Seite kommentieren{% endif %}</a>
+  <a href="{{ url_for("pybble.views.new_oid",oid=obj.oid,objtyp=d_comment) }}">{% if obj.objtyp == d_comment %}antworten{% else %}Seite kommentieren{% endif %}</a>
   </div>
   {%- endif -%}
   {% if can_add(d_bindata) %}
-  <div><a href="{{ url_for("pybble.views.new_oid",oid=obj.oid(),discr=d_bindata) }}">Datei anhängen</a></div>
+  <div><a href="{{ url_for("pybble.views.new_oid",oid=obj.oid,objtyp=d_bindata) }}">Datei anhängen</a></div>
   {% endif %}
   </div>
 
@@ -54,15 +54,15 @@
     <ul class="SubTree">
       {% if not details %}{% set details=() %}{% endif %}
       {% if not aux %}{% set aux=() %}{% endif %}
-	  <li class="t_Comment {% if aux %}expanded{% elif nc>0 %}collapsed{% else %}terminal{% endif %}" rel="{{ obj.oid() }}">
+	  <li class="t_Comment {% if aux %}expanded{% elif nc>0 %}collapsed{% else %}terminal{% endif %}" rel="{{ obj.oid }}">
 		<span class="image"></span>
 		<span href="#nogo" class="contents">
 		  {%- if nc <= 0 -%}
 			Dieser Beitrag wurde noch nicht kommentiert.
 		  {%- elif nc == 1 -%}
-			Dieser Beitrag wurde einmal kommentiert. (<a href="{{ url_for("pybble.views.view_oid_exp",oid=obj.oid(),details="all") }}#comments">alles ausklappen</a>)
+			Dieser Beitrag wurde einmal kommentiert. (<a href="{{ url_for("pybble.views.view_oid_exp",oid=obj.oid,details="all") }}#comments">alles ausklappen</a>)
 		  {%- else -%}
-			Dieser Beitrag wurde {{ nc }}mal kommentiert. (<a href="{{ url_for("pybble.views.view_oid_exp",oid=obj.oid(),details="all") }}#comments">alles ausklappen</a>)
+			Dieser Beitrag wurde {{ nc }}mal kommentiert. (<a href="{{ url_for("pybble.views.view_oid_exp",oid=obj.oid,details="all") }}#comments">alles ausklappen</a>)
 		  {%- endif -%}
 		</span>
 		{% if aux %}

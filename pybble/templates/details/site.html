@@ -2,9 +2,9 @@
     <table>
 	  <tbody>
 		<tr><th>Name:</th><td>{{ obj.name }}</td></tr>
-		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid()) }}">{{ obj.oid() }}</a></td></tr>
+		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid) }}">{{ obj.oid }}</a></td></tr>
 		{% if obj.storage -%}
-		<tr><th>Storage:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.storage.oid()) }}">{{ obj.storage.oid() }}</a></td></tr>
+		<tr><th>Storage:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.storage.oid) }}">{{ obj.storage.oid }}</a></td></tr>
 		{% endif -%}
 		<tr><th>URL:</th><td>{{ obj.domain }}</td></tr>
 		<tr><th>Tracking:</th><td>{{ obj.tracked }}</td></tr>

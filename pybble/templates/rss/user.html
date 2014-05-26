@@ -1,14 +1,14 @@
 <h2>Neuer Benutzer: {{ obj.username }}</h2>
 <p>
-Es gibt einen neuen User namens <a href="{{ url_for("pybble.views.view_oid", _external=True, oid=user.oid()) }}">{{ obj.username }}</a>
+Es gibt einen neuen User namens <a href="{{ url_for("pybble.views.view_oid", _external=True, oid=user.oid) }}">{{ obj.username }}</a>
 (<a href="mailto:{{ obj.email }}">{{ obj.email }}</a>).
 {%- if obj.first_name %}<br />
 Name: {{ obj.first_name }} {{ obj.last_name }}
 {%- endif %}
 </p>
 <p>
-Details: {{ url_for("pybble.views.view_oid", _external=True, oid=obj.oid()) }}
-angelegt von: {{ subline(user) }} ({{ url_for("pybble.views.detail_oid", _external=True, oid=user.oid()) }})
+Details: {{ url_for("pybble.views.view_oid", _external=True, oid=obj.oid) }}
+angelegt von: {{ subline(user) }} ({{ url_for("pybble.views.detail_oid", _external=True, oid=user.oid) }})
 <hr />
 <p>PS: Der Tracker, der diesen Eintrag deines Feeds generiert hat, ist 
-<a href="{{ url_for("pybble.views.view_oid", _external=True, oid=tracker.oid()) }}">dieser hier</a>.</p>
+<a href="{{ url_for("pybble.views.view_oid", _external=True, oid=tracker.oid) }}">dieser hier</a>.</p>

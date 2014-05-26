@@ -14,7 +14,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ##BP
 
 from flask import request, render_template
-from pybble.core.models import obj_get
+from pybble.core.models.object import Object
 from pybble.core.models.template import Template
 from pybble.core.db import db
 from pybble.globals import current_site
@@ -29,7 +29,7 @@ expose = expose.sub("admin")
 @expose("/admin/template/<oid>")
 def list_templates(oid=None):
 	"""List all named templates"""
-	obj = obj_get(oid) if oid else current_site
+	obj = Object.by_oid(oid) if oid else current_site
 	s = obj
 	t = []
 	while s:
@@ -40,6 +40,6 @@ def list_templates(oid=None):
 @expose("/admin/template_for/<oid>")
 def show_templates(oid):
 	"""show list of templates for that object"""
-	obj = obj_get(oid)
-	return render_template('templatelist.html', obj=obj, title_trace=["Template list",obj.oid()])
+	obj = Object.by_oid(oid)
+	return render_template('templatelist.html', obj=obj, title_trace=["Template list",obj.oid])
 	

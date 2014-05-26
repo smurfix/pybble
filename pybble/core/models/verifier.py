@@ -23,37 +23,40 @@ from sqlalchemy.orm import relationship,backref
 from ...utils import random_string
 from .. import config
 from ..db import Column, NoData, check_unique,no_update
-from . import Loadable, ObjectRef
-from ._descr import D
+from ._utils import Loadable
+from .object import Object,ObjectRef
+from .objtyp import ObjType
+from .user import User
 
 ## VerifierBase
 
 VerifierBases = {}
-class VerifierBase(Loadable, ObjectRef):
+class VerifierBase(Loadable, Object):
 	"""
 		Class for verification subsystems.
 		"""
 
 	__tablename__ = "verifierbase"
-	_descr = D.VerifierBase
-
-	@classmethod
-	def __declare_last__(cls):
-		no_update(cls.path)
 
 	name = Column(Unicode(30), unique=True, nullable=False)
 	doc = Column(Unicode(1000), nullable=True)
 
-	def new(self, obj, user=None,*a,**k):
-		"""Return a new verifier for me and the current user."""
+	def setup(self,name,doc=None,**kw):
+		self.name = name
+		if doc is not None:
+			self.doc = doc
+		super(VerifierBase,self).setup(**kw)
+
+	def create_for(self, obj, user=None,*a,**k):
+		"""Create a verifier for this object"""
 		if user is None:
 			user = request.user
-		obj = self.mod.new(obj=obj, user=user, *a,**k) or obj
+		obj = self.mod.create(obj=obj, user=user, *a,**k) or obj
 		return Verifier.new(user=user or request.user, base=self, obj=obj)
 
 ## Verifier
 
-class Verifier(ObjectRef):
+class Verifier(Object):
 	"""
 		Verification emails (or similar).
 		Parent: the thing to be verified.
@@ -61,16 +64,14 @@ class Verifier(ObjectRef):
 		SuperParent: the VerifierBase object this refers to.
 		"""
 	__tablename__ = "verifiers"
-	_descr = D.Verifier
 	@classmethod
 	def __declare_last__(cls):
-		if not hasattr(cls,'obj'):
-			cls.obj = cls.parent
-		if not hasattr(cls,'base'):
-			cls.base = cls.superparent
-		if not hasattr(cls,'user'):
-			cls.user = cls.owner
 		check_unique(cls,"user obj base")
+		super(Verifier,cls).__declare_last__()
+
+	obj = ObjectRef()
+	user = ObjectRef(User)
+	base = ObjectRef(VerifierBase)
 
 	code = Column(Unicode(30), nullable=False)
 
@@ -95,13 +96,7 @@ class Verifier(ObjectRef):
 
 	@property
 	def as_str(self):
-		p,s,o,d = self.pso
-		if self._rec_str or not p: return "‽"
-		try:
-			self._rec_str += 1
-			return u'%s for %s' % (self.base.name, unicode(p))
-		finally:
-			self._rec_str -= 1
+		return u'%s for %s' % (self.base.name, self.obj)
 
 	@property
 	def expired(self):

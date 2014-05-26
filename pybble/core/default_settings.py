@@ -70,4 +70,7 @@ MEDIA_PATH="/var/www/pybble"
 MAILHOST="localhost"
 d_MAILHOST="The system to send email through"
 
+URLFOR_ERROR_FATAL=None
+d_URLFOR_ERROR_FATAL="If False, URLs pointing to nowhere are not fatal. Defaults to debug."
+
 del datetime

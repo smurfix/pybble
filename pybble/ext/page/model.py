@@ -18,7 +18,7 @@ from flask import url_for
 from sqlalchemy import Column,Unicode,Boolean,DateTime
 
 from pybble.core.models import ObjectRef
-from pybble.core.models._descr import D
+from pybble.core.models.objtyp import D
 from pybble.core.models._content import Content
 
 class Page(Content, ObjectRef):
@@ -28,7 +28,7 @@ class Page(Content, ObjectRef):
 		Superparent: Our site (main page) or empty (subpage)
 		Owner: Whoever created the page
 		"""
-	_descr = D.Page
+	_objtyp = D.Page
 
 	name = Column(Unicode, nullable=False)
 	modified = Column(DateTime, default=datetime.utcnow)

@@ -19,7 +19,7 @@ import datetime
 import flask
 import pytest
 
-from pybble.core.db import db,NoData
+from pybble.core.db import db,NoData, refresh
 from .manager import ManagerTC
 from .base import WebTC
 from webunit.webunittest import WebTestCase
@@ -54,29 +54,29 @@ class VarsTestCase(ManagerTC,WebTC,WebTestCase):
 		res = s.config.appiti
 		assert res == "pappiti"
 		self.run_manager("mgr -Dt -s test site param appiti foo")
-		res = s.config.appiti
+		res = refresh(s).config.appiti
 		assert res == "foo"
 		self.run_manager("mgr -Dt -s test site param appiti bar")
-		assert s.config.appiti == "bar"
+		assert refresh(s).config.appiti == "bar"
 		self.run_manager("mgr -Dt -s test site param appiti -")
-		assert s.config.appiti == "pappiti"
-		with pytest.raises(KeyError):
+		assert refresh(s).config.appiti == "pappiti"
+		with pytest.raises(NoData):
 			self.run_manager("mgr -Dt -s test site param nuppi foo") # does not exist
 
 	def test_blueprint_vars(self):
 		from pybble.core.models.site import Site, SiteBlueprint
 		s = Site.q.get_by(name=u"test")
-		b = SiteBlueprint.q.get_by(name=u"VarsTest",parent=s)
+		b = SiteBlueprint.q.get_by(name=u"VarsTest",site=s)
 		assert b.path=="/doc"
 
 		assert b.config.color == "yellow"
 		self.run_manager("mgr -Dt -s test blueprint param VarsTest color green")
-		assert b.config.color == "green"
+		assert refresh(b).config.color == "green"
 		self.run_manager("mgr -Dt -s test blueprint param VarsTest color foo")
-		assert b.config.color == "foo"
+		assert refresh(b).config.color == "foo"
 		self.run_manager("mgr -Dt -s test blueprint param VarsTest color -")
-		assert b.config.color == "yellow"
-		with pytest.raises(KeyError):
+		assert refresh(b).config.color == "yellow"
+		with pytest.raises(NoData):
 			self.run_manager("mgr -Dt -s test blueprint param VarsTest nuppsi fu") # does not exist
 
 		

@@ -6,11 +6,11 @@
 	</thead><tbody>
   {%- for o in obj.uptree() %}
     {% for t in o.templates %}
-    	<tr><td>{{ subline(o) }}</td><td>{{ name_detail(t.detail) }} / {{ name_discr(t.discr) }}</td>
+    	<tr><td>{{ subline(o) }}</td><td>{{ name_detail(t.detail) }} / {{ name_objtyp(t.objtyp) }}</td>
 			<td>{% if t.inherit is none %}*{%elif t.inherit%}Y{%else%}N{%endif%}</td>
-			<td>{{ t.modified }}</td><td><a href="{{ url_for('pybble.views.edit_oid',oid=t.oid()) }}">Edit</a>
-			| <a href="{{ url_for('pybble.views.copy_oid',oid=t.oid(),parent=obj.oid()) }}">Copy</a>
-			| <a href="{{ url_for('pybble.views.delete_oid',oid=t.oid()) }}">Del</a>
+			<td>{{ t.modified }}</td><td><a href="{{ url_for('pybble.views.edit_oid',oid=t.oid) }}">Edit</a>
+			| <a href="{{ url_for('pybble.views.copy_oid',oid=t.oid,parent=obj.oid) }}">Copy</a>
+			| <a href="{{ url_for('pybble.views.delete_oid',oid=t.oid) }}">Del</a>
 			</td></tr>
 	{% else %}
     	<tr><td>{{ subline(o) }}</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>

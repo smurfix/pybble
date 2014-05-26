@@ -2,10 +2,10 @@
     <table>
 	  <tbody>
 		<tr><th>Änderungs-Log:</th><td>{{ obj }}</td></tr>
-		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid()) }}">{{ obj.oid() }}</a></td></tr>
-		<tr><th>User:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_owner.oid()) }}">{{ obj_owner }}</a> ({{ obj_owner.oid() }})</td></tr>
-		<tr><th>Objekt:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_parent.oid()) }}">{{ obj_parent }}</a> ({{ obj_parent.oid() }})</td></tr>
-		<tr><th>Site:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_superparent.oid()) }}">{{ obj_superparent }}</a> ({{ obj_superparent.oid() }})</td></tr>
+		<tr><th>ID:</th><td><a href="{{ url_for("pybble.views.view_oid", oid=obj.oid) }}">{{ obj.oid }}</a></td></tr>
+		<tr><th>User:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_owner.oid) }}">{{ obj_owner }}</a> ({{ obj_owner.oid }})</td></tr>
+		<tr><th>Objekt:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_parent.oid) }}">{{ obj_parent }}</a> ({{ obj_parent.oid }})</td></tr>
+		<tr><th>Site:</th><td><a href="{{ url_for("pybble.views.detail_oid", oid=obj_superparent.oid) }}">{{ obj_superparent }}</a> ({{ obj_superparent.oid }})</td></tr>
 		<tr><th>Zeitpunkt:</th><td>{{ obj.timestamp }}</td></tr>
 	  </tbody>
     </table>

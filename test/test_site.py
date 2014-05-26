@@ -27,12 +27,12 @@ from pybble import ROOT_SITE_NAME
 class SiteTestCase(TC):
 
 	def test_create_multi(self):
-		site = Site.new(name='sroot', domain='test.site.example.com')
-		site1 = Site.new(name='sfoo', domain='foo.site.example.com', parent=site)
-		site2 = Site.new(name='sbar', domain='bar.site.example.com', parent=site)
-		site11 = Site.new(name='sfoofoo', domain='foo.foo.site.example.com', parent=site1)
-		site111 = Site.new(name='sfoofoofoo', domain='foo.foo.foo.site.example.com', parent=site11)
-		self.assertEqual(len(site.children), 2)
+		site = Site.new(name='sroot', domain='test.site.example.com', app="_test")
+		site1 = Site.new(name='sfoo', domain='foo.site.example.com', parent=site, app="_test")
+		site2 = Site.new(name='sbar', domain='bar.site.example.com', parent=site, app="_test")
+		site11 = Site.new(name='sfoofoo', domain='foo.foo.site.example.com', parent=site1, app="_test")
+		site111 = Site.new(name='sfoofoofoo', domain='foo.foo.foo.site.example.com', parent=site11, app="_test")
+		self.assertEqual(len(site.sub_sites), 2)
 		self.assertEqual(len([x for x in site.all_sites]), 5)
 		self.assertEqual(len([x for x in site1.all_sites]), 3)
 
@@ -41,7 +41,7 @@ class SiteTestCase(TC):
 		self.assertEqual(site.name,site2.parent.name)
 		self.assertEqual(site1.name,site11.parent.name)
 
-		c = set(s.name for s in site.all_children("Site"))
+		c = set(s.name for s in site.sub_sites)
 		self.assertNotIn("root",c)
 		self.assertIn("sfoo",c)
 		self.assertNotIn("sfoofoo",c)
@@ -55,7 +55,7 @@ class SiteTestCase(TC):
 		self.assertIn("sfoofoofoo",c)
 		self.assertIn("sbar",c)
 
-		c = set(s.name for s in site1.all_children("Site"))
+		c = set(s.name for s in site1.sub_sites)
 		self.assertNotIn("sroot",c)
 		self.assertNotIn("sfoo",c)
 		self.assertIn("sfoofoo",c)
@@ -70,8 +70,8 @@ class SiteTestCase(TC):
 		self.assertNotIn("sbar",c)
 
 	def test_config(self):
-		site = Site.new(name='s2root', domain='test.site2.example.com')
-		site1 = Site.new(name='s2foo', domain='foo.site2.example.com', parent=site)
+		site = Site.new(name='s2root', domain='test.site2.example.com', app="_test")
+		site1 = Site.new(name='s2foo', domain='foo.site2.example.com', parent=site, app="_test")
 
 		n = ConfigVar.q.count()
 		v1 = ConfigVar.exists(site,"TEST","testing 123",123)
@@ -88,9 +88,9 @@ class SiteTestCase(TC):
 		self.assertEquals(site.config.TEST,123)
 		self.assertEquals(site.config.TEST2,"234")
 
-		assert SiteConfigVar.q.filter_by(parent=site).count() == 0
+		assert SiteConfigVar.q.filter_by(parent=site.config).count() == 0
 		site.config["TEST"] = [12,34]
-		assert SiteConfigVar.q.filter_by(parent=site).count() == 1
+		assert SiteConfigVar.q.filter_by(parent=site.config).count() == 1
 		assert site.config["TEST"] == [12,34]
 		assert site1.config["TEST"] == [12,34]
 		site1.config["TEST"] = [56,67]

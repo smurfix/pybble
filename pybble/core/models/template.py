@@ -27,8 +27,9 @@ from werkzeug.utils import cached_property
 from .. import config
 from ..db import Base, Column, no_update,check_unique, db, refresh, maybe_stale
 from ...globals import current_site
-from . import Object,ObjectRef, TM_DETAIL, Discriminator
-from ._descr import D
+from .object import Object,ObjectRef
+from ._const import TM_DETAIL
+from .objtyp import ObjType
 from .types import MIMEtype,MIMEadapter,MIMEtranslator
 from ._content import Cached,_Content
 
@@ -36,7 +37,7 @@ from ._content import Cached,_Content
 
 _not_cached = "not compiled"
 
-class Template(_Content, Cached, ObjectRef):
+class Template(_Content, Cached, Object):
 	"""
 		A template for rendering.
 		parent: Object the template applies to.
@@ -44,20 +45,19 @@ class Template(_Content, Cached, ObjectRef):
 		superparent: an adapter which links MIME types.
 
 		"""
-	_descr = D.Template
 
 	@classmethod
 	def __declare_last__(cls):
-		if not hasattr(cls,'site'):
-			cls.site = cls.parent
-		if not hasattr(cls,'adapter'):
-			cls.adapter = cls.superparent
-		check_unique(cls, "parent name")
+		check_unique(cls, "target name")
 
 		# Drop cached data when the content changes
 		def _del_cache(target, value, oldvalue, initiator):
 			target.del_cache()
 		event.listen(cls.content, 'set', _del_cache)
+		super(Template,cls).__declare_last__()
+
+	target = ObjectRef()
+	adapter = ObjectRef(MIMEadapter)
 
 	name = Column(Unicode(30), nullable=False, index=True)
 	modified = Column(DateTime,default=datetime.utcnow)
@@ -71,20 +71,19 @@ class Template(_Content, Cached, ObjectRef):
 
 	@cached_property
 	def mime(self):
-		return self.translator.mime
+		return self.adapter.mime
 
-	def setup(self, adapter, data, source, parent, name=None, weight=None):
+	def setup(self, adapter, data, source, target=None, name=None, weight=None):
 		if name is None:
 			name = source
-		if parent is None:
-			parent = current_site
+		if target is None:
+			target = current_site
 
 		self.name = name
 		self.source = source
 		self.content = data
 		self.adapter = adapter
-		self.owner = request.user
-		self.parent = parent
+		self.target = target
 		if weight is not None:
 			self.weight = weight
 
@@ -106,7 +105,7 @@ class Template(_Content, Cached, ObjectRef):
 
 ## TemplateMatch
 
-class TemplateMatch(ObjectRef):
+class TemplateMatch(Object):
 	"""
 		Associate a template to an object.
 
@@ -114,22 +113,21 @@ class TemplateMatch(ObjectRef):
 
 		"""
 	__tablename__ = "template_match"
-	_descr = D.TemplateMatch
 	@classmethod
 	def __declare_last__(cls):
-		if not hasattr(cls,'obj'):
-			cls.obj = cls.parent
-		if not hasattr(cls,'template'):
-			cls.template = cls.superparent
-		check_unique(cls, "obj template inherit for_discr")
-		no_update(cls.obj)
+		check_unique(cls, "target template inherit for_objtyp")
+		no_update(cls.target)
 		no_update(cls.template)
+		super(TemplateMatch,cls).__declare_last__()
 
-		def _ref_descr(mapper, connection, obj):
+		def _ref_objtyp(mapper, connection, obj):
 			if obj.inherit is False and obj.parent is not None:
-				assert obj.for_discr == obj.parent.discr, (obj.for_discr,obj.parent.discr)
-		event.listen(cls, 'before_insert', _ref_descr)
-		event.listen(cls, 'before_update', _ref_descr)
+				assert obj.for_objtyp == obj.parent.objtyp, (obj.for_objtyp,obj.parent.objtyp)
+		event.listen(cls, 'before_insert', _ref_objtyp)
+		event.listen(cls, 'before_update', _ref_objtyp)
+
+	target = ObjectRef()
+	template = ObjectRef(Template)
 
 	inherit = Column(Boolean, nullable=True)
 	weight = Column(Integer, nullable=False, default=0, doc="preference when there are conflicts. Less is better.")
@@ -137,16 +135,15 @@ class TemplateMatch(ObjectRef):
 	from_mime = property(lambda s:s.template.from_mime)
 	to_mime = property(lambda s:s.template.to_mime)
 
-	for_discr_id = Column('discr',Integer, ForeignKey(Discriminator.id), nullable=True)
-	for_discr = relationship(Discriminator, primaryjoin=for_discr_id==Discriminator.id)
+	for_objtyp = ObjectRef(ObjType,nullable=True)
 
-	def setup(self, obj, template, inherit=None,weight=None, for_discr=None):
-		if for_discr is not None:
-			for_discr = Discriminator.get(for_discr)
+	def setup(self, target, template, inherit=None,weight=None, for_objtyp=None):
+		if for_objtyp is not None:
+			for_objtyp = ObjType.get(for_objtyp)
 
-		self.for_discr = for_discr
+		self.for_objtyp = for_objtyp
 		self.template = template
-		self.obj = obj
+		self.target = target
 		self.inherit = inherit
 		if weight is not None:
 			self.weight = weight
@@ -155,13 +152,7 @@ class TemplateMatch(ObjectRef):
 	
 	@property
 	def as_str(self):
-		p,s,o,d = self.pso
-		if self._rec_str or not p: return "‽"
-		try:
-			self._rec_str += 1
-			return u'%s on %s %s shows %s' % (self.for_discr.name if self.for_discr else "*",p, "*" if self.inherit is None else "Y" if self.inherit else "N", s)
-		finally:
-			self._rec_str -= 1
+		return u'%s on %s %s shows %s' % (self.for_objtyp.name if self.for_objtyp else "*",self.target, "*" if self.inherit is None else "Y" if self.inherit else "N", self.template)
  
  	@property
 	def data(self):

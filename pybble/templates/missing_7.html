@@ -8,10 +8,10 @@
 <h2>keine Details verfügbar</h2>
 <p>Sorry, aber ich weiß nicht, wie ich den neuen Beitrag (oder was auch
 immer …)
-<a href="{{ url_for("pybble.views.view_oid", _external=True, oid=obj.oid()) }}">{{ obj.oid() }}</a> von <a href="{{ url_for("pybble.views.detail_oid", _external=True, oid=user.oid()) }}">{{ subline(user) }}</a> hier darstellen soll.<br />
+<a href="{{ url_for("pybble.views.view_oid", _external=True, oid=obj.oid) }}">{{ obj.oid }}</a> von <a href="{{ url_for("pybble.views.detail_oid", _external=True, oid=user.oid) }}">{{ subline(user) }}</a> hier darstellen soll.<br />
 Vielleicht klickst du einfach drauf …</p>
 <p>(Eigentlich ist die Tatsache, dass du diesen Text siehst, ein Bug.
 Das wurde aber bereits geloggt, und wird hoffentlich demnächst behoben.)</p>
 <hr />
 <p>PS: Der Tracker, der diesen Eintrag deines Feeds generiert hat, ist 
-<a href="{{ url_for("pybble.views.view_oid", _external=True, oid=tracker.oid()) }}">dieser hier</a>.</p>
+<a href="{{ url_for("pybble.views.view_oid", _external=True, oid=tracker.oid) }}">dieser hier</a>.</p>

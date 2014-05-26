@@ -1,8 +1,8 @@
 <h2>Änderung</h2>
-<p><a href="{{ url_for("pybble.views.detail_oid", _external=True, oid=user.oid()) }}">{{ subline(user) }}</a> hat den Eintrag „<a href="{{ url_for("pybble.views.view_oid", _external=True, oid=obj.parent.oid()) }}">{{ subline(obj.parent) }}</a>“ geändert:</p>
+<p><a href="{{ url_for("pybble.views.detail_oid", _external=True, oid=user.oid) }}">{{ subline(user) }}</a> hat den Eintrag „<a href="{{ url_for("pybble.views.view_oid", _external=True, oid=obj.parent.oid) }}">{{ subline(obj.parent) }}</a>“ geändert:</p>
 <p>{{ obj.comment }}</p>
 <hr />
 <pre>{{ diff(obj.data, (obj.next_change.data if obj.next_change else obj.parent.data))|safe }}</pre>
 <hr />
 <p>PS: Der Tracker, der diesen Eintrag deines Feeds generiert hat, ist 
-<a href="{{ url_for("pybble.views.view_oid", _external=True, oid=tracker.oid()) }}">dieser hier</a>.</p>
+<a href="{{ url_for("pybble.views.view_oid", _external=True, oid=tracker.oid) }}">dieser hier</a>.</p>

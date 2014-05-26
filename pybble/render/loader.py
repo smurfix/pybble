@@ -99,12 +99,12 @@ def get_template(c, trace=None):
 			if c.blueprint:
 				get_one_site(c,c.blueprint.blueprint,55+weight,got,q)
 				get_one_site(c,c.blueprint,53+weight,got,q)
-		for t in q.filter(TemplateMatch.parent==site):
+		for t in q.filter(TemplateMatch.target==site):
 			got(t.template,weight+t.weight)
 
-		parent = site.parent or site.superparent
+		parent = getattr(site,'parent',None) or getattr(site,'app',None)
 		if parent in seen:
-			site = site.superparent or parent.superparent
+			site = getattr(site,'app',None) or getattr(parent,'app',None)
 			weight += 10
 		else:
 			site = parent
@@ -130,44 +130,49 @@ def get_site_template(c,weight,got):
 
 	if bn:
 		try: # the name might refer to a SiteBlueprint
-			sbp = SiteBlueprint.q.get_by(parent=c.site,name=bn)
+			sbp = SiteBlueprint.q.get_by(site=c.site,name=bn)
 		except NoData: # or to the Blueprint it points to
-			try: bp = db.query(SiteBlueprint).filter(SiteBlueprint.parent==c.site).join(Blueprint, SiteBlueprint.superparent).filter(Blueprint.name==bn).limit(1).one().blueprint
+			try: bp = db.query(SiteBlueprint).filter(SiteBlueprint.site==c.site).join(Blueprint, SiteBlueprint.blueprint).filter(Blueprint.name==bn).limit(1).one().blueprint
 			except NoData: bp = None
 		else:
 			# we get here if the prefix refers to a SiteBlueprint entity
-			try: t = DBTemplate.q.get_by(parent=sbp, name=sn)
+			try: t = DBTemplate.q.get_by(target=sbp, name=sn)
 			except NoData: pass
 			else: got(t,0+weight)
 			bp = sbp.blueprint
 
 		if bp is not None:
-			try: t = DBTemplate.q.get_by(parent=bp, name=sn)
+			try: t = DBTemplate.q.get_by(target=bp, name=sn)
 			except NoData: pass
 			else: got(t,0+weight)
 
 		if c.site.name == bn:
-			try: t = DBTemplate.q.get_by(parent=c.site, name=sn)
+			try: t = DBTemplate.q.get_by(target=c.site, name=sn)
 			except NoData: pass
 			else: got(t,5+weight)
 
 		if c.site.app.name == bn:
-			try: t = DBTemplate.q.get_by(parent=c.site.app, name=sn)
+			try: t = DBTemplate.q.get_by(target=c.site.app, name=sn)
 			except NoData: pass
 			else: got(t,10+weight)
 
 	if c.name:
-		try: t = DBTemplate.q.get_by(parent=c.site.app, name=c.name)
+		try: t = DBTemplate.q.get_by(target=c.site.app, name=c.name)
 		except NoData: pass
 		else: got(t,40)
 
-		try: t = DBTemplate.q.get_by(parent=c.site, name=c.name)
+		try: t = DBTemplate.q.get_by(target=c.site, name=c.name)
 		except NoData: pass
 		else: got(t,9)
 
-_DBTemplate = aliased(DBTemplate)
-_MIMEadapter = aliased(MIMEadapter)
+_DBTemplate = None
+_MIMEadapter = None
 def gen_q(c):
+	global _DBTemplate, _MIMEadapter
+	if _DBTemplate is None:
+		_DBTemplate = aliased(DBTemplate)
+		_MIMEadapter = aliased(MIMEadapter)
+
 	mf = []
 	from_wild = None
 	if c.from_mime:
@@ -201,9 +206,9 @@ def gen_q(c):
 		nf = ()
 		names = None
 	
-	df = TemplateMatch.for_discr==None
+	df = TemplateMatch.for_objtyp==None
 	if c.obj:
-		df = or_(TemplateMatch.for_discr==c.obj.discr, df)
+		df = or_(TemplateMatch.for_objtyp==c.obj.objtyp, df)
 	
 	q = TemplateMatch.q.filter(df).join(_DBTemplate, TemplateMatch.template).filter(*nf).join(_MIMEadapter,_DBTemplate.adapter).filter(*mf)
 	q._from_wild=from_wild
@@ -212,7 +217,7 @@ def gen_q(c):
 	return q
 
 def get_one_site(c,site, weight,got, q):
-	for tm in q.filter(TemplateMatch.parent==site):
+	for tm in q.filter(TemplateMatch.target==site):
 		t = tm.template
 		a = t.adapter
 		w = weight+tm.weight

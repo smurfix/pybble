@@ -22,7 +22,8 @@ from werkzeug.exceptions import NotFound
 from wtforms import Form, HiddenField, TextField, validators
 
 from pybble.render import render_my_template
-from pybble.core.models import TM_DETAIL_PAGE, obj_get, obj_class, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY, Object
+from pybble.core.models._const import TM_DETAIL_PAGE, TM_DETAIL_SNIPPET, TM_DETAIL_HIERARCHY
+from pybble.core.models.object import Object
 from pybble.core.models.template import TemplateMatch
 from pybble.core.models.tracking import Breadcrumb
 from pybble.core.models.site import Site
@@ -69,7 +70,7 @@ def view_tree(oid=None):
 	if oid is None:
 		obj = current_site
 	else:
-		obj = obj_get(oid)
+		obj = Object.by_oid(oid)
 
 	request.user.will_admin(obj)
 	if obj is current_site:
@@ -83,7 +84,7 @@ def view_tree(oid=None):
 
 @expose('/edit/<oid>', methods=('POST','GET'))
 def edit_oid(oid):
-	obj=obj_get(oid)
+	obj=Object.by_oid(oid)
 
 	try: return tryAddOn(obj,"html_edit")
 	except NoRedir: pass
@@ -94,14 +95,14 @@ def edit_oid(oid):
 	return v(obj)
 
 @expose('/new/<oid>', methods=('POST','GET'))
-@expose('/new/<oid>/<discr>', methods=('POST','GET'))
-@expose('/new/<oid>/<discr>/<name>', methods=('POST','GET'))
-def new_oid(oid, discr=None, name=None):
-	obj=obj_get(oid)
-	if discr is None:
-		discr = obj.discriminator
-	request.user.will_add(obj,new_discr=discr)
-	cls = obj_class(discr)
+@expose('/new/<oid>/<objtyp>', methods=('POST','GET'))
+@expose('/new/<oid>/<objtyp>/<name>', methods=('POST','GET'))
+def new_oid(oid, objtyp=None, name=None):
+	obj=Object.by_oid(oid)
+	if objtyp is None:
+		objtyp = obj.objtyp
+	request.user.will_add(obj,new_objtyp=objtyp)
+	cls = obj_class(objtyp)
 	if hasattr(cls,"html_new"):
 		v = cls.html_new
 		vc = v
@@ -119,13 +120,13 @@ def new_oid(oid, discr=None, name=None):
 @expose('/copy/<oid>/<parent>')
 def copy_oid(oid, parent):
 	"""Create a copy of <oid> which lives beyond / controls / whatever <parent>."""
-	obj=obj_get(oid)
-	parent=obj_get(parent)
+	obj=Object.by_oid(oid)
+	parent=Object.by_oid(parent)
 
 	try: return tryAddOn(obj,"html_copy", parent=parent)
 	except NoRedir: pass
 
-	request.user.will_add(parent,new_discr=obj.discriminator)
+	request.user.will_add(parent,new_objtyp=obj.objtyp)
 	if hasattr(obj,"html_edit"):
 		return cls.html_edit(parent=parent)
 	else:
@@ -138,7 +139,7 @@ class DeleteForm(Form):
 
 @expose('/delete/<oid>', methods=('POST','GET'))
 def delete_oid(oid):
-	obj=obj_get(oid)
+	obj=Object.by_oid(oid)
 	request.user.will_delete(obj)
 
 	try: return tryAddOn(obj,"html_delete")
@@ -148,11 +149,11 @@ def delete_oid(oid):
 	if request.method == 'POST' and form.validate():
 		obj.record_deletion(form.comment.data)
 
-		flash(u"%s (%s) wurde gelöscht" % (unicode(obj),obj.oid()), True)
+		flash(u"%s (%s) wurde gelöscht" % (unicode(obj),obj.oid), True)
 		if form.next.data:
 			return redirect(form.next.data)
 		elif obj.parent:
-			return redirect(url_for("pybble.views.view_oid", oid=obj.parent.oid()))
+			return redirect(url_for("pybble.views.view_oid", oid=obj.parent.oid))
 		else:
 			return redirect(url_for("pybble.views.mainpage"))
 
@@ -195,14 +196,14 @@ def split_details_aux(obj,details):
 
 @expose('/view/<oid>/<details>')
 def view_oid_exp(oid, details):
-	obj = obj_get(oid)
+	obj = Object.by_oid(oid)
 	d,a = split_details_aux(obj,details)
 	logger.debug("D A",obj,details,d,a)
 	return view_oid(oid, details=d, aux=a)
 
 @expose('/view/<oid>')
 def view_oid(oid, **args):
-	obj = obj_get(oid)
+	obj = Object.by_oid(oid)
 	request.user.will_read(obj)
 
 	if "details" not in args:
@@ -248,7 +249,7 @@ def view_oid(oid, **args):
 
 @expose('/detail/<oid>')
 def detail_oid(oid):
-	obj = obj_get(oid)
+	obj = Object.by_oid(oid)
 	request.user.will_read(obj)
 	p,s,o,d = obj.pso
 	title_trace=[unicode(obj),"Info"]
@@ -263,39 +264,39 @@ def last_visited():
 def view_snippet(t):
 	oid = request.values["dir"]
 	if '/' in oid:
-		oid,discr = oid.split('/',1)
+		oid,objtyp = oid.split('/',1)
 	else:
-		discr = request.values.get("discr",None)
+		objtyp = request.values.get("objtyp",None)
 	try:
 		t = int(t)
 	except ValueError:
-		if discr:
-			return view_snippet2(t, oid, int(discr))
+		if objtyp:
+			return view_snippet2(t, oid, int(objtyp))
 		else:
 			return view_snippet1(t, oid)
 	else:
 		c = obj_class(t)
-		obj = obj_get(oid)
-		if discr:
+		obj = Object.by_oid(oid)
+		if objtyp:
 			res = []
-			discr = int(discr)
-			for o in obj.all_children(discr):
-				sub = o.has_children(discr)
-				res.append(render_my_template(o, detail=TM_DETAIL_SNIPPET, discr=t, sub=sub, mimetype=None))
+			objtyp = int(objtyp)
+			for o in obj.all_children(objtyp):
+				sub = o.has_children(objtyp)
+				res.append(render_my_template(o, detail=TM_DETAIL_SNIPPET, objtyp=t, sub=sub, mimetype=None))
 			return Response("\n".join(res), mimetype="text/html")
 		else:
 			sub = db.filter_by(c, parent=obj)
-			return render_my_template(obj, detail=TM_DETAIL_SNIPPET, discr=t, sub=sub)
+			return render_my_template(obj, detail=TM_DETAIL_SNIPPET, objtyp=t, sub=sub)
 
 @expose('/snippet/<t>/<oid>',methods=("GET","POST"))
 def view_snippet1(t, oid):
-	obj = obj_get(oid)
+	obj = Object.by_oid(oid)
 	if t == "parent":
-		sub = obj.discr_children
+		sub = obj.objtyp_children
 	elif t == "superparent":
-		sub = obj.discr_superchildren
+		sub = obj.objtyp_superchildren
 	elif t == "owner":
-		sub = obj.discr_owned
+		sub = obj.objtyp_owned
 	elif t == "hierarchy":
 		return render_my_template(obj, detail=TM_DETAIL_HIERARCHY)
 		
@@ -304,10 +305,10 @@ def view_snippet1(t, oid):
 
 	return render_template("snippet1.html", obj=obj, t=t, sub=list(sub))
 
-@expose('/snippet/<t>/<oid>/<discr>',methods=("GET","POST"))
-def view_snippet2(t, oid, discr):
-	c = obj_class(discr)
-	obj = obj_get(oid)
+@expose('/snippet/<t>/<oid>/<objtyp>',methods=("GET","POST"))
+def view_snippet2(t, oid, objtyp):
+	c = obj_class(objtyp)
+	obj = Object.by_oid(oid)
 	if t == "parent":
 		sub = c.q.filter_by(parent=obj)
 		what = "has_children"
@@ -319,7 +320,7 @@ def view_snippet2(t, oid, discr):
 		what = "has_owned"
 	else:
 		raise NotFound()
-	return render_template("snippet2.html", obj=obj, t=t, discr=discr, sub=sub, what=what, cls=c, count=sub.count())
+	return render_template("snippet2.html", obj=obj, t=t, objtyp=objtyp, sub=sub, what=what, cls=c, count=sub.count())
 
 def not_found(url=None):
     return render_template('not_found.html', title_trace=[u"Seite nicht gefunden"])

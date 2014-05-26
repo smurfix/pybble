@@ -154,7 +154,7 @@ class BaseApp(WrapperApp,Flask):
 	def _setup_user(self, **kw):
 		## TODO convert to Flask.login
 		if current_app.config.TESTING:
-			request.user = current_site.owner
+			request.user = User.q.get_by(username=ROOT_USER_NAME)
 		elif 'user' in session:
 			request.user = User.q.get_by(id=session.user)
 		elif FROM_SCRIPT:
@@ -275,11 +275,11 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 		elif not isinstance(site,Site):
 			if site == ROOT_SITE_NAME:
 				try:
-					site = Site.q.get(Site.parent==None,Site.owner!=None)
+					site = Site.q.get(Site.parent==None)
 				except NoData:
 					raise RuntimeError("I cannot find your root site!")
 				except ManyData:
-					raise RuntimeError("You seem to have more than one root. Fix that (with mgr -S): "+"".join(x for x in Site.q.filter(Site.parent==None,Site.owner!=None)))
+					raise RuntimeError("You seem to have more than one root. Fix that (with mgr -S): "+"".join(x for x in Site.q.filter(Site.parent==None)))
 			else:
 				try:
 					try:

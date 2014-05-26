@@ -24,34 +24,38 @@ from sqlalchemy.orm import relationship,backref
 
 from flask import request, current_app
 
-from . import Object,ObjectRef, Discriminator
-from ._descr import D
+from .object import Object,ObjectRef
+from .objtyp import ObjType
+from .user import User
+from .site import Site
 from ..db import Base, Column, check_unique, db
 from ...globals import current_site
 from ...core import config
 from ...core.signal import ObjDeleted
 
-class TrackingObjectRef(ObjectRef):
+class TrackingObject(Object):
+	__abstract__ = True
 	"""Objects of this subclass cannot get changes recorded"""
 	pass
 
 ## Breadcrumb
 
-class Breadcrumb(TrackingObjectRef):
+class Breadcrumb(TrackingObject):
 	"""\
 		Track page visits.
-		Owner: the user who did it.
-		Parent: The page thus visited.
 		Superparent: The site.
-		discr: mirrors parent.discr, for easier selectage
+		objtyp: mirrors parent.objtyp, for easier selectage
 		"""
 	__tablename__ = "breadcrumbs"
-	_descr = D.Breadcrumb
 	_no_crumbs = True
 
-	# for_discr is saved here because of faster lookups
-	for_discr_id = Column("discr", Integer, ForeignKey(Discriminator.id), nullable=False)
-	for_discr = relationship(Discriminator, primaryjoin=for_discr_id==Discriminator.id)
+	# for_objtyp is saved here because of faster lookups
+	for_objtyp_id = Column("objtyp", Integer, ForeignKey(ObjType.id), nullable=False)
+	for_objtyp = relationship(ObjType, primaryjoin=for_objtyp_id==ObjType.id)
+
+	user = ObjectRef(User, doc="The user whodunit")
+	obj = ObjectRef(doc="accessed page")
+	site = ObjectRef(Site)
 
 	#seq = Column(Integer)
 	visited = Column(DateTime,default=datetime.utcnow)
@@ -59,7 +63,7 @@ class Breadcrumb(TrackingObjectRef):
 	cur_visited = Column(DateTime,default=datetime.utcnow, nullable=True)
 
 	def setup(self, user, obj):
-		self.for_discr = obj.discr
+		self.for_objtyp = obj.objtyp
 		self.owner = user
 		self.parent = obj
 
@@ -67,13 +71,7 @@ class Breadcrumb(TrackingObjectRef):
 
 	@property
 	def as_str(self):
-		p,s,o,d = self.pso
-		if self._rec_str or not o or not p: return "‽"
-		try:
-			self._rec_str += 1
-			return u'%s saw %s on %s' % (unicode(o), unicode(p), unicode(self.visited))
-		finally:
-			self._rec_str -= 1
+		return u'%s saw %s on %s' % (unicode(self.user), unicode(self.obj), unicode(self.visited))
 
 	def visit(self):
 		now = datetime.utcnow()
@@ -84,123 +82,79 @@ class Breadcrumb(TrackingObjectRef):
 
 ## Change
 
-class Change(TrackingObjectRef):
+class Change(TrackingObject):
 	"""\
 		Track content changes.
-		Owner: the user who did it.
-		Parent: The page thus changed.
 		"""
 	__tablename__ = "changes"
-	_descr = D.Change
 	_no_crumbs = True
 
-	timestamp = Column(DateTime,default=datetime.utcnow)
+	obj = ObjectRef()
 	data = Column(Unicode(100000))
 
+	@property
+	def tracker(self):
+		return Tracker.q.get_by(obj=self)
+
 	def setup(self, obj, user=None, data=None, comment=None):
-		self.owner = user or request.user
-		self.parent = obj
+		self.obj = obj
 		self.data = data
+		self._owner = user or request.user
 		self._comment = comment
 
 		super(Change,self).setup()
 
 	def after_insert(self):
-		Tracker.new(self, user=self.owner, comment=self._comment)
+		Tracker.new(self, user=self._owner, comment=self._comment)
 
 	@property
 	def as_str(self):
-		p,s,o,d = self.pso
-		if self._rec_str or not o or not p: return "‽"
-		try:
-			self._rec_str += 1
-			return u'%s changed %s on %s' % (unicode(o), unicode(p), unicode(self.timestamp))
-		finally:
-			self._rec_str -= 1
-
-	@property
-	def change_obj(self):
-		return self.parent
-
-	@property
-	def next_change(self):
-		return Change.q.filter(Change.timestamp>self.timestamp)\
-				.filter(Change.parent==self.parent)\
-                	.order_by(Change.timestamp)\
-                	.first()
-	@property
-	def prev_change(self):
-		return Change.q.filter(Change.timestamp<self.timestamp)\
-				.filter(Change.parent==self.parent)\
-                	.order_by(Change.timestamp.desc())\
-                	.first()
+		return u'changed %s' % (unicode(self.obj), unicode(p), unicode(self.timestamp))
 
 ## Delete
 
-class Delete(TrackingObjectRef):
+class Delete(TrackingObject):
 	"""\
 		Track deleted content.
-		Owner: the user who did it.
-		Parent: The page thus deleted.
-		Superparent: the object's original parent.
 		"""
 	__tablename__ = "deleted"
-	_descr = D.Delete
 	_no_crumbs = True
+
 	@classmethod
 	def __declare_last__(cls):
-		if not hasattr(cls,'old_parent'):
-			cls.old_parent = cls.superparent
-		if not hasattr(cls,'old_parent_id'):
-			cls.old_parent_id = cls.superparent_id
-		check_unique(cls,"parent")
+		check_unique(cls,"obj")
+		super(Delete,cls).__declare_last__()
 
-	## The old parent is in self.superparent
-	old_owner_id = Column(Integer, ForeignKey(ObjectRef.id), nullable=True, index=True)
-	old_superparent_id = Column(Integer, ForeignKey(ObjectRef.id), nullable=True, index=True)
+	obj = ObjectRef(doc="the deleted object")
 
-	old_owner = relationship(Object, primaryjoin=old_owner_id==Object.id)
-	old_superparent = relationship(Object, primaryjoin=old_superparent_id==Object.id)
+	@property
+	def tracker(self):
+		return Tracker.q.get_by(obj=self)
 
 	timestamp = Column(DateTime,default=datetime.utcnow)
 
 	def setup(self, obj, user=None, comment=None):
-		assert obj and not isinstance(obj,TrackingObjectRef)
+		assert obj and not isinstance(obj,TrackingObject)
 		obj._deleting = True
-		self.owner = user or request.user
-		self.parent = obj
-		self.old_owner = obj.owner
-		self.superparent = obj.parent
-		self.old_superparent = obj.superparent
+		self._user = user or request.user
+		self.obj = obj
 		self._comment = comment
 
-		obj.owner = None
-		obj.parent = None
-		obj.superparent = None
+		obj.deleted = True
 		super(Delete,self).setup()
 	
 	def after_insert(self):
-		Tracker.new(self, user=user, comment=self._comment)
-		self.parent.signal.send(ObjDeleted)
-		self.parent.signal.dispose()
-
+		Tracker.new(self, user=self._user, comment=self._comment)
+		self.obj.signal.send(ObjDeleted)
+		self.obj.signal.dispose()
 
 	@property
 	def as_str(self):
-		if self._rec_str or not self.owner or not self.parent: return "‽"
-		try:
-			self._rec_str += 1
-			return u'%s deleted %s on %s' % (unicode(self.owner), unicode(self.parent), unicode(self.timestamp))
-		finally:
-			self._rec_str -= 1
-
-	@property
-	def change_obj(self):
-		return self.parent
+		return u'deleted %s' % (unicode(self.obj),)
 
 ## Tracker
 
-class Tracker(TrackingObjectRef):
+class Tracker(TrackingObject):
 	"""\
 		Track any kind of change, for purpose of RSSification, Emails, et al.
 		Owner: the user who did it.
@@ -208,101 +162,48 @@ class Tracker(TrackingObjectRef):
 		Superparent: The site. TODO: or the high-level action which triggered this one.
 		"""
 	__tablename__ = "tracking"
-	_descr = D.Tracker
 	_no_crumbs = True
-	@classmethod
-	def __declare_last__(cls):
-		if not hasattr(cls,'site'):
-			cls.site = cls.superparent
 
+	user = ObjectRef(User)
+	site = ObjectRef(Site)
+	obj = ObjectRef(doc="The new object, or a change/delete record")
 	comment = Column(Unicode(1000), nullable=True)
 	timestamp = Column(DateTime,default=datetime.utcnow)
 
 	def setup(self, obj, user=None,site=None, comment=None):
 		# You can track Change and Delete objects, but not e.g. a Tracker or a Breadcrumb
-		assert obj and (isinstance(obj,(Change,Delete)) or not isinstance(obj,TrackingObjectRef))
+		assert obj and (isinstance(obj,(Change,Delete)) or not isinstance(obj,TrackingObject))
 
-		self.owner = user or request.user
+		self.user = user or request.user
 		self.comment = comment
-		self._obj = obj
-		self._site = site
+		self.obj = obj
+		self.site = site or current_site
 		super(Tracker,self).setup()
 
-	def after_insert(self):
-		db.flush((self.owner,)) # required to guard against cycles
-		self.parent = self._obj
-		self.superparent = self._site or current_site
+#	def after_insert(self):
+#		db.flush((self.owner,)) # required to guard against cycles
+#		self.parent = self._obj
+#		self.superparent = self._site or current_site
 
 	@property
 	def as_str(self):
-		if self._rec_str or not self.owner or not self.superparent: return "‽"
-		try:
-			self._rec_str += 1
-			if self.parent:
-				return u'%s changed %s' % (unicode(self.owner), unicode(self.parent))
-			else:
-				return u'%s changed %s on %s' % (unicode(self.owner), unicode(self.superparent), unicode(self.timestamp))
-		finally:
-			self._rec_str -= 1
+		return u'%s changed %s' % (unicode(self.user), unicode(self.obj))
 
 	@property
-	def change_obj(self):
-		return self.parent.change_obj
-	
-	@property
 	def is_new(self):
-		return not isinstance(self.parent, (Change,Delete))
+		return not isinstance(self.obj, (Change,Delete))
 
 	@property
 	def is_mod(self):
-		return isinstance(self.parent, Change)
+		return isinstance(self.obj, Change)
 
 	@property
 	def is_del(self):
-		return isinstance(self.parent, Delete)
-
-## UserTracker
-
-class UserTracker(TrackingObjectRef):
-	"""\
-		Record that a change be reported to a user. This will be auto-built from Tracker and WantTracking objects.
-		"""
-	__tablename__ = "usertracking"
-	_descr = D.UserTracker
-	_no_crumbs = True
-	@classmethod
-	def __declare_last__(cls):
-		if not hasattr(cls,'user'):
-			cls.user = cls.owner
-		if not hasattr(cls,'tracker'):
-			cls.tracker = cls.parent
-		if not hasattr(cls,'want_tracking'):
-			cls.want_tracking = cls.superparent
-
-	def setup(self, user, tracker, want):
-		self.user = user
-		self.want_tracking = want
-		self.tracker = tracker
-		super(UserTracker,self).setup()
-
-	@property
-	def as_str(self):
-		if self._rec_str or not self.owner or not self.parent: return "‽"
-		try:
-			self._rec_str += 1
-			return '%s for %s' % (unicode(self.parent), unicode(self.owner))
-		finally:
-			self._rec_str -= 1
-
-	@property
-	def change_obj(self):
-		return self.parent.change_obj
-
-check_unique(UserTracker,"user tracker")
+		return isinstance(self.obj, Delete)
 
 ## WantTracking
 
-class WantTracking(ObjectRef):
+class WantTracking(Object):
 	"""
 		Record that a user wants changes reported.
 		Parent: The object which should be tracked.
@@ -310,27 +211,21 @@ class WantTracking(ObjectRef):
 		email: send email when this happens.
 		track_new/_mod/_del: track new / modified / deleted content
 		"""
-	_descr = D.WantTracking
-	_display_name = "Beobachtungs-Eintrag"
-	@classmethod
-	def __declare_last__(cls):
-		if not hasattr(cls,'obj'):
-			cls.obj = cls.parent
-		if not hasattr(cls,'user'):
-			cls.user = cls.owner
+	_display_name = "Monitor entry"
 
-	for_discr_id = Column("discr", Integer, ForeignKey(Discriminator.id), nullable=True)
-	for_discr = relationship(Discriminator, primaryjoin=for_discr_id==Discriminator.id)
+	target = ObjectRef()
+	user = ObjectRef(User, "wants_tracked")
+	for_objtyp = ObjectRef(ObjType, nullable=True)
 
 	email = Column(Boolean, nullable=False) # send mail, not just RSS/on-site?
 	track_new = Column(Boolean, nullable=False) # alert for new data?
 	track_mod = Column(Boolean, nullable=False) # alert for modifications?
 	track_del = Column(Boolean, nullable=False) # alert for deletions?
 
-	def setup(self, user,obj, for_discr=None):
-		self.parent = obj
-		self.owner = user
-		self.for_discr = for_discr
+	def setup(self, user,target, for_objtyp=None):
+		self.user = user
+		self.target = target
+		self.for_objtyp = for_objtyp
 		self.email = False
 		self.track_new = False
 		self.track_mod = False
@@ -339,30 +234,34 @@ class WantTracking(ObjectRef):
 	
 	@property
 	def as_str(self):
-		p,s,o,d = self.pso
-		if self._rec_str or not o or not p: return "‽"
-		try:
-			self._rec_str += 1
-			return u'%s in %s for %s %s' % ("-" if self.for_discr is None else self.for_discr.name, unicode(p),unicode(o), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
-		finally:
-			self._rec_str -= 1
+		return u'%s in %s for %s %s' % ("-" if self.for_objtyp is None else self.for_objtyp.name, unicode(self.user),unicode(self.target), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
+
+## UserTracker
+
+class UserTracker(TrackingObject):
+	"""\
+		Record that a change be reported to a user. This will be auto-built from Tracker and WantTracking objects.
+		"""
+	__tablename__ = "usertracking"
+	_no_crumbs = True
+
+	user = ObjectRef(User)
+	tracker = ObjectRef(WantTracking)
+	obj = ObjectRef(doc="The new object / change / delete record")
+
+	def setup(self, tracker, obj):
+		self.user = tracker.user
+		self.obj = obj
+		self.tracker = tracker
+		super(UserTracker,self).setup()
 
 	@property
-	def data(self):
-		wh = []
-		if self.track_new: wh.append("New")
-		if self.track_mod: wh.append("Mod")
-		if self.track_del: wh.append("Del")
-		return u"""\
-Object: %s %s
-User: %s %s
-Type: %s
-What: %s
-Email: %s
+	def as_str(self):
+		return '%s for %s' % (unicode(self.tracker), unicode(self.obj))
 
-""" % (unicode(self.parent),self.parent.oid(), \
-       unicode(self.owner),self.owner.oid(), \
-	   self.for_discr.name if self.for_discr is not None else "None",
-	   " ".join(wh) if wh else "-", \
-	   "yes" if self.email else "no")
+	@property
+	def change_obj(self):
+		return self.parent.change_obj
+
+check_unique(UserTracker,"user tracker")
 

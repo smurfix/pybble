@@ -44,7 +44,7 @@ class ObjSignal(Signal):
 		if parent.id is None:
 			db.flush()
 			assert parent.id > 0
-		name = str(parent.discr_id)+":"+str(parent.id)
+		name = str(parent.type.id)+":"+str(parent.id)
 		sig = cls._cached_names.get(name,None)
 		if sig is None:
 			sig = super(ObjSignal, cls).__new__(cls)

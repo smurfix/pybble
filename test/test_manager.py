@@ -13,23 +13,17 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from flask import _app_ctx_stack, g, current_app
-from werkzeug.local import LocalProxy
 
-from .core.db import refresh
+from .manager import ManagerTC
+from pybble.manager.main import RootManager
+from .script import capture
 
-class _NotThere: pass
-
-def _get_site():
-	ctx = _app_ctx_stack.top
-	site = getattr(ctx,'site',_NotThere)
-	if site is _NotThere:
-		ctx.site = site = None if current_app.site is None else refresh(current_app.site)
-	return site
-current_site = LocalProxy(_get_site)
-
-def _root_site():
-	from .core.models.site import Site
-	return Site.q.get(Site.parent == None)
-root_site = LocalProxy(_root_site)
+class TestManager(ManagerTC):
+	@capture
+	def test_simple_command_decorator(self, capsys):
+		pass
+		# TODO
+		#code = self.run_manager('manage.py -t app hello --foo=fubar', app=self.app)
+		#out, err = capsys.readouterr()
+		#assert 'Oh hello' in out
 

@@ -1,7 +1,0 @@
-<h2>{{ obj.name }}</h2>
-<p><a href="{{ url_for("pybble.views.detail_oid", _external=True, oid=user.oid()) }}">{{ subline(user) }}</a> hat eine neue Wiki-Seite „<a href="{{ url_for("pybble.views.view_oid", _external=True, oid=obj.oid()) }}">{{ subline(obj) }}</a>“ angelegt:</p>
-<hr />
-{{ obj.data|markdown(extern=1) }}
-<hr />
-<p>PS: Der Tracker, der diesen Eintrag deines Feeds generiert hat, ist 
-<a href="{{ url_for("pybble.views.view_oid", _external=True, oid=tracker.oid()) }}">dieser hier</a>.</p>

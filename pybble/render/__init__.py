@@ -19,15 +19,15 @@ from flask import request,current_app, get_flashed_messages, Response
 from flask._compat import string_types
 
 from ..utils import random_string, AuthError, NotGiven
-from ..core.models import PERM, PERM_NONE, PERM_ADD, obj_get, \
-	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, obj_get, TM_DETAIL, \
-	TM_DETAIL_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_MIME, TM_DETAIL_name, MissingDummy
-from ..core.models._descr import D
-from ..core.models.user import Permission
+from ..core.models._const import PERM, PERM_NONE, PERM_ADD, \
+	TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, TM_DETAIL, \
+	TM_DETAIL_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_MIME, TM_DETAIL_name
+from ..core.models.permit import Permission
 from ..core.models.site import SiteBlueprint,Blueprint
 from ..core.models.template import TemplateMatch, Template
 from ..core.models.files import StaticFile
 from ..core.models.types import MIMEtype
+from ..core.models.object import Object
 from ..core.db import db,NoData
 from ..globals import current_site
 
@@ -128,10 +128,10 @@ class ContentData(object):
 			if blueprint is None and name is not None and '/' in name:
 				bpname,tname = name.split('/',1)
 				try: # the name might refer to my SiteBlueprint
-					bp = SiteBlueprint.q.get_by(parent=site,name=bpname)
+					bp = SiteBlueprint.q.get_by(site=site,name=bpname)
 				except NoData: # or to the Blueprint it points to
 					try:
-						bp = db.query(SiteBlueprint).filter(SiteBlueprint.parent==site).join(Blueprint, SiteBlueprint.superparent).filter(Blueprint.name==bpname).limit(1).one()
+						bp = db.query(SiteBlueprint).filter(SiteBlueprint.site==site).join(Blueprint, SiteBlueprint.blueprint).filter(Blueprint.name==bpname).limit(1).one()
 					except NoData:
 						bp = None
 				if bp is not None:
@@ -172,7 +172,7 @@ class ContentData(object):
 def valid_obj(form, field):
 	"""Field verifier which checks that an object ID is valid"""
 	try:
-		obj_get(field.data)
+		Object.by_oid(field.data)
 	except Exception:
 		raise ValidationError(u"Das Objekt '%s' gibt es nicht" % (field.data,))
 
@@ -183,12 +183,12 @@ def valid_access(o):
 		"""
 	def v_a(form, field):
 		try:
-			obj = obj_get(getattr(form,o).data)
+			obj = Object.by_oid(getattr(form,o).data)
 			right = int(field.data)
 		except Exception:
 			return # checked by others
 		else:
-			if not request.user.can_do(obj, discr=obj,want=right):
+			if not request.user.can_do(obj, objtyp=obj,want=right):
 				raise ValidationError(u"Das darfst du selbst nicht.")
 
 	return v_a
@@ -206,7 +206,7 @@ def render_my_template(obj, detail=None, mimetype=NotGiven, **context):
 	"""Global render"""
 
 	if isinstance(obj,basestring):
-		obj = obj_get(obj)
+		obj = Object.by_oid(obj)
 	if detail is None:
 		detail = TM_DETAIL_PAGE
 	if detail == TM_DETAIL_PAGE:
@@ -259,8 +259,8 @@ def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE, to_typ="html"):
 	ctx["obj_deleted"] = d
 	ctx["detail"] = detail
 
-	#if discr is not None:
-	#	ctx["sub"] = Discriminator.get(discr).mod.q.fiter_by(parent=obj).count()
+	#if objtyp is not None:
+	#	ctx["sub"] = ObjType.get(objtyp).mod.q.fiter_by(parent=obj).count()
 	return render_my_template(**ctx)
 
 @contextfunction
@@ -271,7 +271,7 @@ def render_subline(ctx,obj):
 		return unicode(obj)
 
 @contextfunction
-def render_subrss(ctx,obj, detail=TM_DETAIL_RSS, discr=None):
+def render_subrss(ctx,obj, detail=TM_DETAIL_RSS, objtyp=None):
 	ctx = ctx.get_all()
 	ctx["obj"] = obj.parent.parent
 	ctx["tracker"] = obj.superparent
@@ -284,7 +284,7 @@ def render_subrss(ctx,obj, detail=TM_DETAIL_RSS, discr=None):
 		if detail == TM_DETAIL_EMAIL:
 			raise
 		else:
-			return Markup("<p>'%s' kann nicht dargestellt werden (Zugriffsfehler).</p>" % (obj.oid(),))
+			return Markup("<p>'%s' kann nicht dargestellt werden (Zugriffsfehler).</p>" % (obj.oid,))
 
 import smtplib
 import email.Message
@@ -310,19 +310,19 @@ def send_mail(to='', template='', server=None, **context):
 for a,b in PERM.iteritems():
 	def can_do_closure(a,b):
 		def valid_do(form, field):
-			obj = obj_get(field.data)
+			obj = Object.by_oid(field.data)
 			u = getattr(request,"user",None)
 			if not u:
 				raise ValidationError(u"Kein Benutzer")
 			if current_app.config.DEBUG_ACCESS:
 				print("valid can_"+b+":", u,obj,a, file=sys.stderr)
-			if (u.can_do(obj, discr=obj, want=a) < a) \
+			if (u.can_do(obj, objtyp=obj, want=a) < a) \
 				if (a > PERM_NONE) \
-				else (u.can_do(obj, discr=obj, want=a) != a):
+				else (u.can_do(obj, objtyp=obj, want=a) != a):
 				raise ValidationError(u"Kein Zugriff auf Objekt '%s' (%s)" % (field.data,b))
 
 		def valid_do_self(form, field):
-			obj = obj_get(field.data)
+			obj = Object.by_oid(field.data)
 			u = getattr(request,"user",None)
 			if not u:
 				raise ValidationError(u"Kein Benutzer")
@@ -330,9 +330,9 @@ for a,b in PERM.iteritems():
 				print("valid can_self_"+b+":", u,obj,a, file=sys.stderr)
 			if u is obj:
 				return
-			if (u.can_do(obj, discr=obj, want=a) < a) \
+			if (u.can_do(obj, objtyp=obj, want=a) < a) \
 				if (a > PERM_NONE) \
-				else (u.can_do(obj, discr=obj, want=a) != a):
+				else (u.can_do(obj, objtyp=obj, want=a) != a):
 				raise ValidationError(u"Kein Zugriff auf Objekt '%s' (%s)" % (field.data,b))
 
 		return valid_do,valid_do_self

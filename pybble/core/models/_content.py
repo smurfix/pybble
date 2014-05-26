@@ -22,7 +22,7 @@ from sqlalchemy.orm import relationship
 
 from .. import config
 from ..db import Base, Column
-from . import Object,ObjectRef
+from .object import ObjectRef
 from .types import MIMEtype
 
 ## Template
@@ -47,8 +47,7 @@ class Content(_Content):
 
 		It intentionally provides no methods.
 		"""
-	mime_id = Column(Integer, ForeignKey(MIMEtype.id), nullable=False, index=True)
-	mime = relationship(MIMEtype, primaryjoin=mime_id==MIMEtype.id, doc="Content type of my data content")
+	mime = ObjectRef(MIMEtype, doc="Content type of my data")
 
 class Cached(object):
 	"""\

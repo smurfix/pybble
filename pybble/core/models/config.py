@@ -22,12 +22,12 @@ from flask import url_for, current_app, g,request
 from flask.config import Config
 from flask._compat import string_types,text_type
 
-from .. import json, config
+from .. import json, config as pybble_config
 from ..utils import attrdict
-from ..db import db, Base, Column, NoData, check_unique,no_update, refresh
+from ..db import db, Base, Column, NoData,NoDataExc, check_unique,no_update, refresh
 from ..signal import ConfigChanged
-from . import ObjectRef
-from ._descr import D
+from .object import Object,ObjectRef
+from ...core import config
 
 from datetime import datetime,timedelta
 
@@ -46,139 +46,6 @@ from sqlalchemy.types import TypeDecorator, VARCHAR
 #from .admin.utils import _l
 
 logger = logging.getLogger('pybble.core.models.config')
-
-## ConfigDict
-
-class ConfigDict(Config,attrdict):
-	_parent = None
-	_set_db = None
-	_defaults = None
-	def __init__(self,parent=None):
-		self._parent = parent
-		self._vars = {}
-		self._loads = []
-		if parent:
-			parent.signal.connect(self._reload, sender=ConfigChanged)
-		
-	def _load(self, parent=None, force=False, recurse=None, vars=None, name=None):
-		"""\
-			Load variable data.
-
-			:param force: Overwrite existing values
-			:param recurse: Recursively check parent objects.
-				Infinite loops are protected against.
-			:param vars: If the variable definitions are the children of
-			    self.superparent instead of self, set this to "superparent".
-				TODO: use an attrgetter function instead.
-			:param name: (re)load only this variable
-
-			This code remembers what you load, so that a .reload() will
-			pull the same (kind of) data.
-			"""
-
-		self._loads.append(dict(recurse=recurse,vars=vars))
-		if self._parent is not None:
-			assert parent is None or parent is self._parent
-		else:
-			self._parent = parent
-		self._load1(recurse=recurse,vars=vars, name=name)
-
-	def _reload(self, sender=None, name=None):
-		"""\
-			Reload variable data from the database, after something
-			was changed.
-			"""
-		for k in list(self.keys()) if name is None else (name,):
-			super(ConfigDict,self).__delitem__(k)
-		for kw in self._loads:
-			self._load1(name=name, **kw)
-
-	def _load1(self, force=False, recurse=None, vars=None, name=None):
-		if vars is not None and vars == "GLOBALS":
-			# Special hack to include the globals, esp. when reloading
-			if name is None:
-				for k,v in config.items():
-					super(ConfigDict,self).__setitem__(k,v)
-			elif name in config:
-				super(ConfigDict,self).__setitem__(name,config[name])
-			return
-
-		s = refresh(self._parent)
-		seen = set()
-		if recurse is True:
-			recurse = "parent"
-		while s:
-			if s.id in seen: break
-			seen.add(s.id)
-
-			vf = SiteConfigVar.q.filter_by(parent=s)
-			if name is not None:
-				vf = vf.join(ConfigVar, SiteConfigVar.var).filter(ConfigVar.name==name)
-			for v in vf:
-				if force:
-					if v.var.name not in seen:
-						self[v.var.name] = v.value
-						seen.add(v.var.name)
-				else:
-					self.setdefault(v.var.name, v.value)
-			p = getattr(s,vars,None) if vars else s
-			if p:
-				vf = ConfigVar.q.filter_by(parent=p)
-				if name is not None:
-					vf = vf.filter_by(name=name)
-				for v in vf:
-					self.setdefault(v.name, v.value)
-					self._vars.setdefault(v.name,v)
-
-			if recurse:
-				s = getattr(s,recurse)
-			else:
-				break
-		if self._parent:
-			self._set_db = True
-	
-	def __setitem__(self,k,v):
-		s = self._parent
-		if isinstance(k,string_types):
-			k = text_type(k)
-		if self._set_db:
-			cfv = self._vars[k]
-			assert self._parent
-			try:
-				cf = SiteConfigVar.q.get_by(parent=self._parent, var=cfv)
-			except NoData:
-				cf = SiteConfigVar.new(parent=self._parent, var=cfv, value=v)
-			else:
-				cf.value=v
-			db.flush()
-		super(ConfigDict,self).__setitem__(k,v)
-
-		if self._parent is not None:
-			self._parent.signal.send(ConfigChanged, name=k)
-
-	def __delitem__(self,k):
-		cfv = self._vars.get(k,None)
-		if self._set_db:
-			assert self._parent and cfv
-			try:
-				cf = SiteConfigVar.q.get_by(parent=self._parent, var=cfv)
-			except NoData:
-				pass
-			else:
-				db.delete(cf)
-			db.flush()
-		if cfv is not None:
-			super(ConfigDict,self).__setitem__(k,cfv.value)
-		else:
-			super(ConfigDict,self).__delitem__(k)
-
-		if self._parent is not None:
-			self._parent.signal.send(ConfigChanged, name=k)
-	
-	def _disarm(self):
-		self._set_db = False
-	def _arm(self):
-		self._set_db = True
 
 ## JSON type
 
@@ -202,18 +69,17 @@ class JsonValue(object):
 
 ## ConfigVar
 
-class ConfigVar(ObjectRef, JsonValue):
+class ConfigVar(Object, JsonValue):
 	"""Describes one configuration variable."""
-	_descr = D.ConfigVar
 
 	@classmethod
 	def __declare_last__(cls):
 		check_unique(cls,"parent name")
 		no_update(cls.name)
 		no_update(cls.parent)
+		super(ConfigVar,cls).__declare_last__()
 
-	# Parent: the object this setting is known at
-
+	parent = ObjectRef()
 	name = Column(Unicode(30), index=True)
 	doc = Column(Unicode(1000))
 
@@ -229,7 +95,7 @@ class ConfigVar(ObjectRef, JsonValue):
 		try:
 			return ConfigVar.q.get_by(parent=parent, name=name)
 		except NoData:
-			raise NoData("ConfigVar:"+name)
+			raise NoDataExc("ConfigVar:"+name)
 
 	@staticmethod
 	def exists(parent,name,doc=None,default=None):
@@ -242,19 +108,86 @@ class ConfigVar(ObjectRef, JsonValue):
 	def as_str(self):
 		return u"%s=%s @%s" % (self.name,repr(self.value),self.parent.name)
 
+## ConfigData
+class ConfigData(Object):
+	"""This is a collection of configuration variables, referred to by some object or other"""
+
+	parent = ObjectRef("self", nullable=True, doc="inherited configuration")
+	name = Column(Unicode(30), index=True, doc="informal name for this collection")
+
+	def setup(self, name, parent=None):
+		self.name = name
+		self.parent = parent
+		super(ConfigData,self).setup()
+
+	def get(self, k, default=None):
+		try:
+			return self[k]
+		except KeyError:
+			return default
+
+	def __getattr__(self,k):
+		return self[k]
+
+	def __contains__(self,k):
+		if k in pybble_config:
+			return True
+		return ConfigVar.q.get_by(name=k).count()
+
+	def __getitem__(self,k):
+		k = text_type(k)
+		if k in pybble_config:
+			return pybble_config[k]
+
+		var = ConfigVar.q.get_by(name=k)
+		try:
+			return SiteConfigVar.q.get_by(parent=self, var=var).value
+		except NoData:
+			if self.parent is None:
+				return var.value
+			return self.parent[k]
+	
+	def __setitem__(self,k,v):
+		k = text_type(k)
+		if k in pybble_config:
+			pybble_config[k] = v
+			return
+
+		var = ConfigVar.q.get_by(name=k)
+		try:
+			ov = SiteConfigVar.q.get_by(parent=self, var=var)
+		except NoData:
+			SiteConfigVar.new(self,var,v)
+		else:
+			ov.value = v
+
+	def __delitem__(self,k):
+		k = text_type(k)
+		assert k not in pybble_config, k
+
+		var = ConfigVar.q.get_by(name=k)
+		try:
+			ov = SiteConfigVar.q.get_by(parent=self, var=var)
+		except NoData:
+			pass
+		else:
+			db.delete(ov)
+
+
 ## SiteConfigVar
 
-class SiteConfigVar(ObjectRef, JsonValue):
+class SiteConfigVar(Object, JsonValue):
 	"""This is one configuration variable's value for a site (or some other object, in fact)."""
-	_descr = D.SiteConfigVar
+
+	var = ObjectRef(ConfigVar)
+	parent = ObjectRef(ConfigData)
 
 	@classmethod
 	def __declare_last__(cls):
-		if not hasattr(cls,'var'):
-			cls.var = cls.superparent
 		check_unique(cls,"parent var")
 		no_update(cls.parent)
-		no_update(cls.superparent)
+		no_update(cls.var)
+		super(SiteConfigVar,cls).__declare_last__()
 	# Owner: the user who last set the variable
 
 	def setup(self,parent,var,value):
@@ -262,7 +195,6 @@ class SiteConfigVar(ObjectRef, JsonValue):
 		self.parent = parent
 		self.var = var
 		self.value = value
-		self.owner = getattr(request,'user',None)
 
 		super(SiteConfigVar,self).setup()
 

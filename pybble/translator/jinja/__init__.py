@@ -27,11 +27,11 @@ from flask.templating import Environment as BaseEnvironment
 
 from pybble.translator import BaseTranslator
 from pybble.utils import AuthError
-from pybble.core.models import PERM, PERM_NONE, PERM_ADD, obj_get, \
-	Discriminator, TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, obj_class, obj_get, TM_DETAIL, \
+from pybble.core.models._const import PERM, PERM_NONE, PERM_ADD, \
+	TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, TM_DETAIL, \
 		TM_DETAIL_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name
-from pybble.core.models._descr import D
 from pybble.core.models.user import access_logger
+from pybble.core.models.objtyp import ObjType
 from pybble.core.db import db,NoData
 from pybble.utils.diff import textDiff,textOnlyDiff
 from pybble.render import render_subpage,render_subline,render_subrss
@@ -59,7 +59,7 @@ class Translator(BaseTranslator):
 		dbt = self.db_template
 		c = dbt.get_cache(_version)
 		if c is None:
-			c = self.env.compile(dbt.content, dbt.source, dbt.oid())
+			c = self.env.compile(dbt.content, dbt.source, dbt.oid)
 			dbt.set_cache(c, _version)
 		return c
 

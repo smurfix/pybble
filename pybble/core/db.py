@@ -16,7 +16,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from functools import update_wrapper
 
-from sqlalchemy import create_engine, Integer, types, util, exc as sa_exc, event, or_
+from sqlalchemy import create_engine, Integer, types, util, exc as sa_exc, event, or_, Boolean
 from sqlalchemy.orm import scoped_session, sessionmaker,query
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm.session import Session
@@ -45,7 +45,19 @@ class ManyDataExc(IntegrityError,MultipleResultsFound):
 		return "{}: {}".format(self.__class__.__name__,self.msg)
 	def __repr__(self):
 		return "<{}: {}>".format(self.__class__.__name__,self.msg)
+
+class NoDataExc(NoData):
+	"""Class for not finding results"""
+	msg = None
+	def __init__(self, msg):
+		self.msg = msg
+	def __str__(self):
+		return "{}: {}".format(self.__class__.__name__,self.msg)
+	def __repr__(self):
+		return "<{}: {}>".format(self.__class__.__name__,self.msg)
+
 ManyData = (ManyDataExc,)+ManyDataExc.__bases__
+NoData = (NoDataExc,)+NoDataExc.__bases__
 
 from . import config
 #from zuko.db.logger import logged_session
@@ -110,21 +122,24 @@ class GetQuery(query.Query):
 		return self.filter_by(**k).one()
 		#return self._one(self.filter_by(**k))
 
-	@staticmethod
-	def _one(query):
+	def one(self):
 		"""A re-implementation of one() which can be breakpointed, to aid in debugging"""
 		res = None
-		for obj in query:
+		for obj in self:
 			if res is None:
 				res = obj
 			else:
 				res = ManyDataExc
 		if res is None:
-			raise NoData(query)
+			raise NoDataExc(self)
 		elif res is ManyDataExc:
-			raise ManyDataExc(query)
+			raise ManyDataExc(self)
 		else:
 			return  res
+
+def not_deleted(*a,**k):
+	q = GetQuery(*a,**k)
+	return q.filter_by(deleted=False)
 
 def no_autoflush(fn):
 	"""\
@@ -178,15 +193,60 @@ def setup_events(cls):
 	def receive_load(target, context):
 		target.after_load()
 
-@py2_unicode
-class Base(object):
+class Dumpable(object):
+	"""\
+		A mix-in which declares a dict-like property that contains the
+		actual object data.
+		"""
+	def _dump(self, add_none=False, cols=None):
+		"""\
+			Override with read-only one-to-many links
+			"""
+		return self._as_dict(add_none,cols)
+
+	def _dump_attrs(self):
+		"""Returns the set of names of attributes which should be included in a dump"""
+		i = inspect(self)
+		res = set()
+		for k in i.dict.keys():
+			if k.startswith('_'):
+				continue
+			if k.endswith('_typ_id'):
+				continue
+			if k.endswith('_id'):
+				k = k[:-3]
+			res.add(k)
+		return res
+		
+	def _as_dict(self, add_none=False, cols=None):
+		"""\
+			Override with extra settable properties
+
+			:param add_none: Include keys whose value is None.
+			:param cols: The list of columns to be dumped.
+			             The default is `self.dump_attrs()`.
+			"""
+		if cols is None:
+			cols = self._dump_attrs()
+		res = {}
+		for k in cols:
+			v = getattr(self,k)
+			if add_none or v is not None:
+				res[k] = v
+		return res
+
+	@property
+	def as_dict(self):
+		return self._as_dict()
+
+class _Base(Dumpable):
 	"""\
 		Base object for the system's tables; sets table name and adds ID column automagically
 
 		Initialization of a new object proceeds in steps:
 			* From a form, __init__() is called
 			  - the form or whatever is responsible for adding the object to the database
-			* From code, class_.new() is used (because of descriptive/mandatory parameters)
+			* From code, class_.new() is used (because of objtypiptive/mandatory parameters)
 			  - new() will do the add-to-the-database step itself
 			* .before_insert() will run automatically
 			  - similarly, before an update, .before_update()
@@ -204,9 +264,13 @@ class Base(object):
 	@classmethod
 	def __declare_last__(cls):
 		setup_events(cls)
-
+		try:
+			super(_Base,cls).__declare_last__()
+		except AttributeError:
+			pass
 
 	id = Column(Integer, primary_key=True, label="ID", renderer=IDrenderer)
+	deleted = Column(Boolean, nullable=False, default=False)
 
 	# canonical representation
 	@property
@@ -296,11 +360,12 @@ class Base(object):
 		"""Called after writing to the database"""
 		pass
 
-	q = db.query_property(query_cls=GetQuery)
+	q = db.query_property(query_cls=not_deleted)
 
-Base = declarative_base(cls=Base)
+Base = declarative_base(cls=_Base)
 Base.super_readonly = False
 #logged_session(db,Base)
+
 
 class new_protect(object):
 	"""\
@@ -351,10 +416,14 @@ def check_unique(cls, *vars):
 
 		Usage:
 
-			class SomeObj(ObjectRef):
+			class SomeObj(Object):
 				name = ...
 			check_unique(SomeObj,"name parent")
 			# check_unique(SomeObj,"name","parent") ## same thing
+
+		This verifier ignores deleted objects and understands "default"
+		(there may be only one) and "inherit" (either True+False or None)
+		fields.
 
 		TODO: Add replacing behavior if possible.
 		"""
@@ -374,8 +443,9 @@ def check_unique(cls, *vars):
 				if obj.inherit is not None:
 					q.append(or_(cls.inherit == None, cls.inherit == obj.inherit))
 			elif v == "default":
-				if obj.default:
-					q.append(cls.default == True)
+				if not obj.default:
+					return
+				q.append(cls.default == True)
 			else:
 				q.append(getattr(cls,v)==getattr(obj,v))
 		if obj.id is not None:
@@ -388,6 +458,7 @@ def check_unique(cls, *vars):
 def _block_updates(target, value, oldvalue, initiator):
 	if oldvalue not in (None,NO_VALUE,NEVER_SET,value) and not target._deleting:
 		raise RuntimeError("You cannot change {}.{} (‘{}’ to ‘{}’)".format(target,initiator.parent_token.key,oldvalue,value))
+
 def no_update(var):
 	k = '_pybble_block_'+var.key
 	if getattr(var.class_,k,False):

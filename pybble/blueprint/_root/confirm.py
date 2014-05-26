@@ -21,7 +21,7 @@ from wtforms import Form, TextField, validators
 from wtforms.validators import ValidationError
 
 from pybble.core.db import db,NoData
-from pybble.core.models import obj_get
+from pybble.core.models.object import Object
 from pybble.core.models.verifier import Verifier, VerifierBase
 from ._base import expose
 expose = expose.sub("confirm")
@@ -63,7 +63,7 @@ def confirm(code=None):
 	
 @expose('/admin/confirmed/<oid>')
 def confirmed(oid):
-	obj = obj_get(oid)
+	obj = Object.by_oid(oid)
 	if isinstance(obj,Verifier):
 		return obj.confirmed()
 	raise NotFound()
@@ -71,7 +71,7 @@ def confirmed(oid):
 @expose('/admin/do_confirm/<oid>')
 def do_confirm(oid):
 	if request.method == 'POST':
-		obj = obj_get(oid)
+		obj = Object.by_oid(oid)
 		if isinstance(obj,Verifier) and request.user.can_admin(obj.parent):
 			return obj.entered()
 	raise NotFound()

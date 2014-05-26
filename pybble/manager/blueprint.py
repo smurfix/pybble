@@ -24,7 +24,7 @@ from flask._compat import text_type
 from . import Manager,Option
 from . import PrepCommand as Command
 from ..core.models.site import Blueprint,SiteBlueprint
-from ..core.db import NoData
+from ..core.db import NoData,NoDataExc
 from ..globals import current_site
 from ..blueprint import create_blueprint,drop_blueprint
 
@@ -97,7 +97,7 @@ class ParamBlueprint(Command):
 		try:
 			bp = SiteBlueprint.q.get_by(name=name, site=current_site)
 		except NoData:
-			raise NoData("Blueprint site=%s name=%s" % (current_site.name,name))
+			raise NoDataExc("Blueprint site=%s name=%s" % (current_site.name,name))
 		if key is None:
 			for k,v in bp.config.items():
 				print(k,v)

@@ -22,6 +22,7 @@ from time import time
 from random import random
 from datetime import datetime,timedelta
 from threading import Lock
+import logging
 
 from flask import Flask, current_app,request,session, flash
 from flask._compat import string_types,text_type
@@ -36,6 +37,8 @@ from .models.site import Site
 from .db import db, NoData, refresh
 from ..globals import current_site
 from .signal import all_apps,app_list
+
+logger = logging.getLogger('pybble.core.session')
 
 def add_session():
 	if '_ex' not in session:
@@ -103,7 +106,7 @@ class SubdomainDispatcher(object):
 			root = Site.q.get_by(name=text_type(root))
 		self.root = root
 		self.lock = Lock()
-		self.instances = i = {}
+		self.instances = {}
 		all_apps.connect(self._reload)
 		app_list.connect(self._reload)
 		self._reload(sender=self)
