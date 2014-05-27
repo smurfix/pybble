@@ -14,11 +14,16 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
+## change default encoding to UTF-8
+## this is a no-op in PY3
+import sys
+reload(sys)
+sys.setdefaultencoding("utf-8")
+
 ## Use gevent.
 if True:
 	## You get spurious errors if the core threading module is imported
 	## before monkeypatching.
-	import sys
 	if 'threading' in sys.modules:
 		raise Exception('threading module loaded before patching!')
 	del sys
