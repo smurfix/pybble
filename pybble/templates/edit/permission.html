@@ -2,12 +2,12 @@
 {% from 'form.html' import show, showb %}
 
 {% block body %}
-  <h2>{% if not parent %}Edit{% else %}New{% endif %} permissions for {{ name_objtyp(form.objtyp.data) }} / {{ name_permission(form.right.data) }}</h2>
+  <h2>{% if not parent %}Edit{% else %}New{% endif %} permissions for {{ name_objtyp(form.for_objtyp.data) }} / {{ name_permission(form.right.data) }}</h2>
     <form method="post" action="{{ action }}">
     <table>
 	  {{ show(form.user) }}
-	  {{ show(form.object) }}
-	  {{ show(form.objtyp) }}
+	  {{ show(form.target) }}
+	  {{ show(form.for_objtyp) }}
 	  {{ show(form.new_objtyp) }}
 	  {{ show(form.right) }}
 	  {{ show(form.inherit) }}

@@ -27,6 +27,7 @@ from ..core.models.objtyp import ObjType
 from ..core.models.object import Object
 from ..core.models.user import access_logger
 from ..core.models.template import TemplateMatch, Template as DBTemplate
+from ..core.models._const import PERM_name
 from ..core.db import db,NoData, refresh
 from ..utils.diff import textDiff,textOnlyDiff
 from . import render_subpage,render_subline,render_subrss, ContentData
@@ -84,9 +85,14 @@ class Environment(BaseEnvironment):
 		self.globals['url'] = lambda: request.url
 
 		def name_objtyp(id):
-			if id is None or id == "None":
+			if id is None or id == "-":
 				return "*"
-			return ObjType.q.get_by(id=int(id)).name
+			try:
+				id = int(id)
+			except ValueError:
+				return Object.by_oid(id).name
+			else:
+				return ObjType.q.get_by(id=id)
 		self.globals['name_objtyp'] = name_objtyp
 
 		def name_detail(id):
@@ -95,7 +101,6 @@ class Environment(BaseEnvironment):
 		self.globals['name_detail'] = name_detail
 
 		def name_permission(id):
-			from pybble.models import PERM_name
 			return PERM_name(id).lower()
 		self.globals['name_permission'] = name_permission
 

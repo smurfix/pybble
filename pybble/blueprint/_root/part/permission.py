@@ -23,6 +23,7 @@ from wtforms.validators import ValidationError
 from pybble.render import valid_obj, \
 	valid_admin,valid_access,valid_read
 from pybble.core.models.object import Object
+from pybble.core.models.objtyp import ObjType
 from pybble.core.models._const import PERM, PERM_NONE
 from pybble.core.models.permit import Permission
 from pybble.core.models.template import Template, TemplateMatch
@@ -43,9 +44,9 @@ plc.sort()
 
 class PermissionForm(Form):
 	user = TextField('User', [valid_obj,valid_admin])
-	object = TextField('Object', [valid_obj,valid_read])
+	target = TextField('Object', [valid_obj,valid_read])
 
-	objtyp = SelectField('Existing Object type') ###TODO, choices=tuple((str(q.id),q.name) for q in D))
+	for_objtyp = SelectField('Existing Object type') ###TODO, choices=tuple((str(q.id),q.name) for q in D))
 	new_objtyp = SelectField('New Object type') ###TODO, choices=(("-","(not applicable)"),)+tuple((str(q.id),q.name) for q in D))
 	inherit = SelectField('Applies to', choices=(('Yes','All sub-pages'), ('No','this page only'),('*','This page and all sub-pages')))
 	right = SelectField('Access to', choices=tuple((str(x),y) for x,y in plc),validators=[valid_access('object')])
@@ -55,10 +56,12 @@ def newer(parent, name=None):
 
 def editor(obj=None, parent=None):
 	form = PermissionForm(request.form, prefix="perm")
+	form.for_objtyp.choices = tuple((str(x.id),x.name) for x in ObjType.q.all())
+	form.new_objtyp.choices = (('-','–'),) + form.for_objtyp.choices
 	if request.method == 'POST' and form.validate():
 		user = Object.by_oid(form.user.data)
-		dest = Object.by_oid(form.object.data)
-		objtyp = int(form.objtyp.data)
+		dest = Object.by_oid(form.target.data)
+		for_objtyp = int(form.for_objtyp.data)
 		new_objtyp = int(form.new_objtyp.data) if form.new_objtyp.data != "-" else None
 		right = int(form.right.data)
 
@@ -68,19 +71,19 @@ def editor(obj=None, parent=None):
 		else: assert False
 
 		if parent:
-			obj = Permission.new(user, dest, objtyp, right, inherit)
+			obj = Permission.new(user, dest, for_objtyp, right, inherit)
 			obj.record_creation()
 		else:
 			obj.owner = user
 			obj.parent = dest
-			obj.objtyp = objtyp
+			obj.for_objtyp = for_objtyp
 			obj.right = right
 			obj.inherit = inherit
 		obj.new_objtyp = new_objtyp
 
 		flash(u"Gespeichert.",True)
 
-		m = [ Permission.objtyp == objtyp, Permission.parent_id == obj.id, Permission.owner_id == user.id ]
+		m = [ Permission.for_objtyp == for_objtyp, Permission.parent_id == obj.id, Permission.owner_id == user.id ]
 		if obj.inherit is None:
 			m.append(Permission.inherit != None)
 			m = Permission.q.filter(*m)
@@ -102,17 +105,17 @@ def editor(obj=None, parent=None):
 	
 	elif request.method == 'GET':
 		if obj:
-			form.object.data = parent.oid if parent else obj.parent.oid
+			form.target.data = parent.oid if parent else obj.parent.oid
 			form.user.data = obj.owner.oid
-			form.objtyp.data = str(obj.objtyp)
-			form.new_objtyp.data = str(obj.new_objtyp) if obj.new_objtyp else "-"
+			form.for_objtyp.data = str(obj.for_objtyp.id)
+			form.new_objtyp.data = str(obj.new_objtyp.id) if obj.new_objtyp else "-"
 			form.inherit.data = "*" if obj.inherit is None else "Yes" if obj.inherit else "No"
 			form.right.data = str(obj.right)
 		else:
-			form.object.data = parent.oid
+			form.target.data = parent.oid
 			form.user.data = request.user.oid
 			form.right.data = str(PERM_NONE)
-			form.objtyp.data = str(parent.objtyp)
+			form.for_objtyp.data = str(parent.type.id)
 			form.new_objtyp.data = "-"
 			form.inherit.data = "*"
 
