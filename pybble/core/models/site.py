@@ -251,6 +251,7 @@ class Site(Object):
 class SiteBlueprint(Object):
 	"""A blueprint attached to a site's path"""
 	__tablename__ = "site_blueprint"
+	_admin_add_perm="Blueprint"
 
 	site = ObjectRef(Site)
 	blueprint = ObjectRef(Blueprint)
