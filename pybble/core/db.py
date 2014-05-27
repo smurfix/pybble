@@ -26,12 +26,15 @@ from sqlalchemy.orm.exc import NoResultFound as NoData, MultipleResultsFound
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.pool import AssertionPool
+from sqlalchemy.types import TypeDecorator, VARCHAR
 
 from formalchemy import Column, helpers
 from formalchemy.fields import IntegerFieldRenderer
 
 from flask import Markup, url_for, escape, g, request
 from flask._compat import implements_to_string as py2_unicode, text_type
+
+from . import json
 
 import logging
 logger = logging.getLogger('pybble.core.db')
@@ -136,6 +139,21 @@ class GetQuery(query.Query):
 			raise ManyDataExc(self)
 		else:
 			return  res
+
+class JSON(TypeDecorator):
+	"""Represents any Python object as a json-encoded string.
+	"""
+	impl = VARCHAR(100000)
+
+	def process_bind_param(self, value, dialect):
+		if value is not None:
+			value = json.encode(value)
+		return value
+
+	def process_result_value(self, value, dialect):
+		if value is not None:
+			value = json.decode(value)
+		return value
 
 def not_deleted(*a,**k):
 	q = GetQuery(*a,**k)

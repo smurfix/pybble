@@ -22,9 +22,9 @@ from flask import url_for, current_app, g,request
 from flask.config import Config
 from flask._compat import string_types,text_type
 
-from .. import json, config as pybble_config
+from .. import config as pybble_config
 from ..utils import attrdict
-from ..db import db, Base, Column, NoData,NoDataExc, check_unique,no_update, refresh
+from ..db import db, Base, Column, NoData,NoDataExc, check_unique,no_update, refresh, JSON
 from ..signal import ConfigChanged
 from .object import Object,ObjectRef
 from ...core import config
@@ -33,7 +33,6 @@ from datetime import datetime,timedelta
 
 from sqlalchemy import Integer, Unicode, DateTime, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship,backref
-from sqlalchemy.types import TypeDecorator, VARCHAR
 
 #from flask.ext.misaka import markdown
 #
@@ -48,21 +47,6 @@ from sqlalchemy.types import TypeDecorator, VARCHAR
 logger = logging.getLogger('pybble.core.models.config')
 
 ## JSON type
-
-class JSON(TypeDecorator):
-	"""Represents any Python object as a json-encoded string.
-	"""
-	impl = VARCHAR(100000)
-
-	def process_bind_param(self, value, dialect):
-		if value is not None:
-			value = json.encode(value)
-		return value
-
-	def process_result_value(self, value, dialect):
-		if value is not None:
-			value = json.decode(value)
-		return value
 
 class JsonValue(object):
 	value = Column(JSON)
