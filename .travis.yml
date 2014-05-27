@@ -5,3 +5,5 @@ install:
   - "pip install -v -r requirements.txt"
   - "pip install -v -r requirements_test.txt"
 script: make test
+before_install:
+  - sudo locale-gen --no-purge --lang de_DE.UTF-8
