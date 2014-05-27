@@ -76,6 +76,11 @@ class Environment(BaseEnvironment):
 		self.filters['date'] = datetimeformat
 		self.filters['datetime'] = datetimeformat
 
+		def is_object(obj):
+			return isinstance(obj,Object)
+
+		self.tests['object'] = is_object
+
 		self.globals['url'] = lambda: request.url
 
 		def name_objtyp(id):

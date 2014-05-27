@@ -61,15 +61,13 @@ class _serialize_object(object):
 
 	@staticmethod
 	def encode(obj):
-		res = {"t":(obj.typ,obj.subtyp), "s":str(obj)}
-		if obj.ext is not None:
-			res['x'] = obj.ext
+		res = {"t":(obj.type.id,obj.id), "s":str(obj)}
 		return res
 
 	@staticmethod
 	def decode(t=None,s=None,x=None,**_):
 		from .objtyp import ObjType
-		return ObjType.q.get_by(typ=t[0],subtyp=t[1])
+		return ObjType.get(t[0],t[1])
 
 _tables = [] # A list of new tables
 _refs = [] # A list of "any-table" references (tableobject,columnname)
@@ -181,7 +179,20 @@ def update_modified(mapper, connection, target):
 	"""Utility helper for event.listen('before_update')"""
 	target.modified = datetime.utcnow()
 
-_type = {}
+class get_type(object):
+	_type = {}
+	def __get__(self, obj, cls):
+		if obj:
+			cls = obj.__class__
+		t = self._type.get(id(cls),None)
+		if t is None:
+			from .objtyp import ObjType
+			self._type[id(cls)] = t = ObjType.get(cls)
+			return t
+		else:
+			return refresh(t)
+get_type = get_type()
+
 class Object(Base):
 	__metaclass__ = ObjectMeta
 	__abstract__ = True
@@ -213,17 +224,8 @@ class Object(Base):
 		from .objtyp import ObjType
 		return ObjType.get(type, id)
 
-	@property
-	def type(self):
-		cls = self.__class__
-		t = _type.get(id(cls),None)
-		if t is None:
-			from .objtyp import ObjType
-			_type[id(cls)] = t = ObjType.get(cls)
-			return t
-		else:
-			return refresh(t)
-	
+	type = get_type
+
 	@property
 	def mimetype(self):
 		return self.type.mimetype
@@ -343,11 +345,12 @@ class Object(Base):
 
 	@property
 	def all_refs(self, typ=None):
-		from .objtyp import ObjType
 		"""\
 			Return all (obj,attr) tuples where getattr(obj,attr)==self.
 			if typ != None, also limit to isinstance(obj,typ).
 			"""
+		from .objtyp import ObjType
+
 		if typ is not None and (not isinstance(typ,type) or not issubclass(typ,Object)):
 			typ = ObjType.get(objtyp).mod
 
@@ -356,6 +359,19 @@ class Object(Base):
 				continue
 			for r in t.q.filter(getattr(t,k) == self):
 				yield r,k
+
+	def count_refs(self):
+		"""Return #references as (objtype,key,num) tuples"""
+		for t,k in chain(_refs,self._refs):
+			c = t.q.filter(getattr(t,k) == self).count()
+			if c:
+				yield t,k,c
+	
+	def get_refs(self,objtype,key):
+		"""Return all references to me from this object+key"""
+		cls = objtype.mod
+		for r in cls.q.filter(getattr(cls,key)==self):
+			yield r
 
 	@property
 	def signal(self):

@@ -52,7 +52,7 @@ if(jQuery) (function($){
 				
 				function showTree(c, t) {
 					$(c).addClass('wait');
-					$.post(o.script, { dir: t }, function(data) {
+					$.get(o.script+'/'+t, function(data) {
 						data = $(data)
 						$(c).replaceWith(data)
 						c = data
@@ -87,7 +87,7 @@ if(jQuery) (function($){
 					});
 				}
 				// Loading message
-				$(this).html('<li class="wait"><span class="image"></span>' + o.loadMessage + '</li>');
+				$(this).html('<li class="wait"><span class="image" />' + o.loadMessage + '</li>');
 				// Get the initial file list
 				showTree( $(this).find('LI'), escape(o.root) );
 			});

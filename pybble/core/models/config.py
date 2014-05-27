@@ -96,12 +96,17 @@ class ConfigVar(Object, JsonValue):
 class ConfigData(Object):
 	"""This is a collection of configuration variables, referred to by some object or other"""
 
-	parent = ObjectRef("self", nullable=True, doc="inherited configuration")
+	super = ObjectRef("self", nullable=True, doc="inherited configuration")
 	name = Column(Unicode(30), index=True, doc="informal name for this collection")
+
+	@property
+	def parent(self):
+		from .site import Site
+		return self.super or Site.q.get_by(parent=None)
 
 	def setup(self, name, parent=None):
 		self.name = name
-		self.parent = parent
+		self.super = parent
 		super(ConfigData,self).setup()
 
 	def get(self, k, default=None):
@@ -130,9 +135,9 @@ class ConfigData(Object):
 		try:
 			return SiteConfigVar.q.get_by(parent=self, var=var).value
 		except NoData:
-			if self.parent is None:
+			if self.super is None:
 				return var.value
-			return self.parent[k]
+			return self.super[k]
 	
 	def __setitem__(self,k,v):
 		if isinstance(k,ConfigVar):

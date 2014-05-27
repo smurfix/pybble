@@ -54,6 +54,7 @@ class ObjType(Loadable, Object):
 			typ = cls.get(typ)
 			assert obj.type is typ, str((obj.type,typ))
 			return typ
+
 		if hasattr(typ,'_get_current_object'): # Flask localproxy
 			typ = typ._get_current_object()
 		if isinstance(typ,type) and issubclass(typ, Object):
@@ -93,5 +94,5 @@ class _serialize_objtype(object):
 		
 	@staticmethod
 	def decode(t,s=None,**_):
-		return MIMEtype.q.get_by(typ=t[0],subtyp=t[1])
+		return ObjType.q.get_by(id=t)
 

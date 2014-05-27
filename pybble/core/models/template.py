@@ -56,6 +56,10 @@ class Template(_Content, Cached, Object):
 		event.listen(cls.content, 'set', _del_cache)
 		super(Template,cls).__declare_last__()
 
+	@property
+	def parent(self):
+		return self.target
+
 	target = ObjectRef()
 	adapter = ObjectRef(MIMEadapter)
 
@@ -125,6 +129,10 @@ class TemplateMatch(Object):
 				assert obj.for_objtyp == obj.parent.objtyp, (obj.for_objtyp,obj.parent.objtyp)
 		event.listen(cls, 'before_insert', _ref_objtyp)
 		event.listen(cls, 'before_update', _ref_objtyp)
+
+	@property
+	def parent(self):
+		return self.target
 
 	target = ObjectRef()
 	template = ObjectRef(Template)

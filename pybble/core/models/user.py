@@ -119,6 +119,9 @@ class User(PasswordValue,Object):
 	feed_read = Column(DateTime, nullable=True)
 
 	site = ObjectRef(Site, doc="The site which the user registered at, otherwise not interesting")
+	@property
+	def parent(self):
+		return self.site
 
 	@classmethod
 	def new_anon_user(cls,site=None):
@@ -379,6 +382,10 @@ class Member(Object):
 	group = ObjectRef(doc="Usually a group, but may be anything")
 
 	excluded = Column(Boolean, nullable=False,default=False)
+
+	@property
+	def parent(self):
+		return self.group
 
 	def setup(self,member,group, excluded=False):
 		if isinstance(member,User) and isinstance(group,Site) and member.username == ANON_USER_NAME:

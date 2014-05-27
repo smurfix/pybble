@@ -50,6 +50,10 @@ class App(Module):
 
 	config = ObjectRef(ConfigData)
 
+	@property
+	def parent(self):
+		return Site.q.get_by(parent=None)
+
 ## Blueprint
 
 class Blueprint(Module):
@@ -59,6 +63,9 @@ class Blueprint(Module):
 
 	config = ObjectRef(ConfigData)
 
+	@property
+	def parent(self):
+		return Site.q.get_by(parent=None)
 
 ## Site
 
@@ -161,15 +168,6 @@ class Site(Object):
 		
 		Member.add_to(root,admin)
 		
-		def gen(typ,perm,who):
-			if perm is None: return
-			if perm < 0:
-				permit(who,self,perm,typ)
-				if who is admin:
-					perm = PERM_ADMIN
-				else:
-					perm = PERM_SUB_ADMIN
-			permit(who,self,perm,typ)
 		if self.parent is None:
 			self._setup_root_perms()
 		else:
@@ -190,6 +188,11 @@ class Site(Object):
 
 				nts = getattr(typ.mod,'_'+pm+'_add_perm',())
 				if isinstance(nts,string_types):
+					if nts == "*":
+						for nt in ObjType.q.all():
+							permit(actor,self, objtyp=nt,new_objtyp=typ, right=PERM_ADD,inherit=None)
+						continue
+
 					nts = nts.split(" ")
 				for nt in nts:
 					nt = ObjType.get(nt)
@@ -252,6 +255,10 @@ class SiteBlueprint(Object):
 	site = ObjectRef(Site)
 	blueprint = ObjectRef(Blueprint)
 	config = ObjectRef(ConfigData)
+
+	@property
+	def parent(self):
+		return self.site
 
 	@classmethod
 	def __declare_last__(cls):

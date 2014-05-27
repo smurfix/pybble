@@ -62,6 +62,9 @@ class Permission(Object):
 		"""
 	__tablename__ = "permissions"
 	_no_crumbs = True
+
+	_admin_add_perm="*"
+
 	@classmethod
 	def __declare_last__(cls):
 		#check_unique(cls, 'owner parent ???')
@@ -205,12 +208,12 @@ def can_do(user,obj, objtyp=None, new_objtyp=None, want=None):
 	"""Recursively get the permission of this user for that (type of) object."""
 
 	ru = getattr(request,"user",None)
-	if obj is not current_site and \
-		ru and ru.can_admin(current_site, objtyp=current_site.type):
-		if current_app.config.DEBUG_ACCESS:
-			log_access("ADMIN",obj)
-		return want if want and want < 0 else PERM_ADMIN
-
+#	if obj is not current_site and \
+#		ru and ru.can_admin(current_site, objtyp=current_site.type):
+#		if current_app.config.DEBUG_ACCESS:
+#			log_access("ADMIN",obj)
+#		return want if want and want < 0 else PERM_ADMIN
+#
 #		if want>0 and want<=PERM_READ and obj.owner==user:
 #			if current_app.config.DEBUG_ACCESS:
 #				log_access("OWN",obj)
@@ -241,6 +244,8 @@ def can_do(user,obj, objtyp=None, new_objtyp=None, want=None):
 	inherited = False
 	done = set()
 	while obj:
+		if current_app.config.DEBUG_ACCESS:
+			log_access("Checking",obj)
 		if obj in done:
 			raise ValueError("Parent recursion on "+repr(obj))
 		done.add(obj)
@@ -254,8 +259,6 @@ def can_do(user,obj, objtyp=None, new_objtyp=None, want=None):
 										Permission.target == obj,
 										or_(Permission.user == u for u in user.groups), ## includes the user itself!
 										*pq)).order_by(Permission.right.desc())
-		if current_app.config.DEBUG_ACCESS:
-			log_access("Checking",obj)
 		p = p.first()
 		if p is not None:
 			if current_app.config.DEBUG_ACCESS:

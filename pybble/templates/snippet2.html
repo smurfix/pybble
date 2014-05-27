@@ -1,10 +1,10 @@
-<li rel="{{obj.oid}}/{{objtyp}}" class="directory expanded td_{{cls.cls_name()}}">
+<li rel="{{obj.oid}}/{{cls.type.id}}/{{k}}" class="directory expanded td_{{cls.name}}">
 	<span class="image" />
-	<a href="#nogo">{{ cls.cls_name() }} ({% if count > 1 %}{{count}} items{% else %}1 item{%endif%})</a>
+	<a href="#nogo">{{ cls.name }} ({% if count > 1 %}{{count}} items{% else %}1 item{%endif%})</a>
 
 <ul style="display: none;">
 {% for o in sub %}
-	<li rel="{{o.oid}}" class="{% if o[what]() %}directory{% else %}file{% endif %} collapsed t_{{o.classname}}">
+	<li rel="{{o.oid}}" class="directory collapsed t_{{o.type.name}}">
 		<span class="image" />
 	    <a href="{{ url_for("pybble.views.detail_oid",oid=o.oid) }}">
 			{{ subpage(o,3) }}

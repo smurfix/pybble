@@ -79,9 +79,7 @@ def view_tree(oid=None):
 	else:
 		title_trace=[unicode(obj),"Objects"]
 
-	p,s,o,d = obj.pso
-	return render_template('tree.html', obj=obj, obj_parent=p, obj_superparent=s, obj_owner=o, obj_deleted=d,
-	                                    title_trace=title_trace)
+	return render_template('tree.html', obj=obj, title_trace=title_trace)
 
 @expose('/edit/<oid>', methods=('POST','GET'))
 def edit_oid(oid):
@@ -252,76 +250,27 @@ def view_oid(oid, **args):
 def detail_oid(oid):
 	obj = Object.by_oid(oid)
 	request.user.will_read(obj)
-	p,s,o,d = obj.pso
 	title_trace=[unicode(obj),"Info"]
-	return render_template("detail.html", obj=obj, obj_parent=p, obj_superparent=s, obj_owner=o, obj_deleted=d, title_trace=title_trace)
+	return render_template("detail.html", obj=obj, title_trace=title_trace)
 
 @expose('/last_visited')
 def last_visited():
 	return render_template("last_visited.html", q=request.user.all_visited(), title_trace=[u"zuletzt besucht"])
 	
-
-@expose('/snippet/<t>',methods=("GET","POST"))
-def view_snippet(t):
-	oid = request.values["dir"]
-	if '/' in oid:
-		oid,objtyp = oid.split('/',1)
-	else:
-		objtyp = request.values.get("objtyp",None)
-	try:
-		t = int(t)
-	except ValueError:
-		if objtyp:
-			return view_snippet2(t, oid, int(objtyp))
-		else:
-			return view_snippet1(t, oid)
-	else:
-		c = obj_class(t)
-		obj = Object.by_oid(oid)
-		if objtyp:
-			res = []
-			objtyp = int(objtyp)
-			for o in obj.all_children(objtyp):
-				sub = o.has_children(objtyp)
-				res.append(render_my_template(o, detail=TM_DETAIL_SNIPPET, objtyp=t, sub=sub, mimetype=None))
-			return Response("\n".join(res), mimetype="text/html")
-		else:
-			sub = db.filter_by(c, parent=obj)
-			return render_my_template(obj, detail=TM_DETAIL_SNIPPET, objtyp=t, sub=sub)
-
-@expose('/snippet/<t>/<oid>',methods=("GET","POST"))
-def view_snippet1(t, oid):
+@expose('/snippet/<oid>',methods=("GET","POST"))
+@expose('/snippet/<oid>/<k>',methods=("GET","POST"))
+def view_snippet(oid,k=None):
+	"""Return a list of fields in this object, and references to it"""
 	obj = Object.by_oid(oid)
-	if t == "parent":
-		sub = obj.objtyp_children
-	elif t == "superparent":
-		sub = obj.objtyp_superchildren
-	elif t == "owner":
-		sub = obj.objtyp_owned
-	elif t == "hierarchy":
-		return render_my_template(obj, detail=TM_DETAIL_HIERARCHY)
-		
-	else:
-		raise NotFound()
+	return render_template("snippet1.html", obj=obj, key=k, sub=list(obj.count_refs()))
 
-	return render_template("snippet1.html", obj=obj, t=t, sub=list(sub))
-
-@expose('/snippet/<t>/<oid>/<objtyp>',methods=("GET","POST"))
-def view_snippet2(t, oid, objtyp):
-	c = obj_class(objtyp)
+@expose('/snippet/<oid>/<int:objtyp>/<k>',methods=("GET","POST"))
+def view_snippet2(oid, objtyp,k):
 	obj = Object.by_oid(oid)
-	if t == "parent":
-		sub = c.q.filter_by(parent=obj)
-		what = "has_children"
-	elif t == "superparent":
-		sub = c.q.filter_by(superparent=obj)
-		what = "has_superchildren"
-	elif t == "owner":
-		sub = c.q.filter_by(owner=obj)
-		what = "has_owned"
-	else:
-		raise NotFound()
-	return render_template("snippet2.html", obj=obj, t=t, objtyp=objtyp, sub=sub, what=what, cls=c, count=sub.count())
+	objtyp = ObjType.get(objtyp)
+	
+	sub=list(obj.get_refs(objtyp,k))
+	return render_template("snippet2.html", cls=objtyp, obj=obj, sub=sub, k=k, count=len(sub))
 
 def not_found(url=None):
     return render_template('not_found.html', title_trace=[u"Seite nicht gefunden"])

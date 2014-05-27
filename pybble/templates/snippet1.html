@@ -1,16 +1,26 @@
-<li rel="{{obj.oid}}" class="{% if sub %}directory{% else %}file{% endif %} expanded t_{{obj.classname}}">
+<li rel="{{obj.oid}}{% if key %}/{{key}}{%endif%}" class="directory expanded t_{{obj.type.name}}">
 		<span class="image" />
-	    <a href="{{ url_for("pybble.views.detail_oid",oid=obj.oid) }}">
+	    {% if key %}{{key}}: {%endif%}<a href="{{ url_for("pybble.views.detail_oid",oid=obj.oid) }}">
 			{{ subline(obj) }}
 		</a>
-{% if sub %}
 <ul style="display: none;">
-{% for cls,sel,count in sub %}
-	<li rel="{{obj.oid}}/{{cls.cls_objtyp()}}" class="directory collapsed td_{{cls.cls_name()}}">
+{% for k,v in obj.as_dict.items() %}
+	{% if v is object %}
+		<li rel="{{v.oid}}/{{k}}" class="directory collapsed t_{{v.type.name}}">
 		<span class="image" />
-	    <a href="#nogo">{{ cls.cls_name() }} ({% if count > 1 %}{{count}} items{% else %}1 item{%endif%})</a>
+	    {{k}}:
+		<a href="{{ url_for("pybble.views.detail_oid",oid=v.oid) }}">
+			{{ subline(v) }}
+		</a>
+	{% else %}
+		<li>{{k}}: {{v}} </li>
+	{% endif %}
+{% endfor %}
+{% for cls,k,count in sub %}
+	<li rel="{{obj.oid}}/{{cls.type.id}}/{{k}}" class="directory collapsed td_{{cls.name}}">
+		<span class="image" />
+	    <a href="#nogo">{{ cls.type.name }}.{{k}} ({% if count > 1 %}{{count}} items{% else %}1 item{%endif%})</a>
 	</li>
 {% endfor %}
 </ul>
-{% endif %}
 </li>

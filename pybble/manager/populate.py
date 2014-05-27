@@ -97,7 +97,7 @@ class PopulateCommand(Command):
 		from ..core.models.template import Template,TemplateMatch
 		from ..core.models.config import ConfigVar
 		from ..core.models.verifier import VerifierBase
-		from ..core.models.tracking import Delete
+		from ..core.models.tracking import Delete,Change
 		from .. import ROOT_SITE_NAME,ROOT_USER_NAME, ANON_USER_NAME
 		from .add import _upd
 
@@ -225,7 +225,7 @@ class PopulateCommand(Command):
 				if force:
 					superuser.site = root
 		db.flush()
-		if superuser.email is None or force:
+		if superuser.email is None or (force and superuser.email != config.ADMIN_EMAIL):
 			if superuser.email is not None:
 				logger.info(u"The main admin email changed from ‘{}’ to ‘{}’".format(superuser.email,config.ADMIN_EMAIL))
 			superuser.email = text_type(config.ADMIN_EMAIL)
@@ -355,22 +355,36 @@ class PopulateCommand(Command):
 							if e.errno != errno.ENOENT:
 								raise
 							logger.error("File ‘{}’ vanished".format(filepath))
-							sf.bindata.hash = None
-							sf.bindata.record_deletion("file vanished")
+							sf.file.hash = None
+							Delete.new(sf.file, comment="file vanished")
 							db.flush()
 
-							sb = BinData.new(f[:dot],ext=f[dot+1:],content=content, storage=st)
+							try:
+								sb = BinData.lookup(content)
+							except NoData:
+								sb = BinData.new(f[:dot],ext=f[dot+1:],content=content, storage=st)
 							osb = sf.bindata
-							sf.bindata = sb
-							sf.record_change({"bindata":[osb,sb]},"file vanished")
+							sf.file = sb
+							sf.record_change({"file":(osb,sb)},comment="file vanished")
 							c = sf.content
 
 						if content != sf.content:
 							logger.warning("StaticFile %d:‘%s’ differs." % (sf.id,webpath))
 							if force:
-								sf.bindata.record_deletion("replaced by update")
-								sf.record_deletion("replaced by update")
-								sf = StaticFile.new(webpath,sb)
+								try:
+									sb = BinData.lookup(content)
+								except NoData:
+									sb = BinData.new(f[:dot],ext=f[dot+1:],content=content, storage=st)
+								import pdb;pdb.set_trace()
+								pdb._repr.maxstring = 200
+								pdb._repr.maxother = 200
+								try:
+									Delete.new(sf.file, comment="replaced by update")
+									Change.new(sf,data={'file':(sf.file,sb)})
+								except:
+									pdb.post_mortem()
+									raise
+								sf.file = sb
 					db.commit()
 			return added
 		added = add_files(STATIC_PATH, u"")

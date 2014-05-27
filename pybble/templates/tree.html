@@ -3,49 +3,18 @@
 {%- set scripts = ['jQuery.ObjectTree.js'] + scripts|default([]) -%}
 {% block add_header %}
 		<script type="text/javascript">
-			
 			$(document).ready( function() {
-				$('#jq_owner').objTree({ root: '{{obj.oid}}', script: '/snippet/owner' });
-				$('#jq_parent').objTree({ root: '{{obj.oid}}', script: '/snippet/parent' });
-				$('#jq_superparent').objTree({ root: '{{obj.oid}}', script: '/snippet/superparent' });
+				$('#jq').objTree({ root: '{{obj.oid}}', script: '/snippet' });
 			});
 		</script>
 
 {% endblock %}
 {% block body %}
   {{ subpage(obj,4) }}
-  <h2>Object trees of {{ obj }}</h2>
-  <h3>Owner</h3>
-  <ul class="ObjectTree" id="jq_owner">
-     <li>Javascript is disabled -- no display!</span>
-	 <!-- TODO: generate a child list -->
-  </ul>
-  <h3>Parent / child</h3>
-  <ul class="ObjectTree" id="jq_parent">
-     <li>Javascript is disabled -- no display!</span>
-	 <!-- TODO: generate a child list -->
-  </ul>
-  <h3>Super-Parent / child</h3>
-  <ul class="ObjectTree" id="jq_superparent">
+  <h2>Object tree of {{ obj }}</h2>
+  <ul class="ObjectTree" id="jq">
      <li>Javascript is disabled -- no display!</span>
 	 <!-- TODO: generate a child list -->
   </ul>
 
-  {% if obj.owner or obj.parent or obj.superparent %}
-  <h3>Uplinks</h3>
-  <table class="uplink">
-  <tbody>
-    {% if obj.owner -%}
-	  <tr><th>Owner:</th><td><a href="{{ url_for("pybble.views.view_tree", oid=obj.owner.oid) }}">{{ obj.owner }}</a></td><td>{{ obj.owner.oid }}</td></tr>
-	{%- endif %}
-    {% if obj.parent -%}
-	  <tr><th>Parent:</th><td><a href="{{ url_for("pybble.views.view_tree", oid=obj.parent.oid) }}">{{ obj.parent }}</a></td><td>{{ obj.parent.oid }}</td></tr>
-	{%- endif %}
-    {% if obj.superparent -%}
-	  <tr><th>SuperParent:</th><td><a href="{{ url_for("pybble.views.view_tree", oid=obj.superparent.oid) }}">{{ obj.superparent }}</a></td><td>{{ obj.superparent.oid }}</td></tr>
-	{%- endif %}
-	</tbody></table>
-	{% else %}
-	<p>Es gibt keine Uplinks. Wurde dieses Objekt gelöscht?</p>
-	{% endif %}
 {% endblock %}

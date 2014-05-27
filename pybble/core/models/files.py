@@ -51,8 +51,6 @@ class BinData(Object):
 		super(BinData,cls).__declare_last__()
 
 	storage = ObjectRef(Storage)
-
-	parent = ObjectRef()
 	mime = ObjectRef(MIMEtype)
 
 	name = Column(Unicode(30), nullable=False)
@@ -60,13 +58,16 @@ class BinData(Object):
 	timestamp = Column(DateTime,default=datetime.utcnow)
 	size = Column(Integer)
 
+	@property
+	def parent(self):
+		return self.storage
+
 	@staticmethod
 	def lookup(content):
 		return BinData.q.filter(BinData.hash == hash_data(content), BinData.storage != None).one()
 			
-	def setup(self,name, ext=None,mimetype=None, content=None, parent=None, storage=None, **kw):
+	def setup(self,name, ext=None,mimetype=None, content=None, storage=None, **kw):
 		super(BinData,self).setup(**kw)
-		if not parent: parent = current_site
 		if not storage: storage = parent.default_storage
 		if mimetype:
 			self.mime = mimetype
@@ -80,7 +81,6 @@ class BinData(Object):
 		self._content = content
 		self.hash = hash_data(content)
 		self.size = len(content)
-		self.parent = parent
 		self.storage = storage
 		db.add(self)
 		self._save_content()
@@ -107,7 +107,7 @@ class BinData(Object):
 	@property
 	def mimetype(self):
 		try:
-			return self.mime.mimetype
+			return str(self.mime)
 		except Exception:
 			return "???/???"
 
@@ -172,13 +172,15 @@ class BinData(Object):
 	def _save_content(self):
 		p = self.path
 		if os.path.exists(p):
-			raise RuntimeError("File exists",p)
-		try:
-			open(p,"w").write(self.content)
-		except BaseException:
-			if os.path.exists(p):
-				os.remove(p)
-			raise
+			with file(p) as f:
+				assert self.content == f.read()
+		else:
+			try:
+				open(p,"w").write(self.content)
+			except BaseException:
+				if os.path.exists(p):
+					os.remove(p)
+				raise
 
 ## StaticFile
 
@@ -202,12 +204,12 @@ class StaticFile(Object):
 	path = Column(Unicode(1000), nullable=False)
 	modified = Column(DateTime,default=datetime.utcnow)
 
-	def setup(self, path, bin, site=None, **kw):
+	def setup(self, path, bin, parent=None, site=None, **kw):
 		self.path = path
-		self.parent = bin
 		if site is None:
 			site = current_site
 		self.site = site
+		self.parent = parent or site
 		self.file = bin
 
 		super(StaticFile,self).setup(**kw)

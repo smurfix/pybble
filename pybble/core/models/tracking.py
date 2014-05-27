@@ -28,7 +28,7 @@ from .object import Object,ObjectRef
 from .objtyp import ObjType
 from .user import User
 from .site import Site
-from ..db import Base, Column, check_unique, db
+from ..db import Base, Column, check_unique, db, JSON
 from ...globals import current_site
 from ...core import config
 from ...core.signal import ObjDeleted
@@ -59,6 +59,10 @@ class Breadcrumb(TrackingObject):
 	cur_visited = Column(DateTime,default=datetime.utcnow, nullable=True)
 	counter = Column(Integer, default=0)
 
+	@property
+	def parent(self):
+		return self.user
+
 	def setup(self, user, obj):
 		self.user = user
 		self.obj = obj
@@ -68,7 +72,7 @@ class Breadcrumb(TrackingObject):
 
 	@property
 	def as_str(self):
-		return u'%s saw %s on %s' % (unicode(self.user), unicode(self.obj), unicode(self.visited))
+		return u'%s saw %s on %s' % (self.user, self.obj, self.visited)
 
 	def visit(self):
 		now = datetime.utcnow()
@@ -88,7 +92,11 @@ class Change(TrackingObject):
 	_no_crumbs = True
 
 	obj = ObjectRef()
-	data = Column(Unicode(100000))
+	data = Column(JSON)
+
+	@property
+	def parent(self):
+		return self.obj
 
 	@property
 	def tracker(self):
@@ -107,7 +115,7 @@ class Change(TrackingObject):
 
 	@property
 	def as_str(self):
-		return u'changed %s' % (unicode(self.obj), unicode(p), unicode(self.timestamp))
+		return u'changed %s' % (self.obj)
 
 ## Delete
 
@@ -124,6 +132,10 @@ class Delete(TrackingObject):
 		super(Delete,cls).__declare_last__()
 
 	obj = ObjectRef(doc="the deleted object")
+
+	@property
+	def parent(self):
+		return self.obj
 
 	@property
 	def tracker(self):
@@ -148,7 +160,7 @@ class Delete(TrackingObject):
 
 	@property
 	def as_str(self):
-		return u'deleted %s' % (unicode(self.obj),)
+		return u'deleted %s' % (self.obj,)
 
 ## Tracker
 
@@ -168,6 +180,10 @@ class Tracker(TrackingObject):
 	comment = Column(Unicode(1000), nullable=True)
 	timestamp = Column(DateTime,default=datetime.utcnow)
 
+	@property
+	def parent(self):
+		return self.obj
+
 	def setup(self, obj, user=None,site=None, comment=None):
 		# You can track Change and Delete objects, but not e.g. a Tracker or a Breadcrumb
 		assert obj and (isinstance(obj,(Change,Delete)) or not isinstance(obj,TrackingObject))
@@ -185,7 +201,7 @@ class Tracker(TrackingObject):
 
 	@property
 	def as_str(self):
-		return u'%s changed %s' % (unicode(self.user), unicode(self.obj))
+		return u'%s changed %s' % (self.user, self.obj)
 
 	@property
 	def is_new(self):
@@ -215,6 +231,10 @@ class WantTracking(Object):
 	user = ObjectRef(User, "wants_tracked")
 	for_objtyp = ObjectRef(ObjType, nullable=True)
 
+	@property
+	def parent(self):
+		return self.user
+
 	email = Column(Boolean, nullable=False) # send mail, not just RSS/on-site?
 	track_new = Column(Boolean, nullable=False) # alert for new data?
 	track_mod = Column(Boolean, nullable=False) # alert for modifications?
@@ -232,7 +252,7 @@ class WantTracking(Object):
 	
 	@property
 	def as_str(self):
-		return u'%s in %s for %s %s' % ("-" if self.for_objtyp is None else self.for_objtyp.name, unicode(self.user),unicode(self.target), "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
+		return u'%s in %s for %s %s' % ("-" if self.for_objtyp is None else self.for_objtyp.name, self.user,self.target, "-N"[self.track_new]+"-M"[self.track_mod]+"-D"[self.track_del])
 
 ## UserTracker
 
@@ -247,6 +267,10 @@ class UserTracker(TrackingObject):
 	tracker = ObjectRef(WantTracking)
 	obj = ObjectRef(doc="The new object / change / delete record")
 
+	@property
+	def parent(self):
+		return self.user
+
 	def setup(self, tracker, obj):
 		self.user = tracker.user
 		self.obj = obj
@@ -255,7 +279,7 @@ class UserTracker(TrackingObject):
 
 	@property
 	def as_str(self):
-		return '%s for %s' % (unicode(self.tracker), unicode(self.obj))
+		return '%s for %s' % (self.tracker, self.obj)
 
 	@property
 	def change_obj(self):

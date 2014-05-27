@@ -45,6 +45,10 @@ class Storage(Object):
 		check_unique(cls, "default site")
 		super(Storage,cls).__declare_last__()
 
+	@property
+	def parent(self):
+		return self.site
+
 	def setup(self, name,path,url, site=None, **kw):
 		self.name = unicode(name)
 		self.path = unicode(path)
