@@ -25,13 +25,13 @@ MIME = (
 ## * the name of a module, all of whose ObjectRef descendants will be imported
 ## * the path to an ObjectRef class
 ## * a list of paths to ObjectRef classes
-MODEL = "pybble.ext.page.model"
+MODEL = "pybble.ext.page.model.Page"
 
 ## New apps. Ditto, though more than one app is … strange.
 APP = ()
 
 ## New blueprints. Ditto and somewhat more common.
-BLUEPRINT = ()
+BLUEPRINT = ("pybble.ext.page.blueprint.Blueprint",)
 
 ## Code to run, after everything is set up
 ## This typically adds additional permissions.
