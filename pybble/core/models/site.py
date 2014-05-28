@@ -24,6 +24,7 @@ from flask import request
 from flask._compat import string_types,text_type
 
 from ... import ROOT_SITE_NAME,ANON_USER_NAME,ROOT_USER_NAME
+from ...globals import root_site
 from .. import config
 from ..db import Base, Column, db, NoData, maybe_stale, no_update,check_unique
 from ..signal import app_list, ConfigChanged,NewSite
@@ -52,7 +53,7 @@ class App(Module):
 
 	@property
 	def parent(self):
-		return Site.q.get_by(parent=None)
+		return root_site
 
 ## Blueprint
 
@@ -65,7 +66,7 @@ class Blueprint(Module):
 
 	@property
 	def parent(self):
-		return Site.q.get_by(parent=None)
+		return root_site
 
 ## Site
 
@@ -124,18 +125,16 @@ class Site(Object):
 			if self.parent is not None:
 				raise RuntimeError("The new root site must be named ‘{}’, not ‘{}’.".format(ROOT_SITE_NAME,name))
 			try:
-				r = self.parent = Site.q.get(Site.parent==None)
+				r = self.parent = root_site
 			except NoData:
 				pass
 			else:
 				raise RuntimeError("There already is a root site: {}.".format(r))
 		elif self.parent is None:
 			try:
-				self.parent = Site.q.get(Site.parent==None)
+				self.parent = root_site
 			except NoData:
 				raise RuntimeError("The new root site must be named ‘{}’, not ‘{}’.".format(ROOT_SITE_NAME,name))
-		elif self.parent is None:
-			self.parent = Site.q.get_by(name=ROOT_SITE_NAME)
 
 	def after_insert(self):
 		super(Site,self).after_insert()

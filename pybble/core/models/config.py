@@ -23,6 +23,7 @@ from flask.config import Config
 from flask._compat import string_types,text_type
 
 from .. import config as pybble_config
+from ...globals import root_site
 from ..utils import attrdict
 from ..db import db, Base, Column, NoData,NoDataExc, check_unique,no_update, refresh, JSON
 from ..signal import ConfigChanged
@@ -102,7 +103,7 @@ class ConfigData(Object):
 	@property
 	def parent(self):
 		from .site import Site
-		return self.super or Site.q.get_by(parent=None)
+		return self.super or root_site
 
 	def setup(self, name, parent=None):
 		self.name = name
