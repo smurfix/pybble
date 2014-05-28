@@ -68,7 +68,7 @@ class Permission(Object):
 
 	@classmethod
 	def __declare_last__(cls):
-		#check_unique(cls, 'owner parent ???')
+		check_unique(cls, 'user target right inherit for_objtyp new_objtyp new_mimetyp')
 		no_update(cls.user)
 		no_update(cls.target)
 		super(Permission,cls).__declare_last__()
@@ -140,8 +140,11 @@ def permit(user,obj, right, objtyp=None, new_objtyp=None,new_mimetyp=None, inher
 		pq = [Permission.right >= 0]
 	else:
 		pq = [Permission.right == right]
+
+	objtyp = ObjType.get(obj if objtyp is None else objtyp)
 	if inherit is not None:
 		pq.append(or_(Permission.inherit == None, Permission.inherit == inherit))
+
 	p = list(Permission.q.filter_by(user=user, target=obj, for_objtyp=objtyp, new_objtyp=new_objtyp,new_mimetyp=new_mimetyp).filter(*pq))
 	
 	if p:
