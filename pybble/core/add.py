@@ -490,6 +490,9 @@ def process_module(mod, force=False):
 		except (KeyError,AttributeError):
 			pass
 		else:
-			if data is not None:
-				proc(data, force=force)
+			if data is None:
+				continue
+			if isinstance(data,string_types):
+				data = (text_type(data),)
+			proc(data, force=force)
 

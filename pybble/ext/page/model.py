@@ -17,19 +17,18 @@ from flask import url_for
 
 from sqlalchemy import Column,Unicode,Boolean,DateTime
 
-from pybble.core.models import ObjectRef
-from pybble.core.models.objtyp import D
+from pybble.core.models.object import Object
 from pybble.core.models._content import Content
 
-class Page(Content, ObjectRef):
+from datetime import datetime
+
+class Page(Content, Object):
 	"""\
 		A page (or whatever) of content.
 		Parent: The "main" wikipage we're a parent of, or whatever parent there is
 		Superparent: Our site (main page) or empty (subpage)
 		Owner: Whoever created the page
 		"""
-	_objtyp = D.Page
-
 	name = Column(Unicode, nullable=False)
 	modified = Column(DateTime, default=datetime.utcnow)
 	order = Column(Integer, nullable=True, doc="Include on parent page? if so, in what order?")

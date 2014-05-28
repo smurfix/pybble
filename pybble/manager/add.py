@@ -32,20 +32,16 @@ class AddCommand(Command):
 		self.add_option(Option("-f","--force", dest="force",action="store_true",help="Override all database changes"))
 		self.add_option(Option("module", action="store",help="Add this module to Pybble"))
 
-	def __call__(self,app, force=False):
+	def __call__(self,app, **kw):
 		with app.test_request_context('/'):
-			self.main(app,force)
+			self.main(app,**kw)
 
 	def main(self,app, module=None,help=False,force=False):
-		if help or not path:
+		if help or not module:
 			self.parser.print_help()
 			sys.exit(not help)
 
-		try:
-			mod = import_string(module)
-		except Exception as e:
-			logger.error(e)
-			
+		mod = import_string(module)
 		process_module(mod)
 
 		db.commit()
