@@ -19,23 +19,10 @@ This module contains the filter which translates from HAML to HTML templates.
 
 import sys
 
-from jinja2 import Markup, contextfunction
-from flask import request,current_app
-from flask.helpers import locked_cached_property
-
-from flask.templating import Environment as BaseEnvironment
+from jinja2 import contextfunction
 
 from pybble.translator import BaseTranslator
-from pybble.utils import AuthError
-from pybble.core.models._const import PERM, PERM_NONE, PERM_ADD, \
-	TM_DETAIL_PAGE, TM_DETAIL_SUBPAGE, TM_DETAIL_STRING, TM_DETAIL, \
-		TM_DETAIL_DETAIL, TM_DETAIL_RSS, TM_DETAIL_EMAIL, TM_DETAIL_name
-from pybble.core.models.user import access_logger
-from pybble.core.models.objtyp import ObjType
-from pybble.core.db import db,NoData
-from pybble.utils.diff import textDiff,textOnlyDiff
-from pybble.render import render_subpage,render_subline,render_subrss
-from pybble.render.jinja import SiteTemplateLoader,Environment
+from pybble.render.jinja import Environment
 
 import logging
 logger = logging.getLogger('pybble.translator.jinja')
