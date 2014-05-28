@@ -33,7 +33,7 @@ from datetime import datetime,timedelta
 expose = Exposer()
 
 class Blueprint(BaseBlueprint):
-	PARAMS = (
+	VAR = (
 		## TODO: able to change prefixes
 		## TODO: serve, and generate redirects to, OIDified static filenames
 	)

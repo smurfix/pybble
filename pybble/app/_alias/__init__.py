@@ -20,6 +20,7 @@ class App(BaseApp):
 	"""
 	This app simply does the same thing as its parent.
 	"""
+	TEMPLATE=("templates",)
 	_parent = None
 	def __call__(self, environ, start_response):
 		if self._parent is None:

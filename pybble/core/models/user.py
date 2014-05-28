@@ -363,6 +363,13 @@ class Group(Object):
 	def members(self):
 		return Member.q.filter_by(group=self)
 
+	def add(self,member, fail=False):
+		return Member.add_to(member,self, fail=fail)
+	def delete(self,member, fail=False):
+		return Member.drop_from(member,self, fail=fail)
+	def __contains__(self,member):
+		return Member.q.filter_by(group=self,member=member).count() > 0
+
 ## Membership
 
 class Member(Object):

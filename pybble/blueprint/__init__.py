@@ -56,6 +56,8 @@ class SetupState(BlueprintSetupState):
 		self.app.add_url_rule(rule, endpoint, view_func, defaults=defaults, **options)
 
 class BaseBlueprint(FlaskBlueprint):
+	TEMPLATE=("templates",)
+
 	params = None
 	def __init__(self, bp, path, **kw):
 		self.bp = bp

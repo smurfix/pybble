@@ -36,7 +36,6 @@ from ..manager import Manager,Command
 logger = logging.getLogger('pybble.verifier')
 
 class BaseVerifier(object):
-	PARAMS = ()
 	template = None
 
 	@classmethod

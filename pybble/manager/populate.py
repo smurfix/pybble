@@ -30,10 +30,9 @@ from ..utils import random_string
 from ..core import config
 from ..core.utils import attrdict
 from ..core.db import db, NoData
+from ..core.add import process_module
 from ..globals import current_site
 from . import Manager,Command,Option
-
-from .add import add_mimes
 
 logger = logging.getLogger('pybble.manager.populate')
 
@@ -52,7 +51,7 @@ upload_content_types = [
 	('application','binary','bin',"raw data",None),
 	('application','pdf','pdf',"PDF document",None),
 ]
-content_types = upload_content_types+[
+MIME = upload_content_types+[
 	('application','rss+xml','rss',"RSS feed",None),
 	('text','xml','xml',"XML data",None),
 	('message','rfc822',None,"Email message",None),
@@ -74,6 +73,45 @@ content_types = upload_content_types+[
 	('xml','rss',None,"a fragment for the RSS feed",None),
 ]
 
+MODEL = (
+	'pybble.core.models.objtyp.ObjType',
+	'pybble.core.models.config.ConfigVar',
+	'pybble.core.models.config.ConfigData',
+	'pybble.core.models.config.SiteConfigVar',
+	'pybble.core.models.site.App',
+	'pybble.core.models.site.Blueprint',
+	'pybble.core.models.site.Site',
+	'pybble.core.models.site.SiteBlueprint',
+	'pybble.core.models.user.User',
+	'pybble.core.models.user.Group',
+	'pybble.core.models.user.Member',
+	'pybble.core.models.tracking.TrackingObject',
+	'pybble.core.models.tracking.Breadcrumb',
+	'pybble.core.models.tracking.Change',
+	'pybble.core.models.tracking.Delete',
+	'pybble.core.models.tracking.Tracker',
+	'pybble.core.models.tracking.WantTracking',
+	'pybble.core.models.tracking.UserTracker',
+	'pybble.core.models.permit.Permission',
+	'pybble.core.models.types.MIMEtype',
+	'pybble.core.models.types.MIMEext',
+	'pybble.core.models.types.MIMEtranslator',
+	'pybble.core.models.types.MIMEadapter',
+	'pybble.core.models.template.Template',
+	'pybble.core.models.template.TemplateMatch',
+	'pybble.core.models.storage.Storage',
+	'pybble.core.models.files.BinData',
+	'pybble.core.models.files.StaticFile',
+	'pybble.core.models.verifier.VerifierBase',
+	'pybble.core.models.verifier.Verifier',
+)
+
+VAR = []
+APP = []
+BLUEPRINT = []
+VERIFIER = []
+TEMPLATE = []
+
 class PopulateCommand(Command):
 	"""Add minimal basic data to the database"""
 	def __init__(self):
@@ -85,96 +123,69 @@ class PopulateCommand(Command):
 			self.main(app,force)
 
 	def main(self,app, force=False):
-		from ..core.models.objtyp import ObjType
-		from ..core.models._const import PERM_ADMIN,PERM_READ,PERM_ADD
-		from ..core.models._const import TM_DETAIL_SUBPAGE,TM_DETAIL_DETAIL,TM_DETAIL_HIERARCHY,TM_DETAIL_RSS,TM_DETAIL_STRING,TM_DETAIL_EMAIL,TM_DETAIL_SNIPPET,TM_DETAIL_PREVIEW,TM_DETAIL_id
-		from ..core.models.site import Site
+		from ..core.models.site import Site,App,Blueprint,SiteBlueprint
 		from ..core.models.storage import Storage
-		from ..core.models.files import BinData,StaticFile
-		from ..core.models.user import User,Group,Member
-		from ..core.models.permit import Permission
-		from ..core.models.types import MIMEtype,MIMEtranslator,MIMEadapter
-		from ..core.models.template import Template,TemplateMatch
-		from ..core.models.config import ConfigVar
-		from ..core.models.verifier import VerifierBase
-		from ..core.models.tracking import Delete,Change
-		from .. import ROOT_SITE_NAME,ROOT_USER_NAME, ANON_USER_NAME
-		from .add import _upd
+		from ..core.models.files import StaticFile
+		from ..core.models.user import User
+		from ..core.models.permit import Permission,permit
+		from ..core.models.types import MIMEtype
+		from ..core.models._const import PERM_ADD
+		from ..translator import list_translators
+		from ..verifier import list_verifiers
+		from .. import ROOT_SITE_NAME,ROOT_USER_NAME
 
 		from ..app import list_apps
 		from ..blueprint import list_blueprints
-		from ..core.models.site import App,Blueprint,SiteBlueprint
 
 		if 'MEDIA_PATH' not in config:
 			raise RuntimeError("You have to set MEDIA_PATH so that I can store my files somewhere")
 
-		## Variable installer.
-		## Generic code because it doesn't hurt and may be used for Blueprint vars later.
-		def add_vars(gen,parent):
-			"""Add variables. The generator yields (name,value,docstring) triples."""
-			
-			added=[]
-			for k,v,d in gen:
-				try:
-					cf = ConfigVar.q.get_by(name=k, parent=parent)
-				except NoData:
-					cf = ConfigVar.new(parent=parent, name=k, value=v, doc=d)
-					db.flush()
-					added.append(k)
-				else:
-					if not cf.doc or force:
-						cf.doc = d
-			if added:
-				logger.info("New variables for {}: ".format(str(parent))+",".join(added))
-			db.commit()
+		global VAR
+		def gen_vars():
+			from pybble.core import default_settings as DS
+			for k,v in DS.__dict__.items():
+				if k != k.upper(): continue
+				if k in app.config: # add overrides
+					v = app.config[k]
+				yield text_type(k),v,getattr(DS,'d_'+k,None)
+		VAR = gen_vars()
 
-		## helper to load known apps, blueprints
-		def loadables(lister,Obj,path, iname=None,add_vars=add_vars):
-			if iname is None:
-				iname = Obj.__name__
-			added=changed=found=0
-			for name in lister():
+		global APP
+		def gen_apps():
+			for name in list_apps():
 				name = text_type(name)
-				found += 1
-				is_new = False
-				try:
-					obj = Obj.q.get_by(name=name)
-				except NoData:
-					obj = Obj.new(name=name, path="{}.{}.{}".format(path,name,iname))
-					is_new = True
-				try:
-					a = obj.mod
-				except Exception as e:
-					logger.warn("{} ({}) is not usable: {}\n{}".format(iname,obj.path,str(e), format_exc()))
-					if is_new:
-						# Dance 
-						db.flush((obj,))
-						db.delete(obj)
-				else:
-					if obj.doc is None or force:
-						try:
-							obj.doc = a.__doc__
-						except AttributeError:
-							pass
+				yield ("pybble.app.{}.App".format(name),name)
+		APP = list(gen_apps()) # required twice
 
-					if hasattr(a,"PARAMS"):
-						## Set default variables
-						add_vars(a.PARAMS,obj)
+		global BLUEPRINT
+		def gen_bps():
+			for name in list_blueprints():
+				name = text_type(name)
+				yield ("pybble.blueprint.{}.Blueprint".format(name),name)
+		BLUEPRINT = gen_bps()
 
-			if not found:
-				logger.warn("{}: None found".format(Obj.__name__))
-			elif changed or added:
-				logger.info("{}: {} new, {} updated".format(Obj.__name__,added,changed))
-			db.commit()
+		global TRANSLATOR
+		def gen_translators():
+			for name in list_translators():
+				name = text_type(name)
+				yield ("pybble.translator.{}.Translator".format(name),name)
+		TRANSLATOR = gen_translators()
 
-		loadables(list_apps,App,"pybble.app")
-		loadables(list_blueprints,Blueprint,"pybble.blueprint")
+		global VERIFIER
+		def gen_translators():
+			for name in list_verifiers():
+				name = text_type(name)
+				yield ("pybble.verifier.{}.Verifier".format(name),name)
+		VERIFIER = gen_translators()
+
+		## Bootstrapping is tricky.
+		process_module({'MODEL':MODEL, 'MIME':MIME, 'APP':APP})
 
 		## main site
 		rapp = App.q.get_by(name='_root')
 		try:
 			try:
-				root = Site.q.get(Site.parent==None)
+				root = Site.q.get_by(parent=None)
 			except NoData:
 				root = Site.q.get_by(name=ROOT_SITE_NAME)
 		except NoData:
@@ -197,14 +208,14 @@ class PopulateCommand(Command):
 		_app_ctx_stack.top.site = root
 		_app_ctx_stack.top.app = root.app
 
-		## storage
+		## Default storage
 		try:
 			try:
 				st = Storage.q.get_by(name=u"Pybble")
 			except NoData:
 				st = Storage.q.get_by(name=u"Test")
 		except NoData:
-			st = Storage.new("Test",app.config.MEDIA_PATH,"localhost:5000/static", site=root)
+			st = Storage.new("Test",app.config.MEDIA_PATH,"/static", site=root)
 			if Storage.q.filter_by(site=root,default=True).count() == 0:
 				st.default = True
 		else:
@@ -233,280 +244,13 @@ class PopulateCommand(Command):
 		request.user = superuser
 		root.initial_permissions(superuser)
 
-		## more MIME types
-		add_mimes(content_types)
-		
-		## MIME translators
-		def get_them(types, add=False):
-			if isinstance(types,string_types):
-				types = (types,)
-			for s in types:
-				mt = MIMEtype.get(s, add=add)
-				if mt.subtyp == "*":
-					yield mt,10
-					for r in MIMEtype.q.filter_by(typ=mt.typ):
-						if r.subtyp == '*' or r.subtyp.startswith('_'):
-							continue
-						yield mt,50
-				else:
-					yield mt,0
+		global STATIC
+		STATIC = ((STATIC_PATH,''),)
 
-		def translators(lister,path="pybble.translator"):
-			added=found=0
-			for name in lister():
-				name = text_type(name)
-				found += 1
-				is_new = False
-				mpath = "{}.{}.{}".format(path,name,"Translator")
-				mod = "??"
-				try:
-					E=mpath
-					mod = import_string(mpath)
-					E=mod.SOURCE
-					src = get_them(mod.SOURCE, add=True)
-					E=mod.DEST
-					dst = get_them(mod.DEST, add=True)
-					E=mod.CONTENT
-					mt = MIMEtype.get(mod.CONTENT, add=True)
-					E="??"
-					w = mod.WEIGHT
-				except NoData as e:
-					logger.warn("{} is not usable ({}): {}\n{}".format(mod,E,str(e), format_exc()))
-					continue
-				try:
-					trans = MIMEtranslator.q.get_by(path=mpath)
-				except NoData:
-					trans = MIMEtranslator.new(path=mpath,mime=mt,weight=w,name=mpath)
-				else:
-					if trans.mime != mt:
-						logger.warn("{} has a broken type: {} instead of {}".format(mod,trans.mime,mt))
-						if force:
-							trans.mime = mt
-					if force:
-						trans.weight=w
-
-				for s,sw in src:
-					for d,dw in dst:
-						n = "{} to {} with {}".format(src,dst,mt)
-						w=sw+dw
-						try:
-							obj = MIMEadapter.q.get_by(from_mime=s,to_mime=d,translator=trans)
-						except NoData:
-							obj = MIMEadapter.new(from_mime=s,to_mime=d,translator=trans,name=n,weight=w)
-							added += 1
-						else:
-							if force:
-								obj.weight = w
-								obj.name = n
-			if not found:
-				logger.warn("{}: None found".format(MIMEtranslator.__name__))
-			elif added:
-				logger.info("{}: {} new".format(MIMEtranslator.__name__,added))
-			db.commit()
-
-
-		## helper to load known apps, blueprints
-
-		from ..verifier import list_verifiers
-		loadables(list_verifiers,VerifierBase,"pybble.verifier","Verifier")
-
-		from ..translator import list_translators
-		translators(list_translators)
-
-		## static files (recursive)
-		def add_files(dir,path):
-			added=0
-			for f in os.listdir(dir):
-				if f.startswith("."):
-					continue
-				f = f.decode("utf-8")
-				filepath = os.path.join(dir,f)
-				if path:
-					webpath = path+'/'+f
-				else:
-					webpath = f
-				if os.path.isdir(filepath):
-					added += add_files(filepath,webpath)
-					continue
-				dot = f.rindex(".")
-				mime = MIMEtype.get(f[dot+1:])
-				with open(filepath,"rb") as fd:
-					content = fd.read()
-					try:
-						sb = BinData.lookup(content)
-					except NoData:
-						sb = BinData.new(f[:dot],ext=f[dot+1:],content=content, storage=st)
-
-					try:
-						try:
-							sf = StaticFile.q.get_by(path=webpath,site=root)
-						except NoData:
-							sf = StaticFile.q.get_by(path='/'+webpath,site=root)
-					except NoData:
-						sf = StaticFile.new(webpath,sb)
-					else:
-						if sf.path.startswith('/'):
-							sf.path = sf.path[1:] # silently fix this
-
-						try:
-							c = sf.content
-						except EnvironmentError as e:
-							import errno
-							if e.errno != errno.ENOENT:
-								raise
-							logger.error("File ‘{}’ vanished".format(filepath))
-							sf.file.hash = None
-							Delete.new(sf.file, comment="file vanished")
-							db.flush()
-
-							try:
-								sb = BinData.lookup(content)
-							except NoData:
-								sb = BinData.new(f[:dot],ext=f[dot+1:],content=content, storage=st)
-							osb = sf.bindata
-							sf.file = sb
-							sf.record_change({"file":(osb,sb)},comment="file vanished")
-							c = sf.content
-
-						if content != sf.content:
-							logger.warning("StaticFile %d:‘%s’ differs." % (sf.id,webpath))
-							if force:
-								try:
-									sb = BinData.lookup(content)
-								except NoData:
-									sb = BinData.new(f[:dot],ext=f[dot+1:],content=content, storage=st)
-								import pdb;pdb.set_trace()
-								pdb._repr.maxstring = 200
-								pdb._repr.maxother = 200
-								try:
-									Delete.new(sf.file, comment="replaced by update")
-									Change.new(sf,data={'file':(sf.file,sb)})
-								except:
-									pdb.post_mortem()
-									raise
-								sf.file = sb
-					db.commit()
-			return added
-		added = add_files(STATIC_PATH, u"")
-		if added:
-			logger.debug("{} files changed.".format(added))
-
-		## templates
-		def read_template(parent, filepath,webpath, inferred=""):
-			extmap = { 'haml':'template/haml', 'html':'template/jinja' }
-
-			added = 0
-			with file(filepath) as f:
-				try:
-					data = inferred + f.read().decode("utf-8")
-				except Exception:
-					print("While reading",filepath,file=sys.stderr)
-					raise
-
-			hdr = attrdict(match=[],inherit=None)
-			m = _metadata.match(data)
-			while m:
-				k,v = m.groups()
-				ov = hdr.get(k,None)
-				if ov is None:
-					if v == "-":
-						v = None
-					elif '/' in v:
-						v = MIMEtype.get(v, add=True)
-					elif v in ("True False 0 1 None".split()):
-						v = eval(v)
-					elif k == "weight":
-						v = int(v)
-					hdr[k] = v
-				elif k == "match":
-					hdr[k].append((v,hdr.inherit))
-				else:
-					raise ValueError("Template ‘{}’: duplicate metadata key ‘{}’".format(filepath,k))
-				data = data[m.end():]
-				m = _metadata.match(data)
-
-			if "src" not in hdr: hdr.src = "pybble/_empty"
-			if "dst" not in hdr: hdr.dst = "html/*"
-			if "named" not in hdr: hdr.named = True
-			if "dsc" not in hdr: hdr.dsc = None
-			if "weight" not in hdr: hdr.weight = 0
-			if "typ" not in hdr:
-				try:
-					dot = filepath.rindex(".")
-					hdr.typ = MIMEtype.get(extmap[filepath[dot+1:]])
-				except (ValueError,KeyError,NoData):
-					logger.error("Template ‘{}’ not loaded: unknown MIME type".format(filepath))
-					return added
-
-			hdr_src = MIMEtype.get(hdr.src)
-			hdr_dst = MIMEtype.get(hdr.dst)
-			hdr_typ = MIMEtype.get(hdr.typ)
-			hdr_dsc = TM_DETAIL_id(hdr.dsc) if hdr.dsc is not None else None
-			n="{} from {} to {}".format(hdr_typ,hdr_src,hdr_dst)
-
-			try:
-				tr = MIMEtranslator.q.get_by(mime=hdr_typ)
-			except NoData:
-				logger.error("Template ‘{}’ not loaded: no translator which understands {}".format(filepath,hdr_typ))
-				return added
-			try:
-				a = MIMEadapter.q.get_by(from_mime=hdr_src, to_mime=hdr_dst, translator=tr)
-			except NoData:
-				a = MIMEadapter.new(from_mime=hdr_src, to_mime=hdr_dst, translator=tr, name=n)
-
-			try:
-				t = Template.q.get_by(source=filepath)
-			except NoData:
-				t = Template.new(source=filepath, data=data, target=parent, adapter=a, weight=hdr.weight or 0)
-				t.owner = superuser
-				if hdr.named:
-					t.name = webpath
-				added += 1
-			else:
-				chg = 0
-				if t.target is not parent:
-					logger.warn("Template {} ‘{}’: changed target from {} to {}".format(t.id, filepath, t.target,parent))
-					if force:
-						t.target = parent
-						chg = 1
-
-				if t.adapter is not a:
-					logger.warn("Template {} ‘{}’: changed adapter from {} to {}".format(t.id, filepath, t.adapter,a))
-					if force:
-						t.adapter = a
-						chg = 1
-
-				if t.content != data:
-					logger.warn(u"Template {} ‘{}’ differs.".format(t.id,filepath))
-					if force:
-						t.content = data
-						chg = 1
-
-				if force:
-					t.owner = superuser
-					t.weight = hdr.weight
-					added += chg
-			for m,inherit in hdr.match:
-				if m == "root":
-					m = root
-				elif m == "superuser":
-					m = superuser
-				else:
-					logger.warn("Template {} ‘{}’: I don't know how to attach to {}".format(t.id, filepath, m))
-
-				try:
-					tm = TemplateMatch.q.filter_by(template=t,target=m,for_objtyp=hdr_dsc).filter(or_(TemplateMatch.inherit == None,TemplateMatch.inherit==inherit)).one()
-				except NoData:
-					tm = TemplateMatch.new(template=t,target=m,for_objtyp=hdr_dsc,inherit=inherit)
-
-			db.commit()
-			return added
-
-		def find_templates(parent, dirpath,webpath="",mapper=""):
+		def find_templates(dirpath,webpath="",mapper=""):
 			if not os.path.isdir(dirpath):
-				return 0
+				return
 
-			added = 0
 			for fn in os.listdir(dirpath):
 				if fn.startswith("."):
 					continue
@@ -515,13 +259,14 @@ class PopulateCommand(Command):
 				m=mapper
 				if os.path.isdir(newdirpath):
 					if m: m=m.do_dir(fn)
-					added += find_templates(parent, newdirpath,newwebpath,m)
+					for r in find_templates(newdirpath,newwebpath,m):
+						yield r
 				else:
 					if m: m=m.do_file(fn)
-					added += read_template(parent, newdirpath,newwebpath,m)
-			return added
+					yield (newdirpath,newwebpath,m)
 
 		class M(object):
+			"""Infer template metadata from the file name"""
 			def __init__(self,path=()):
 				self.path=path
 			def do_dir(self,fn):
@@ -550,63 +295,13 @@ class PopulateCommand(Command):
 ##match root
 ##weight 0
 """.format(fn,p,ext)
-		added = find_templates(root, TEMPLATE_PATH,mapper=M())
-		if added:
-			logger.debug("{} templates changed.".format(added))
 
-		## Set default variables
-		def gen_vars():
-			from pybble.core import default_settings as DS
-			for k,v in DS.__dict__.items():
-				if k != k.upper(): continue
-				if k in app.config: # add overrides
-					v = app.config[k]
-				yield text_type(k),v,getattr(DS,'d_'+k,None)
-		add_vars(gen_vars(),root)
+		global TEMPLATE
+		TEMPLATE = find_templates(TEMPLATE_PATH,mapper=M())
 
-		## built-in Apps and Blueprints
-
-		for app in App.q.all():
-			try:
-				mod = sys.modules[app.mod.__module__]
-				try:
-					mp = os.path.dirname(mod.__file__)
-				except AttributeError:
-					mp = mod.__path__[0]
-				path = os.path.join(mp, 'templates')
-				added = find_templates(app, path)
-				if added:
-					logger.info("{} templates for app {} added/changed.".format(added,app.name))
-			except Exception:
-				print("Error trying to load app ‘{}’".format(app.path), file=sys.stderr)
-				print_exc()
-				sys.exit(1)
-
-		for bp in Blueprint.q.all():
-			try:
-				mod = sys.modules[bp.mod.__module__]
-				try:
-					mp = os.path.dirname(mod.__file__)
-				except AttributeError:
-					mp = mod.__path__[0]
-				path = os.path.join(mp, 'templates')
-				added = find_templates(bp, path)
-				if added:
-					logger.info("{} templates for blueprint {} added/changed.".format(added,bp.name))
-			except Exception:
-				print("Error trying to load blueprint ‘{}’".format(bp.path), file=sys.stderr)
-				print_exc()
-				sys.exit(1)
-
-		## Add uplaod permissions
-		#for typ,subtyp,ext,name,doc in upload_content_types:
-		#	mt = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
-		#	if Permission.q.filter(Permission.new_objtyp==e,Permission.for_objtyp==d, Permission.parent==s).count():
-		#		continue
-		#	p=Permission.new(u, s, d, PERM_ADD)
-		#	p.new_objtyp=e
-#
-#			/perm
+		# APP is here again because of attached templates which might not
+		# have loaded the first time because of missing translators
+		process_module({'VAR':VAR, 'BLUEPRINT':BLUEPRINT, 'APP':APP, 'TRANSLATOR':TRANSLATOR, 'VERIFIER':VERIFIER, 'STATIC':STATIC, 'TEMPLATE':TEMPLATE})
 
 		## possible root app fix-ups
 		aapp = App.q.get_by(name="_alias")
@@ -656,6 +351,11 @@ class PopulateCommand(Command):
 					logger.warn("Root site's static blueprint endpoint changed from ‘{}’ to ‘static’.".format(rbp.name))
 					rbp.endpoint = ""
 		db.commit()
+
+		# Add file types that may be uploaded
+		for typ,subtyp,ext,name,doc in upload_content_types:
+			mt = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
+			permit(root,root, right=PERM_ADD, new_objtyp=StaticFile.type, new_mimetyp=mt)
 
 		## All done!
 		logger.debug("Setup finished.")

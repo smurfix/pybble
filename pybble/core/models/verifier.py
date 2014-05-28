@@ -26,6 +26,7 @@ from ..db import Column, NoData, check_unique,no_update
 from ._utils import Loadable
 from .object import Object,ObjectRef
 from .objtyp import ObjType
+from .config import ConfigData
 from .user import User
 
 ## VerifierBase
@@ -41,8 +42,11 @@ class VerifierBase(Loadable, Object):
 	name = Column(Unicode(30), unique=True, nullable=False)
 	doc = Column(Unicode(1000), nullable=True)
 
+	config = ObjectRef(ConfigData)
+
 	def setup(self,name,doc=None,**kw):
 		self.name = name
+		self.config = ConfigData.new("Verifier "+name)
 		if doc is not None:
 			self.doc = doc
 		super(VerifierBase,self).setup(**kw)
@@ -59,9 +63,6 @@ class VerifierBase(Loadable, Object):
 class Verifier(Object):
 	"""
 		Verification emails (or similar).
-		Parent: the thing to be verified.
-		Owner: the user who asked.
-		SuperParent: the VerifierBase object this refers to.
 		"""
 	__tablename__ = "verifiers"
 	@classmethod
@@ -69,8 +70,8 @@ class Verifier(Object):
 		check_unique(cls,"user obj base")
 		super(Verifier,cls).__declare_last__()
 
-	obj = ObjectRef()
-	user = ObjectRef(User)
+	obj = ObjectRef(doc="The object (or access thereto) to be verified")
+	user = ObjectRef(User, doc="The user who shall be granted access")
 	base = ObjectRef(VerifierBase)
 
 	code = Column(Unicode(30), nullable=False)

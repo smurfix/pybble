@@ -23,7 +23,7 @@ expose = Exposer()
 
 class App(BaseApp):
 	"""Test app. Not suitable for production use."""
-	PARAMS = (
+	VAR = (
 	        ("appiti","pappiti", "Test for passing a parameter into a site"),
 		)
 

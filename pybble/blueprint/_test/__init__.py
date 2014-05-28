@@ -24,7 +24,7 @@ from pybble.core.route import Exposer
 expose = Exposer()
 
 class Blueprint(BaseBlueprint):
-	PARAMS = (
+	VAR = (
 		("color","yellow", "Test for passing a parameter into a blueprint"),
 	)
 	def setup(self):

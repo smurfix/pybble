@@ -425,16 +425,3 @@ class ObjectRef(object):
 		self.doc = doc
 		self.declared_attr = declared_attr
 
-@event.listens_for(mapper, "after_configured")
-def add_objtypes():
-	"""Initialize ObjType and MIMEtype entries for our tables"""
-	from .objtyp import ObjType
-	global _tables
-	tt = _tables
-	_tables = []
-	for t in tt:
-		typ = ObjType.get(t)
-		# This creates the ObjType
-
-	_tables = []
-	

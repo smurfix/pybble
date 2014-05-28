@@ -114,6 +114,8 @@ class BaseApp(WrapperApp,Flask):
 	response_class = Response
 	translators = {}
 
+	TEMPLATE=("templates",)
+
 	def __init__(self, site, testing=False, **kw):
 		super(BaseApp,self).__init__(site=site,testing=testing, import_name="pybble", template_folder=None, static_folder=None, **kw)
 

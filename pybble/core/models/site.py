@@ -198,6 +198,7 @@ class Site(Object):
 					nt = ObjType.get(nt)
 					permit(actor,self, objtyp=nt,new_objtyp=typ, right=PERM_ADD,inherit=None)
 
+		# Upload permissions for MIME types are added in pybble.manager.populate
 
 	def copy_perms(self,parent):
 		import pdb;pdb.set_trace()
