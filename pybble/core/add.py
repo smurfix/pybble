@@ -25,16 +25,16 @@ from flask import request,current_app,g, _app_ctx_stack
 from flask._compat import text_type,string_types
 from werkzeug import import_string
 
-from .. import TEMPLATE_PATH, STATIC_PATH
-from ..utils import random_string, NotGiven
-from ..globals import current_site, root_site
+from ..utils import NotGiven
+from ..globals import root_site
 from . import config
 from .utils import attrdict
 from .db import db, NoData, engine
 from .models.types import MIMEtype,MIMEtranslator,MIMEadapter
 from .models.config import ConfigVar
-from .models.site import Site
-from .models.site import App,Blueprint
+from .models.site import Site,App,Blueprint
+from .models.files import StaticFile,BinData
+from .models.storage import Storage
 from .models.verifier import VerifierBase
 from .models.objtyp import ObjType
 from .models.template import Template,TemplateMatch
@@ -116,7 +116,7 @@ def add_mime(typ,subtyp,ext=NotGiven,name=NotGiven,doc=NotGiven, force=False):
 		if doc is NotGiven: doc = None
 		if name is NotGiven: name = None
 		mt = MIMEtype.new(typ=typ, subtyp=subtyp, ext=ext, name=name, doc=doc)
-		logger.debug("MIME type ‘{}’ created.".format(mt))
+		logger.debug("New: "+str(mt))
 	else:
 		_upd(mt,(('doc',doc), ('ext',ext), ('name',name)),force)
 
@@ -129,7 +129,7 @@ def add_vars(gen,parent=None, force=False):
 	"""Add variables. The generator yields (name,value,docstring) triples."""
 
 	if parent is None: # default to the system root
-		parent = Site.q.get_by(parent=None)
+		parent = root_site
 
 	parent = parent.config
 	added=[]
@@ -148,8 +148,6 @@ def add_vars(gen,parent=None, force=False):
 			cf = ConfigVar.new(parent=parent, name=var, value=default, doc=doc)
 		else:
 			_upd(cf,(('doc',doc), ('value',default)), force)
-			if not cf.doc or force:
-				cf.doc = d
 	if added:
 		logger.debug("New variables for {}: ".format(parent) + ",".join(added))
 	db.commit()
@@ -251,28 +249,34 @@ def add_static(filepath,path, force=False):
 			f = f.decode("utf-8")
 			fp = os.path.join(filepath,f)
 			wp = path+'/'+f if path else f
-			add_files(fp,wp)
+			add_static(fp,wp)
 		return
 
-	dot = f.rindex(".")
-	mime = MIMEtype.get(f[dot+1:])
+	dot = filepath.rindex(".")
+	mime = MIMEtype.get(filepath[dot+1:])
 
 	# TODO: don't read the whole file
 	with open(filepath,"rb") as fd:
 		content = fd.read()
 
+	root = root_site
+	def nsb():
+		return BinData.new(os.path.basename(filepath[:dot]),ext=filepath[dot+1:],content=content, storage=st)
+
 	try:
 		sb = BinData.lookup(content)
 	except NoData:
-		sb = BinData.new(f[:dot],ext=f[dot+1:],content=content, storage=st)
+		st = Storage.q.get_by(default=True,site=root)
+		sb = nsb()
 
 	try:
 		try:
-			sf = StaticFile.q.get_by(path=webpath,site=root)
+			sf = StaticFile.q.get_by(path=path,site=root)
 		except NoData:
-			sf = StaticFile.q.get_by(path='/'+webpath,site=root)
+			sf = StaticFile.q.get_by(path='/'+path,site=root)
 	except NoData:
-		sf = StaticFile.new(webpath,sb)
+		sf = StaticFile.new(path,sb)
+		logger.debug("New: "+str(sf))
 	else:
 		if sf.path.startswith('/'):
 			sf.path = sf.path[1:] # silently fix this
@@ -291,19 +295,19 @@ def add_static(filepath,path, force=False):
 			try:
 				sb = BinData.lookup(content)
 			except NoData:
-				sb = BinData.new(f[:dot],ext=f[dot+1:],content=content, storage=st)
+				sb = nsb()
 			osb = sf.bindata
 			sf.file = sb
-			sf.record_change({"file":(osb,sb)},comment="file vanished")
+			Change.new(sf,{"file":(osb,sb)}, comment="file vanished")
 			c = sf.content
 
 		if content != sf.content:
-			logger.warning("StaticFile %d:‘%s’ differs." % (sf.id,webpath))
+			logger.warning("StaticFile %d:‘%s’ differs." % (sf.id,path))
 			if force:
 				try:
 					sb = BinData.lookup(content)
 				except NoData:
-					sb = BinData.new(f[:dot],ext=f[dot+1:],content=content, storage=st)
+					sb = nsb()
 				try:
 					Delete.new(sf.file, comment="replaced by update")
 					Change.new(sf,data={'file':(sf.file,sb)})
@@ -393,20 +397,30 @@ def add_template(parent, filepath,webpath, inferred="", force=False):
 		a = MIMEadapter.q.get_by(from_mime=hdr_src, to_mime=hdr_dst, translator=tr)
 	except NoData:
 		a = MIMEadapter.new(from_mime=hdr_src, to_mime=hdr_dst, translator=tr, name=n)
-		logger.debug("Adapter ‘{}’ created.".format(a))
+		logger.debug("New: "+str(a))
 
 	try:
 		t = Template.q.get_by(source=filepath)
 	except NoData:
+		t = None
+		if hdr.named:
+			try: 
+				t = Template.q.get_by(name=webpath,target=parent)
+			except NoData:
+				pass
+			else:
+				logger.error("EXISTS: {} at {} {}".format(t,parent,webpath))
+				return
+				
 		t = Template.new(source=filepath, data=data, target=parent, adapter=a, weight=hdr.weight or 0)
 		if hdr.named: t.name = webpath
-		logger.debug("Template ‘{}’ created.".format(t))
+		logger.debug("New: "+str(t))
 	else:
 		if hdr.named: n=(('name',webpath),)
 		else: n = ()
 		_upd(t,n+(('target',parent),('adapter',a),('content',data)),force=force)
 
-	root = Site.q.get_by(parent=None)
+	root = root_site
 	for m,inherit in hdr.match:
 		if m == "root":
 			m = root
@@ -419,13 +433,13 @@ def add_template(parent, filepath,webpath, inferred="", force=False):
 			tm = TemplateMatch.q.filter_by(template=t,target=m,for_objtyp=hdr_dsc).filter(or_(TemplateMatch.inherit == None,TemplateMatch.inherit==inherit)).one()
 		except NoData:
 			tm = TemplateMatch.new(template=t,target=m,for_objtyp=hdr_dsc,inherit=inherit)
-			logger.debug("TemplateMatch ‘{}’ created.".format(tm))
+			logger.debug("New: "+str(tm))
 
 	db.commit()
 
 def add_templates(data, parent=None, force=False):
 	if parent is None: # default to the system root
-		parent = Site.q.get_by(parent=None)
+		parent = root_site
 
 	for d in data:
 		if isinstance(d,(tuple,list)):
@@ -464,6 +478,7 @@ def process_module(mod, force=False):
 		('VERIFIER',lambda x,force: _load(VerifierBase,x,force)),
 		('FILE',add_statics),
 		('TEMPLATE',add_templates),
+		('STATIC',add_statics),
 	)
 
 	for k,proc in targets:
