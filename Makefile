@@ -8,6 +8,13 @@ test:
 retest:
 	@sh test/run.sh -nvN
 
+upgrade:
+	./manage.py core migrate upgrade
+
+rev:
+	./manage.py core migrate revision --auto
+	git add migrations/versions
+
 update:
 	@sh utils/update_boilerplate
 

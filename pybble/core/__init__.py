@@ -86,6 +86,9 @@ class config(attrdict):
 		for k,v in Flask.default_config.items():
 			self.setdefault(k,v)
 
+		# for Alembic
+		self.SQLALCHEMY_DATABASE_URI = self.sql_uri
+
 		self._module = config
 
 	def _default(self,k,v,conv=None):

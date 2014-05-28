@@ -13,6 +13,7 @@ https://github.com/smurfix/formalchemy/tarball/master
 https://github.com/smurfix/yapps/tarball/master
 https://github.com/PitMairen/hamlish-jinja/tarball/master
 Flask-Security
+Flask-Migrate>=0.6
 WTForms
 pytz
 #python-texttable

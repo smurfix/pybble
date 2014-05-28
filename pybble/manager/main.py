@@ -24,6 +24,7 @@ from flask import Flask, url_for
 from flask.config import Config
 
 from flask.ext.script import Server
+from flask.ext.migrate import Migrate, MigrateCommand
 
 from werkzeug.exceptions import NotFound
 from werkzeug.wsgi import responder
@@ -159,6 +160,7 @@ class RootManager(Manager):
 		coremanager.add_command("populate",PopulateCommand())
 		coremanager.add_command("add",AddCommand())
 		coremanager.add_command("schema",SchemaCommand())
+		coremanager.add_command("migrate",MigrateCommand)
 
 		self.add_command("site",SiteManager())
 		#self.add_command("app",AppCommand())

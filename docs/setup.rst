@@ -29,3 +29,21 @@ for the server's domain-less hostname has been created. If your browser
 cannot resolve that name, add it to your /etc/hosts file for now; you
 will discover ways to teach Pybble about alternate host names later.
 
+Database upgrades
+-----------------
+
+Pybbles uses `Flask-Migrate` (which uses Alembic) to manage database
+transitions.
+
+After changing the schema, do
+
+	pybble core migrate revision --auto
+
+You will then find a new file in `migrations/versions` which applies your
+changes to the database. Edit this file as appropriate, and add it to the
+git revision that contains your changes.
+
+To upgrade the actual database, run
+
+	pybble core migrate upgrade
+

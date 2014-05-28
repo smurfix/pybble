@@ -33,6 +33,7 @@ from formalchemy.fields import IntegerFieldRenderer
 
 from flask import Markup, url_for, escape, g, request
 from flask._compat import implements_to_string as py2_unicode, text_type
+from flask.ext.migrate import Migrate
 
 from . import json
 
@@ -398,6 +399,8 @@ class new_protect(object):
 		g.naked_new = self.naked_new
 
 def init_db(app):
+	migrate = Migrate(app, db)
+
 	@app.teardown_request
 	def shutdown_session(exception=None):
 		if exception:
