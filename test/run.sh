@@ -154,7 +154,7 @@ if [ -n "$PLAIN" ] ; then
 	ASS="$ASS --assert=plain"
 fi
 if [ -n "$DEBUG" ] ; then
-	PY=env pdb
+	PY="env pdb"
 	ASS="$ASS -s --pdb"
 fi
 
