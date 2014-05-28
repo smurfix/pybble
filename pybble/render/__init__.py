@@ -13,7 +13,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from jinja2 import Environment, BaseLoader, Markup, contextfunction, contextfilter
+from jinja2 import Markup, contextfunction, contextfilter
 from werkzeug.utils import reraise
 from flask import request,current_app, get_flashed_messages, Response
 from flask._compat import string_types
@@ -162,6 +162,7 @@ class ContentData(object):
 		return get_template(self)
 		
 	def render(self, **vars):
+		logger.debug("RENDER: "+repr(self.__dict__))
 		return self.template.render(self, vars)
 	
 	def __str__(self):
@@ -247,43 +248,6 @@ def get_context():
 		CRUMBS=(user.groups+list(p.obj for p in user.all_visited()[0:20])) if user else None,
 		NOW=datetime.utcnow(),
 	)
-
-@contextfunction
-def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE, to_typ="html"):
-	ctx = ctx.get_all()
-	ctx["obj"] = obj
-	ctx["obj_parent"] = getattr(obj,'parent',None)
-	ctx["obj_superparent"] = None
-	ctx["obj_owner"] = None
-	ctx["obj_deleted"] = obj.deleted
-	ctx["detail"] = detail
-
-	#if objtyp is not None:
-	#	ctx["sub"] = ObjType.get(objtyp).mod.q.fiter_by(parent=obj).count()
-	return render_my_template(**ctx)
-
-@contextfunction
-def render_subline(ctx,obj):
-	try:
-		return render_subpage(ctx,obj, detail=TM_DETAIL_STRING)
-	except AuthError:
-		return unicode(obj)
-
-@contextfunction
-def render_subrss(ctx,obj, detail=TM_DETAIL_RSS, objtyp=None):
-	ctx = ctx.get_all()
-	ctx["obj"] = obj.parent.parent
-	ctx["tracker"] = obj.superparent
-	ctx["user"] = obj.parent.owner
-	ctx["usertracker"] = obj
-	ctx["detail"] = detail
-	try:
-		return render_my_template(obj, **ctx)
-	except AuthError:
-		if detail == TM_DETAIL_EMAIL:
-			raise
-		else:
-			return Markup("<p>'%s' kann nicht dargestellt werden (Zugriffsfehler).</p>" % (obj.oid,))
 
 import smtplib
 import email.Message

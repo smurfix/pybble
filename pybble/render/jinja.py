@@ -30,13 +30,50 @@ from ..core.models.template import TemplateMatch, Template as DBTemplate
 from ..core.models._const import PERM_name
 from ..core.db import db,NoData, refresh
 from ..utils.diff import textDiff,textOnlyDiff
-from . import render_subpage,render_subline,render_subrss, ContentData
+from . import ContentData, render_my_template
 from .loader import get_template
 
 from time import time
 
 import logging
 logger = logging.getLogger('pybble.render')
+
+@contextfunction
+def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE, to_typ="html"):
+	ctx = ctx.get_all()
+	ctx["obj"] = obj
+	ctx["obj_parent"] = getattr(obj,'parent',None)
+	ctx["obj_superparent"] = None
+	ctx["obj_owner"] = None
+	ctx["obj_deleted"] = obj.deleted
+	ctx["detail"] = detail
+
+	#if objtyp is not None:
+	#	ctx["sub"] = ObjType.get(objtyp).mod.q.fiter_by(parent=obj).count()
+	return render_my_template(**ctx)
+
+@contextfunction
+def render_subline(ctx,obj):
+	try:
+		return render_subpage(ctx,obj, detail=TM_DETAIL_STRING)
+	except AuthError:
+		return unicode(obj)
+
+@contextfunction
+def render_subrss(ctx,obj, detail=TM_DETAIL_RSS, objtyp=None):
+	ctx = ctx.get_all()
+	ctx["obj"] = obj.parent.parent
+	ctx["tracker"] = obj.superparent
+	ctx["user"] = obj.parent.owner
+	ctx["usertracker"] = obj
+	ctx["detail"] = detail
+	try:
+		return render_my_template(obj, **ctx)
+	except AuthError:
+		if detail == TM_DETAIL_EMAIL:
+			raise
+		else:
+			return Markup("<p>'%s' kann nicht dargestellt werden (Zugriffsfehler).</p>" % (obj.oid,))
 
 class Environment(BaseEnvironment):
 	"""Set up our Jinja environment"""
