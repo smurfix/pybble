@@ -36,6 +36,7 @@ from ._const import PERM,PERM_NONE,PERM_ADMIN,PERM_READ,PERM_ADD,PERM_name,PERM_
 from .user import User
 from .object import Object,ObjectRef
 from .objtyp import ObjType
+from .types import MIMEtype
 from .tracking import Delete
 
 import sys
@@ -80,8 +81,9 @@ class Permission(Object):
 
 	for_objtyp = ObjectRef(ObjType)
 	new_objtyp = ObjectRef(ObjType, nullable=True)
+	new_mimetyp = ObjectRef(MIMEtype, nullable=True)
 
-	def setup(self, user, target, for_objtyp=None, right=None, inherit=None, new_objtyp=None):
+	def setup(self, user, target, for_objtyp=None, right=None, inherit=None, new_objtyp=None,new_mimetyp=None):
 		assert right is not None
 		if right < 0:
 			assert new_objtyp is not None
@@ -94,6 +96,7 @@ class Permission(Object):
 		self.user = user
 		self.target = target
 		self.new_objtyp = new_objtyp
+		self.new_mimetyp = new_mimetyp
 
 		if right == PERM_ADD:
 			try: del user._can_add
@@ -103,26 +106,26 @@ class Permission(Object):
 	
 	@property
 	def as_str(self):
-		return u'%s can %s %s %s %s %s' % (unicode(self.user),PERM[self.right],self.for_objtyp.name if self.for_objtyp else "‽",unicode(self.target), "*" if self.inherit is None else "Y" if self.inherit else "N", self.new_objtyp.name if self.new_objtyp is not None else "-")
+		return u'%s can %s %s %s %s %s/%s' % (unicode(self.user),PERM[self.right],self.for_objtyp.name if self.for_objtyp else "‽",unicode(self.target), "*" if self.inherit is None else "Y" if self.inherit else "N", self.new_objtyp.name if self.new_objtyp is not None else "-", self.new_mimetyp.name if self.new_mimetyp is not None else "-")
 
 for a,b in PERM.iteritems():
 	def can_do_closure(a,b):
-		def can_do(self, obj, objtyp=None, new_objtyp=None):
+		def can_do(self, obj, objtyp=None, new_objtyp=None,new_mimetyp=None):
 			if objtyp is None and obj is not None:
 				objtyp = obj.type
 			if current_app.config.DEBUG_ACCESS:
-				log_access("can_"+b+":", self,obj,objtyp,new_objtyp)
+				log_access("can_"+b+":", self,obj,objtyp,new_objtyp,new_mimetyp)
 			if a > PERM_NONE:
-				return self.can_do(obj, objtyp=objtyp, new_objtyp=new_objtyp, want=a) >= a
+				return self.can_do(obj, objtyp=objtyp, new_objtyp=new_objtyp,new_mimetyp=new_mimetyp, want=a) >= a
 			else:
-				return self.can_do(obj, objtyp=objtyp, new_objtyp=new_objtyp, want=a) == a
+				return self.can_do(obj, objtyp=objtyp, new_objtyp=new_objtyp,new_mimetyp=new_mimetyp, want=a) == a
 		can_do.__doc__ = "Check if this user/group/whatever can %s an object" % \
 			(b.lower() if a > PERM_NONE else "do nothing with",)
 
-		def will_do(self, obj, objtyp=None, new_objtyp=None):
+		def will_do(self, obj, objtyp=None, new_objtyp=None,new_mimetyp=None):
 			if current_app.config.DEBUG_ACCESS:
-				log_access("will_"+b+":", self,obj,objtyp,new_objtyp)
-			if not can_do(self, obj, objtyp=objtyp, new_objtyp=new_objtyp):
+				log_access("will_"+b+":", self,obj,objtyp,new_objtyp,new_mimetyp)
+			if not can_do(self, obj, objtyp=objtyp, new_objtyp=new_objtyp,new_mimetyp=new_mimetyp):
 				raise AuthError(obj,a)
 
 		return can_do,will_do
@@ -132,14 +135,14 @@ for a,b in PERM.iteritems():
 	setattr(Object,'will_'+b.lower(), d)
 
 
-def permit(user,obj, right, objtyp=None, new_objtyp=None, inherit=None):
+def permit(user,obj, right, objtyp=None, new_objtyp=None,new_mimetyp=None, inherit=None):
 	if right >= PERM_NONE:
 		pq = [Permission.right >= 0]
 	else:
 		pq = [Permission.right == right]
 	if inherit is not None:
 		pq.append(or_(Permission.inherit == None, Permission.inherit == inherit))
-	p = list(Permission.q.filter(Permission.user==user, Permission.target==obj, Permission.for_objtyp==objtyp, Permission.new_objtyp==new_objtyp, *pq))
+	p = list(Permission.q.filter_by(user=user, target=obj, for_objtyp=objtyp, new_objtyp=new_objtyp,new_mimetyp=new_mimetyp).filter(*pq))
 	
 	if p:
 		if p[0].inherit is None and inherit is not None:
@@ -150,8 +153,8 @@ def permit(user,obj, right, objtyp=None, new_objtyp=None, inherit=None):
 			Change(p,{'inherit':(p.inherit,not inherit)})
 			p.inherit = not inherit
 		elif p[0].inherit is not None and inherit is None:
-			permit(user,obj, right, objtyp, new_objtyp, inherit=False)
-			permit(user,obj, right, objtyp, new_objtyp, inherit=True)
+			permit(user,obj, right, objtyp, new_objtyp,new_mimetyp, inherit=False)
+			permit(user,obj, right, objtyp, new_objtyp,new_mimetyp, inherit=True)
 			return
 		else:
 			assert len(p) == 1
@@ -161,17 +164,17 @@ def permit(user,obj, right, objtyp=None, new_objtyp=None, inherit=None):
 			Change.new(p,{'right':(p.right,right)})
 			p.right = right
 			return
-	p = Permission.new(user,obj,objtyp,right,inherit,new_objtyp=new_objtyp)
+	p = Permission.new(user,obj,objtyp,right,inherit,new_objtyp=new_objtyp,new_mimetyp=new_mimetyp)
 	logger.debug("New: {}".format(p))
 
-def forbid(user,obj, objtyp=None, inherit=None,new_objtyp=None, right=PERM_LIST):
+def forbid(user,obj, objtyp=None, inherit=None,new_objtyp=None,new_mimetyp=None, right=PERM_LIST):
 	if right >= PERM_NONE:
 		pq = [Permission.right >= right]
 	else:
 		pq = [Permission.right == want]
 	if inherit is not None:
 		pq.append(or_(Permission.inherit == None, Permission.inherit == inherit))
-	p = list(Permission.q.filter_by(user=u, target=obj, for_objtyp=objtyp,new_objtyp=new_objtyp, *pq))
+	p = list(Permission.q.filter_by(user=u, target=obj, for_objtyp=objtyp,new_objtyp=new_objtyp,new_mimetyp=new_mimetyp).filter(*pq))
 	
 	assert len(p) <= 2
 	if not p:
@@ -200,11 +203,11 @@ def forbid(user,obj, objtyp=None, inherit=None,new_objtyp=None, right=PERM_LIST)
 			p.inherit = not inherit
 			p.right = right-1
 			Change.new(p,{'right':(p.right,right-1),'inherit':(p.inherit,not inherit)})
-			Permission.new(p.user,p.obj,p.objtyp,orig_right,not p.inherit,new_objtyp=new_objtyp)
+			Permission.new(p.user,p.obj,p.objtyp,orig_right,not p.inherit,new_objtyp=new_objtyp,new_mimetyp=new_mimetyp)
 	else:
 		fix(p)
 	
-def can_do(user,obj, objtyp=None, new_objtyp=None, want=None):
+def can_do(user,obj, objtyp=None, new_objtyp=None,new_mimetyp=None, want=None):
 	"""Recursively get the permission of this user for that (type of) object."""
 
 	ru = getattr(request,"user",None)
@@ -220,7 +223,7 @@ def can_do(user,obj, objtyp=None, new_objtyp=None, want=None):
 #			return want
 
 	if current_app.config.DEBUG_ACCESS:
-		log_access("PERM", ObjType.get(objtyp).name if objtyp else "-", ObjType.get(new_objtyp) if new_objtyp else "-", (PERM_name(want) if want else "-")+":",obj,"FOR",user,"AT",current_site, u"⇒")
+		log_access("PERM", objtyp or "-", (str(new_objtyp) if new_objtyp else "-")+'/'+(str(new_mimetyp) if new_mimetyp else "-"), (PERM_name(want) if want else "-")+":",obj,"FOR",user,"AT",current_site, u"⇒")
 
 	pq = []
 	if want is not None:
@@ -240,6 +243,9 @@ def can_do(user,obj, objtyp=None, new_objtyp=None, want=None):
 	if new_objtyp is not None:
 		new_objtyp = ObjType.get(new_objtyp)
 		pq.append(Permission.new_objtyp == new_objtyp)
+	if new_mimetyp is not None:
+		new_mimetyp = ObjType.get(new_mimetyp)
+		pq.append(Permission.new_mimetyp == new_mimetyp)
 
 	inherited = False
 	done = set()

@@ -48,6 +48,7 @@ class PermissionForm(Form):
 
 	for_objtyp = SelectField('Existing Object type') ###TODO, choices=tuple((str(q.id),q.name) for q in D))
 	new_objtyp = SelectField('New Object type') ###TODO, choices=(("-","(not applicable)"),)+tuple((str(q.id),q.name) for q in D))
+	new_mimetyp = SelectField('New MIME type') ###TODO, choices=(("-","(not applicable)"),)+tuple((str(q.id),q.name) for q in D))
 	inherit = SelectField('Applies to', choices=(('Yes','All sub-pages'), ('No','this page only'),('*','This page and all sub-pages')))
 	right = SelectField('Access to', choices=tuple((str(x),y) for x,y in plc),validators=[valid_access('object')])
 
@@ -58,11 +59,13 @@ def editor(obj=None, parent=None):
 	form = PermissionForm(request.form, prefix="perm")
 	form.for_objtyp.choices = tuple((str(x.id),x.name) for x in ObjType.q.all())
 	form.new_objtyp.choices = (('-','–'),) + form.for_objtyp.choices
+	form.new_mimetyp.choices = (('-','–'),) + tuple((str(x.id),x.name) for x in MIMEtype.q.all())
 	if request.method == 'POST' and form.validate():
 		user = Object.by_oid(form.user.data)
 		dest = Object.by_oid(form.target.data)
 		for_objtyp = int(form.for_objtyp.data)
 		new_objtyp = int(form.new_objtyp.data) if form.new_objtyp.data != "-" else None
+		new_mimetyp = int(form.new_mimetyp.data) if form.new_mimetyp.data != "-" else None
 		right = int(form.right.data)
 
 		if form.inherit.data == "Yes": inherit = True
@@ -80,6 +83,7 @@ def editor(obj=None, parent=None):
 			obj.right = right
 			obj.inherit = inherit
 		obj.new_objtyp = new_objtyp
+		obj.new_mimetyp = new_mimetyp
 
 		flash(u"Gespeichert.",True)
 
@@ -109,6 +113,7 @@ def editor(obj=None, parent=None):
 			form.user.data = obj.owner.oid
 			form.for_objtyp.data = str(obj.for_objtyp.id)
 			form.new_objtyp.data = str(obj.new_objtyp.id) if obj.new_objtyp else "-"
+			form.new_mimetyp.data = str(obj.new_mimetyp.id) if obj.new_mimetyp else "-"
 			form.inherit.data = "*" if obj.inherit is None else "Yes" if obj.inherit else "No"
 			form.right.data = str(obj.right)
 		else:
@@ -117,6 +122,7 @@ def editor(obj=None, parent=None):
 			form.right.data = str(PERM_NONE)
 			form.for_objtyp.data = str(parent.type.id)
 			form.new_objtyp.data = "-"
+			form.new_mimetyp.data = "-"
 			form.inherit.data = "*"
 
 	return render_template('edit/permission.html', parent=parent, obj=obj, form=form, title_trace=["New permission" if parent else "Edit permission"])

@@ -208,7 +208,7 @@ class Site(Object):
 		oanon = Group.q.get_by(parent=parent, name=ANON_USER_NAME)
 		for src,dst in ((oadmin,admin),(oanon,anon),(parent,self)):
 			for p in Permission.q.filter_by(user=src):
-				Permission.new(user=dst, target=p.target, objtyp=p.objtyp, inherit=p.inherit, right=p.right, new_objtyp=p.new_objtyp)
+				Permission.new(user=dst, target=p.target, objtyp=p.objtyp, inherit=p.inherit, right=p.right, new_objtyp=p.new_objtyp,new_mimeyp=p.new_mimetyp)
 
 	def after_update(self):
 		super(Site,self).after_update()
