@@ -49,6 +49,14 @@ class Content(_Content):
 		"""
 	mime = ObjectRef(MIMEtype, doc="Content type of my data")
 
+class ContentObj(object):
+	def __init__(self, mime,content):
+		self.mime = mime
+		self.content = content
+
+	def __composite_values__(self):
+		return self.mime, self.content
+
 class Cached(object):
 	"""\
 		This is a mix-in to provide a statically-cached version of some content.
