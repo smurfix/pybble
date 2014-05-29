@@ -52,4 +52,8 @@ class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 		from pybble.ext.page.model import Page
 		p = Page.q.get_by(name='WebSnip')
 		self.assertContent("http://ptest/"+p.oid,"Sub_for_Testing")
+
+	def test_site(self):
+		p = Site.q.get_by(domain='ptest')
+		self.assertContent("http://ptest/"+p.oid,"Site_for_Testing")
 			
