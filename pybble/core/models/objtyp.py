@@ -46,6 +46,11 @@ class ObjType(Loadable, Object):
 	
 	@classmethod
 	def get(cls, typ, obj=None):
+		"""\
+			Resolve 'something' to an object type, or (of the second
+			parameter is an integer) to an object.
+			
+			"""
 		if typ is None and obj is None:
 			return None
 		if typ is not None and obj is not None:
