@@ -300,6 +300,7 @@ class PopulateCommand(Command):
 
 		# APP is here again because of attached templates which might not
 		# have loaded the first time because of missing translators
+		process_module({'MODEL':MODEL}, force=True)
 		process_module({'VAR':VAR, 'BLUEPRINT':BLUEPRINT, 'APP':APP, 'TRANSLATOR':TRANSLATOR, 'VERIFIER':VERIFIER, 'STATIC':STATIC, 'TEMPLATE':TEMPLATE}, force=force)
 
 		## possible root app fix-ups

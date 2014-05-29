@@ -202,12 +202,16 @@ def add_objtypes(objects, force=False):
 		objs.append((obj,name,doc))
 
 	ObjType.metadata.create_all(engine)
+	try:
+		root = root_site.add_default_permissions
+	except NoData:
+		return
 
 	for obj,name,doc in objs:
 		obj = ObjType.get(obj) # will create the record
 		_upd(obj,(('name',name),('doc',doc)), force=force)
-		if obj._is_new:
-			root_site.add_default_permissions(obj)
+		if obj._is_new or force:
+			root(obj)
 
 def add_translator(obj,name,doc=NotGiven, force=False):
 	## Templating and whatnot
