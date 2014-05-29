@@ -317,7 +317,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 
 def create_site(parent,domain,app,name):
 	app = App.q.get_by(name=app)
-	site = Site.new(parent=parent, name=name, domain=domain, app=app)
+	site = Site.new(parent=parent, name=name, domain=domain, app=app, superuser=request.user)
 	db.flush()
 	return site
 

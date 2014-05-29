@@ -25,23 +25,29 @@ from flask import request,current_app,g, _app_ctx_stack
 from flask._compat import text_type,string_types
 from werkzeug import import_string
 
+from .. import ROOT_USER_NAME
 from ..utils import NotGiven
 from ..globals import root_site
 from . import config
 from .utils import attrdict
 from .db import db, NoData, engine
-from .models.types import MIMEtype,MIMEtranslator,MIMEadapter
+from .models.types import MIMEtype,MIMEtranslator,MIMEadapter,MIMEext
 from .models.config import ConfigVar
 from .models.site import Site,App,Blueprint
+from .models.user import User
 from .models.files import StaticFile,BinData
 from .models.storage import Storage
 from .models.verifier import VerifierBase
 from .models.objtyp import ObjType
+from .models.tracking import Change
 from .models.template import Template,TemplateMatch
 
 logger = logging.getLogger('pybble.core.add')
 
 _metadata = re.compile('##:?(\S+) *[ :] *(.*)\n') # re.U ?
+
+def root_user():
+	return User.q.get_by(site=root_site, username=ROOT_USER_NAME)
 
 def _upd(obj,attrdata, force=False):
 	"""\
@@ -59,14 +65,16 @@ def _upd(obj,attrdata, force=False):
 				continue
 			logger.info("{}: cleared {}.".format(obj,attr))
 		elif odata is None:
-			logger.info("{}: set {}.".format(obj,attr))
+			if not obj._is_new:
+				logger.info("{}: set {}.".format(obj,attr))
 		else:
-			if odata == data or not force:
+			if odata == data or not (force or obj._is_new):
 				continue
-			logger.info("{}: updated {}.".format(obj,attr))
+			if not obj._is_new:
+				logger.info("{}: updated {}.".format(obj,attr))
 		chg[attr] = (odata,data)
 	if chg:
-		Change.new(obj,chg)
+		Change.new(obj, root_user(), data=chg)
 		for k,v in chg.items():
 			setattr(obj,k,v[1])
 
@@ -81,6 +89,10 @@ def _load(Obj,lister, force=False):
 			obj = obj[0]
 		if isinstance(obj,string_types):
 			obj = import_string(obj)
+			if name is NotGiven:
+				name = getattr(obj,'NAME',name)
+			if doc is NotGiven:
+				doc = getattr(obj,'DOC',doc)
 		
 		path = obj.__module__+'.'+obj.__name__
 		try:
@@ -109,16 +121,32 @@ def modpath(obj,dir=None):
 def add_mime(typ,subtyp,ext=NotGiven,name=NotGiven,doc=NotGiven, force=False):
 	"""Add a single MIME type."""
 
+	if not isinstance(ext,(list,tuple)):
+		ext = (ext,)
 	try:
 		mt = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
 	except NoData:
 		if ext is NotGiven: ext = None
 		if doc is NotGiven: doc = None
 		if name is NotGiven: name = None
-		mt = MIMEtype.new(typ=typ, subtyp=subtyp, ext=ext, name=name, doc=doc)
+		mt = MIMEtype.new(typ=typ, subtyp=subtyp, ext=ext[0], name=name, doc=doc)
+
 		logger.debug("New: "+str(mt))
 	else:
-		_upd(mt,(('doc',doc), ('ext',ext), ('name',name)),force)
+		_upd(mt,(('doc',doc), ('ext',ext[0]), ('name',name)),force)
+	ext = list(ext[1:])
+	for me in MIMEext.q.filter_by(mime=mt):
+		try:
+			ext.remove(me.ext)
+		except ValueError:
+			if force:
+				Delete.new(me)
+				logger.info("Removed: "+str(me))
+	if mt._is_new or force:
+		for t in ext:
+			me = MIMEext.new(mime=mt,ext=t)
+			logger.info("New: "+str(me))
+
 
 def add_mimes(content_types, force=False):
 	"""Add a list of MIME types."""
@@ -157,8 +185,8 @@ def add_objtypes(objects, force=False):
 
 	objs = []
 	for obj in objects:
-		name = None
-		doc = None
+		name = NotGiven
+		doc = NotGiven
 		if isinstance(obj,(list,tuple)):
 			if len(obj) > 2:
 				doc = obj[2]
@@ -166,12 +194,20 @@ def add_objtypes(objects, force=False):
 			obj = obj[0]
 		if isinstance(obj,string_types):
 			obj = import_string(obj)
-		objs.append(obj)
+			if name is NotGiven:
+				name = getattr(obj,'NAME',name)
+			if doc is NotGiven:
+				doc = getattr(obj,'DOC',doc)
+
+		objs.append((obj,name,doc))
 
 	ObjType.metadata.create_all(engine)
 
-	for obj in objs:
-		ObjType.get(obj)
+	for obj,name,doc in objs:
+		obj = ObjType.get(obj) # will create the record
+		_upd(obj,(('name',name),('doc',doc)), force=force)
+		if obj._is_new:
+			root_site.add_default_permissions(obj)
 
 def add_translator(obj,name,doc=NotGiven, force=False):
 	## Templating and whatnot
@@ -298,7 +334,7 @@ def add_static(filepath,path, force=False):
 				sb = nsb()
 			osb = sf.bindata
 			sf.file = sb
-			Change.new(sf,{"file":(osb,sb)}, comment="file vanished")
+			Change.new(sf,root_user(), data={"file":(osb,sb)}, comment="file vanished")
 			c = sf.content
 
 		if content != sf.content:
@@ -310,7 +346,7 @@ def add_static(filepath,path, force=False):
 					sb = nsb()
 				try:
 					Delete.new(sf.file, comment="replaced by update")
-					Change.new(sf,data={'file':(sf.file,sb)})
+					Change.new(sf,root_user(), data={'file':(sf.file,sb)})
 				except:
 					pdb.post_mortem()
 					raise
