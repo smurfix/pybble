@@ -18,6 +18,7 @@ import sys
 import logging
 from time import time
 from itertools import chain
+from urllib import urlencode
 
 from flask import Flask, request, g, session, Markup, Response as BaseResponse, current_app, Markup
 from flask.config import Config
@@ -312,7 +313,8 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 		app.config.URLFOR_ERROR_FATAL = app.debug
 	if not app.config.URLFOR_ERROR_FATAL:
 		def build_err(error, endpoint, values):
-			return Markup('<a href="#" class="build_error" title="%s (%s)">Bad link</a>') % (endpoint,repr(values))
+			#return Markup('<a href="#" class="build_error" title="%s (%s)">Bad link</a>') % (endpoint,repr(values))
+			return Markup('bad_Link/')+endpoint+"?"+urlencode(values)
 		app.url_build_error_handlers.append(build_err)
 
 	init_db(app)
