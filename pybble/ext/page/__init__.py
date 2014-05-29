@@ -31,7 +31,7 @@ MODEL = "pybble.ext.page.model.Page"
 APP = ()
 
 ## New blueprints. Ditto and somewhat more common.
-BLUEPRINT = ("pybble.ext.page.blueprint.Blueprint",)
+BLUEPRINT = ("pybble.ext.page.blueprint.Blueprint","pybble.ext.page.named.Blueprint")
 
 ## Code to run, after everything is set up
 ## This typically adds additional permissions.
