@@ -95,7 +95,7 @@ def get_template(c, trace=None,_retry=False):
 		seen.add(site)
 
 		get_site_template(c,site,weight,got)
-		if site is c.site:
+		if site == c.site:
 			if c.blueprint:
 				get_one_site(c,c.blueprint.blueprint,55+weight,got,q)
 				get_one_site(c,c.blueprint,53+weight,got,q)
@@ -223,7 +223,7 @@ def get_one_site(c,site, weight,got, q):
 		t = tm.template
 		a = t.adapter
 		w = weight+tm.weight
-		if a.from_mime is q._from_wild: w += 100
-		if a.to_mime is q._to_wild: w += 100
+		if a.from_mime == q._from_wild: w += 100
+		if a.to_mime == q._to_wild: w += 100
 		got(t,w)
 
