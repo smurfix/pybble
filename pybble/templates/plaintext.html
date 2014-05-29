@@ -1,0 +1,15 @@
+##weight 10000
+##src text/plain
+##dst text/html
+##typ template/jinja
+##named 0
+##inherit -
+##match root
+
+{% extends 'layout.html' %}
+{% block body %}
+
+<pre>
+{{ c.content }}
+</pre>
+{% endblock %}
