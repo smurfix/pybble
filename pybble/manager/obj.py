@@ -24,6 +24,7 @@ from . import Manager,Command,Option,PrepCommand
 from ..core.rest import RESTend
 from ..core.db import db, NoData,ManyData
 from ..core.models.objtyp import ObjType
+from ..core.models.types import MIMEtype
 from ..core.models._const import PERM_NAME, TM_DETAIL
 from ..core.json import encode
 from ..utils import getsubattr
@@ -42,6 +43,7 @@ def _parse(args):
 		* foo==D:User ⇒ refer to the User table
 		* foo==R:Read ⇒ refer to the "Read" access right
 		* foo==T:Detail ⇒ refer to the "Detail" template type
+		* foo==M:text/html ⇒ refer to this MIME type
 		* foo==Bar:123 ⇒ reference to this database entry
 	"""
 	data = {}
@@ -63,6 +65,8 @@ def _parse(args):
 				v = PERM_NAME[oid]
 			elif objtyp == "T":
 				v = TM_DETAIL[oid]
+			elif objtyp == "M":
+				v = MIMEtype.get(oid)
 			else:
 				try:
 					v = ObjType.get(objtyp)
