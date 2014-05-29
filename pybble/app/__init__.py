@@ -35,6 +35,7 @@ from ..core.models.site import Site,App,SiteBlueprint,Blueprint
 from ..core.models.config import ConfigVar
 from ..core.models.user import User
 from ..core.models.types import MIMEtranslator
+from ..core.models.object import Object
 from ..globals import current_site
 from ..manager import Manager,Command
 from ..render import ContentData,get_context
@@ -103,7 +104,10 @@ class Response(BaseResponse):
 	@classmethod
 	def force_type(cls,req,env=None):
 		if isinstance(req,ContentData):
-			return cls(req.render(c=req), content_type=str(req.to_mime))
+			vars = {'c':req}
+			if isinstance(req.content,Object):
+				vars['obj'] = req.content
+			return cls(req.render(**vars), content_type=str(req.to_mime))
 		else:
 			return super(cls,Response).force_type(req,env)
 
