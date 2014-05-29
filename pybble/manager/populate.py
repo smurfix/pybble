@@ -205,7 +205,7 @@ class PopulateCommand(Command):
 
 		db.commit()
 		_app_ctx_stack.top.site = root
-		_app_ctx_stack.top.app = root.app
+		_app_ctx_stack.top.app.app = root.app
 
 		## Default storage
 		try:
