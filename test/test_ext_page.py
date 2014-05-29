@@ -55,5 +55,5 @@ class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 
 	def test_site(self):
 		p = Site.q.get_by(domain='ptest')
-		self.assertContent("http://ptest/"+p.oid,"Site_for_Testing")
+		self.assertContent("http://ptest/"+p.oid,"page for PageTest.")
 			
