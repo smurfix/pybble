@@ -219,6 +219,6 @@ class MIMEadapter(Object):
 			raise
 
 	def __str__(self):
-		return u"‹%s %s: %s➙%s›" % (self.__class__.__name__, self.id,unicode(self.from_mime),unicode(self.to_mime))
+		return u"‹%s %s: %s ➙ %s›" % (self.__class__.__name__, self.id,unicode(self.from_mime),unicode(self.to_mime))
 	__repr__ = __str__
 
