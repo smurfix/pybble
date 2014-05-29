@@ -47,6 +47,7 @@ from ..signal import ObjSignal
 
 from ..db import Base, Column, IDrenderer, db, NoData,NoDataExc, maybe_stale, no_autoflush, refresh, setup_events, Dumpable
 from ._const import PERM_ADD,PERM_READ,PERM_ADMIN
+from ._render import Rendered
 
 from flask import current_app
 from flask._compat import text_type, string_types
@@ -201,12 +202,13 @@ class get_type(object):
 			return refresh(t)
 get_type = get_type()
 
-class Object(Base):
+class Object(Base,Rendered):
 	__metaclass__ = ObjectMeta
 	__abstract__ = True
 
 	_rec_str = 0 ## marker for possibly-recursive __str__ calls
 	_deleting = False ## marker for skipping some do-not-modify tests
+	_is_new = False ## marker for just having been created
 
 	_no_crumbs = False ## if True, don't create Breadcrumb data when visiting
 
@@ -233,6 +235,10 @@ class Object(Base):
 		return ObjType.get(type, id)
 
 	type = get_type
+
+	def setup(self,**k):
+		super(Object,self).setup(**k)
+		self._is_new = True
 
 	@property
 	def mimetype(self):
