@@ -100,68 +100,76 @@ class ObjectMeta(type(Base)):
 		cls._refs = []
 		cls.__table_args__ = list(dct.get('__table_args__',[])) # collect indices for foreign-key tables here
 
-		for k,v in dct.items():
-			if ObjectRef is not None and isinstance(v,ObjectRef):
-				if v.typ is None: ## any table
-					from .objtyp import ObjType
+		# Now walk through all our (base) classes.
+		# This is necessary to collect ObjectRef entries in subclasses
+		seen = set()
+		for ccls in cls.__mro__:
+			for k,v in ccls.__dict__.items():
+				if k.startswith('_'): continue
+				if k in seen: continue
+				seen.add(k)
 
-					## Create a new composite.
-					if v.declared_attr:
-						col_typ = declared_attr((lambda k,v: lambda cls: Column(k+'_typ_id',Integer, ForeignKey(ObjType.id),nullable=v.nullable, doc=v.doc, unique=v.unique))(k,v))
-						col_id = declared_attr((lambda k,v: lambda cls: Column(k+'_id',Integer, nullable=v.nullable))(k,v))
-					else:
-						col_typ = Column(k+'_typ_id',Integer, ForeignKey(ObjType.id),nullable=v.nullable, doc=v.doc, unique=v.unique)
-						col_id = Column(k+'_id',Integer, nullable=v.nullable)
-					setattr(cls,k+"_typ_id", col_typ)
-					setattr(cls,k+"_id", col_id)
-					if v.declared_attr:
-						setattr(cls,k, declared_attr((lambda col_typ,col_id: lambda cls: composite(ObjectRef, col_typ,col_id, deferred=True))(col_typ,col_id)))
-					else:
-						setattr(cls,k, composite(Object._compose, col_typ,col_id, deferred=True))
-					_refs.append((cls,k))
-					cls.__table_args__.append(Index("i_%s_%s"%(name,k),col_typ,col_id))
-				else: ## specific table
-					rem = {}
-					if v.backref:
-						rem['back_populates'] = v.backref
-					if isinstance(v.typ,(int,long)):
-						v.typ = ObjType.q.get(id=typ).mod
-						v.typ_id = v.typ.id
-					elif isinstance(v.typ,string_types):
-						if v.typ == "self":
-							col_typ = Column(k+'_id',Integer, ForeignKey(cls.__tablename__+'.id'),nullable=v.nullable, doc=v.doc, unique=v.unique)
-							col_ref = relationship(cls, remote_side=[cls.id], foreign_keys=(col_typ,), **rem)
-							setattr(cls,k+"_id", col_typ)
-							setattr(cls,k, col_ref)
-							cls._refs.append((cls,k))
-							cls.__table_args__.append(Index("i_%s_%s"%(name,k),col_typ))
-							if v.backref:
-								setattr(cls,v.backref, relationship(cls, primaryjoin = col_typ==cls.id, back_populates=k, uselist=not v.unique))
-							continue
+				if ObjectRef is not None and isinstance(v,ObjectRef):
+					if v.typ is None: ## any table
+						from .objtyp import ObjType
+
+						## Create a new composite.
+						if v.declared_attr:
+							col_typ = declared_attr((lambda k,v: lambda cls: Column(k+'_typ_id',Integer, ForeignKey(ObjType.id),nullable=v.nullable, doc=v.doc, unique=v.unique))(k,v))
+							col_id = declared_attr((lambda k,v: lambda cls: Column(k+'_id',Integer, nullable=v.nullable))(k,v))
 						else:
-							v.typ = ObjType.q.get(path=typ).mod
+							col_typ = Column(k+'_typ_id',Integer, ForeignKey(ObjType.id),nullable=v.nullable, doc=v.doc, unique=v.unique)
+							col_id = Column(k+'_id',Integer, nullable=v.nullable)
+						setattr(cls,k+"_typ_id", col_typ)
+						setattr(cls,k+"_id", col_id)
+						if v.declared_attr:
+							setattr(cls,k, declared_attr((lambda col_typ,col_id: lambda cls: composite(ObjectRef, col_typ,col_id, deferred=True))(col_typ,col_id)))
+						else:
+							setattr(cls,k, composite(Object._compose, col_typ,col_id, deferred=True))
+						_refs.append((cls,k))
+						cls.__table_args__.append(Index("i_%s_%s"%(name,k),col_typ,col_id))
+					else: ## specific table
+						rem = {}
+						if v.backref:
+							rem['back_populates'] = v.backref
+						if isinstance(v.typ,(int,long)):
+							v.typ = ObjType.q.get(id=typ).mod
 							v.typ_id = v.typ.id
-					else:
-						v.typ_id = v.typ.id
-						rem['remote_side'] = v.typ.__name__+'.id'
-					if v.declared_attr:
-						col_typ = declared_attr((lambda k,v: lambda cls: Column(k+'_id',Integer, ForeignKey(v.typ_id),nullable=v.nullable, doc=v.doc, unique=v.unique))(k,v))
-						col_ref = declared_attr((lambda k,v,r: lambda cls: relationship(v.typ, primaryjoin = col_typ==v.typ_id, **r))(k,v,rem))
-					else:
-						col_typ = Column(k+'_id',Integer, ForeignKey(v.typ_id),nullable=v.nullable, doc=v.doc, unique=v.unique)
-						col_ref = relationship(v.typ, primaryjoin = col_typ==v.typ_id, **rem)
-					setattr(cls,k+"_id", col_typ)
-					setattr(cls,k, col_ref)
-					v.typ._refs.append((cls,k))
-					cls.__table_args__.append(Index("i_%s_%s"%(name,k),col_typ))
-					if v.backref:
-						if isinstance(v.typ,string_types):
-							setattr(v.typ,v.backref, relationship(cls, primaryjoin = "%s_id==%s" % (k,v.typ_id), back_populates=k))
+						elif isinstance(v.typ,string_types):
+							if v.typ == "self":
+								col_typ = Column(k+'_id',Integer, ForeignKey(cls.__tablename__+'.id'),nullable=v.nullable, doc=v.doc, unique=v.unique)
+								col_ref = relationship(cls, remote_side=[cls.id], foreign_keys=(col_typ,), **rem)
+								setattr(cls,k+"_id", col_typ)
+								setattr(cls,k, col_ref)
+								cls._refs.append((cls,k))
+								cls.__table_args__.append(Index("i_%s_%s"%(name,k),col_typ))
+								if v.backref:
+									setattr(cls,v.backref, relationship(cls, primaryjoin = col_typ==cls.id, back_populates=k, uselist=not v.unique))
+								continue
+							else:
+								v.typ = ObjType.q.get(path=typ).mod
+								v.typ_id = v.typ.id
 						else:
-							setattr(v.typ,v.backref, relationship(cls, primaryjoin = col_typ==v.typ.id, back_populates=k, uselist=not v.unique))
-				
-			elif k == 'modified':
-				event.listen(cls,'before_update',update_modified)
+							v.typ_id = v.typ.id
+							rem['remote_side'] = v.typ.__name__+'.id'
+						if v.declared_attr:
+							col_typ = declared_attr((lambda k,v: lambda cls: Column(k+'_id',Integer, ForeignKey(v.typ_id),nullable=v.nullable, doc=v.doc, unique=v.unique))(k,v))
+							col_ref = declared_attr((lambda k,v,r: lambda cls: relationship(v.typ, primaryjoin = col_typ==v.typ_id, **r))(k,v,rem))
+						else:
+							col_typ = Column(k+'_id',Integer, ForeignKey(v.typ_id),nullable=v.nullable, doc=v.doc, unique=v.unique)
+							col_ref = relationship(v.typ, primaryjoin = col_typ==v.typ_id, **rem)
+						setattr(cls,k+"_id", col_typ)
+						setattr(cls,k, col_ref)
+						v.typ._refs.append((cls,k))
+						cls.__table_args__.append(Index("i_%s_%s"%(name,k),col_typ))
+						if v.backref:
+							if isinstance(v.typ,string_types):
+								setattr(v.typ,v.backref, relationship(cls, primaryjoin = "%s_id==%s" % (k,v.typ_id), back_populates=k))
+							else:
+								setattr(v.typ,v.backref, relationship(cls, primaryjoin = col_typ==v.typ.id, back_populates=k, uselist=not v.unique))
+					
+				elif k == 'modified':
+					event.listen(cls,'before_update',update_modified)
 			
 		_tables.append(cls)
 		cls_ = cls
