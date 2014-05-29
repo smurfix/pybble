@@ -28,9 +28,6 @@ class RESTend(object):
 	## TODO: permissions
 	def get(self,objtyp,id):
 		obj = ObjType.get(objtyp,id)
-		if objtyp is not None:
-			D = ObjType.get(objtyp).mod
-			assert type(obj) is D, "{} is not a {}".format(str(obj),str(D))
 		if self.json:
 			obj = obj.as_dict
 		return obj
@@ -38,9 +35,6 @@ class RESTend(object):
 	def put(self,objtyp,id, comment=None,**data):
 		obj = ObjType.get(objtyp,id)
 		changed = {}
-		if objtyp is not None:
-			D = ObjType.get(objtyp).mod
-			assert D is type(obj), "{} is not a {}".format(str(obj),str(D))
 		old = obj.as_dict
 		for k,v in data.items():
 			ov = getattr(obj,k,None)
@@ -62,8 +56,8 @@ class RESTend(object):
 		try:
 			obj = objtyp.mod.new(**data)
 		except TypeError as e:
-			raise TypeError("{}: {}".format(D,e)) ## SIGH
-		res = Tracker.new(request.user,obj, comment=comment)
+			raise TypeError("{}: {}".format(objtyp,e)) ## SIGH
+		res = Tracker.new(obj, comment=comment)
 		if self.json:
 			res = res.as_dict
 		return res
@@ -71,9 +65,7 @@ class RESTend(object):
 	def patch(self,objtyp,id, comment=None,**data):
 		obj = ObjType.get(objtyp,id)
 		changed = {}
-		if objtyp is not None:
-			D = ObjType.get(objtyp).mod
-			assert D is type(obj), "{} is not a {}".format(str(obj),str(D))
+
 		old = obj.as_dict
 		for k,v in data.items():
 			ov = getattr(obj,k,None)
@@ -90,9 +82,6 @@ class RESTend(object):
 	
 	def delete(self,typ,id, comment=None):
 		obj = ObjType.get(typ,id)
-		if objtyp is not None:
-			D = ObjType.get(objtyp).mod
-			assert D is type(obj), "{} is not a {}".format(str(obj),str(D))
 		Delete.new(obj, comment=comment)
 		if self.json:
 			obj = obj.as_dict
