@@ -94,8 +94,8 @@ def get_template(c, trace=None):
 			break
 		seen.add(site)
 
+		get_site_template(c,site,weight,got)
 		if site is c.site:
-			get_site_template(c,weight,got)
 			if c.blueprint:
 				get_one_site(c,c.blueprint.blueprint,55+weight,got,q)
 				get_one_site(c,c.blueprint,53+weight,got,q)
@@ -116,7 +116,7 @@ def get_template(c, trace=None):
 		raise TemplateNotFound(c)
 	return res[0]
 
-def get_site_template(c,weight,got):
+def get_site_template(c,site,weight,got):
 	bn = None
 	sn = None
 	if c.name:
@@ -128,11 +128,11 @@ def get_site_template(c,weight,got):
 			sn = c.name
 			weight += 30
 
-	if bn:
+	if c.site == site and bn:
 		try: # the name might refer to a SiteBlueprint
-			sbp = SiteBlueprint.q.get_by(site=c.site,name=bn)
+			sbp = SiteBlueprint.q.get_by(site=site,name=bn)
 		except NoData: # or to the Blueprint it points to
-			try: bp = db.query(SiteBlueprint).filter(SiteBlueprint.site==c.site).join(Blueprint, SiteBlueprint.blueprint).filter(Blueprint.name==bn).limit(1).one().blueprint
+			try: bp = db.query(SiteBlueprint).filter(SiteBlueprint.site==site).join(Blueprint, SiteBlueprint.blueprint).filter(Blueprint.name==bn).limit(1).one().blueprint
 			except NoData: bp = None
 		else:
 			# we get here if the prefix refers to a SiteBlueprint entity
@@ -146,22 +146,23 @@ def get_site_template(c,weight,got):
 			except NoData: pass
 			else: got(t,0+weight)
 
-		if c.site.name == bn:
-			try: t = DBTemplate.q.get_by(target=c.site, name=sn)
+		if site.name == bn:
+			try: t = DBTemplate.q.get_by(target=site, name=sn)
 			except NoData: pass
 			else: got(t,5+weight)
 
-		if c.site.app.name == bn:
-			try: t = DBTemplate.q.get_by(target=c.site.app, name=sn)
+		if hasattr(site,'app') and site.app.name == bn:
+			try: t = DBTemplate.q.get_by(target=site.app, name=sn)
 			except NoData: pass
 			else: got(t,10+weight)
 
 	if c.name:
-		try: t = DBTemplate.q.get_by(target=c.site.app, name=c.name)
-		except NoData: pass
-		else: got(t,40)
+		if hasattr(site,'app'):
+			try: t = DBTemplate.q.get_by(target=site.app, name=c.name)
+			except NoData: pass
+			else: got(t,40)
 
-		try: t = DBTemplate.q.get_by(target=c.site, name=c.name)
+		try: t = DBTemplate.q.get_by(target=site, name=c.name)
 		except NoData: pass
 		else: got(t,9)
 
