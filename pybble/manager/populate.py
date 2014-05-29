@@ -178,7 +178,7 @@ class PopulateCommand(Command):
 		VERIFIER = gen_translators()
 
 		## Bootstrapping is tricky.
-		process_module({'MODEL':MODEL, 'MIME':MIME, 'APP':APP})
+		process_module({'MODEL':MODEL, 'MIME':MIME, 'APP':APP}, force=force)
 
 		## main site
 		rapp = App.q.get_by(name='_root')
@@ -300,7 +300,7 @@ class PopulateCommand(Command):
 
 		# APP is here again because of attached templates which might not
 		# have loaded the first time because of missing translators
-		process_module({'VAR':VAR, 'BLUEPRINT':BLUEPRINT, 'APP':APP, 'TRANSLATOR':TRANSLATOR, 'VERIFIER':VERIFIER, 'STATIC':STATIC, 'TEMPLATE':TEMPLATE})
+		process_module({'VAR':VAR, 'BLUEPRINT':BLUEPRINT, 'APP':APP, 'TRANSLATOR':TRANSLATOR, 'VERIFIER':VERIFIER, 'STATIC':STATIC, 'TEMPLATE':TEMPLATE}, force=force)
 
 		## possible root app fix-ups
 		aapp = App.q.get_by(name="_alias")
