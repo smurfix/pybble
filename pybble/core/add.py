@@ -406,8 +406,8 @@ def add_template(parent, filepath,webpath, inferred="", force=False):
 			hdr[k] = v
 		elif k == "match":
 			hdr[k].append((v,hdr.inherit))
-		else:
-			raise ValueError("Template ‘{}’: duplicate metadata key ‘{}’".format(filepath,k))
+		elif str(ov) != str(v):
+			raise ValueError("Template ‘{}’: duplicate metadata key ‘{}’ ‘{}’ ‘{}’".format(filepath,k,ov,v))
 
 	if "src" not in hdr: hdr.src = "pybble/_empty"
 	if "dst" not in hdr: hdr.dst = "html/*"
@@ -505,9 +505,9 @@ def find_templates(parent, path,webpath="", inferred="",force=False):
 				continue
 			newpath = os.path.join(path,fn)
 			newwebpath = "{}/{}".format(webpath,fn) if webpath else fn
-			find_templates(parent, newpath,newwebpath, force=force)
+			find_templates(parent, newpath,newwebpath, inferred=inferred,force=force)
 		return
-	add_template(parent, path,webpath, inferred="",force=force)
+	add_template(parent, path,webpath, inferred=inferred,force=force)
 
 def process_module(mod, force=False):
 	targets = (
