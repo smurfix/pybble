@@ -68,8 +68,8 @@ def object_list(model_slug):
 
 def _fixup_fs(fs,id,attrs):
 	"""Change all fields that have been passed in **attrs to read-only"""
-	opts = [fs.id.readonly(),fs.objtyp.readonly()]
-	hide = [fs.children,fs.superchildren,fs.owned]
+	opts = [fs.id.readonly()]
+	hide = [] #[fs.children,fs.superchildren,fs.owned]
 	if id:
 		fs.configure(pk=True)
 	for k in attrs:
