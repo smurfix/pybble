@@ -34,7 +34,6 @@ def editor(request, obj=None, parent=None):
 		else:
 			data = obj.data
 			obj.name = name
-			obj.record_change(data)
 
 		flash(u"Gespeichert.",True)
 		return redirect(url_for("pybble.views.view_oid", oid=obj.oid))

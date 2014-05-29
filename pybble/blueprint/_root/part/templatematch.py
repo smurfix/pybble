@@ -66,7 +66,6 @@ def editor(request, obj=None, parent=None):
 
 		if parent:
 			obj = TemplateMatch.new(parent,int(form.objtyp.data),int(form.detail.data),form.page.data.replace("\r",""))
-			obj.record_creation()
 		else:
 			obj.record_change()
 			obj.data = form.page.data.replace("\r","")

@@ -129,7 +129,6 @@ def register():
 		u = User.new(form.username.data, form.password.data, anon=True) ## needs verification
 		u.email = form.email.data
 		u.parent = current_site
-		u.record_creation()
 
 		verifier = VerifierBase.q.get_by(name="register")
 		v = verifier.new(obj=current_site, user=u)

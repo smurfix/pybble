@@ -36,7 +36,6 @@ def editor(request, obj=None, parent=None):
 
 		if parent:
 			obj = Member.new(user, group)
-			obj.record_creation()
 		else:
 			data = obj.data
 			obj.owner = user

@@ -73,7 +73,6 @@ def editor(obj=None, parent=None):
 
 		if parent:
 			obj = WantTracking.new(user, dest, objtyp)
-			obj.record_creation()
 		else:
 			obj.record_change()
 			obj.owner = user
