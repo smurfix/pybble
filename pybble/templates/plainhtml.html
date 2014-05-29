@@ -1,0 +1,12 @@
+##weight 10000
+##src html/subpage
+##dst text/html
+##typ template/jinja
+##named 0
+##inherit -
+##match root
+
+{% extends 'layout.html' %}
+{% block body %}
+{{ c.content }}
+{% endblock %}

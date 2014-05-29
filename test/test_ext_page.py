@@ -35,8 +35,8 @@ class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 
 			self.run_manager("mgr -Dt -s ptest blueprint add PageDisplay / BlueTest")
 			self.run_manager("mgr -Dt -s ptest obj add Page name=TextPage mime==M:text/plain content=Test_for_Testing order=1")
-
 			self.run_manager("mgr -Dt -s ptest obj add Page name=WebPage mime==M:text/html content=HTML_for_Testing order=1")
+			self.run_manager("mgr -Dt -s ptest obj add Page name=WebSnip mime==M:html/subpage content=Sub_for_Testing order=1")
 
 	def test_text_page(self):
 		from pybble.ext.page.model import Page
@@ -47,4 +47,9 @@ class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 		from pybble.ext.page.model import Page
 		p = Page.q.get_by(name='WebPage')
 		self.assertContent("http://ptest/"+p.oid,"HTML_for_Testing")
+			
+	def test_sub_page(self):
+		from pybble.ext.page.model import Page
+		p = Page.q.get_by(name='WebSnip')
+		self.assertContent("http://ptest/"+p.oid,"Sub_for_Testing")
 			
