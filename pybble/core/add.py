@@ -63,15 +63,15 @@ def _upd(obj,attrdata, force=False):
 		if data is None:
 			if odata is None or not force:
 				continue
-			logger.info("{}: cleared {}.".format(obj,attr))
+			logger.info("{}: cleared {}, was ‘{}’.".format(obj,attr,odata))
 		elif odata is None:
 			if not obj._is_new:
-				logger.info("{}: set {}.".format(obj,attr))
+				logger.info("{}: set {} to ‘{}’.".format(obj,attr,data))
 		else:
 			if odata == data or not (force or obj._is_new):
 				continue
 			if not obj._is_new:
-				logger.info("{}: updated {}.".format(obj,attr))
+				logger.info("{}: updated {}: ‘{}’ ➙ ‘{}’.".format(obj,attr,odata,data))
 		chg[attr] = (odata,data)
 	if chg:
 		Change.new(obj, root_user(), data=chg)
