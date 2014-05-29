@@ -374,6 +374,13 @@ class Object(Base,Rendered):
 			for r in t.q.filter(getattr(t,k) == self):
 				yield r,k
 
+	def _dump(self, add_none=False, cols=None):
+		res = super(Object,self)._dump(add_none=add_none,cols=cols)
+		res['_refs'] = r = {}
+		for t,k,c in self.count_refs():
+			r[t.__name__+'_'+k] = tuple(self.get_refs(t,k))
+		return res
+
 	def count_refs(self):
 		"""Return #references as (objtype,key,num) tuples"""
 		for t,k in chain(_refs,self._refs):
@@ -381,9 +388,12 @@ class Object(Base,Rendered):
 			if c:
 				yield t,k,c
 	
-	def get_refs(self,objtype,key):
+	def get_refs(self,cls,key):
 		"""Return all references to me from this object+key"""
-		cls = objtype.mod
+		from .objtyp import ObjType
+
+		if isinstance(cls,ObjType):
+			cls = cls.mod
 		for r in cls.q.filter(getattr(cls,key)==self):
 			yield r
 
