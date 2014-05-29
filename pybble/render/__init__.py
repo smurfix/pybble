@@ -170,6 +170,9 @@ class ContentData(object):
 			return self.content
 		return ("{}({})".format(self.__class__.__name__,",".join( str(k)+'='+repr(v) for k,v in self.__dict__.items() if k[0] != '_' and v is not None)))
 
+	def __iter__(self):
+		yield self.content
+
 def valid_obj(form, field):
 	"""Field verifier which checks that an object ID is valid"""
 	try:
