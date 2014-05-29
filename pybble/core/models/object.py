@@ -258,7 +258,7 @@ class Object(Base,Rendered):
 			db.flush()
 		return "%d.%d.%s" % (self.type.id,
 		                     self.id, 
-		                     urlsafe_b64encode(md5(str(self.type.id) +'.'+ str(self.id) + current_app.config.SECRET_KEY)\
+		                     urlsafe_b64encode(md5(str(self.type.id) +'.'+ str(self.id) + current_app.config['SECRET_KEY'])\
 		                                          .digest()).strip('\n =')[:10])
 
 	@staticmethod
