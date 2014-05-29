@@ -258,10 +258,6 @@ def can_do(user,obj, objtyp=None, new_objtyp=None,new_mimetyp=None, want=None):
 		if obj in done:
 			raise ValueError("Parent recursion on "+repr(obj))
 		done.add(obj)
-		if objtyp is None:
-			ds = Permission.for_objtyp == None
-		else:
-			ds = or_(Permission.for_objtyp == None, Permission.for_objtyp == objtyp)
 
 		p = Permission.q.filter(and_(or_(Permission.for_objtyp == None, Permission.for_objtyp == objtyp) if objtyp is not None else (Permission.for_objtyp == None),
 										or_(Permission.inherit == inherited, Permission.inherit == None),
