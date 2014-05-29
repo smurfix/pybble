@@ -20,16 +20,19 @@ from jinja2 import TemplateNotFound
 
 from pybble.blueprint import BaseBlueprint
 from pybble.core.route import Exposer
+from pybble.core.models.object import Object
+
 expose = Exposer()
 
 class Blueprint(BaseBlueprint):
+	NAME = "PageDisplay"
 	def setup(self):
 		super(Blueprint,self).setup()
 		expose.add_to(self)
 
 @expose('/<oid>')
-def showpage():
+def showpage(oid):
 	obj = Object.by_oid(oid)
 	request.user.will_read(obj)
-	return render_my_
+	return obj.render_content()
 

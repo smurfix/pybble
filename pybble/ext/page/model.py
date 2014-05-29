@@ -15,10 +15,12 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from flask import url_for
 
-from sqlalchemy import Column,Unicode,Boolean,DateTime
+from sqlalchemy import Column,Unicode,Boolean,DateTime,Integer
 
-from pybble.core.models.object import Object
+from pybble.core.models.object import Object,ObjectRef
 from pybble.core.models._content import Content
+from pybble.core.models._const import PERM_READ,PERM_ADMIN
+from pybble.globals import current_site
 
 from datetime import datetime
 
@@ -29,16 +31,29 @@ class Page(Content, Object):
 		Superparent: Our site (main page) or empty (subpage)
 		Owner: Whoever created the page
 		"""
+	NAME="Page"
+	DOC="A basic content page"
+
+	_site_perm=PERM_READ
+	_site_add_perm=()
+	_anon_perm=PERM_READ
+	_anon_add_perm=()
+	_admin_perm=PERM_ADMIN
+	_admin_add_perm=('Site','Page')
+
 	name = Column(Unicode, nullable=False)
+	parent = ObjectRef()
+
 	modified = Column(DateTime, default=datetime.utcnow)
 	order = Column(Integer, nullable=True, doc="Include on parent page? if so, in what order?")
 
-	@classmethod
-	def new(cls, name, content, order=None):
-		self = cls(True)
+	# the `Content` mix-in provides everything required for rendering
 
+	def setup(self, name,parent=None,order=None, **k):
 		self.name=name
-		self.order=order
+		self.parent = parent or current_site
+		if order is not None:
+			self.order=order
 
-		content.to(self)
-		self._add()
+		super(Page,self).setup(**k)
+	
