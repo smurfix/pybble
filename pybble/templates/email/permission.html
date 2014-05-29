@@ -1,8 +1,8 @@
 {{ subline(user) }} ({{ url_for("pybble.views.detail_oid", _external=True, oid=user.oid) }})
-hat einen Berechtigungseintrag „{{ subline(obj) }}“
+hat einen Berechtigungseintrag ‘{{ subline(obj) }}’
 ({{ url_for("pybble.views.view_oid", _external=True, oid=obj.oid) }})
-für den Datensatz „{{ subline(obj.parent) }}“ ({{  url_for("pybble.views.view_oid", _external=True, oid=obj.parent.oid) }})
-und den Benutzer bzw. die Gruppe „{{ subline(obj.owner) }}“ ({{  url_for("pybble.views.view_oid", _external=True, oid=obj.owner.oid) }})
+für den Datensatz ‘{{ subline(obj.parent) }}’ ({{  url_for("pybble.views.view_oid", _external=True, oid=obj.parent.oid) }})
+und den Benutzer bzw. die Gruppe ‘{{ subline(obj.owner) }}’ ({{  url_for("pybble.views.view_oid", _external=True, oid=obj.owner.oid) }})
 angelegt:
 -----
 {{ obj.data|safe }}

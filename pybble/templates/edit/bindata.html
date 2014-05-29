@@ -3,9 +3,9 @@
 
 {% block body %}
   {% if obj %}
-  <h2>Datei-Info „{{ name }}“editieren</h2>
+  <h2>Datei-Info ‘{{ name }}’editieren</h2>
   {% else %}
-  <h2>Neue Datei für „{{ parent.name }}“</h2>
+  <h2>Neue Datei für ‘{{ parent.name }}’</h2>
   {% endif %}
     <form method="post" action="{{ action }}" enctype="multipart/form-data" encoding="UTF-8">
     <table>
