@@ -34,7 +34,7 @@ from . import ContentData
 
 logger = logging.getLogger('pybble.render.loader')
 
-def get_template(c, trace=None):
+def get_template(c, trace=None,_retry=False):
 	"""\
 		This code's purpose is to find a template which matches the given
 		requirements which is "close" to wherever the current object is.
@@ -111,8 +111,9 @@ def get_template(c, trace=None):
 			weight += 1
 
 	if not res[0]:
-		if current_app.config.DEBUG_WEB:
+		if not _retry and current_app.config.DEBUG_WEB:
 			import pdb;pdb.set_trace()
+			return get_template(c,_retry=True)
 		raise TemplateNotFound(c)
 	return res[0]
 
