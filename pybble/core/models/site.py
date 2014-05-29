@@ -173,42 +173,46 @@ class Site(Object):
 			self.copy_perms(self.parent)
 
 	def _setup_root_perms(self):
+
+		for typ in ObjType.q.all():
+			self.add_default_permissions(typ)
+
+	def add_default_permissions(self,typ):
 		from .permit import permit
 		from .user import Group
 
 		admin = Group.q.get_by(parent=self, name=ROOT_USER_NAME)
 		anon = Group.q.get_by(parent=self, name=ANON_USER_NAME)
 
-		for typ in ObjType.q.all():
-			for pm,actor in (('site',self),('admin',admin),('anon',anon)):
-				perm = getattr(typ.mod,'_'+pm+'_perm',None)
-				if perm is not None:
-					permit(actor,self, objtyp=typ, right=perm,inherit=None)
+		for pm,actor in (('site',self),('admin',admin),('anon',anon)):
+			perm = getattr(typ.mod,'_'+pm+'_perm',None)
+			if perm is not None:
+				permit(actor,self, objtyp=typ, right=perm,inherit=None)
 
-				nts = getattr(typ.mod,'_'+pm+'_add_perm',())
-				if isinstance(nts,string_types):
-					if nts == "*":
-						for nt in ObjType.q.all():
-							permit(actor,self, objtyp=nt,new_objtyp=typ, right=PERM_ADD,inherit=None)
-						continue
+			nts = getattr(typ.mod,'_'+pm+'_add_perm',())
+			if isinstance(nts,string_types):
+				if nts == "*":
+					for nt in ObjType.q.all():
+						permit(actor,self, objtyp=nt,new_objtyp=typ, right=PERM_ADD,inherit=None)
+					continue
 
-					nts = nts.split(" ")
-				for nt in nts:
-					nt = ObjType.get(nt)
-					permit(actor,self, objtyp=nt,new_objtyp=typ, right=PERM_ADD,inherit=None)
+				nts = nts.split(" ")
+			for nt in nts:
+				nt = ObjType.get(nt)
+				permit(actor,self, objtyp=nt,new_objtyp=typ, right=PERM_ADD,inherit=None)
 
 		# Upload permissions for MIME types are added in pybble.manager.populate
 
 	def copy_perms(self,parent):
-		import pdb;pdb.set_trace()
 		from .permit import Permission
+		from .user import Group
 		admin = Group.q.get_by(parent=self, name=ROOT_USER_NAME)
 		anon = Group.q.get_by(parent=self, name=ANON_USER_NAME)
 		oadmin = Group.q.get_by(parent=parent, name=ROOT_USER_NAME)
 		oanon = Group.q.get_by(parent=parent, name=ANON_USER_NAME)
 		for src,dst in ((oadmin,admin),(oanon,anon),(parent,self)):
 			for p in Permission.q.filter_by(user=src):
-				Permission.new(user=dst, target=p.target, objtyp=p.objtyp, inherit=p.inherit, right=p.right, new_objtyp=p.new_objtyp,new_mimeyp=p.new_mimetyp)
+				Permission.new(user=dst, target=p.target, for_objtyp=p.for_objtyp, inherit=p.inherit, right=p.right, new_objtyp=p.new_objtyp,new_mimetyp=p.new_mimetyp)
 
 	def after_update(self):
 		super(Site,self).after_update()
