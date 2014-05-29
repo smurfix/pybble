@@ -90,6 +90,7 @@ class TC(unittest.TestCase):
 		super(TC,self).setUp()
 		app = self.app_class(__name__)
 		app.config.from_object(self)
+		app.config.from_object("TEST")
 
 		self.app = app
 		self.ctx = app.test_request_context()
