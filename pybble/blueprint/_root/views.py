@@ -26,7 +26,7 @@ from pybble.core.models._const import TM_DETAIL_PAGE, TM_DETAIL_SNIPPET, TM_DETA
 from pybble.core.models.object import Object
 from pybble.core.models.objtyp import ObjType
 from pybble.core.models.template import TemplateMatch
-from pybble.core.models.tracking import Breadcrumb
+from pybble.core.models.tracking import Breadcrumb,Delete
 from pybble.core.models.site import Site
 from pybble.core.db import db,NoData
 from pybble.globals import current_site
@@ -146,7 +146,7 @@ def delete_oid(oid):
 
 	form = DeleteForm(request.form, prefix='delete')
 	if request.method == 'POST' and form.validate():
-		obj.record_deletion(form.comment.data)
+		Delete.new(form.comment.data)
 
 		flash(u"%s (%s) wurde gelöscht" % (unicode(obj),obj.oid), True)
 		if form.next.data:
