@@ -36,3 +36,5 @@ def showpage(oid):
 	request.user.will_read(obj)
 	return obj.render_content()
 
+BLUEPRINT = ()
+MODEL = ("pybble.ext.page.model.Page",)
