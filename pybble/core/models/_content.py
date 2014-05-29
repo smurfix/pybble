@@ -39,7 +39,11 @@ class _Content(object):
 		is defined elsewhere.
 		"""
 	content = Column(Unicode(100000), nullable=False)
-	pass
+
+	def setup(self,content=None,**k):
+		if content is not None:
+			self.content = content
+		super(_Content,self).setup(**k)
 
 class Content(_Content):
 	"""\
@@ -48,6 +52,11 @@ class Content(_Content):
 		It intentionally provides no methods.
 		"""
 	mime = ObjectRef(MIMEtype, doc="Content type of my data")
+
+	def setup(self,mime=None,**k):
+		if mime is not None:
+			self.mime = mime
+		super(Content,self).setup(**k)
 
 class ContentObj(object):
 	def __init__(self, mime,content):
