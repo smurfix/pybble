@@ -19,7 +19,7 @@ import unittest
 from functools import wraps
 import logging
 
-from flask import Flask,current_app
+from flask import Flask
 from flask.ext.script._compat import StringIO, text_type
 from flask.ext.script import Command, Option, prompt, prompt_bool
 from werkzeug.utils import cached_property
