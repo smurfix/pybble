@@ -21,7 +21,7 @@ from traceback import print_exc,format_exc
 
 from sqlalchemy import or_
 
-from flask import request,current_app,g, _app_ctx_stack
+from flask import request,g, _app_ctx_stack
 from flask._compat import text_type,string_types
 from werkzeug import import_string
 
