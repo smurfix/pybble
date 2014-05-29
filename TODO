@@ -1,5 +1,9 @@
 Test: Add support for coverage
 
+Allow a template to selectively override one on its parent
+	* store the current context and the object where the template was found at
+	* a recursing search will simply continue at obj.parent
+
 Limit MIME types for storage
 	* assign permissions for adding (mimetype+storage+site)
 	* only types with ADD permission are shown
