@@ -19,7 +19,7 @@ class Rendered(object):
         """
     @property
     def content(self):
-        return self.as_dict
+        return self
 
     @property
     def mime(self):
