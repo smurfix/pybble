@@ -29,12 +29,8 @@ def editor(request, obj=None, parent=None):
 	if request.method == 'POST' and form.validate():
 		name = form.name.data
 
-		if parent:
-			if isinstance(parent,Site):
-				obj = Group.new(name, request.user, parent)
-			else:
-				obj = Group.new(name, parent, request.site)
-			obj.record_creation()
+		if parent is None:
+			obj = Group.new(name=name, parent=parent)
 		else:
 			data = obj.data
 			obj.name = name
