@@ -42,7 +42,7 @@ class AddBlueprint(Command):
 			self.parser.print_help()
 			sys.exit(not help)
 		if path == "/":
-			path = None
+			path = ""
 		elif not path.startswith('/'):
 			print("This does not work -- paths must start with a slash.", file=sys.stderr)
 			sys.exit(1)

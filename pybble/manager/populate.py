@@ -320,9 +320,9 @@ class PopulateCommand(Command):
 			logger.error("The ‘_root’ blueprint is not present. Setup is incomplete!")
 		else:
 			try:
-				rbp = SiteBlueprint.q.get_by(site=root,blueprint=root_bp,path="/")
+				rbp = SiteBlueprint.q.get_by(site=root,blueprint=root_bp,path="")
 			except NoData:
-				rbp = SiteBlueprint.new(site=root,blueprint=root_bp,path="/",name="pybble")
+				rbp = SiteBlueprint.new(site=root,blueprint=root_bp,path="",name="pybble")
 				logger.debug("Root site's content blueprint created.")
 			else:
 				if rbp.name != "pybble" and force:
@@ -339,9 +339,9 @@ class PopulateCommand(Command):
 			logger.error("The ‘static’ blueprint is not present. Setup is incomplete!")
 		else:
 			try:
-				rbp = SiteBlueprint.q.get_by(site=root,blueprint=static_bp,path="/")
+				rbp = SiteBlueprint.q.get_by(site=root,blueprint=static_bp,path="")
 			except NoData:
-				rbp = SiteBlueprint.new(site=root,blueprint=static_bp,path="/",name="static",endpoint="")
+				rbp = SiteBlueprint.new(site=root,blueprint=static_bp,path="",name="static",endpoint="")
 				logger.debug("Root site's static blueprint created.")
 			else:
 				if rbp.name != "static" and force:

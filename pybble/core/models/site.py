@@ -264,6 +264,14 @@ class SiteBlueprint(Object):
 	@classmethod
 	def __declare_last__(cls):
 		check_unique(cls, "site name")
+
+		@event.listens_for(cls.path, 'set')
+		def block_bad_path(target, value, oldvalue, initiator):
+			if value == "":
+				return
+			if value == "" or value[0] != '/' or value[-1] == '/' or "//" in value or "/../" in value:
+				raise RuntimeError("You cannot set a blueprint path to ‘{}’)".format(value))
+
 		super(SiteBlueprint,cls).__declare_last__()
 
 	name = Column(Unicode(30), required=True, nullable=False, doc="blueprint's name, for url_for() et al.")
@@ -312,11 +320,4 @@ class SiteBlueprint(Object):
 	@property
 	def as_str(self):
 		return u"‘%s’: %s @ %s%s" % (self.name, self.blueprint.name, self.site.domain, self.path)
-
-@event.listens_for(SiteBlueprint.path, 'set')
-def block_bad_path(target, value, oldvalue, initiator):
-	if value == "/":
-		return
-	if value == "" or value[0] != '/' or value[-1] == '/' or "//" in value or "/../" in value:
-		raise RuntimeError("You cannot set a blueprint path to ‘{}’)".format(value))
 
