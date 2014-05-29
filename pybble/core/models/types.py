@@ -130,6 +130,10 @@ class MIMEext(Object):
 	mime = ObjectRef(MIMEtype, "exts")
 	ext = Column(Unicode(10), nullable=False)
 
+	def setup(self,mime,ext):
+		self.mime = mime
+		self.ext = ext
+
 	def __str__(self):
 		return u"‹%s %s: %s %s›" % (self.__class__.__name__, self.id,self.ext,unicode(self.mime))
 	__repr__ = __str__
