@@ -74,7 +74,7 @@ def view_tree(oid=None):
 		obj = Object.by_oid(oid)
 
 	request.user.will_admin(obj)
-	if obj is current_site:
+	if obj == current_site:
 		title_trace=["Objects"]
 	else:
 		title_trace=[unicode(obj),"Objects"]

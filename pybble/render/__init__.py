@@ -163,7 +163,7 @@ class ContentData(object):
 		
 	def render(self, **vars):
 		logger.debug("RENDER: "+repr(self.__dict__))
-		if self.from_mime is self.to_mime:
+		if self.from_mime == self.to_mime:
 			assert self.content
 			return self
 		try:
@@ -301,7 +301,7 @@ for a,b in PERM.iteritems():
 				raise ValidationError(u"Kein Benutzer")
 			if current_app.config.DEBUG_ACCESS:
 				print("valid can_self_"+b+":", u,obj,a, file=sys.stderr)
-			if u is obj:
+			if u == obj:
 				return
 			if (u.can_do(obj, objtyp=obj, want=a) < a) \
 				if (a > PERM_NONE) \

@@ -192,7 +192,7 @@ class PopulateCommand(Command):
 			logger.debug("The root site has been created.")
 		else:
 			if root.app is None or force:
-				if root.app is not rapp:
+				if root.app != rapp:
 					root.app = rapp
 					logger.debug("Root site's app set.")
 

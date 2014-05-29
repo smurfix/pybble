@@ -214,7 +214,7 @@ def can_do(user,obj, objtyp=None, new_objtyp=None,new_mimetyp=None, want=None):
 	"""Recursively get the permission of this user for that (type of) object."""
 
 	ru = getattr(request,"user",None)
-#	if obj is not current_site and \
+#	if obj != current_site and \
 #		ru and ru.can_admin(current_site, objtyp=current_site.type):
 #		if current_app.config.DEBUG_ACCESS:
 #			log_access("ADMIN",obj)

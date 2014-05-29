@@ -22,6 +22,8 @@ import gevent
 from gevent.queue import Queue
 from signal import SIGINT
 
+from flask._compat import string_types
+
 locale.setlocale(locale.LC_ALL, str("de_DE.UTF-8"))
 logger = logging.getLogger('zuko.base')
 
@@ -230,7 +232,7 @@ class UTFPrinter(PrettyPrinter,object):
 
 	def format(self, object, context, maxlevels, level):
 		typ = type(object)
-		if typ is str:
+		if typ in string_types:
 			object = object.decode("utf-8")
 		elif typ is _dt.datetime:
 			return "DT( %s )"%(format_dt(object),),True,False

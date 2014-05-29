@@ -247,7 +247,7 @@ class Site(Object):
 	def config_changed(self, sender=None, name=None):
 		## TODO: invalidate caches, as soon as we have any
 		for s in self.all_sites:
-			if s is not self: # don't recurse
+			if s != self: # don't recurse
 				s.signal.send(ConfigChanged, name=name)
 
 ## SiteBlueprint
