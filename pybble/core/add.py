@@ -462,7 +462,9 @@ def add_template(parent, filepath,webpath, inferred="", force=False):
 
 	root = root_site
 	for m,inherit in hdr.match:
-		if m == "root":
+		if m == "parent":
+			m = parent
+		elif m == "root":
 			m = root
 		elif m == "superuser":
 			m = superuser
