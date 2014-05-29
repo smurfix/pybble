@@ -19,7 +19,7 @@ import logging
 from time import time
 from itertools import chain
 
-from flask import Flask, request, render_template, g, session, Markup, Response as BaseResponse, current_app, Markup
+from flask import Flask, request, g, session, Markup, Response as BaseResponse, current_app, Markup
 from flask.config import Config
 from flask.templating import DispatchingJinjaLoader
 from flask.ext.script import Server
@@ -103,8 +103,7 @@ class Response(BaseResponse):
 	@classmethod
 	def force_type(cls,req,env=None):
 		if isinstance(req,ContentData):
-			resp = cls(req.content, content_type=str(req.from_mime))
-			return resp
+			return cls(req.render(c=req), content_type=str(req.to_mime))
 		else:
 			return super(cls,Response).force_type(req,env)
 
