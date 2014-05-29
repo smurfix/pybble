@@ -92,6 +92,8 @@ class MIMEtype(Object):
 		if subtyp is None:
 			if isinstance(typ,MIMEtype):
 				return typ
+			if isinstance(typ,Object):
+				return typ.mime
 			typ = text_type(typ)
 			try:
 				typ,subtyp = typ.split('/')
