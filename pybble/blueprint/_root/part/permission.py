@@ -26,6 +26,7 @@ from pybble.core.models.object import Object
 from pybble.core.models.objtyp import ObjType
 from pybble.core.models._const import PERM, PERM_NONE
 from pybble.core.models.permit import Permission
+from pybble.core.models.types import MIMEtype
 from pybble.core.models.template import Template, TemplateMatch
 from pybble.core.db import db,NoData
 from pybble.core.session import logged_in
@@ -64,8 +65,8 @@ def editor(obj=None, parent=None):
 		user = Object.by_oid(form.user.data)
 		dest = Object.by_oid(form.target.data)
 		for_objtyp = int(form.for_objtyp.data)
-		new_objtyp = int(form.new_objtyp.data) if form.new_objtyp.data != "-" else None
-		new_mimetyp = int(form.new_mimetyp.data) if form.new_mimetyp.data != "-" else None
+		new_objtyp = ObjType.q.get_by(id=form.new_objtyp.data) if form.new_objtyp.data != "-" else None
+		new_mimetyp = MIMEtype.id.get_by(form.new_mimetyp.data) if form.new_mimetyp.data != "-" else None
 		right = int(form.right.data)
 
 		if form.inherit.data == "Yes": inherit = True
@@ -74,35 +75,17 @@ def editor(obj=None, parent=None):
 		else: assert False
 
 		if parent:
-			obj = Permission.new(user, dest, for_objtyp, right, inherit)
-			obj.record_creation()
+			obj = Permission.new(user, dest, for_objtyp,new_objtyp=new_objtyp,new_mimetyp=new_mimetyp, right=right, inherit=inherit)
 		else:
 			obj.owner = user
 			obj.parent = dest
 			obj.for_objtyp = for_objtyp
 			obj.right = right
 			obj.inherit = inherit
-		obj.new_objtyp = new_objtyp
-		obj.new_mimetyp = new_mimetyp
+			obj.new_objtyp = new_objtyp
+			obj.new_mimetyp = new_mimetyp
 
 		flash(u"Gespeichert.",True)
-
-		m = [ Permission.for_objtyp == for_objtyp, Permission.parent_id == obj.id, Permission.owner_id == user.id ]
-		if obj.inherit is None:
-			m.append(Permission.inherit != None)
-			m = Permission.q.filter(*m)
-			if m.count():
-				flash(u"Vorherige Berechtigung(en) entfernt.")
-				for mm in m:
-					Delete.new(mm)
-		else:
-			m.append(Permission.inherit == None)
-			m = Permission.q.filter(*m)
-			if m.count():
-				flash(u"Bestehende Berechtigung eingeschränkt.")
-				for mm in m:
-					mm.inherit = not obj.inherit
-					Change.new(mm,data=dict(inherit=[None,mm.inherit]))
 
 		return redirect(url_for("pybble.views.view_oid", oid=dest.oid))
 
