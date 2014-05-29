@@ -126,7 +126,7 @@ class ObjectMeta(type(Base)):
 						if v.declared_attr:
 							setattr(cls,k, declared_attr((lambda col_typ,col_id: lambda cls: composite(ObjectRef, col_typ,col_id, deferred=True))(col_typ,col_id)))
 						else:
-							setattr(cls,k, composite(Object._compose, col_typ,col_id, deferred=True))
+							setattr(cls,k, composite(_compose, col_typ,col_id, deferred=True))
 						_refs.append((cls,k))
 						cls.__table_args__.append(Index("i_%s_%s"%(name,k),col_typ,col_id))
 					else: ## specific table
@@ -202,6 +202,13 @@ class get_type(object):
 			return refresh(t)
 get_type = get_type()
 
+class _compose(object):
+	def __new__(cls,type=None,id=None):
+		if type is None:
+			return object.__new__(cls)
+		from .objtyp import ObjType
+		return ObjType.get(type, id)
+
 class Object(Base,Rendered):
 	__metaclass__ = ObjectMeta
 	__abstract__ = True
@@ -228,11 +235,11 @@ class Object(Base,Rendered):
 
 	def __composite_values__(self):
 		return self.type.id, self.id
-
-	@staticmethod
-	def _compose(type,id):
-		from .objtyp import ObjType
-		return ObjType.get(type, id)
+	def __init__(self, type=None,id=None):
+		if type is not None:
+			assert self.type==type
+		if id is not None:
+			assert self.id==id
 
 	type = get_type
 
