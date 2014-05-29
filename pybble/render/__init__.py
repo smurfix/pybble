@@ -15,7 +15,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from jinja2 import Markup, contextfunction, contextfilter
 from werkzeug.utils import reraise
-from flask import request,current_app, get_flashed_messages, Response
+from flask import request,current_app, get_flashed_messages, Response, g
 from flask._compat import string_types
 
 from ..utils import random_string, AuthError, NotGiven
@@ -138,7 +138,7 @@ class ContentData(object):
 					blueprint = bp
 
 		self.obj = obj
-		self.anchor = anchor or obj or site
+		self.anchor = anchor or getattr(g,'anchor',None) or obj or site
 		self.from_mime = from_mime
 		self.to_mime = to_mime
 		self.blueprint = blueprint
@@ -163,7 +163,11 @@ class ContentData(object):
 		
 	def render(self, **vars):
 		logger.debug("RENDER: "+repr(self.__dict__))
-		return self.template.render(self, vars)
+		try:
+			old_anchor = getattr(g,'anchor',None)
+			return self.template.render(self, vars)
+		finally:
+			g.anchor = old_anchor
 	
 	def __str__(self):
 		if self.content:
