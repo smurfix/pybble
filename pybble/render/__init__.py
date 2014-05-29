@@ -163,6 +163,9 @@ class ContentData(object):
 		
 	def render(self, **vars):
 		logger.debug("RENDER: "+repr(self.__dict__))
+		if self.from_mime is self.to_mime:
+			assert self.content
+			return self
 		try:
 			old_anchor = getattr(g,'anchor',None)
 			return self.template.render(self, vars)
