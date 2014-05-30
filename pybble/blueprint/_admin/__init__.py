@@ -20,15 +20,30 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## 
 
 from flask import Module, request, redirect, url_for, render_template, abort
-from formalchemy import FieldSet
+from formalchemy import FieldSet, helpers as fa_h
+from formalchemy.fields import FieldRenderer
 
 from pybble.blueprint import BaseBlueprint
 from pybble.core.models.objtyp import ObjType
+from pybble.core.models.object import Object,ObjRefComposer
 from pybble.core.route import Exposer
-from pybble.core.db import NoData
+from pybble.core.db import NoData, db
 expose = Exposer()
 
 models = {}
+
+class ObjRefRenderer(FieldRenderer):
+	"""Render as a text field, for now."""
+	def render(self, **kwargs):
+		return fa_h.text_field(self.name, value=self.value, maxlength=20, **kwargs)
+	def stringify_value(self,v,as_html=False):
+		return v.oid
+	def deserialize(self):
+		obj = self.params.getone(self.name)
+		if obj in ("","-"):
+			return None
+		return Object.by_oid(obj)
+FieldSet.default_renderers[ObjRefComposer] = ObjRefRenderer
 
 class Blueprint(BaseBlueprint):
 	"""\
@@ -70,6 +85,7 @@ def _fixup_fs(fs,id,attrs):
 	"""Change all fields that have been passed in **attrs to read-only"""
 	opts = [fs.id.readonly()]
 	hide = [] #[fs.children,fs.superchildren,fs.owned]
+	if hasattr(fs,'config'): hide.append(fs.config)
 	if id:
 		fs.configure(pk=True)
 	for k in attrs:
@@ -90,13 +106,11 @@ def object_edit(model_slug, model_key=None, **attrs):
 
 	if model_key:
 		obj = model.q.get_by(id=int(model_key))
-		fields = FieldSet(obj)
 	else:
 		obj = None
-		fields = FieldSet(model)
 
-	fields = FieldSet(data)
-	_fixup_fs(fields,int(model_key),attrs)
+	fields = FieldSet(data, session=db)
+	_fixup_fs(fields,model_key,attrs)
 
 	if request.method == 'POST':
 		fields.rebind(data=request.form)
