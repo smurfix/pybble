@@ -14,6 +14,7 @@ Then, run
 
 	pybble -S schema --exec
 	pybble -S populate
+	pybble -S core migrate stamp head
 
 You now have a basic Pybble installation.
 
