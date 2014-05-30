@@ -12,8 +12,8 @@ Create a file named LOGIN.py with, at minimum, the following content:
 
 Then, run
 
-	pybble -S schema --exec
-	pybble -S populate
+	pybble -S core schema --exec
+	pybble -S core populate
 	pybble -S core migrate stamp head
 
 You now have a basic Pybble installation.
@@ -47,4 +47,15 @@ git revision that contains your changes.
 To upgrade the actual database, run
 
 	pybble core migrate upgrade
+
+Note that Alembic does not find some changes, e.g. altered column lengths.
+An alternate solution is to run `dbdiff`, which is packaged with Pybble:
+
+	pybble -S core schema --diff
+
+Depending on the database you use, this will likely report a large number
+of spurious differences, but it _will_ notice when a column gets longer.
+
+Because of the spurious-differences problem, the output of this program
+needs to be applied selectively and manually.
 
