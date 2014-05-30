@@ -24,6 +24,7 @@ from formalchemy import FieldSet, helpers as fa_h
 from formalchemy.fields import FieldRenderer
 
 from pybble.blueprint import BaseBlueprint
+from pybble.core.utils import attrdict
 from pybble.core.models.objtyp import ObjType
 from pybble.core.models.object import Object,ObjRefComposer
 from pybble.core.route import Exposer
@@ -98,18 +99,20 @@ def object_edit(model_slug, model_key=None, **attrs):
 	if model_slug not in models:
 		abort(404)
 	model = models[model_slug]
+	sk = attrdict()
 	if model_key:
 		try: data = model.q.get_by(id=model_key)
 		except NoData: abort(404)
 	else:
 		data = model
+		sk.session = db
 
 	if model_key:
 		obj = model.q.get_by(id=int(model_key))
 	else:
 		obj = None
 
-	fields = FieldSet(data, session=db)
+	fields = FieldSet(data, **sk)
 	_fixup_fs(fields,model_key,attrs)
 
 	if request.method == 'POST':
