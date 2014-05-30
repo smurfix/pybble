@@ -80,7 +80,7 @@ class Template(_Content, Cached, Object):
 
 	def setup(self, adapter, data, source, target=None, name=None, weight=None):
 		if name is None:
-			name = source
+			name = "/".join(source.split('/')[-3:])
 		if target is None:
 			target = current_site
 
