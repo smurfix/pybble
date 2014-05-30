@@ -54,7 +54,7 @@ class App(Module):
 	@property
 	def parent(self):
 		return root_site
-
+	
 ## Blueprint
 
 class Blueprint(Module):
@@ -115,7 +115,6 @@ class Site(Object):
 		self.name=name
 		self.parent=parent
 		self.app=app
-		self.config = ConfigData.new("Site "+name,parent=parent.config if parent is not None else None)
 		self._superuser = superuser
 
 		super(Site,self).setup()
@@ -135,11 +134,15 @@ class Site(Object):
 				self.parent = root_site
 			except NoData:
 				raise RuntimeError("The new root site must be named ‘{}’, not ‘{}’.".format(ROOT_SITE_NAME,name))
+		super(Site,self).before_insert()
 
-	def after_insert(self):
+	def before_all_insert(self):
+		if self.config is None:
+			self.config = ConfigData.new(parent=self.parent.config if self.parent else None, name="for "+str(self))
+		super(Site,self).before_all_insert()
+
+	def after_all_insert(self):
 		super(Site,self).after_insert()
-
-		self.config = ConfigData.new(parent=self.parent.config if self.parent else None, name="for "+str(self))
 
 		app_list.send(NewSite)
 		self.signal.connect(self.config_changed, ConfigChanged)
@@ -305,8 +308,6 @@ class SiteBlueprint(Object):
 		self.name = name
 		self.path = path
 		self.endpoint = endpoint
-		self.config = ConfigData.new("SiteBlueprint "+name,parent=blueprint.config)
-
 		super(SiteBlueprint,self).setup()
 
 	def after_insert(self):
@@ -324,4 +325,9 @@ class SiteBlueprint(Object):
 	@property
 	def as_str(self):
 		return u"‘%s’: %s @ %s%s" % (self.name, self.blueprint.name, self.site.domain, self.path)
+
+	def before_all_insert(self):
+		if self.config is None:
+			self.config = ConfigData.new(parent=self.parent, name="for {} {}".format(self.__class__.__name__,self.name))
+		super(SiteBlueprint,self).before_all_insert()
 

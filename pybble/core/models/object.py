@@ -126,7 +126,7 @@ class ObjectMeta(type(Base)):
 						if v.declared_attr:
 							setattr(cls,k, declared_attr((lambda col_typ,col_id: lambda cls: composite(ObjectRef, col_typ,col_id, deferred=True))(col_typ,col_id)))
 						else:
-							setattr(cls,k, composite(_compose, col_typ,col_id, deferred=True))
+							setattr(cls,k, composite(ObjRefComposer, col_typ,col_id, deferred=True))
 						_refs.append((cls,k))
 						cls.__table_args__.append(Index("i_%s_%s"%(name,k),col_typ,col_id))
 					else: ## specific table
@@ -202,7 +202,7 @@ class get_type(object):
 			return refresh(t)
 get_type = get_type()
 
-class _compose(object):
+class ObjRefComposer(object):
 	def __new__(cls,type=None,id=None):
 		if type is None:
 			return object.__new__(cls)

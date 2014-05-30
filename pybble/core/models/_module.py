@@ -41,3 +41,8 @@ class Module(Loadable,Object):
 
 		super(Module,self).setup(**kw)
 
+	def before_all_insert(self):
+		if self.config is None:
+			self.config = ConfigData.new(parent=self.parent, name="for {} {}".format(self.__class__.__name__,self.name))
+		super(Module,self).before_all_insert()
+

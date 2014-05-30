@@ -85,6 +85,12 @@ class PybbleSession(Session):
 	def flush(self, *a,**k):
 		if self._flushing:
 			return
+		try:
+			self._flushing = True
+			for obj in self.new:
+				obj.before_all_insert()
+		finally:
+			self._flushing = False
 		super(PybbleSession,self).flush(*a,**k)
 #
 #	def merge(self,obj):
@@ -188,13 +194,15 @@ def no_autoflush(fn):
 #		q = mapper.class_._q(q)
 #	return q
 
-def call_event(cls,method):
+def call_event(cls,method,code=None):
 	"""\
 		A helper which registers callbacks to `method` on `cls`
 		"""
+	if code is None:
+		code = method
 	def helper(mapper,connection,obj):
 		getattr(obj,method)()
-	event.listen(cls,method, helper)
+	event.listen(cls,code, helper)
 		
 def setup_events(cls):
 	"""\
@@ -204,9 +212,9 @@ def setup_events(cls):
 		created via a generic form, REST, et al.; you need to call them
 		there manually.
 		"""
-	#call_event(cls,"before_insert")
+	#call_event(cls,"before_all_insert","before_insert")
 	call_event(cls,"before_update")
-	#call_event(cls,"after_insert")
+	call_event(cls,"after_all_insert","after_insert")
 	call_event(cls,"after_update")
 	@event.listens_for(cls, 'load')
 	def receive_load(target, context):
@@ -360,10 +368,21 @@ class _Base(Dumpable):
 		pass
 
 	def before_insert(self):
+		"""\
+			Called after finalizing the object but before writing to the database.
+			This is only called when inserting via .new()
+			"""
+		pass
+
+	def before_all_insert(self):
 		"""Called after finalizing the object but before writing to the database"""
 		pass
 
 	def after_insert(self):
+		"""Called after inserting into the database; the ID is valid"""
+		pass
+
+	def after_all_insert(self):
 		"""Called after inserting into the database; the ID is valid"""
 		pass
 
