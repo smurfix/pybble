@@ -34,15 +34,16 @@ class Storage(Object):
 	"""A box for binary data files"""
 
 	site = ObjectRef(Site)
-	name = Column(Unicode(30), unique=True, nullable=False)
-	path = Column(Unicode(1000), unique=True, nullable=False)
-	url = Column(Unicode(200), unique=True, nullable=False)
+	name = Column(Unicode(30), nullable=False)
+	path = Column(Unicode(500), nullable=False)
+	url = Column(Unicode(200), nullable=False)
 	default = Column(Boolean, default=False, nullable=False)
 
 	@classmethod
 	def __declare_last__(cls):
 		check_unique(cls, "name site")
 		check_unique(cls, "default site")
+		check_unique(cls, "path")
 		super(Storage,cls).__declare_last__()
 
 	@property
