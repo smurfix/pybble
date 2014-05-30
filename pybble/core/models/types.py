@@ -201,11 +201,17 @@ class MIMEadapter(Object):
 	doc = Column(Unicode(LEN_DOC), nullable=True)
 	weight = Column(Integer, nullable=False,default=0, doc="Used when translating from A to B to C. Less is better.")
 
-	def setup(self, translator,from_mime,to_mime, name,weight=None,doc=None):
+	def setup(self, translator,from_mime,to_mime, name=None,weight=None,doc=None):
 		self.translator = translator
 		self.from_mime = from_mime
 		self.to_mime = to_mime
-		if name is not None: self.name = name
+
+		if name is None:
+			name = "{} to {} via {}".format(from_mime,to_mime,translator)
+		if len(name)>LEN_NAME-10:
+			name = name[:LEN_NAME-10]+'…'+str(from_mime.id+to_mime.id+translator.id)
+			# This name is too short for auto-populating but too long for humans
+		self.name = name
 		if weight is not None: self.weight = weight
 		super(MIMEadapter,self).setup()
 

@@ -254,15 +254,14 @@ def add_translator(obj,name,doc=NotGiven, force=False):
 
 	for s,sw in src:
 		for d,dw in dst:
-			n = "{} to {} with {}".format(src,dst,mt)
 			w=sw+dw
 
 			try:
 				obj = MIMEadapter.q.get_by(from_mime=s,to_mime=d,translator=trans)
 			except NoData:
-				obj = MIMEadapter.new(from_mime=s,to_mime=d,translator=trans,name=n,weight=w)
+				obj = MIMEadapter.new(from_mime=s,to_mime=d,translator=trans,weight=w)
 			else:
-				_upd(obj,(("weight",w),("name",n)),force=force)
+				_upd(obj,(("weight",w),),force=force)
 
 	db.commit()
 
