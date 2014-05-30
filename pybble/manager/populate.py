@@ -61,15 +61,14 @@ MIME = upload_content_types+[
 	('html','*',None,"any html data",None),
 	('text','*',None,"any text data",None),
 
-	('html','subpage',None,"a (main) part of a webpage",None),
-	('html','string',None,"a short string objtypibing an object",None),
-	('html','detail',None,"a tabular view of an object's internal state",None),
-	('html','snippet',None,"a fragment for the explore view",None),
-	('html','hierarchy',None,"a fragment for hierarchical view within a page",None),
-	('html','hierarchy',None,"a fragment for hierarchical view within a page",None),
-	('html','preview',None,"a view for previewing",None),
-	('html','edit',None,"the form for editing",None),
-	('xml','rss',None,"a fragment for the RSS feed",None),
+	('html','subpage',None,None,"a (main) part of a webpage"),
+	('html','string',None,None,"a short string describing an object"),
+	('html','detail',None,None,"a tabular view of an object's internal state"),
+	('html','snippet',None,None,"a fragment for the explore view"),
+	('html','hierarchy',None,None,"a fragment for hierarchical view within a page"),
+	('html','preview',None,None,"a view for previewing"),
+	('html','edit',None,None,"the form for editing"),
+	('xml','rss',None,None,"a fragment for the RSS feed"),
 ]
 
 MODEL = (
