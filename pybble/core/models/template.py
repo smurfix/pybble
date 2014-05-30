@@ -124,11 +124,17 @@ class TemplateMatch(Object):
 		no_update(cls.template)
 		super(TemplateMatch,cls).__declare_last__()
 
-		def _ref_objtyp(mapper, connection, obj):
-			if obj.inherit is False and obj.parent is not None:
-				assert obj.for_objtyp == obj.parent.objtyp, (obj.for_objtyp,obj.parent.objtyp)
-		event.listen(cls, 'before_insert', _ref_objtyp)
-		event.listen(cls, 'before_update', _ref_objtyp)
+	def before_insert(self):
+		self._check_ref_objtyp()
+		super(TemplateMatch,self).before_insert()
+
+	def before_update(self):
+		self._check_ref_objtyp()
+		super(TemplateMatch,self).before_update()
+
+	def _check_ref_objtyp(self):
+		if self.inherit is False and self.parent is not None:
+			assert self.for_objtyp == self.parent.objtyp, (self.for_objtyp,self.parent.objtyp)
 
 	@property
 	def parent(self):

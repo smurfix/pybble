@@ -27,6 +27,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.pool import AssertionPool
 from sqlalchemy.types import TypeDecorator, VARCHAR
+from sqlalchemy.util import IdentitySet
 
 from formalchemy import Column, helpers
 from formalchemy.fields import IntegerFieldRenderer
@@ -87,11 +88,19 @@ class PybbleSession(Session):
 			return
 		try:
 			self._flushing = True
-			for obj in self.new:
-				obj.before_all_insert()
+			done = IdentitySet()
+			while True:
+				todo = self.new-done
+				if not todo:
+					break
+				for obj in todo:
+					obj.before_insert()
+					done.add(obj)
 		finally:
 			self._flushing = False
 		super(PybbleSession,self).flush(*a,**k)
+		for obj in done:
+			obj.after_insert()
 #
 #	def merge(self,obj):
 #		if self._flushing:
@@ -206,15 +215,12 @@ def call_event(cls,method,code=None):
 		
 def setup_events(cls):
 	"""\
-		Add the standard event listeners.
+		Add (some of) the standard event listeners.
 
-		Note that the "insert" calls are not performed when new records are
-		created via a generic form, REST, et al.; you need to call them
-		there manually.
+		Others are called in the flush() wrapper because the event code
+		does that too late.
 		"""
-	#call_event(cls,"before_all_insert","before_insert")
 	call_event(cls,"before_update")
-	call_event(cls,"after_all_insert","after_insert")
 	call_event(cls,"after_update")
 	@event.listens_for(cls, 'load')
 	def receive_load(target, context):
@@ -273,7 +279,7 @@ class _Base(Dumpable):
 		Initialization of a new object proceeds in steps:
 			* From a form, __init__() is called
 			  - the form or whatever is responsible for adding the object to the database
-			* From code, class_.new() is used (because of objtypiptive/mandatory parameters)
+			* From code, class_.new() is used
 			  - new() will do the add-to-the-database step itself
 			* .before_insert() will run automatically
 			  - similarly, before an update, .before_update()
@@ -347,10 +353,8 @@ class _Base(Dumpable):
 		"""\
 			Add this record to the database.
 			"""
-		self.before_insert()
 		db.add(self)
-		db.flush((self,))
-		self.after_insert()
+		db.flush()
 
 	def setup(self):
 		"""\
@@ -370,19 +374,10 @@ class _Base(Dumpable):
 	def before_insert(self):
 		"""\
 			Called after finalizing the object but before writing to the database.
-			This is only called when inserting via .new()
 			"""
 		pass
 
-	def before_all_insert(self):
-		"""Called after finalizing the object but before writing to the database"""
-		pass
-
 	def after_insert(self):
-		"""Called after inserting into the database; the ID is valid"""
-		pass
-
-	def after_all_insert(self):
 		"""Called after inserting into the database; the ID is valid"""
 		pass
 
@@ -490,6 +485,7 @@ def check_unique(cls, *vars):
 				q.append(getattr(cls,v)==getattr(obj,v))
 		if obj.id is not None:
 			q.append(cls.id != obj.id)
+		q.append(cls.id != None)
 		if cls.q.filter(*q).count() > 0:
 			raise ManyDataExc("Duplicate:{}:{} = {}".format(",".join(vars), str(obj), str(list(cls.q.filter(*q).all()))))
 	event.listen(cls,"before_insert",check)
