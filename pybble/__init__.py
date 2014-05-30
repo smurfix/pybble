@@ -20,6 +20,12 @@ import sys
 reload(sys)
 sys.setdefaultencoding("utf-8")
 
+from warnings import filterwarnings
+filterwarnings("error")
+filterwarnings("ignore",category=DeprecationWarning)
+filterwarnings("ignore",category=ImportWarning)
+filterwarnings("ignore",message="^Converting column '.*' from VARCHAR to TEXT")
+
 ## Use gevent.
 if True:
 	## You get spurious errors if the core threading module is imported
