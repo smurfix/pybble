@@ -13,6 +13,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
+import pybble
 import re
 import sys
 from functools import wraps
@@ -24,6 +25,9 @@ from flask.ext.script import Command, Manager, Option, prompt, prompt_bool
 from pytest import raises
 from .base import TC
 from .script import Catcher,capture,run
+
+import warnings
+warnings.filterwarnings("ignore",message="Options will be ignored.")
 
 class SimpleCommand(Command):
 	'simple command'
