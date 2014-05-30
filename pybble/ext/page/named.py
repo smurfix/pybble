@@ -20,7 +20,6 @@ from jinja2 import TemplateNotFound
 
 from pybble.blueprint import BaseBlueprint
 from pybble.core.route import Exposer
-from pybble.core.db import abort
 
 expose = Exposer()
 
