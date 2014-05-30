@@ -1,5 +1,6 @@
 python-flask-script (>= 2.0.5)
 python-flask-security
+python-flask-migrate
 python-gevent (>= 1.0)
 python-formalchemy
 python-flask-sqlalchemy
@@ -7,8 +8,6 @@ python-mysqldb
 python-tz
 python-markdown
 python-hamlish-jinja
-#
-mysql-server
 python-pytest (>= 2.4)
 python-wsgi-intercept (>= 0.6.1+smurf)
 python-webunit (>= 1:1.3.10+smurf1-2)
