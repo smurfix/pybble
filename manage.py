@@ -27,6 +27,7 @@ from warnings import filterwarnings
 filterwarnings("error")
 filterwarnings("ignore",category=DeprecationWarning)
 filterwarnings("ignore",category=ImportWarning)
+filterwarnings("ignore",message="^Converting column '.*' from VARCHAR to TEXT")
 
 #from flask.ext.collect import Collect
 #from quokka.core.db import db
