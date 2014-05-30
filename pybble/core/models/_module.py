@@ -17,6 +17,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from sqlalchemy import Unicode
 
 from ..db import Column
+from . import LEN_NAME,LEN_DOC
 from .object import Object,ObjectRef
 from .config import ConfigData
 from ._utils import Loadable
@@ -27,8 +28,8 @@ from werkzeug.utils import cached_property, import_string
 class Module(Loadable,Object):
 	"""An abstract table which implements some sort of Pybble module"""
 	__abstract__ = True
-	name = Column(Unicode(30), unique=True, nullable=False, doc="Human-readable short name")
-	doc = Column(Unicode(1000), nullable=True, doc="docstring")
+	name = Column(Unicode(LEN_NAME), unique=True, nullable=False, doc="Human-readable short name")
+	doc = Column(Unicode(LEN_DOC), nullable=True, doc="docstring")
 
 	#config = ObjectRef(ConfigData, declared_attr=True)
 

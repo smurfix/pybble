@@ -28,6 +28,7 @@ from ...globals import root_site
 from .. import config
 from ..db import Base, Column, db, NoData, maybe_stale, no_update,check_unique
 from ..signal import app_list, ConfigChanged,NewSite
+from . import LEN_NAME,LEN_DOMAIN,LEN_PATH
 from ._module import Module
 from .object import Object,ObjectRef
 from .objtyp import ObjType
@@ -90,8 +91,8 @@ class Site(Object):
 	config = ObjectRef(ConfigData)
 	app = ObjectRef(App)
 
-	domain = Column(Unicode(100), nullable=False, unique=True)
-	name = Column(Unicode(30), nullable=False, unique=True)
+	domain = Column(Unicode(LEN_DOMAIN), nullable=False, unique=True)
+	name = Column(Unicode(LEN_NAME), nullable=False, unique=True)
 	tracked = Column(DateTime,nullable=False, default=datetime.utcnow)
 	## Datestamp of newest fully-processed Tracker
 
@@ -279,9 +280,9 @@ class SiteBlueprint(Object):
 
 		super(SiteBlueprint,cls).__declare_last__()
 
-	name = Column(Unicode(30), required=True, nullable=False, doc="blueprint's name, for url_for() et al.")
-	endpoint = Column(Unicode(30), nullable=False, default="", doc="Endpoint to attach as. May be empty.")
-	path = Column(Unicode(1000), nullable=False, default="", doc="URL path where to attach this ")
+	name = Column(Unicode(LEN_NAME), required=True, nullable=False, doc="blueprint's name, for url_for() et al.")
+	endpoint = Column(Unicode(LEN_NAME), nullable=False, default="", doc="Endpoint to attach as. May be empty.")
+	path = Column(Unicode(LEN_PATH), nullable=False, default="", doc="URL path where to attach this ")
 
 	def setup(self, site,blueprint, endpoint=None, name=None,path=None):
 		if isinstance(blueprint,string_types):

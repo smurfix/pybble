@@ -20,6 +20,7 @@ from sqlalchemy.orm import relationship,backref
 
 from ...globals import current_site
 from ..db import check_unique
+from . import LEN_NAME,LEN_PATH
 from .object import Object,ObjectRef
 from .site import Site
 
@@ -34,8 +35,8 @@ class Storage(Object):
 	"""A box for binary data files"""
 
 	site = ObjectRef(Site)
-	name = Column(Unicode(30), nullable=False)
-	path = Column(Unicode(500), nullable=False)
+	name = Column(Unicode(LEN_NAME), nullable=False)
+	path = Column(Unicode(LEN_PATH), nullable=False)
 	url = Column(Unicode(200), nullable=False)
 	default = Column(Boolean, default=False, nullable=False)
 

@@ -32,6 +32,7 @@ from ...utils import random_string, AuthError
 from ...core import config
 from ..db import Base, Column, db, NoData,NoDataExc, check_unique,no_update
 from ...globals import current_site
+from . import LEN_NAME,LEN_USERNAME,LEN_PERSONNAME,LEN_CRYPTPW
 from ._const import PERM,PERM_NONE,PERM_ADMIN,PERM_READ,PERM_ADD,PERM_name
 from .objtyp import ObjType
 from .site import Site
@@ -51,7 +52,7 @@ def log_access(*args):
 class Password(TypeDecorator):
 	"""Represents any Python object as a json-encoded string.
 	"""
-	impl = VARCHAR(1000)
+	impl = VARCHAR(LEN_CRYPTPW)
 
 	def process_bind_param(self, value, dialect):
 		if value: # covers both "" and None
@@ -103,10 +104,10 @@ class User(PasswordValue,Object):
 		# which works because none of these may be updated
 	        
 	# A simple way to make 'username' read-only
-	username = Column(Unicode(30), nullable=False)
+	username = Column(Unicode(LEN_USERNAME), nullable=False)
 
-	first_name = Column(Unicode(50), nullable=True)
-	last_name = Column(Unicode(50), nullable=True)
+	first_name = Column(Unicode(LEN_PERSONNAME), nullable=True)
+	last_name = Column(Unicode(LEN_PERSONNAME), nullable=True)
 	email = Column(Unicode(200), nullable=True)
 
 	first_login = Column(DateTime, nullable=True) ## ever
@@ -351,7 +352,7 @@ class Group(Object):
 		"""
 	__tablename__ = "groups"
 
-	name = Column(Unicode(30))
+	name = Column(Unicode(LEN_NAME))
 	parent = ObjectRef()
 
 	def setup(self,name,parent):

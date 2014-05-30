@@ -24,6 +24,7 @@ from ...core import config
 from ...globals import current_site
 from ...utils import hash_data
 from ..db import Base, Column, db, check_unique,no_update
+from . import LEN_NAME,LEN_PATH
 from .object import Object,ObjectRef, update_modified
 from .types import MIMEtype
 from .storage import Storage
@@ -53,7 +54,7 @@ class BinData(Object):
 	storage = ObjectRef(Storage)
 	mime = ObjectRef(MIMEtype)
 
-	name = Column(Unicode(30), nullable=False)
+	name = Column(Unicode(LEN_NAME), nullable=False)
 	hash = Column(Unicode(33), nullable=True, unique=True) ## NULL if deleted
 	timestamp = Column(DateTime,default=datetime.utcnow)
 	size = Column(Integer)
@@ -201,7 +202,7 @@ class StaticFile(Object):
 	parent = ObjectRef(doc="wherever this has been uploaded into")
 	site = ObjectRef(Site)
 
-	path = Column(Unicode(1000), nullable=False)
+	path = Column(Unicode(LEN_PATH), nullable=False)
 	modified = Column(DateTime,default=datetime.utcnow)
 
 	def setup(self, path, bin, parent=None, site=None, **kw):

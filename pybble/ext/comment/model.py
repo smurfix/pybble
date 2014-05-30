@@ -9,8 +9,8 @@ class Comment(renderObject):
 	__tablename__ = "comment"
 	__mapper_args__ = {'polymorphic_identity': 23}
 	
-	name = Column(Unicode)
-	data = Column(Unicode)
+	name = Column(Unicode(LEN_NAME))
+	data = Column(Unicode(LEN_CONTENT))
 	added = DateTime(default_factory=datetime.utcnow)
 	renderer_id = Column(Integer, nullable=True)
 	renderer = Reference(renderer_id,Renderer)

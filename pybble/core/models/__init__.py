@@ -13,4 +13,17 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-# empty
+# a couple of internal constants
+
+LEN_NAME=50
+LEN_DOC=1000
+LEN_PATH=4096
+LEN_CONTENT=100000
+LEN_JSON=100000
+LEN_USERNAME=30
+LEN_PERSONNAME=40
+LEN_DOMAIN=150
+LEN_EMAIL=200
+LEN_TYPE=10
+LEN_EXT=8
+LEN_CRYPTPW=100

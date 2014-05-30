@@ -19,6 +19,7 @@ from sqlalchemy import Unicode,Integer
 
 from flask._compat import string_types,text_type
 
+from . import LEN_NAME,LEN_DOC
 from ._utils import Loadable
 from .object import Object
 from ..json import json_adapter
@@ -28,8 +29,8 @@ class ObjType(Loadable, Object):
 	"""Object registry"""
 	__tablename__ = "objtype"
 
-	name = Column(Unicode(30), nullable=False, unique=True)
-	doc = Column(Unicode(1000), nullable=True)
+	name = Column(Unicode(LEN_NAME), nullable=False, unique=True)
+	doc = Column(Unicode(LEN_DOC), nullable=True)
 
 	def __str__(self):
 		return u'‹T:%s %s›' % (self.id, self.name)

@@ -37,6 +37,7 @@ from flask._compat import implements_to_string as py2_unicode, text_type
 from flask.ext.migrate import Migrate
 
 from . import json
+from .models import LEN_JSON
 
 import logging
 logger = logging.getLogger('pybble.core.db')
@@ -159,7 +160,7 @@ class GetQuery(query.Query):
 class JSON(TypeDecorator):
 	"""Represents any Python object as a json-encoded string.
 	"""
-	impl = VARCHAR(100000)
+	impl = VARCHAR(LEN_JSON)
 
 	def process_bind_param(self, value, dialect):
 		if value is not None:

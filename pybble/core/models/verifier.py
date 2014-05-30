@@ -23,6 +23,7 @@ from sqlalchemy.orm import relationship,backref
 from ...utils import random_string
 from .. import config
 from ..db import Column, NoData, check_unique,no_update
+from . import LEN_NAME,LEN_DOC
 from ._utils import Loadable
 from .object import Object,ObjectRef
 from .objtyp import ObjType
@@ -39,8 +40,8 @@ class VerifierBase(Loadable, Object):
 
 	__tablename__ = "verifierbase"
 
-	name = Column(Unicode(30), unique=True, nullable=False)
-	doc = Column(Unicode(1000), nullable=True)
+	name = Column(Unicode(LEN_NAME), unique=True, nullable=False)
+	doc = Column(Unicode(LEN_DOC), nullable=True)
 
 	config = ObjectRef(ConfigData)
 

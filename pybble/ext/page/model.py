@@ -17,6 +17,7 @@ from flask import url_for
 
 from sqlalchemy import Column,Unicode,Boolean,DateTime,Integer
 
+from pybble.core.models import LEN_NAME
 from pybble.core.models.object import Object,ObjectRef
 from pybble.core.models._content import Content
 from pybble.core.models._const import PERM_READ,PERM_ADMIN
@@ -41,7 +42,7 @@ class Page(Content, Object):
 	_admin_perm=PERM_ADMIN
 	_admin_add_perm=('Site','Page')
 
-	name = Column(Unicode, nullable=False)
+	name = Column(Unicode(LEN_NAME), nullable=False)
 	parent = ObjectRef()
 
 	modified = Column(DateTime, default=datetime.utcnow)

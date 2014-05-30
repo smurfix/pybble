@@ -27,6 +27,7 @@ from ...globals import root_site
 from ..utils import attrdict
 from ..db import db, Base, Column, NoData,NoDataExc, check_unique,no_update, refresh, JSON
 from ..signal import ConfigChanged
+from . import LEN_NAME,LEN_DOC
 from .object import Object,ObjectRef
 from ...core import config
 
@@ -65,8 +66,8 @@ class ConfigVar(Object, JsonValue):
 		super(ConfigVar,cls).__declare_last__()
 
 	parent = ObjectRef()
-	name = Column(Unicode(30), index=True)
-	doc = Column(Unicode(1000))
+	name = Column(Unicode(LEN_NAME), index=True)
+	doc = Column(Unicode(LEN_DOC))
 
 	def setup(self, parent, name,value, doc=None):
 		self.parent = parent
@@ -98,7 +99,7 @@ class ConfigData(Object):
 	"""This is a collection of configuration variables, referred to by some object or other"""
 
 	super = ObjectRef("self", nullable=True, doc="inherited configuration")
-	name = Column(Unicode(30), index=True, doc="informal name for this collection")
+	name = Column(Unicode(LEN_NAME), index=True, doc="informal name for this collection")
 
 	@property
 	def parent(self):

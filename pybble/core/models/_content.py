@@ -22,6 +22,7 @@ from sqlalchemy.orm import relationship
 
 from .. import config
 from ..db import Base, Column
+from . import LEN_CONTENT
 from .object import ObjectRef
 from .types import MIMEtype
 
@@ -38,7 +39,7 @@ class _Content(object):
 		This is a Content version without "mime", assuming that this reference
 		is defined elsewhere.
 		"""
-	content = Column(Unicode(100000), nullable=False)
+	content = Column(Unicode(LEN_CONTENT), nullable=False)
 
 	def setup(self,content=None,**k):
 		if content is not None:

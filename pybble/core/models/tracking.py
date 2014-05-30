@@ -24,6 +24,7 @@ from sqlalchemy.orm import relationship,backref
 
 from flask import request, current_app
 
+from . import LEN_DOC
 from .object import Object,ObjectRef
 from .objtyp import ObjType
 from .user import User
@@ -177,7 +178,7 @@ class Tracker(TrackingObject):
 	user = ObjectRef(User)
 	site = ObjectRef(Site)
 	obj = ObjectRef(doc="The new object, or a change/delete record")
-	comment = Column(Unicode(1000), nullable=True)
+	comment = Column(Unicode(LEN_DOC), nullable=True)
 	timestamp = Column(DateTime,default=datetime.utcnow)
 
 	@property
