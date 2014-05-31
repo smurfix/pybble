@@ -323,10 +323,10 @@ class SiteBlueprint(Object):
 
 	@property
 	def as_str(self):
-		return u"‘%s’: %s @ %s%s" % (self.name, self.blueprint.name, self.site.domain, self.path)
+		return u"‘%s’: %s @ %s%s" % (self.name, self.blueprint.name if self.blueprint else '‽', self.site.domain if self.site else '‽', self.path)
 
 	def before_insert(self):
 		if self.config is None:
-			self.config = ConfigData.new(parent=self.parent.config, name="for {} {}".format(self.__class__.__name__,self.name))
+			self.config = ConfigData.new(parent=self.parent.config if self.parent else None, name="for {} {}".format(self.__class__.__name__,self.name))
 		super(SiteBlueprint,self).before_insert()
 
