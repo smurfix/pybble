@@ -47,9 +47,9 @@ class PermissionForm(Form):
 	user = TextField('User', [valid_obj,valid_admin])
 	target = TextField('Object', [valid_obj,valid_read])
 
-	for_objtyp = SelectField('Existing Object type') ###TODO, choices=tuple((str(q.id),q.name) for q in D))
-	new_objtyp = SelectField('New Object type') ###TODO, choices=(("-","(not applicable)"),)+tuple((str(q.id),q.name) for q in D))
-	new_mimetyp = SelectField('New MIME type') ###TODO, choices=(("-","(not applicable)"),)+tuple((str(q.id),q.name) for q in D))
+	for_objtyp = SelectField('Existing Object type')
+	new_objtyp = SelectField('New Object type')
+	new_mimetyp = SelectField('New MIME type')
 	inherit = SelectField('Applies to', choices=(('Yes','All sub-pages'), ('No','this page only'),('*','This page and all sub-pages')))
 	right = SelectField('Access to', choices=tuple((str(x),y) for x,y in plc),validators=[valid_access('object')])
 
