@@ -25,7 +25,7 @@ from flask._compat import string_types,text_type
 from .. import config as pybble_config
 from ...globals import root_site
 from ..utils import attrdict
-from ..db import db, Base, Column, NoData,NoDataExc, check_unique,no_update, refresh, JSON
+from ..db import db, Base, Column, NoData,NoDataExc, check_unique,no_update, refresh, JSON, maybe_stale
 from ..signal import ConfigChanged
 from . import LEN_NAME,LEN_DOC
 from .object import Object,ObjectRef
@@ -102,6 +102,7 @@ class ConfigData(Object):
 	name = Column(Unicode(LEN_NAME), index=True, doc="informal name for this collection")
 
 	@property
+	@maybe_stale
 	def parent(self):
 		from .site import Site
 		return self.super or root_site
@@ -111,6 +112,7 @@ class ConfigData(Object):
 		self.super = parent
 		super(ConfigData,self).setup()
 
+	@maybe_stale
 	def get(self, k, default=None):
 		try:
 			return self[k]
@@ -120,11 +122,13 @@ class ConfigData(Object):
 	def __getattr__(self,k):
 		return self[k]
 
+	@maybe_stale
 	def __contains__(self,k):
 		if k in pybble_config:
 			return True
 		return ConfigVar.q.get_by(name=k).count()
 
+	@maybe_stale
 	def __getitem__(self,k):
 		if isinstance(k,ConfigVar):
 			var = k
@@ -141,6 +145,7 @@ class ConfigData(Object):
 				return var.value
 			return self.super[k]
 	
+	@maybe_stale
 	def __setitem__(self,k,v):
 		if isinstance(k,ConfigVar):
 			var = k
@@ -159,6 +164,7 @@ class ConfigData(Object):
 		else:
 			ov.value = v
 
+	@maybe_stale
 	def __delitem__(self,k):
 		k = text_type(k)
 		assert k not in pybble_config, k
@@ -171,16 +177,19 @@ class ConfigData(Object):
 		else:
 			db.delete(ov)
 
+	@maybe_stale
 	def keys(self):
 		for k in pybble_config.keys():
 			yield k
 		for k in ConfigVar.q.all():
 			yield k.name
+	@maybe_stale
 	def values(self):
 		for k in pybble_config.values():
 			yield k
 		for k in ConfigVar.q.all():
 			yield self[k]
+	@maybe_stale
 	def items(self):
 		for k in pybble_config.items():
 			yield k
