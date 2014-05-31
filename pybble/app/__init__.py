@@ -123,8 +123,6 @@ class BaseApp(WrapperApp,Flask):
 	def __init__(self, site, testing=False, **kw):
 		super(BaseApp,self).__init__(site=site,testing=testing, import_name="pybble", template_folder=None, static_folder=None, **kw)
 
-		self.wsgi_app = CustomProxyFix(self.wsgi_app)
-
 		if site is not None:
 			site.signal.connect(self._reload)
 		all_apps.connect(self._reload)
@@ -216,15 +214,6 @@ def datetimeformat(value, format='%d-%m-%Y %H:%M %Z%z'):
 	if isinstance(value,(int,float)):
 		value = datetime.utcfromtimestamp(value)
 	return value.astimezone(TZ).strftime(format)
-
-class CustomProxyFix(object):
-	def __init__(self, app):
-		self.app = app
-	def __call__(self, environ, start_response):
-		host = environ.get('HTTP_X_FORWARDED_HOST', '')
-		if host:
-			environ['HTTP_HOST'] = host
-		return self.app(environ, start_response)
 
 # global default config
 cfg_app = None

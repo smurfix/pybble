@@ -202,6 +202,9 @@ class SubdomainServer(Server):
 	"""Actually run the server"""
 	def __call__(self,app, host,port,**opts):
 		dispatch = SubdomainDispatcher(app.site)
+		if app.config.BEHIND_PROXY:
+			from werkzeug.contrib.fixers import ProxyFix
+			dispatch = ProxyFix(dispatch)
 		server = WSGIServer((host,port), dispatch)
 		db.commit()
 		db.close()
