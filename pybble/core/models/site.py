@@ -281,8 +281,8 @@ class SiteBlueprint(Object):
 		super(SiteBlueprint,cls).__declare_last__()
 
 	name = Column(Unicode(LEN_NAME), required=True, nullable=False, doc="blueprint's name, for url_for() et al.")
-	endpoint = Column(Unicode(LEN_NAME), nullable=False, default="", doc="Endpoint to attach as. May be empty.")
-	path = Column(Unicode(LEN_PATH), nullable=False, default="", doc="URL path where to attach this ")
+	endpoint = Column(Unicode(LEN_NAME), required=False, nullable=False, default="", doc="Endpoint to attach as. May be empty.")
+	path = Column(Unicode(LEN_PATH), required=False, nullable=False, default="", doc="URL path where to attach this ")
 
 	def setup(self, site,blueprint, endpoint=None, name=None,path=None):
 		if isinstance(blueprint,string_types):
