@@ -22,12 +22,10 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 import datetime
 
 APPLICATION_ROOT=None
-DEBUG=False
-d_DEBUG="Emit debug information"
 DEBUG_ACCESS=False
 d_DEBUG_ACCESS="Trace access control tests"
-DEBUG_WEB=None
-d_DEBUG_WEB="Web debugger? True:Werkzeug False:pdb None:No"
+DEBUG=None
+d_DEBUG="Web debugger? True:Werkzeug False:pdb None:No"
 BEHIND_PROXY=False
 d_BEHIND_PROXY="Observe X-Forwarded-Host: header?"
 JSON_AS_ASCII=True

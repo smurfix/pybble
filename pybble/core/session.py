@@ -149,7 +149,7 @@ class SubdomainDispatcher(object):
 				# Note that this assumes that a site's app cannot change
 				# TODO: this is not actually enforced anywhere
 
-			if app.config.DEBUG_WEB is True:
+			if app.config.DEBUG is True:
 				app = DebuggedApplication(app, evalex=True)
 			return app
 
@@ -164,7 +164,7 @@ class SubdomainDispatcher(object):
 			return res
 
 		except Exception as e:
-			if not app or app.config.DEBUG_WEB is not False:
+			if not app or app.config.DEBUG is not False:
 				raise
 
 			x=sys.exc_info()

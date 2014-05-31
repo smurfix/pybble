@@ -50,7 +50,7 @@ while getopts "dhkKnNprtv" i ; do
                 d)
                         DEBUG=y
 						DBG=-d
-						DBGENV=PYBBLE_DEBUG_WEB=True
+						DBGENV=PYBBLE_DEBUG=True
 						;;
                 h)
                         usage 0 ;;
