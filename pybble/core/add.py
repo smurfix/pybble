@@ -448,7 +448,7 @@ def add_template(parent, filepath,webpath, inferred="", force=False):
 			except NoData:
 				pass
 			else:
-				logger.error("EXISTS: {} at {} {}".format(t,parent,webpath))
+				logger.error("EXISTS: {} at {} {}\n{}\n{}".format(t,parent,webpath,filepath,t.source))
 				return
 				
 		t = Template.new(source=filepath, data=data, target=parent, adapter=a, weight=hdr.weight or 0)
@@ -491,7 +491,7 @@ def add_templates(data, parent=None, force=False):
 			assert isinstance(d,string_types)
 			filepath = text_type(d)
 			webpath = inferred = ""
-		filepath = modpath(parent,filepath)
+		filepath = os.path.relpath(modpath(parent,filepath))
 
 		find_templates(parent, filepath,webpath, inferred=inferred, force=force)
 
