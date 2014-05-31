@@ -26,11 +26,11 @@ from sqlalchemy.orm.exc import NoResultFound as NoData, MultipleResultsFound
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.pool import AssertionPool
-from sqlalchemy.types import TypeDecorator, VARCHAR
+from sqlalchemy.types import TypeDecorator, VARCHAR,Unicode
 from sqlalchemy.util import IdentitySet
 
-from formalchemy import Column, helpers
-from formalchemy.fields import IntegerFieldRenderer
+from formalchemy import Column as FAColumn, helpers
+from formalchemy.fields import IntegerFieldRenderer,TextAreaFieldRenderer, TextFieldRenderer
 
 from flask import Markup, url_for, escape, g, request
 from flask._compat import implements_to_string as py2_unicode, text_type
@@ -41,6 +41,16 @@ from .models import LEN_JSON
 
 import logging
 logger = logging.getLogger('pybble.core.db')
+
+def Column(col, *a,**k):
+	if "renderer" not in k and ((col in (Unicode,VARCHAR,JSON)) or isinstance(col,(Unicode,VARCHAR,JSON))):
+		if col is JSON or col.length > 255:
+			k['renderer'] = TextAreaFieldRenderer
+		else:
+			k['renderer'] = TextFieldRenderer
+	elif getattr(col,'length',0) == 100000:
+		import pdb;pdb.set_trace()
+	return FAColumn(col,*a,**k)
 
 class ManyDataExc(IntegrityError,MultipleResultsFound):
 	"""Class for tests of unique constraint violations"""
