@@ -115,6 +115,8 @@ def load_app_blueprints(app):
 			if path == "/": path = ""
 			bpm = b.mod(bp, b.path, url_prefix=path)
 			app.register_blueprint(bpm, url_defaults = { 'bp': bp })
+		if not site.inherit_parent:
+			break
 		site = site.parent
 
 def create_blueprint(site, blueprint, path, name=None,endpoint=None):

@@ -16,7 +16,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from datetime import datetime,timedelta
 import logging
 
-from sqlalchemy import Integer, Unicode, ForeignKey, DateTime, event, Table
+from sqlalchemy import Integer, Unicode, ForeignKey, DateTime, event, Table, Boolean
 from sqlalchemy.orm import relationship,backref
 
 from werkzeug.utils import cached_property
@@ -91,6 +91,7 @@ class Site(Object):
 	config = ObjectRef(ConfigData)
 	app = ObjectRef(App)
 
+	inherit_parent = Column(Boolean, nullable=False, server_default='FALSE', default=False, doc="Inherit blueprints etc. from parent")
 	domain = Column(Unicode(LEN_DOMAIN), nullable=False, unique=True)
 	name = Column(Unicode(LEN_NAME), nullable=False, unique=True)
 	tracked = Column(DateTime,nullable=False, default=datetime.utcnow)
