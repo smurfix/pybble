@@ -307,10 +307,15 @@ class PopulateCommand(Command):
 		import socket
 		hostname = text_type(socket.gethostname())
 		try:
-			asite = Site.q.get_by(domain=hostname)
+			asite = Site.q.get_by(name="root alias",parent=root)
 		except NoData:
 			asite = Site.new(name="root alias", domain=hostname, app=aapp)
 			logger.info("Root site aliased ‘{}’ created.".format(hostname))
+		else:
+			if asite.domain != hostname:
+				logger.warn("Root site alias is {}, not {}".format(asite.domain,hostname))
+				if force:
+					logger.warn("This is NOT aut-corrected.")
 		db.commit()
 
 		try:
