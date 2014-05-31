@@ -130,7 +130,7 @@ class ConfigData(Object):
 			var = k
 		else:
 			k = text_type(k)
-			if k in pybble_config:
+			if k in pybble_config and pybble_config._is_fixed(k):
 				return pybble_config[k]
 			var = ConfigVar.q.get_by(name=k)
 
@@ -148,7 +148,8 @@ class ConfigData(Object):
 			k = text_type(k)
 			if k in pybble_config:
 				pybble_config[k] = v
-				return
+				if pybble_config._is_fixed(k):
+					return
 
 			var = ConfigVar.q.get_by(name=k)
 		try:

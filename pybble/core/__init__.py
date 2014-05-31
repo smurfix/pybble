@@ -20,8 +20,16 @@ from flask._compat import text_type
 
 class config(attrdict):
 	_module = None
+	_not_really = set()
 	def __init__(self):
 		self._load()
+
+	def _is_fixed(self,k):
+		if k in self._not_really:
+			return False
+		if k in self:
+			return True
+		return False
 
 	def _load(self,config=None):
 		if config is None:
@@ -66,6 +74,10 @@ class config(attrdict):
 		from . import default_settings as DS
 		for k,v in DS.__dict__.items():
 			if k != k.upper(): continue
+			# These are overrideable
+			if k not in self:
+				self[k] = v
+				self._not_really.add(k)
 			self._default(text_type(k),v)
 
 		if 'SECRET_KEY' not in self:
@@ -84,7 +96,10 @@ class config(attrdict):
 				self.sql_uri = "%s://%s:%s@%s:%s/%s" % (self.sql_driver,self.sql_user,self.sql_pass,self.sql_host,self.sql_port,self.sql_database)
 
 		for k,v in Flask.default_config.items():
-			self.setdefault(k,v)
+			# These are overrideable
+			if k not in self:
+				self[k] = v
+				self._not_really.add(k)
 
 		# for Alembic
 		self.SQLALCHEMY_DATABASE_URI = self.sql_uri
