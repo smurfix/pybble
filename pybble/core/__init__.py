@@ -18,13 +18,25 @@ import os
 from flask import Flask
 from flask._compat import text_type
 
+def _std_values(x):
+	if x == "None":
+		return None
+	if x == "True":
+		return True
+	if x == "False":
+		return False
+	return x
+
 class config(attrdict):
 	_module = None
 	_not_really = set()
+	_really = set()
 	def __init__(self):
 		self._load()
 
 	def _is_fixed(self,k):
+		if k in self._really:
+			return True
 		if k in self._not_really:
 			return False
 		if k in self:
@@ -106,11 +118,12 @@ class config(attrdict):
 
 		self._module = config
 
-	def _default(self,k,v,conv=None):
+	def _default(self,k,v,conv=_std_values):
 		try:
 			v = os.environ['PYBBLE_'+k.upper()]
 			if conv:
 				v = conv(v)
+			self._really.add(k)
 		except KeyError:
 			if k in self:
 				return
