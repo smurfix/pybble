@@ -1,0 +1,11 @@
+#!/bin/sh
+set -ex
+export PYBBLE=LOGIN
+
+if test -s PID ; then
+    p=$(cat PID)
+    if kill "$p" ; then
+        date +%s > RESTART
+    fi
+    rm -f PID
+fi

@@ -1,0 +1,11 @@
+#!/bin/sh
+set -ex
+export PYBBLE=LOGIN
+
+./manage.py -S  core migrate upgrade
+
+if test -f RESTART ; then
+    rm -f RESTART
+    ./manage.py run -p 58080 &
+    echo $! > PID
+fi
