@@ -1,6 +1,5 @@
 #!/bin/sh
 set -ex
-export PYBBLE=LOGIN
 
 if test -s PID ; then
     p=$(cat PID)
