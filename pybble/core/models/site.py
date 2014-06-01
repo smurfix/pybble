@@ -91,7 +91,7 @@ class Site(Object):
 	config = ObjectRef(ConfigData)
 	app = ObjectRef(App)
 
-	inherit_parent = Column(Boolean, nullable=False, default=False, doc="Inherit blueprints etc. from parent")
+	inherit_parent = Column(Boolean, nullable=False, server_default='FALSE', default=False, doc="Inherit blueprints etc. from parent")
 	domain = Column(Unicode(LEN_DOMAIN), nullable=False, unique=True)
 	name = Column(Unicode(LEN_NAME), nullable=False, unique=True)
 	tracked = Column(DateTime,nullable=False, default=datetime.utcnow)

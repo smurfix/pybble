@@ -38,7 +38,7 @@ transitions.
 
 After changing the schema, do
 
-	pybble core migrate revision --auto
+	pybble -S core migrate revision --auto
 
 You will then find a new file in `migrations/versions` which applies your
 changes to the database. Edit this file as appropriate, and add it to the
@@ -46,7 +46,7 @@ git revision that contains your changes.
 
 To upgrade the actual database, run
 
-	pybble core migrate upgrade
+	pybble -S core migrate upgrade
 
 Note that Alembic does not find some changes, e.g. altered column lengths.
 An alternate solution is to run `dbdiff`, which is packaged with Pybble:
