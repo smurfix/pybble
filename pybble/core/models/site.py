@@ -108,7 +108,7 @@ class Site(Object):
 				yield ss
 	# we don't have "yield from" in PY2
 
-	def setup(self,domain, name=None, parent=None,app=None, superuser=None):
+	def setup(self,domain, name=None, parent=None,app=None, superuser=None, inherit=True):
 		if name is None:
 			name=u"Here be "+domain
 		self.domain=unicode(domain)
@@ -118,6 +118,7 @@ class Site(Object):
 		self.parent=parent
 		self.app=app
 		self._superuser = superuser
+		self.inherit_parent = inherit
 
 		super(Site,self).setup()
 	
