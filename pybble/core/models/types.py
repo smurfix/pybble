@@ -116,7 +116,7 @@ class MIMEtype(Object):
 
 	def before_insert(self):
 		if self.name is None:
-			self.name = typ+'/'+subtyp
+			self.name = self.typ+'/'+self.subtyp
 		super(MIMEtype,self).before_insert()
 
 	@property
