@@ -26,7 +26,7 @@ from flask._compat import text_type,string_types
 from werkzeug import import_string
 
 from .. import TEMPLATE_PATH, STATIC_PATH
-from ..utils import random_string
+from ..utils import random_string,NotGiven
 from ..core import config
 from ..core.utils import attrdict
 from ..core.db import db, NoData
@@ -61,14 +61,14 @@ MIME = upload_content_types+[
 	('html','*',None,"any html data",None),
 	('text','*',None,"any text data",None),
 
-	('html','subpage',None,None,"a (main) part of a webpage"),
-	('html','string',None,None,"a short string describing an object"),
-	('html','detail',None,None,"a tabular view of an object's internal state"),
-	('html','snippet',None,None,"a fragment for the explore view"),
-	('html','hierarchy',None,None,"a fragment for hierarchical view within a page"),
-	('html','preview',None,None,"a view for previewing"),
-	('html','edit',None,None,"the form for editing"),
-	('xml','rss',None,None,"a fragment for the RSS feed"),
+	('html','subpage',None,NotGiven,"a (main) part of a webpage"),
+	('html','string',None,NotGiven,"a short string describing an object"),
+	('html','detail',None,NotGiven,"a tabular view of an object's internal state"),
+	('html','snippet',None,NotGiven,"a fragment for the explore view"),
+	('html','hierarchy',None,NotGiven,"a fragment for hierarchical view within a page"),
+	('html','preview',None,NotGiven,"a view for previewing"),
+	('html','edit',None,NotGiven,"the form for editing"),
+	('xml','rss',None,NotGiven,"a fragment for the RSS feed"),
 ]
 
 MODEL = (
