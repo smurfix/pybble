@@ -78,8 +78,6 @@ class MIMEtype(Object):
 			objtyp = ObjType.get(subtyp)
 		else:
 			objtyp = None
-		if name is None:
-			name = typ+'/'+subtyp
 		self.typ = typ
 		self.subtyp = subtyp
 		self.name = name
@@ -115,6 +113,11 @@ class MIMEtype(Object):
 				import pdb;pdb.set_trace()
 				raise KeyError("Could not find MIME type "+typ+'/'+subtyp)
 			return cls.new(typ=typ,subtyp=subtyp, add=add)
+
+	def before_insert(self):
+		if self.name is None:
+			self.name = typ+'/'+subtyp
+		super(MIMEtype,self).before_insert()
 
 	@property
 	def as_str(self):
