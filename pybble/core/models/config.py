@@ -123,7 +123,7 @@ class ConfigData(Object):
 		try:
 			return self[k]
 		except KeyError:
-			return AttributeError(k)
+			raise AttributeError(k)
 
 	@maybe_stale
 	def __contains__(self,k):
