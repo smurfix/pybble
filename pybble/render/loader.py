@@ -160,6 +160,15 @@ def get_site_template(c,site,weight,got):
 			except NoData: pass
 			else: got(t,10+weight)
 
+	if c.site == site and c.blueprint:
+		try: t = DBTemplate.q.get_by(target=c.blueprint, name=c.name)
+		except NoData: pass
+		else: got(t,10+weight)
+
+		try: t = DBTemplate.q.get_by(target=c.blueprint.blueprint, name=c.name)
+		except NoData: pass
+		else: got(t,20+weight)
+
 	if c.name:
 		if hasattr(site,'app'):
 			try: t = DBTemplate.q.get_by(target=site.app, name=c.name)
