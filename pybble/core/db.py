@@ -252,7 +252,7 @@ class Dumpable(object):
 		"""Returns the set of names of attributes which should be included in a dump"""
 		i = inspect(self)
 		res = set()
-		for k in i.dict.keys():
+		for k in i.attrs.keys():
 			if k.startswith('_'):
 				continue
 			if k.endswith('_typ_id'):
