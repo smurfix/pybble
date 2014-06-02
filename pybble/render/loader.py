@@ -102,6 +102,9 @@ def get_template(c, trace=None,_retry=False):
 		for t in q.filter(TemplateMatch.target==site):
 			got(t.template,weight+t.weight)
 
+		if not getattr(site,'inherit_parent',True):
+			break
+
 		parent = getattr(site,'parent',None) or getattr(site,'app',None)
 		if parent in seen:
 			site = getattr(site,'app',None) or getattr(parent,'app',None)
