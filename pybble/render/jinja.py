@@ -266,10 +266,10 @@ class SiteTemplateLoader(BaseLoader):
 			trace = []
 			def tracer(*t):
 				trace.append(t)
-			t = get_template(c, tracer)
+			t = get_template(c, tracer)[0]
 			#g.context.setdefault('LOADER_TRACE',[]).append((c,trace))
 		else:
-			t = get_template(c)
+			t = get_template(c)[0]
 		mtime = t.modified
 		def t_is_current():
 			#db.refresh(refresh(t),('modified',))

@@ -13,10 +13,12 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from jinja2 import Markup, contextfunction, contextfilter
+from jinja2 import Markup, contextfunction, contextfilter, TemplateNotFound
 from werkzeug.utils import reraise
 from flask import request,current_app, get_flashed_messages, Response, g
 from flask._compat import string_types
+from sqlalchemy.orm import aliased
+from sqlalchemy import or_
 
 from ..utils import random_string, AuthError, NotGiven
 from ..core.models._const import PERM, PERM_NONE, PERM_ADD, \
@@ -26,7 +28,7 @@ from ..core.models.permit import Permission
 from ..core.models.site import SiteBlueprint,Blueprint
 from ..core.models.template import TemplateMatch, Template
 from ..core.models.files import StaticFile
-from ..core.models.types import MIMEtype
+from ..core.models.types import MIMEtype,MIMEadapter
 from ..core.models.object import Object
 from ..core.db import db,NoData
 from ..globals import current_site
@@ -150,6 +152,12 @@ class ContentData(object):
 	def environment(self):
 		return dict((k,v) for k,v in self.__dict__.items() if not k.startswith('_') and v is not None)
 	
+	def clone(self,**vars):
+		c = type(self)()
+		c.__dict__.update(self.__dict__)
+		c.__dict__.update(vars)
+		return c
+
 	def __call__(self, environ,start_response):
 		raise NotImplementedError("completely untested and probably wrong")
 		from pybble.app import Response
@@ -159,19 +167,60 @@ class ContentData(object):
 	@property
 	def template(self):
 		from .loader import get_template
-		return get_template(self)
+		return get_template(self)[0]
 		
-	def render(self, **vars):
+	def render(self, _vars={}, _intermediate = True, **vars):
+		if _vars:
+			assert not vars
+			vars=_vars
 		logger.debug("RENDER: "+repr(self.__dict__))
 		if self.from_mime == self.to_mime:
 			assert self.content
 			return self
 		try:
 			old_anchor = getattr(g,'anchor',None)
-			return self.template.render(self, vars)
+			try:
+				t = self.template
+			except TemplateNotFound:
+				## try to find some intermediate solution?
+				if not _intermediate:
+					raise
+				return self.render_with_intermediate(vars)
+			else:
+				return t.render(self, vars)
+
 		finally:
 			g.anchor = old_anchor
 	
+	def render_with_intermediate(self, vars):
+		from .loader import get_template
+
+		r1 = r2 = w = None
+		ma = aliased(MIMEadapter)
+		mb = aliased(MIMEadapter)
+		import pdb;pdb.set_trace()
+		for a,b in db.query(ma,mb).filter(
+				or_(ma.from_mime==self.from_mime,ma.from_mime==MIMEtype.get(self.from_mime.typ,"*")),
+				mb.to_mime==self.to_mime,
+				ma.to_mime_id==mb.from_mime_id,
+				ma.id != mb.id):
+			try:
+				wx = 100 if a.from_mime.subtyp == "*" else 0
+				c1 = self.clone(to_mime=a.to_mime, from_mime=a.from_mime)
+				c2 = self.clone(from_mime=b.from_mime)
+				t1,w1 = get_template(c1)
+				t2,w2 = get_template(c2)
+				if w is None or w > w1+w2+wx:
+					w = w1+w2+wx
+					r1 = t1
+					r2 = t2
+			except TemplateNotFound:
+				pass
+		if w is None:
+			raise
+		c2.content = c1.render(_intermediate = False, _vars=vars)
+		return c2.render(_intermediate = False, _vars=vars)
+
 	def __str__(self):
 		if self.content:
 			return self.content

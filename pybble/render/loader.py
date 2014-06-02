@@ -114,11 +114,11 @@ def get_template(c, trace=None,_retry=False):
 			weight += 1
 
 	if not res[0]:
-		if not _retry and current_app.config.DEBUG is False:
-			import pdb;pdb.set_trace()
-			return get_template(c,_retry=True)
+#		if not _retry and current_app.config.DEBUG is False:
+#			import pdb;pdb.set_trace()
+#			return get_template(c,_retry=True)
 		raise TemplateNotFound(c)
-	return res[0]
+	return res
 
 def get_site_template(c,site,weight,got):
 	bn = None
