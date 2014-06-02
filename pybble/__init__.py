@@ -14,17 +14,23 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-## change default encoding to UTF-8
+# This module contains basic setup code for Pybble.
+# Do not import random stuff from here
+__all__ = ['ROOT_SITE_NAME','ROOT_USER_NAME','ANON_USER_NAME','TEMPLATE_PATH','STATIC_PATH','FROM_SCRIPT']
+
+## change the default encoding to UTF-8
 ## this is a no-op in PY3
+## PY2 defaults to ASCII, but that's way beyond obsolete
 import sys
 reload(sys)
 sys.setdefaultencoding("utf-8")
 
+# Warnings are bad, except for some which are not
 from warnings import filterwarnings
 filterwarnings("error")
 filterwarnings("ignore",category=DeprecationWarning)
 filterwarnings("ignore",category=ImportWarning)
-filterwarnings("ignore",message="^Converting column '.*' from VARCHAR to TEXT")
+filterwarnings("ignore",message="^Converting column '.*' from VARCHAR to TEXT") # mysql special
 
 ## Use gevent.
 if True:
@@ -32,12 +38,15 @@ if True:
 	## before monkeypatching.
 	if 'threading' in sys.modules:
 		raise Exception('threading module loaded before patching!')
-	del sys
 
 	## All OK, so now go ahead.
 	import gevent.monkey
 	gevent.monkey.patch_all()
-	del gevent
+
+# We use Flask's templates
+from formalchemy import config
+from flask import render_template
+config.engine = render_template
 
 ## This is the default name for the site root.
 ## There should be only one.
@@ -53,6 +62,4 @@ STATIC_PATH = path.join(path.dirname(__file__), 'static')
 # if you start something from the script, the default user is the site root.
 # This is set in manager.py and checked in pybble.app.BaseApp._setup_user().
 FROM_SCRIPT = False
-
-del path
 

@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+
+{% block body %}
+    <h2>List of {{ model_slug.title() }} Objects</h2>
+    <a href="{{ url_for('_admin.object_new', model_slug=model_slug) }}">Create New {{ model_slug.title() }}</a>
+    <table>
+        <thead>
+            <tr>
+                {% for field_name in field_names %}
+                    <th>{{ field_name.title() }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for object in objects %}
+                <tr>
+                    {% for field_name in field_names %}
+                        {% if loop.first %}
+                            <td><a href="{{ url_for('_admin.object_edit', model_slug=model_slug, model_key=object[primary_key]) }}">{{ object[field_name] }}</a></td>
+                        {% else %}
+                            <td>{{ object[field_name] }}</td>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
