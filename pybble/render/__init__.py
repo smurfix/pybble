@@ -204,15 +204,6 @@ def valid_access(o):
 
 	return v_a
 
-class TemplateNotFound(IOError, LookupError):
-	"""
-	A template was not found by the template loader.
-	"""
-
-	def __init__(self, name):
-		IOError.__init__(self, name)
-		self.name = name
-
 def render_my_template(obj, detail=None, mimetype=NotGiven, **context):
 	"""Global render"""
 
