@@ -120,7 +120,10 @@ class ConfigData(Object):
 			return default
 
 	def __getattr__(self,k):
-		return self[k]
+		try:
+			return self[k]
+		except KeyError:
+			return AttributeError(k)
 
 	@maybe_stale
 	def __contains__(self,k):
@@ -136,7 +139,10 @@ class ConfigData(Object):
 			k = text_type(k)
 			if k in pybble_config and pybble_config._is_fixed(k):
 				return pybble_config[k]
-			var = ConfigVar.q.get_by(name=k)
+			try:
+				var = ConfigVar.q.get_by(name=k)
+			except NoData:
+				raise KeyError(k)
 
 		try:
 			return SiteConfigVar.q.get_by(parent=self, var=var).value
