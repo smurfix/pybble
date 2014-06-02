@@ -41,7 +41,10 @@ from sqlalchemy.orm import relationship,backref,composite, mapper
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.inspection import inspect
 
+from formalchemy import FieldSet
+
 from ...compat import py2_unicode
+from ..utils import hybridmethod
 from ..json import json_adapter
 from ..signal import ObjSignal
 
@@ -202,6 +205,44 @@ class get_type(object):
 			return refresh(t)
 get_type = get_type()
 
+class get_fieldset(object):
+	"""Helper to generate a FormAlchemy fieldset for this object"""
+	def __get__(self, obj, cls):
+		from .objtyp import ObjType
+		hide = []
+		opts = []
+		if obj and not isinstance(obj,ObjType):
+			fs = FieldSet(obj)
+			for fn,f in fs._fields.items():
+				if getattr(self.__class__,'_pybble_block_'+fn, False):
+					opts.append(f.readonly())
+			cls = type(obj)
+		else:
+			if obj:
+				cls = obj.mod
+			obj = cls
+			fs = FieldSet(cls, session=db)
+
+		seen = set()
+		for c in cls.__mro__:
+			for k in getattr(c,'form_readonly',()):
+				if k not in seen:
+					opts.append(getattr(fs,k).readonly())
+					seen.add(k)
+			for k in getattr(c,'form_hidden',()):
+				if k not in seen:
+					hide.append(getattr(fs,k))
+					seen.add(k)
+		obj.form_mod(fs)
+
+		if hasattr(fs,'config'):
+			hide.append(fs.config)
+		if not isinstance(self,ObjType):
+			fs.configure(pk=True)
+		fs.configure(options=opts, exclude=hide)
+		return fs
+get_fieldset = get_fieldset()
+
 class ObjRefComposer(object):
 	def __new__(cls,type=None,id=None):
 		if type is None:
@@ -233,6 +274,14 @@ class Object(Base,Rendered):
 	## means that anybody may by default add comments to these objects
 	## This only applies when initially setting up the root site
 
+	## Overriding these lists means adding to them, not replacing.
+	form_hidden = ('deleted',)
+	form_readonly = ('id',)
+	@hybridmethod
+	def form_mod(self, fs):
+		"""Override for more specific form changes"""
+		pass
+
 	def __composite_values__(self):
 		return self.type.id, self.id
 	def __init__(self, type=None,id=None):
@@ -242,6 +291,7 @@ class Object(Base,Rendered):
 			assert self.id==id
 
 	type = get_type
+	fieldset = get_fieldset
 
 	def setup(self,**k):
 		super(Object,self).setup(**k)

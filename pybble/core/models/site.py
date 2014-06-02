@@ -27,6 +27,7 @@ from ... import ROOT_SITE_NAME,ANON_USER_NAME,ROOT_USER_NAME
 from ...globals import root_site
 from .. import config
 from ..db import Base, Column, db, NoData, maybe_stale, no_update,check_unique
+from ..utils import hybridmethod
 from ..signal import app_list, ConfigChanged,NewSite
 from . import LEN_NAME,LEN_DOMAIN,LEN_PATH
 from ._module import Module
@@ -81,6 +82,13 @@ class Site(Object):
 	_anon_perm=PERM_READ
 	_admin_perm=PERM_ADMIN
 	_admin_add_perm="Site"
+
+	form_readonly = ('tracked',)
+	form_hidden = ('sub_sites',)
+	@hybridmethod
+	def form_mod(self,fs):
+		fs.parent.required()
+		super(Site,self).form_mod(fs)
 
 	@classmethod
 	def __declare_last__(cls):
@@ -148,8 +156,9 @@ class Site(Object):
 		app_list.send(NewSite)
 		self.signal.connect(self.config_changed, ConfigChanged)
 
-		if self._superuser is not None:
-			self.initial_permissions(self._superuser)
+		sup = getattr(self,'_superuser',None)
+		if sup is not None:
+			self.initial_permissions(sup)
 	
 	def initial_permissions(self,root):
 		from .permit import permit

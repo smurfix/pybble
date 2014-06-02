@@ -31,35 +31,13 @@ from pybble.core.models.site import Site
 from pybble.core.db import db,NoData
 from pybble.globals import current_site
 from ._base import expose
+from .part import ObjEditor
 expose = expose.sub("views")
 
 import logging
 logger = logging.getLogger('pybble._root.views')
 
 import inspect,sys
-
-class NoRedir(BaseException):
-	"""Dummy exception to signal that no add-on module is responsible"""
-	pass
-
-def tryAddOn(obj,req, **kw):
-	try: hv = getattr(obj,"url_"+req)
-	except AttributeError: pass
-	else:
-		try:
-			hv = hv(**kw)
-		except TypeError:
-			pass
-		else:
-			if hv is not None:
-				return redirect(hv)
-
-	try: hv = getattr(obj,req)
-	except AttributeError: pass
-	else:
-		return hv(**kw)
-	
-	raise NoRedir
 
 @expose("/")
 def mainpage():
@@ -83,15 +61,12 @@ def view_tree(oid=None):
 
 @expose('/edit/<oid>', methods=('POST','GET'))
 def edit_oid(oid):
+	from .part import ObjEditor
 	obj=Object.by_oid(oid)
-
-	try: return tryAddOn(obj,"html_edit")
-	except NoRedir: pass
-
-	v = import_string("pybble.blueprint._root.part.%s.editor" % (obj.type.name.lower(),))
 	if not getattr(v,"no_check_perm",None):
 		request.user.will_write(obj)
-	return v(obj)
+	ed = ObjEditor(obj)
+	return ed.editor()
 
 @expose('/new/<oid>', methods=('POST','GET'))
 @expose('/new/<oid>/<objtyp>', methods=('POST','GET'))
@@ -99,22 +74,18 @@ def edit_oid(oid):
 def new_oid(oid, objtyp=None, name=None):
 	obj=Object.by_oid(oid)
 	if objtyp is None:
-		objtyp = obj.objtyp
-	request.user.will_add(obj,new_objtyp=objtyp)
-	cls = ObjType.get(objtyp)
-	if hasattr(cls,"html_new"):
-		v = cls.html_new
-		vc = v
+		objtyp = obj.type
 	else:
-		v = import_string("pybble.blueprint._root.part.%s.newer" % (cls.name.lower(),))
-		def vc(**args):
-			return v(**args)
+		try: objtyp = int(objtyp)
+		except ValueError: pass
+		objtyp = ObjType.get(objtyp)
+	request.user.will_add(obj,new_objtyp=objtyp)
 
+	ed = ObjEditor(objtyp)
 	args = {}
-	fn = inspect.getargspec(v)[0]
-	if "name" in fn: args["name"]=name
-	if "parent" in fn: args["parent"]=obj
-	return vc(**args)
+	if name is not None: args["name"]=name
+	args["parent"]=obj
+	return ed.editor(**args)
 
 @expose('/copy/<oid>/<parent>')
 def copy_oid(oid, parent):
@@ -224,27 +195,7 @@ def view_oid(oid, **args):
 		args["details"] = ()
 		args["aux"] = ()
 
-	try: return tryAddOn(obj,"html_view", **args)
-	except NoRedir: pass
-
-	try:
-		name = getattr(obj,"name",None)
-		v = import_string("pybble.blueprint._root.part.%s.viewer" % (obj.classname.lower(),))
-	except Exception as e:
-		return render_my_template(obj=obj, detail=TM_DETAIL_PAGE, **args);
-	else:
-		try:
-			if not args and (not isinstance(obj,Site) or obj == current_site):
-				return redirect(url_for('.part.%s.viewer' % (obj.classname.lower(),),**args))
-		except BuildError:
-			pass
-		fn = inspect.getargspec(v)[0]
-		if "obj" in fn: args["obj"]=obj
-		if "oid" in fn: args["oid"]=oid
-		if "name" in fn: args["name"]=name
-		if "details" in fn: args["details"]=details
-		if "aux" in fn: args["aux"]=aux
-		return v(**args)
+	return render_my_template(obj=obj, detail=TM_DETAIL_PAGE, **args);
 
 @expose('/detail/<oid>')
 def detail_oid(oid):
@@ -273,11 +224,11 @@ def view_snippet2(oid, objtyp,k):
 	return render_template("snippet2.html", cls=objtyp, obj=obj, sub=sub, k=k, count=len(sub))
 
 def not_found(url=None):
-    return render_template('not_found.html', title_trace=[u"Seite nicht gefunden"])
+	return render_template('not_found.html', title_trace=[u"Seite nicht gefunden"])
 
 def not_allowed(obj, perm=None):
-    return render_template('not_allowed.html', title_trace=[u"Keine Berechtigung"], obj=obj, perm=perm)
+	return render_template('not_allowed.html', title_trace=[u"Keine Berechtigung"], obj=obj, perm=perm)
 
 def not_able(obj, perm=None):
-    return render_template('not_able.html', title_trace=[u"Das geht nicht"], obj=obj, perm=perm)
+	return render_template('not_able.html', title_trace=[u"Das geht nicht"], obj=obj, perm=perm)
 
