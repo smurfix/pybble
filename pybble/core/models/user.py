@@ -148,7 +148,7 @@ class User(PasswordValue,Object):
 			for c,k in u.all_refs:
 				if isinstance(c,TrackingObject):
 					pass
-				elif isinstance(c,Member) and c.group.name == ANON_USER_NAME and c.group.owner == site:
+				elif isinstance(c,Member) and c.group.name == ANON_USER_NAME and c.group.parent == site:
 					pass
 				else:
 					Delete.new(c,comment="ANON user cleanup")
