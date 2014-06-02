@@ -28,7 +28,7 @@
   <table><thead>
     <tr><td>Objekt</td><td>Typ</td><td>Edit</td></tr>
 	</thead><tbody>
-  {%- for o in parent.uptree() %}
+  {%- for o in parent.ancestors %}
     {% for p in o.trackings %}
     	<tr><td><a href="#nogo" class="pickup" oid="{{p.parent.oid}}">{{ p.parent }}</a></td>
 			<td>{{ name_objtyp(p.objtyp) }}</td>

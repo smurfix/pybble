@@ -299,6 +299,12 @@ class Object(Base,Rendered):
 			self.dst = dst
 			self.args = args
 
+	@property
+	def ancestors(self):
+		while self:
+			yield self
+			self = getattr(self,'parent',None)
+
 	def all_memberships(self, typ=None):
 		"""Return all objects (of some type?) I am a member of."""
 		from .objtyp import ObjType

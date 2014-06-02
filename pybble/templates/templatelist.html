@@ -4,7 +4,7 @@
   <table><thead>
     <tr><td>Object</td><td>Type</td><td>Subpages?</td><td>geändert</td><td>Edit?</td></tr>
 	</thead><tbody>
-  {%- for o in obj.uptree() %}
+  {%- for o in obj.ancestors %}
     {% for t in o.templates %}
     	<tr><td>{{ subline(o) }}</td><td>{{ name_detail(t.detail) }} / {{ name_objtyp(t.objtyp) }}</td>
 			<td>{% if t.inherit is none %}*{%elif t.inherit%}Y{%else%}N{%endif%}</td>
