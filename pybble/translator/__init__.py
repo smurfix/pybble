@@ -39,6 +39,12 @@ from ..manager import Manager,Command
 
 logger = logging.getLogger('pybble.translator')
 
+# Warning: we have two different .render() semantics here. Internal to
+# Pybble we pass the templating context and a param dict. The external
+# calling convention for the translated template is .render(**dict).
+# The translator accepts the internal convention on its __call__()
+# method and calls the external .render().
+
 class BaseTranslator(object):
 	# Override with the MIME types you translate from/to
 	## if you provide for more than one, register more classes
@@ -61,7 +67,7 @@ class BaseTranslator(object):
 			Run this template.
 			"""
 		current_app.update_template_context(params)
-		c.content = self.template.render(params)
+		c.content = self.template.render(**params)
 		c.from_mime = self.db_template.adapter.to_mime
 		return c
 
