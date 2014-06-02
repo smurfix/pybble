@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+
+{% block body %}
+    <h2>Create a New ‘{{ obj.name }}’ Object</h2>
+    <form method="POST">
+        <table>
+            <tbody>
+                {{ fields.render() }}
+                <tr>
+                    <th>&nbsp;</th>
+                    <td><input type="submit" value="Create ‘{{ obj.name }}’" /></td>
+                </tr>
+            </tbody>
+        </table>
+    </form>
+{% endblock %}
+
