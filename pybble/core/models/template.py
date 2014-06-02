@@ -41,10 +41,7 @@ _not_cached = "not compiled"
 class Template(_Content, Cached, Object):
 	"""
 		A template for rendering.
-		parent: Object the template applies to.
-		owner: the user who created the template.
-		superparent: an adapter which links MIME types.
-
+		Target: whatever this template is attached to (e.g. a blueprint)
 		"""
 
 	@classmethod
