@@ -31,6 +31,7 @@ from ... import ANON_USER_NAME
 from ...utils import random_string, AuthError
 from ...core import config
 from ..db import Base, Column, db, NoData, check_unique,no_update
+from ..utils import hybridmethod
 from ...globals import current_site
 from ._const import PERM,PERM_NONE,PERM_ADMIN,PERM_READ,PERM_ADD,PERM_name,PERM_LIST
 from .user import User
@@ -72,6 +73,16 @@ class Permission(Object):
 		no_update(cls.user)
 		no_update(cls.target)
 		super(Permission,cls).__declare_last__()
+
+	@hybridmethod
+	def form_mod(self,fs,parent=None):
+		if parent is not None:
+			if isinstance(parent,(User,Group)):
+				f = 'user'
+			else:
+				f = 'target'
+			fs.set(f,parent)
+		super(Permission,self).form_mod(fs)
 
 	user = ObjectRef(doc="The user or group who can do things")
 	target = ObjectRef(doc="The target which can have things done to it")

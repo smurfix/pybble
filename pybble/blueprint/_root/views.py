@@ -81,7 +81,7 @@ def new_oid(oid, objtyp=None, name=None):
 		objtyp = ObjType.get(objtyp)
 	request.user.will_add(obj,new_objtyp=objtyp)
 
-	ed = ObjEditor(objtyp)
+	ed = ObjEditor(objtyp,obj)
 	args = {}
 	if name is not None: args["name"]=name
 	args["parent"]=obj

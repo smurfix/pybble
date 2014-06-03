@@ -86,8 +86,11 @@ class Site(Object):
 	form_readonly = ('tracked',)
 	form_hidden = ('sub_sites',)
 	@hybridmethod
-	def form_mod(self,fs):
-		fs.parent.required()
+	def form_mod(self,fs,parent=None):
+		if parent is not None:
+			fs.set('parent',parent)
+		else:
+			fs.parent.required()
 		super(Site,self).form_mod(fs)
 
 	@classmethod
@@ -268,16 +271,26 @@ class Site(Object):
 class SiteBlueprint(Object):
 	"""A blueprint attached to a site's path"""
 	__tablename__ = "site_blueprint"
-	_admin_add_perm="Blueprint"
+	_admin_add_perm=("Blueprint","Site")
+	_alias = {'parent':'site'}
 
 	site = ObjectRef(Site)
 	blueprint = ObjectRef(Blueprint)
 	config = ObjectRef(ConfigData)
 
-	@property
-	def parent(self):
-		return self.site
-
+	@hybridmethod
+	def form_mod(self,fs,parent=None):
+		if parent is not None:
+			if isinstance(parent,Site):
+				f = 'site'
+			elif isinstance(parent,Blueprint):
+				f = 'blueprint'
+			else:
+				f = None
+			if f is not None:
+				fs.set(f,parent)
+		super(self,SiteBlueprint).form_mod(fs)
+	
 	@classmethod
 	def __declare_last__(cls):
 		check_unique(cls, "site name")
@@ -338,6 +351,6 @@ class SiteBlueprint(Object):
 
 	def before_insert(self):
 		if self.config is None:
-			self.config = ConfigData.new(parent=self.parent.config if self.parent else None, name="for {} {}".format(self.__class__.__name__,self.name))
+			self.config = ConfigData.new(parent=self.site.config if self.site else None, name="for {} {}".format(self.__class__.__name__,self.name))
 		super(SiteBlueprint,self).before_insert()
 

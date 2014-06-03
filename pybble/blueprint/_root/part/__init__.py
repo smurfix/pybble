@@ -43,11 +43,12 @@ class ObjRefRenderer(FieldRenderer):
 FieldSet.default_renderers[ObjRefComposer] = ObjRefRenderer
 
 class ObjEditor(object):
-	def __init__(self, obj):
+	def __init__(self, obj, parent=None):
 		self.obj = obj
+		self.parent = parent
 
 	def editor(self, **kw):
-		fields = self.obj.fieldset
+		fields = self.obj.fieldset(parent=self.parent)
 
 		if request.method == 'POST':
 			fields.rebind(data=request.form)

@@ -102,6 +102,7 @@ class User(PasswordValue,Object):
 		super(User,cls).__declare_last__()
 		# Uniqueness of username+site is handled in before_insert,
 		# which works because none of these may be updated
+	_alias = {'parent':'site'}
 	        
 	# A simple way to make 'username' read-only
 	username = Column(Unicode(LEN_USERNAME), nullable=False)
@@ -120,9 +121,6 @@ class User(PasswordValue,Object):
 	feed_read = Column(DateTime, nullable=True)
 
 	site = ObjectRef(Site, doc="The site which the user registered at, otherwise not interesting")
-	@property
-	def parent(self):
-		return self.site
 
 	@classmethod
 	def new_anon_user(cls,site=None):
@@ -351,6 +349,7 @@ class Group(Object):
 		A group of users. (Usually.)
 		"""
 	__tablename__ = "groups"
+	_admin_add_perm="User"
 
 	name = Column(Unicode(LEN_NAME))
 	parent = ObjectRef()
@@ -380,6 +379,8 @@ class Member(Object):
 		"""
 	__tablename__ = "groupmembers"
 	_no_crumbs = True
+	_admin_add_perm="Group"
+	_alias = {'parent':'group'}
 
 	@classmethod
 	def __declare_last__(cls):
@@ -390,10 +391,6 @@ class Member(Object):
 	group = ObjectRef(doc="Usually a group, but may be anything")
 
 	excluded = Column(Boolean, nullable=False,default=False)
-
-	@property
-	def parent(self):
-		return self.group
 
 	def setup(self,member,group, excluded=False):
 		if isinstance(member,User) and isinstance(group,Site) and member.username == ANON_USER_NAME:

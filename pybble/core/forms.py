@@ -18,4 +18,6 @@ from formalchemy import FieldSet as BaseFieldSet
 class FieldSet(BaseFieldSet):
 	def set(self,name,value):
 		setattr(self.model,name, value)
-		self.configure(options=(getattr(self,name).readonly(),))
+		self.reconfigure(options=(getattr(self,name).readonly(),))
+
+assert hasattr(FieldSet, 'reconfigure'), "I need FormAlchemy 1.5"

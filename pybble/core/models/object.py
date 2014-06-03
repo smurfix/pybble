@@ -41,7 +41,7 @@ from sqlalchemy.orm import relationship,backref,composite, mapper
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.inspection import inspect
 
-from formalchemy import FieldSet
+from ..forms import FieldSet
 
 from ...compat import py2_unicode
 from ..utils import hybridmethod
@@ -107,8 +107,15 @@ class ObjectMeta(type(Base)):
 		# Now walk through all our (base) classes.
 		# This is necessary to collect ObjectRef entries in subclasses
 		seen = set()
+		_alias = cls._alias
+
 		for ccls in cls.__mro__:
 			for k,v in ccls.__dict__.items():
+				if k == "_alias":
+					# merge _alias content
+					for kk,vv in v.items():
+						_alias.setdefault(kk,vv)
+					continue
 				if k.startswith('_'): continue
 				if k in seen: continue
 				seen.add(k)
@@ -205,44 +212,6 @@ class get_type(object):
 			return refresh(t)
 get_type = get_type()
 
-class get_fieldset(object):
-	"""Helper to generate a FormAlchemy fieldset for this object"""
-	def __get__(self, obj, cls):
-		from .objtyp import ObjType
-		hide = []
-		opts = []
-		if obj and not isinstance(obj,ObjType):
-			fs = FieldSet(obj)
-			for fn,f in fs._fields.items():
-				if getattr(self.__class__,'_pybble_block_'+fn, False):
-					opts.append(f.readonly())
-			cls = type(obj)
-		else:
-			if obj:
-				cls = obj.mod
-			obj = cls
-			fs = FieldSet(cls, session=db)
-
-		seen = set()
-		for c in cls.__mro__:
-			for k in getattr(c,'form_readonly',()):
-				if k not in seen:
-					opts.append(getattr(fs,k).readonly())
-					seen.add(k)
-			for k in getattr(c,'form_hidden',()):
-				if k not in seen:
-					hide.append(getattr(fs,k))
-					seen.add(k)
-		obj.form_mod(fs)
-
-		if hasattr(fs,'config'):
-			hide.append(fs.config)
-		if not isinstance(self,ObjType):
-			fs.configure(pk=True)
-		fs.configure(options=opts, exclude=hide)
-		return fs
-get_fieldset = get_fieldset()
-
 class ObjRefComposer(object):
 	def __new__(cls,type=None,id=None):
 		if type is None:
@@ -267,6 +236,7 @@ class Object(Base,Rendered):
 	_anon_add_perm=()
 	_admin_perm=PERM_ADMIN
 	_admin_add_perm=()
+	_alias = {}
 	## The *_add_perm entries denote to which objects the user can add this type,
 	## so
 	##		class Comment(Object):
@@ -278,9 +248,11 @@ class Object(Base,Rendered):
 	form_hidden = ('deleted',)
 	form_readonly = ('id',)
 	@hybridmethod
-	def form_mod(self, fs):
+	def form_mod(self, fs,parent=None):
 		"""Override for more specific form changes"""
-		pass
+		if parent is not None:
+			f = self._alias.get('parent','parent')
+			fs.set(f,parent)
 
 	def __composite_values__(self):
 		return self.type.id, self.id
@@ -291,11 +263,57 @@ class Object(Base,Rendered):
 			assert self.id==id
 
 	type = get_type
-	fieldset = get_fieldset
+
+	@hybridmethod
+	def fieldset(obj, parent=None):
+		"""Helper to generate a FormAlchemy fieldset for this object/class"""
+		from .objtyp import ObjType
+		hide = []
+		opts = []
+		if isinstance(obj,Object) and not isinstance(obj,ObjType):
+			fs = FieldSet(obj)
+			for fn,f in fs._fields.items():
+				if getattr(self.__class__,'_pybble_block_'+fn, False):
+					opts.append(f.readonly())
+			cls = type(obj)
+		else:
+			if isinstance(obj,ObjType):
+				cls = obj.mod
+			else:
+				cls = obj
+			obj = None
+			fs = FieldSet(cls, session=db)
+
+		seen = set()
+		for c in cls.__mro__:
+			for k in getattr(c,'form_readonly',()):
+				if k not in seen:
+					opts.append(getattr(fs,k).readonly())
+					seen.add(k)
+			for k in getattr(c,'form_hidden',()):
+				if k not in seen:
+					hide.append(getattr(fs,k))
+					seen.add(k)
+
+		if hasattr(fs,'config'):
+			hide.append(fs.config)
+		fs.configure(options=opts, exclude=hide)
+		if obj is not None:
+			fs.reconfigure(pk=True)
+		(obj or cls).form_mod(fs,parent)
+		return fs
 
 	def setup(self,**k):
 		super(Object,self).setup(**k)
 		self._is_new = True
+
+	@hybridmethod
+	def __getattr__(self,k):
+		"""Observe _alias array"""
+		try:
+			return getattr(self,self._alias[k])
+		except KeyError:
+			raise AttributeError(k)
 
 	@property
 	def mimetype(self):
