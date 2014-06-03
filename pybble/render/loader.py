@@ -70,7 +70,7 @@ def get_template(c, trace=None,_retry=False):
 	if current_app.debug:
 		from pprint import pformat
 		TQ = pformat(c.__dict__)
-		print(TQ,file=sys.stderr)
+		#print(TQ,file=sys.stderr)
 
 	q = gen_q(c)
 	site = c.anchor
