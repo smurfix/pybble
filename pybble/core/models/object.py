@@ -272,10 +272,10 @@ class Object(Base,Rendered):
 		opts = []
 		if isinstance(obj,Object) and not isinstance(obj,ObjType):
 			fs = FieldSet(obj)
-			for fn,f in fs._fields.items():
-				if getattr(self.__class__,'_pybble_block_'+fn, False):
-					opts.append(f.readonly())
 			cls = type(obj)
+			for fn,f in fs._fields.items():
+				if getattr(cls,'_pybble_block_'+fn, False):
+					opts.append(f.readonly())
 		else:
 			if isinstance(obj,ObjType):
 				cls = obj.mod
