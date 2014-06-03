@@ -19,7 +19,6 @@ This module contains the filter which translates from HAML to HTML templates.
 
 import sys
 
-from flask import Markup
 from jinja2 import contextfunction
 
 from pybble.translator import BaseTranslator
@@ -59,8 +58,6 @@ class Translator(BaseTranslator):
 		vars = dict(*a, **k)
 		ctx = self.new_context(vars)
 		res = self.template.render(**vars)
-		if c.to_mime.typ == "html" or c.to_mime.subtyp == "html":
-			res = Markup(res)
 		return res
 
 	@staticmethod

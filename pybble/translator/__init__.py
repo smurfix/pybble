@@ -68,8 +68,6 @@ class BaseTranslator(object):
 			"""
 		current_app.update_template_context(params)
 		c.content = self.template.render(**params)
-		if c.to_mime.typ == "html" or c.to_mime.subtyp == "html":
-			c.content = Markup(c.content)
 		c.from_mime = self.db_template.adapter.to_mime
 		return c
 

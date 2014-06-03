@@ -185,9 +185,13 @@ class ContentData(object):
 				## try to find some intermediate solution?
 				if not _intermediate:
 					raise
-				return self.render_with_intermediate(vars)
+				res = self.render_with_intermediate(vars)
 			else:
-				return t.render(self, vars)
+				res = t.render(self, vars)
+
+			if self.to_mime.type == "html" or self.to_mime.subtype == "html":
+				res = Markup(res)
+			return res
 
 		finally:
 			g.anchor = old_anchor
