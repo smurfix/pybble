@@ -26,7 +26,7 @@ from signal import SIGINT
 from flask._compat import string_types
 
 locale.setlocale(locale.LC_ALL, str("de_DE.UTF-8"))
-logger = logging.getLogger('zuko.base')
+logger = logging.getLogger('pybble.core.utils')
 
 ## time zones
 UTC = pytz.UTC

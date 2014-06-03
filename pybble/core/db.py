@@ -37,6 +37,7 @@ from flask._compat import implements_to_string as py2_unicode, text_type
 from flask.ext.migrate import Migrate
 
 from . import json
+from . import config
 from .models import LEN_JSON
 
 import logging
@@ -74,9 +75,6 @@ class NoDataExc(NoData):
 
 ManyData = (ManyDataExc,)+ManyDataExc.__bases__
 NoData = (NoDataExc,)+NoDataExc.__bases__
-
-from . import config
-#from zuko.db.logger import logged_session
 
 def db_engine(**kw):
 	kw.setdefault('pool_recycle',255)
