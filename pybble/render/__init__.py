@@ -43,16 +43,15 @@ logger = logging.getLogger('pybble.render')
 
 class MIMEprop(object):
 	"""\
-		A referral to a MIME property. Use as:
+		A referral to a cached MIME property. Use as:
 
 			class Whatever(Object):
-				mimetype = MIMEprop()
+				mimetype = MIMEprop('something_unique')
 		"""
 	def __init__(self, name):
 		self.name = '_'+name+'_mime'
 
 	def __get__(self, obj, type=None):
-		global _MIMEtype
 		if obj is None:
 			return self
 		return getattr(obj,self.name)
@@ -86,7 +85,7 @@ class ContentData(object):
 	from_mime = MIMEprop('from')
 	to_mime = MIMEprop('to')
 
-	def __init__(self, obj=None, content=None, anchor=None, site=None, from_mime=NotGiven,to_mime=NotGiven, name=None, blueprint=None, **params):
+	def __init__(self, obj=None, content=None, anchor=None, site=None, from_mime=NotGiven,to_mime=NotGiven, name=None, blueprint=None):
 
 		if site is None:
 			site = current_site
