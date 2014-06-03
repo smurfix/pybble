@@ -63,7 +63,7 @@ def view_tree(oid=None):
 def edit_oid(oid):
 	from .part import ObjEditor
 	obj=Object.by_oid(oid)
-	if not getattr(v,"no_check_perm",None):
+	if not getattr(obj,"no_check_perm",None):
 		request.user.will_write(obj)
 	ed = ObjEditor(obj)
 	return ed.editor()
