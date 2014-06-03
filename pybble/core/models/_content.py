@@ -86,6 +86,7 @@ class Cached(object):
 		"""
 	_cache = Column("cache",PickleType(pickler=marshal), nullable=False, default="")
 	_version = Column("version",Unicode(30), nullable=False, default="")
+	form_hidden = ('_cache','_version')
 
 	def get_cache(self,version):
 		if self._version != version:

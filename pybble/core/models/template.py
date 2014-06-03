@@ -44,6 +44,9 @@ class Template(_Content, Cached, Object):
 		Target: whatever this template is attached to (e.g. a blueprint)
 		"""
 
+	_admin_add_perm=("Site",)
+	_alias = {'parent':'target'}
+
 	@classmethod
 	def __declare_last__(cls):
 		check_unique(cls, "target name")
@@ -53,10 +56,6 @@ class Template(_Content, Cached, Object):
 			target.del_cache()
 		event.listen(cls.content, 'set', _del_cache)
 		super(Template,cls).__declare_last__()
-
-	@property
-	def parent(self):
-		return self.target
 
 	target = ObjectRef()
 	adapter = ObjectRef(MIMEadapter)
