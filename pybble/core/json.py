@@ -105,6 +105,9 @@ class Encoder(JSONEncoder):
 			encoding='utf-8')
 
 	def default(self, data):
+		try: data = data._get_current_object()
+		except AttributeError: pass
+
 		obj = type2cls.get(data.__class__,None)
 		if obj is not None:
 			data = obj.encode(data)
