@@ -109,7 +109,7 @@ class Environment(BaseEnvironment):
 		self.filters['render'] = render
 
 		def cdata(data): ## [[[[
-			return Markup("<![CDATA[")+data.replace("]]>","]] >")+Markup("]]>")
+			return Markup("<![CDATA["+data.replace("]]>","]] >")+"]]>")
 		self.filters['cdata'] = cdata
 
 		def datetimeformat(value, format='%Y-%m-%d %H:%M'):
