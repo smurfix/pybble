@@ -49,3 +49,7 @@ def test_blue():
 	"""Fetch template by SiteBlueprint name"""
 	return render_template('BlueTest/blue.html')
 
+@expose('/<var>')
+def test_var(var):
+	"""… and insert some data"""
+	return render_template('BlueTest/var.html', fubar=var)
