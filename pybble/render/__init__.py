@@ -260,8 +260,39 @@ def valid_access(o):
 
 	return v_a
 
+def render_template(template, **context):
+	"""\
+		Renders a named template with the given context.
+
+		:param template: the name of the template to be
+		                 rendered, or an iterable with template names
+		                 the first one existing will be rendered
+		:param context: the variables that will be available in the
+		                context of the template.
+		"""
+	if isinstance(template,string_types):
+		c = ContentData(name=template)
+		return c.render(_vars=context)
+
+	for tn in template:
+		try:
+			return render_template(tn,**context)
+		except TemplateNotFound:
+			pass
+	raise TemplateNotFound(template)
+
 def render_my_template(obj, detail=None, mimetype=NotGiven, **context):
-	"""Global render"""
+	"""\
+		Renders an object's template with the given context.
+
+		:param obj: the Pybble object that should be displayed.
+		:param detail: Which aspect to show.
+		               Defaults to `TM_DETAIL_PAGE`.
+		:param mimetype: The MIME type of the data we want to emit.
+		                 Defaults to being derived from `detail`.
+		:param context: the variables that will be available in the
+		                context of the template.
+		"""
 
 	if isinstance(obj,basestring):
 		obj = Object.by_oid(obj)
