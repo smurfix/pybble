@@ -96,6 +96,9 @@ class Environment(BaseEnvironment):
 		## setup template loader
 		app.jinja_loader = self.loader
 
+		## This is mandatory.
+		self.autoescape = True
+
 		## TODO: do the same thing with static files
 
 		def render(obj, *a,**kw):
@@ -224,13 +227,6 @@ class Environment(BaseEnvironment):
 			c,d = can_do_closure(a,b)
 			self.globals['can_' + b.lower()] = c
 			self.globals['will_' + b.lower()] = d
-
-	def select_jinja_autoescape(self, filename):
-		"""\
-			Returns `True` if autoescaping should be active for the given template name.
-			We simply assume it is.
-			"""
-		return True
 
 class SiteTemplateLoader(BaseLoader):
 	"""\

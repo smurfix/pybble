@@ -47,3 +47,9 @@ class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 	def test_four(self):
 		self.assertContent("http://btest/blue/yellow","Yellow Color")
 
+	def test_var(self):
+		self.assertContent("http://btest/blue/Joe","Hello,Joe.")
+
+	def test_esc_var(self):
+		self.assertContent("http://btest/blue/<=>","Hello,&lt;=&gt;.")
+
