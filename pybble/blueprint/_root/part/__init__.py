@@ -47,7 +47,7 @@ class ObjEditor(object):
 		self.obj = obj
 		self.parent = parent
 
-	def editor(self, **kw):
+	def editor(self, template=None, done=None, **kw):
 		fields = self.obj.fieldset(parent=self.parent)
 
 		if request.method == 'POST':
@@ -55,8 +55,12 @@ class ObjEditor(object):
 			if fields.validate():
 				fields.sync()
 				db.flush()
+				if done is not None:
+					return done()
 				next_url = url_for('pybble.views.view_oid', oid=fields.model.oid)
 				return redirect(next_url)
-		template = 'admin/new.html' if isinstance(self.obj,ObjType) else 'admin/edit.html'
+
+		if template is None:
+			template = 'admin/new.html' if isinstance(self.obj,ObjType) else 'admin/edit.html'
 		return render_template(template, fields=fields, obj=self.obj, **kw)
 

@@ -87,47 +87,36 @@ def new_oid(oid, objtyp=None, name=None):
 	args["parent"]=obj
 	return ed.editor(**args)
 
-@expose('/copy/<oid>/<parent>')
+@expose('/copy/<oid>/<parent>', methods=('POST','GET'))
 def copy_oid(oid, parent):
 	"""Create a copy of <oid> which lives beyond / controls / whatever <parent>."""
 	obj=Object.by_oid(oid)
 	parent=Object.by_oid(parent)
 
-	try: return tryAddOn(obj,"html_copy", parent=parent)
-	except NoRedir: pass
-
-	request.user.will_add(parent,new_objtyp=obj.objtyp)
-	if hasattr(obj,"html_edit"):
-		return cls.html_edit(parent=parent)
-	else:
-		v = import_string("pybble.blueprint._root.part.%s.editor" % (obj.type.name.lower(),))
-		return v(obj=obj,parent=parent)
+	request.user.will_add(parent,new_objtyp=obj.type)
+	ed = ObjEditor(obj,parent)
+	return ed.editor()
 
 class DeleteForm(Form):
 	next = HiddenField("next URL")
-	comment = TextField('Grund', [validators.required(u"Grund der Löschung?"), validators.length(min=3, max=200)])
+	comment = TextField('reason', [validators.required(u"Grund der Löschung?"), validators.length(min=3, max=200)])
 
 @expose('/delete/<oid>', methods=('POST','GET'))
 def delete_oid(oid):
 	obj=Object.by_oid(oid)
 	request.user.will_delete(obj)
 
-	try: return tryAddOn(obj,"html_delete")
-	except NoRedir: pass
+	ed = ObjEditor(Delete,obj)
 
-	form = DeleteForm(request.form, prefix='delete')
-	if request.method == 'POST' and form.validate():
-		Delete.new(form.comment.data)
-
-		flash(u"%s (%s) wurde gelöscht" % (unicode(obj),obj.oid), True)
-		if form.next.data:
-			return redirect(form.next.data)
-		elif obj.parent:
-			return redirect(url_for("pybble.views.view_oid", oid=obj.parent.oid))
+	def _did_delete():
+		flash(u"{} was deleted".format(obj), True)
+		parent = getattr(obj,"parent",None)
+		if parent:
+			return redirect(url_for("pybble.views.view_oid", oid=parent.oid))
 		else:
 			return redirect(url_for("pybble.views.mainpage"))
 
-	return render_template('delete.html', form=form, title_trace=[u"Löschen"], obj=obj)
+	return ed.editor(template="delete.html", done=_did_delete)
 
 def split_details(obj, details):
 	if details == "all":

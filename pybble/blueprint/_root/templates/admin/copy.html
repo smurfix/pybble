@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+
+{% block body %}
+    <h2>Copy ‘{{ obj.type.name }}’ Object</h2>
+    <form method="POST">
+        <table>
+            <tbody>
+                {{ fields.render() }}
+                <tr>
+                    <th>&nbsp;</th>
+                    <td><input type="submit" value="Copy {{ obj.type.name }}" /></td>
+                </tr>
+            </tbody>
+        </table>
+    </form>
+{% endblock %}
