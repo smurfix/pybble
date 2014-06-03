@@ -23,7 +23,7 @@ import logging
 from time import time
 from importlib import import_module
 
-from flask import Flask, render_template, request
+from flask import Flask, request
 from flask.blueprints import BlueprintSetupState, Blueprint as FlaskBlueprint
 from flask.config import Config
 from flask.ext.script import Server

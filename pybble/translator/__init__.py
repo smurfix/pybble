@@ -69,7 +69,7 @@ class BaseTranslator(object):
 		current_app.update_template_context(params)
 		c.content = self.template.render(**params)
 		c.from_mime = self.db_template.adapter.to_mime
-		return c
+		return c.content
 
 	@staticmethod
 	def init_app(app):

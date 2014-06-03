@@ -17,10 +17,13 @@ _doc="""
 This module contains a few dummy URLs for testing.
 """
 
-from pybble.blueprint import BaseBlueprint
-from flask import render_template, abort, request
+from flask import abort, request
 from jinja2 import TemplateNotFound
+
+from pybble.blueprint import BaseBlueprint
 from pybble.core.route import Exposer
+from pybble.render import render_template
+
 expose = Exposer()
 
 class Blueprint(BaseBlueprint):

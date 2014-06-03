@@ -3,7 +3,7 @@
 from datetime import datetime
 import sys
 
-from flask import request,flash,url_for,render_template
+from flask import request, flash, url_for
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 
@@ -11,6 +11,7 @@ from pybble.core.models import MIMEtype
 from pybble.core.models.files import BinData
 from pybble.core.db import db,NoData
 from pybble.core.session import logged_in
+from pybble.render import render_template
 
 from wtforms import Form, BooleanField, TextField, TextAreaField, \
 	SelectField, PasswordField, HiddenField, validators

@@ -18,6 +18,15 @@ import os
 from flask import Flask
 from flask._compat import text_type
 
+# We use our own template system
+from formalchemy import config as fa_config
+def _render_template(*a,**k):
+	# This prevents circular imports
+	from pybble.render import render_template
+	fa_config.engine = render_template
+	return render_template(*a,**k)
+fa_config.engine = _render_template
+
 def _std_values(x):
 	if x == "None":
 		return None

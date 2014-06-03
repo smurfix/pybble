@@ -29,7 +29,6 @@ from sqlalchemy.types import TypeDecorator, VARCHAR
 
 from ... import ANON_USER_NAME
 from ...utils import random_string, AuthError
-from ...core import config
 from ..db import Base, Column, db, NoData, check_unique,no_update
 from ..utils import hybridmethod
 from ...globals import current_site

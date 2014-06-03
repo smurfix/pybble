@@ -15,7 +15,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from datetime import datetime
 
-from flask import request, url_for, flash, render_template
+from flask import request, url_for, flash
 
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
@@ -29,6 +29,8 @@ from pybble.utils import random_string
 from pybble.render import valid_obj
 from pybble.core.models.template import Template, TemplateMatch
 from pybble.core.models.user import User
+from pybble.render import render_template
+
 from ._base import expose
 expose = expose.sub("rss")
 

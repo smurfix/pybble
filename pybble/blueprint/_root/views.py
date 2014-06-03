@@ -13,7 +13,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from flask import request, url_for, flash, current_app, Response, render_template
+from flask import request, url_for, flash, current_app, Response
 
 from werkzeug import redirect, import_string
 from werkzeug.routing import BuildError
@@ -30,6 +30,8 @@ from pybble.core.models.tracking import Breadcrumb,Delete
 from pybble.core.models.site import Site
 from pybble.core.db import db,NoData
 from pybble.globals import current_site
+from pybble.render import render_template
+
 from ._base import expose
 from .part import ObjEditor
 expose = expose.sub("views")

@@ -17,7 +17,7 @@ _doc="""
 This module contains a few dummy URLs for testing.
 """
 
-from flask import render_template, abort, request, Response, current_app
+from flask import abort, request, Response, current_app
 from jinja2 import TemplateNotFound
 from werkzeug.http import parse_etags, remove_entity_headers, http_date
 

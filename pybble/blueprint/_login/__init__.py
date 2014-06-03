@@ -18,10 +18,11 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## 
 
 from .. import BaseBlueprint
-from flask import render_template, abort
+from flask import abort
 from jinja2 import TemplateNotFound
 
-from ...core.route import Exposer
+from pybble.render import render_template
+from pybble.core.route import Exposer
 expose = Exposer()
 
 class Blueprint(BaseBlueprint):

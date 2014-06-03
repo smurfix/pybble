@@ -13,7 +13,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from flask import request, flash,url_for, render_template
+from flask import request, flash,url_for
 from werkzeug import redirect
 from werkzeug.exceptions import NotFound
 from wtforms import Form, BooleanField, TextField, TextAreaField, \
@@ -30,6 +30,7 @@ from pybble.core.models.types import MIMEtype
 from pybble.core.models.template import Template, TemplateMatch
 from pybble.core.db import db,NoData
 from pybble.core.session import logged_in
+from pybble.render import render_template
 from .._base import expose
 expose = expose.sub("part.permission")
 

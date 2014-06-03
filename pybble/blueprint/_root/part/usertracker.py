@@ -13,10 +13,12 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from flask import request, session, render_template
+from flask import request, session
 
 from pybble.core.models.tracking import UserTracker
 from pybble.core.db import db
+from pybble.render import render_template
+
 from .._base import expose
 expose = expose.sub("part.usertracker")
 

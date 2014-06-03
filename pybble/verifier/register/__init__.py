@@ -20,7 +20,7 @@ valid.
 It is tied too tightly to the Pybble root for comfort.
 """
 
-from flask import render_template, abort, request, redirect, url_for, flash
+from flask import abort, request, redirect, url_for, flash
 from jinja2 import TemplateNotFound
 
 from pybble.verifier import BaseVerifier

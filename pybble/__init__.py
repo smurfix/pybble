@@ -43,11 +43,6 @@ if True:
 	import gevent.monkey
 	gevent.monkey.patch_all()
 
-# We use Flask's templates
-from formalchemy import config
-from flask import render_template
-config.engine = render_template
-
 ## This is the default name for the site root.
 ## There should be only one.
 ROOT_SITE_NAME = '_root'

@@ -16,7 +16,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 # This is the site's root app.
 # It contains the default templates and basic user+site administration.
 
-from flask import render_template
+from ...render import render_template
 from .. import BaseApp
 from pybble.core.route import Exposer
 expose = Exposer()

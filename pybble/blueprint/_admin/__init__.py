@@ -19,7 +19,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## You typically add it under /admin.
 ## 
 
-from flask import Module, request, redirect, url_for, render_template, abort
+from flask import Module, request, redirect, url_for, abort
 from formalchemy import FieldSet, helpers as fa_h
 from formalchemy.fields import FieldRenderer
 
@@ -29,6 +29,7 @@ from pybble.core.models.objtyp import ObjType
 from pybble.core.models.object import Object,ObjRefComposer
 from pybble.core.route import Exposer
 from pybble.core.db import NoData, db
+from pybble.render import render_template
 expose = Exposer()
 
 models = {}

@@ -15,7 +15,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 ## Basic homepage.
 
-from flask import render_template, abort, g, request
+from flask import abort, g, request
 from jinja2 import TemplateNotFound
 
 from pybble.blueprint import BaseBlueprint

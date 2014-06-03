@@ -13,12 +13,15 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from flask import request, render_template
+from flask import request
+
 from pybble.core.models.object import Object
 from pybble.core.models.template import Template
 from pybble.core.db import db
 from pybble.globals import current_site
 from ._base import expose
+from pybble.render import render_template
+
 expose = expose.sub("admin")
 
 ###

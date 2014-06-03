@@ -175,7 +175,7 @@ class ContentData(object):
 		logger.debug("RENDER: "+repr(self.__dict__))
 		if self.from_mime == self.to_mime:
 			assert self.content
-			return self
+			return self.content
 		try:
 			old_anchor = getattr(g,'anchor',None)
 			try:
@@ -184,13 +184,13 @@ class ContentData(object):
 				## try to find some intermediate solution?
 				if not _intermediate:
 					raise
-				res = self.render_with_intermediate(vars)
+				self.render_with_intermediate(vars)
 			else:
-				res = t.render(self, vars)
+				t.render(self, vars)
 
-			if self.to_mime.type == "html" or self.to_mime.subtype == "html":
-				res = Markup(res)
-			return res
+			if self.to_mime.typ == "html" or self.to_mime.subtyp == "html":
+				self.content = Markup(self.content)
+			return self.content
 
 		finally:
 			g.anchor = old_anchor
@@ -220,8 +220,9 @@ class ContentData(object):
 				pass
 		if w is None:
 			raise
-		c2.content = c1.render(_intermediate = False, _vars=vars)
-		return c2.render(_intermediate = False, _vars=vars)
+		c2.content = c1.render(_intermediate = False, _vars=vars).content
+		self.content = c2.render(_intermediate = False, _vars=vars).content
+		return self.content
 
 	def __str__(self):
 		if self.content:

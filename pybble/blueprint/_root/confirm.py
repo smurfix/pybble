@@ -13,7 +13,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from flask import flash, request, render_template
+from flask import flash, request
 from flask._compat import text_type
 
 from werkzeug.exceptions import NotFound
@@ -23,6 +23,7 @@ from wtforms.validators import ValidationError
 from pybble.core.db import db,NoData
 from pybble.core.models.object import Object
 from pybble.core.models.verifier import Verifier, VerifierBase
+from pybble.render import render_template
 from ._base import expose
 expose = expose.sub("confirm")
 
