@@ -15,7 +15,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from jinja2 import Markup, contextfunction, contextfilter, TemplateNotFound
 from werkzeug.utils import reraise
-from flask import request,current_app, get_flashed_messages, Response, g
+from flask import request,current_app, get_flashed_messages, Response, g, escape
 from flask._compat import string_types
 from sqlalchemy.orm import aliased
 from sqlalchemy import or_
@@ -198,7 +198,6 @@ class ContentData(object):
 		r1 = r2 = w = None
 		ma = aliased(MIMEadapter)
 		mb = aliased(MIMEadapter)
-		import pdb;pdb.set_trace()
 		for a,b in db.query(ma,mb).filter(
 				or_(ma.from_mime==self.from_mime,ma.from_mime==MIMEtype.get(self.from_mime.typ,"*")),
 				mb.to_mime==self.to_mime,
@@ -225,6 +224,11 @@ class ContentData(object):
 		if self.content:
 			return self.content
 		return ("{}({})".format(self.__class__.__name__,",".join( str(k)+'='+repr(v) for k,v in self.__dict__.items() if k[0] != '_' and v is not None)))
+
+	def __html__(self):
+		if self.content:
+			return escape(self.content)
+		return escape(str(self))
 
 	def __iter__(self):
 		yield self.content
