@@ -26,6 +26,7 @@ from flask._compat import text_type
 
 from jinja2 import Template,BaseLoader, TemplateNotFound
 
+from ..globals import current_site
 from ..core.db import db, NoData, refresh
 from ..core.models.template import Template as DBTemplate, TemplateMatch
 from ..core.models.site import Site,SiteBlueprint,Blueprint
@@ -89,6 +90,7 @@ def get_template(c, trace=None,_retry=False):
 			res[1] = weight
 		
 	weight = 0
+	seen_current_site = False
 	while site is not None:
 		if site in seen:
 			break
@@ -102,7 +104,9 @@ def get_template(c, trace=None,_retry=False):
 		for t in q.filter(TemplateMatch.target==site):
 			got(t.template,weight+t.weight)
 
-		if not getattr(site,'inherit_parent',True):
+		if current_site == site:
+			seen_current_site = True
+		if seen_current_site and not getattr(site,'inherit_parent',True):
 			break
 
 		parent = getattr(site,'parent',None) or getattr(site,'app',None)

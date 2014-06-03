@@ -104,6 +104,7 @@ class BaseBlueprint(FlaskBlueprint):
 def load_app_blueprints(app):
 	site = app.site
 	names = set() 
+	seen_current_site = False
 	while site is not None:
 		for bp in site.blueprints:
 			b = bp.blueprint
@@ -115,7 +116,9 @@ def load_app_blueprints(app):
 			if path == "/": path = ""
 			bpm = b.mod(bp, b.path, url_prefix=path)
 			app.register_blueprint(bpm, url_defaults = { 'bp': bp })
-		if not site.inherit_parent:
+		if current_site == site:
+			seen_current_site = True
+		if seen_current_site and not site.inherit_parent:
 			break
 		site = site.parent
 
