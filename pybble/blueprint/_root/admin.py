@@ -33,7 +33,7 @@ def list_templates(oid=None):
 	s = obj
 	t = []
 	while s:
-		t.extend(Template.q.filter_by(superparent_id == s).order_by(Template.name))
+		t.extend(Template.q.filter_by(target=s).order_by(Template.name))
 		s = s.parent
 	return render_template('templates.html', templates=t, obj=obj, title_trace=["Templates",current_site.name])
 	
