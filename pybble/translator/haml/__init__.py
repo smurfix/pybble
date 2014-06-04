@@ -40,13 +40,18 @@ class Translator(JinjaTranslator):
 
 	@classmethod
 	def init_app(cls,app):
-		# This sets up the Jinja app
+		# This sets up the Jinja environment. In fact we need two: one for
+		# our own toplevel templates, and one for templates that are loaded
+		# by way of Jinja's template inheritance model.
+
+		# first, install the preprocessor in Jinja's system
 		env = super(Translator,cls).init_app(app, global_only=True)
 		env.extensions["jinja2.ext.HamlishExtension"] = HamlishExtension(env)
 		env.hamlish_file_extensions=('.haml',)
 		env.hamlish_mode='debug'
 		env.hamlish_enable_div_shortcut=True
 
+		# second, use our own
 		env = super(Translator,cls).init_app(app, global_only=False)
 		# this ignores the global Jinja env because we already set that up
 		# so we get a local one back, which is usable for HAML-only

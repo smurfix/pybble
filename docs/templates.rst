@@ -1,7 +1,8 @@
 Templates
 #########
 
-Pybble uses Jinja2 templates.
+Pybble uses Jinja2 templates, but you can plug in many other templating
+systems.
 
 It installs a somewhat-large number of extensions to help with its object
 system.
@@ -119,11 +120,12 @@ to interpolate for a given object. The following are available:
 
 	Default: missing_9.html
 
-{1:"Page", 2:"Subpage", 3:"String", 4:"Detail", 5:"Snippet",
-        6:"Hierarchy", 7:"RSS", 8:"email", 9:"preview"
+These "missing_#" templates are not referred to by name, but by way of the
+normal unnamed-template lookup rules.
 
-Additionally, there is a "missing_0.html" template which is attached to the
-Pybble root. It is displayed when the requested domain is unknown.
+Additionally, there is a named "missing_0.html" template which is attached
+to the root site. It is displayed when the requested domain is not known to
+Pybble.
 
 Filters
 =======
@@ -131,5 +133,27 @@ Filters
 render
 ~~~~~~
 
-Insert an object's vew
+Insert an object's HTML view. You can add a parameter telling Pybble which
+variant to use; the most common are `tm_subpage` (inclusion on the main
+page) and `tm_string` (a short human-readable text).
+
+Translator structure
+====================
+
+The code which actually transforms a template text to output is called a
+`translator` in Pybble.
+
+	*	`init_app(app)` does whatever it needs to do to the Flask app.
+		If you set up an initial environment, don't store it in the app,
+		just return it.
+	
+	*	`template` is a property with a `render()` method which accepts
+		arbitrary keyword arguments for your template's variables, and
+		which returns the actual result of applying the template.
+
+		Your environment is available as `self.env`, and the Pybble
+		template object is `self.db_template`.
+
+See `pybble/translator/jinja/__init__.py` for a complete example, including
+caching.
 

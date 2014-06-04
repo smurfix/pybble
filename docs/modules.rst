@@ -34,7 +34,7 @@ A list of database tables: subtypes of `pybble.core.models.object.Object`.
 
     MODEL = (
         ('pybble.ext.wiki.Page','WikiPage','An inline-editable page'),
-        pybble.ext.wiki.Page, # direct object, and no name+doc
+        pybble.ext.wiki.Page, # a class named 'Page', docstring from there
     )
 
 The components are
@@ -43,26 +43,14 @@ The components are
     * human-readable name
     * documentation
 
-The documentation is optional. List all tables you use, even if indirectly,
-otherwise some core Pybble features (like the object tree introspection)
-will not work.
+The documentation is optional. You need to list all tables you use, even if
+indirectly, otherwise some core Pybble features (like the object tree
+introspection) will not work.
 
-The database tables will be created during the import.
+Database tables will be created during the import.
 
-Models may have a couple of attributes which control an initial set of
-permissions when a new site is created. The default is:
-
-    _site_perm=None
-    _anon_perm=None
-    _admin_perm=PERM_ADMIN
-
-    _site_add_perm=()
-    _anon_add_perm=()
-    _admin_add_perm=()
-
-These are, respectively, for registered users, anonymous users, and
-administrators. The first set controls the rights to existing records, the
-second lists which objects this model may be added to.
+For further documentation about Pybble models and attributes used during
+iport, see the :ref:`model` document.
 
 APP
 ---
@@ -96,16 +84,19 @@ The components are
 
 The value can be any JSON-serializeable Python expression.
 
-You should add the VAR list to the app or blueprint which is actually using
-the variable:
+Variables declared in this way, i.e. a global VAR, will be added to the
+site root, which is probably not what you want because Pybble's (future …
+TODO) configuration front-end will not find them.
+
+Instead, you should add the VAR list to the app or blueprint which is
+actually using the variable:
 
     class MyBlueprint(BaseBlueprint):
         …
         VAR = ( … )
 
-Variables declared in a global VAR will be added to the site root, which is
-probably not what you want because Pybble's (future … TODO) configuration
-front-end will not find them.
+From your code, you can refer to the variable's value via
+`current_site.config.VARNAME`.
 
 TEMPLATE
 --------
@@ -123,9 +114,13 @@ contents. This is a
 TRANSLATOR
 ----------
 
-A list of translators to install.
+A list of translators (i.e. template engines) to install. A SASS/SCSS
+compiler would accept both .sass and .scss by way of different translators.
 
 The format is the same as `MODEL`.
+
+See ref:`templates` for a description of the code required to implement a
+translator.
 
 VERIFIER
 --------

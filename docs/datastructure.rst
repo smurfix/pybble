@@ -4,36 +4,22 @@ Pybble's data
 Data structures in web frameworks are difficult. You want to be both
 flexible *and* generic.
 
-Pybble's approach is the one which is supported by `SQLalchemy`'s "linked
-tables" inheritance model: everything interesting descends from `Object`,
-which has three generic "parent" pointers, appropriately named `parent`,
-`superparent` and `owner`.
+Pybble's approach is rather simple: an object is one row in one SQL table.
+Each kind of object gets its own table. There's an index table (`ObjType`)
+which keeps track of all database-mapped classes, including itself.
 
-The *parent* is the object which contains this one.
-The *superparent* is the higher-level object which owns a collection of
-parent-child trees.
-The *owner* is the user who created an object.
+References to specific classes are simply foreign keys. References to "any"
+object are possible, but the SQL database des not enforce integrity.
 
-For instance, consider a comment on a web page. The `owner` is the user who
-created the comment; the `superparent` is the web page the comment is
-attached to; the `parent` points to the comment this one is replying to, or
-also to the web page if it directly addresses its content.
+Deleted entries are marked with s "Deleted" boolean which every table has.
+The standard query simply ignores deleted entries. Physical cleanup is
+TODO. Each object is linked to a "Tracker" object which records who created
+it when; changes and deletions are handled similarly.
 
-This essentially means that you can comment on anything. Or indeed that you
-can attach anything to anything else, which does not always make sense.
-
-However, this also means that you can have a generic command for exploring
-your website's data structure, even if you add ten strange modules.
-
-In theory, individual object models are responsible for checking that you
-set their owner/parent/superparent to something that makes semantic sense
-and/or doesn't crash the web app. In practice, well, none of that is
-implemented yet.
-
-An object's superparent is supposed to be immutable (except for setting it
-to None when 'deleting' the object).
-This is not enforced anywhere (yet), but Pybble require a restart if you
-ever change e.g. a site's app (pointed to as the site's superparent).
+Pybble has a loose object hierarchy which is used fo looking up templates
+and ACLs. Every object which participates in this hierarchy has a "parent"
+field which ultimately links to the website it appears on, which itself
+links to the Pybble root site.
 
 Websites
 --------
@@ -54,11 +40,11 @@ At the bottom there's the actual machinery which transforms some text
 (like a Jinja template) to HTML (or RSS or whatever). Pybble calls that a
 translator.
 
-Since one such machine might be able to work on many inputs and can spit
-out equally many outputs, the next step is an adapter which associates a
+Since one such machine can work on many input formats and can spit out
+equally many outputs, the next step is an adapter which associates a
 concrete combination of input+output types to that translator.
 
-The next step is the actual template which contains the data (usually text)
+The next step is the actual template, which contains the data (usually text)
 that describes the frame around which the translator will mangle its input
 to output.
 
@@ -66,56 +52,43 @@ Since real site hierarchies don't always conform in any easy way to
 convenient places to attach a template, the next step is a TemplateMatch
 object which links your site's objects to the templates to use.
 
-With that, let's do a walk-through of how Pybble displays your site's
-/about page; we assume that your code is simply
+The rendering process depends on whether you have a concrete object you'd
+like to display. For instance, your site has a home page, so viewing that
+looks like
+
+	@expose('/')
+	def show_home():
+        return render_my_template(current_site)
+
+On the other hand, when you don't have a convenient object, you can
+directly show a template:
 
 	@expose('/about')
 	def show_about():
         return render_template('about')
 
-This is the easy case, since the lookup is performed by name and you don't
-have an object to display. Pybble therefore uses an input type of
-‘pybble/_empty’ and searches for a template which can transform that to
-‘text/html’, starting at your site object. Your site probably won't have
-such a translator, so it looks again on the `parent` page, which is likely
-to be the system root. That has a special low-priority translator attached
-which knows that the usual site structure is to have an inner content and a
-layout; the inner content has a type of ‘html/subpage’. (This is hardcoded,
-except for the "html" part which can be anything.)
+In the first case, the template in question will be located by its input
+and output MIME types; the second does a simple lookup by name.
+The result consists of whatever the templating system emits, plus an
+output MIME (pseudo) type.
 
-Thus, that translator looks for a template that transforms ’pybble/_empty’ to
-’html/subpage’ and which is (a) attached to your site, (b) named 'about'.
-Let's assume that you have created one. After interpreting that template,
-Pybble has something of type ’html/subpage’; it now re-enters the process
-with that.
+The template can thus either produce your complete page, probably via the
+templating system's inheritance methods, and tell Pybble that it produced
+‘text/html’ – or it can emit somethign like a ‘html/subpage’ pseudo type.
+Pybble will find a template to transform that into your complete webpage,
+passing the original object along so you can do context sensitive menus
+via the templating system.
 
-This time, search proceeds 
+HTML-Escaping
+-------------
 
-
-It basically looks uses the object attached to the URL
-for a template which 
-
-A Pybble template gets some input (for instance, a Pybble object) and
-textual data in some form (e.g. a Jinja template), and emits output
-(a HTML subpage).
-
-So this will transform your homepage into that homepage's content.
-The surrounding framework (menu structure and whatnot) is generated in
-another template: the usual way is to have a default template associated
-with your website ("translating" from `pybble/*` to `text/html`), which
-contains a "translate this object to `html/subpage` (this is not a "real"
-MIME type).
-
-To sum this up, a template has an input format (pybble/site),
-an output format (html/subpage), some chunk of text you can edit
-(maybe just configuration parameters, or a whole Jinja template),
-maybe some chunk of cached data you can't edit, and a translator which
-understands a couple of MIME types and emits the appropriate output.
-
-Pybble keeps track of all of this by way of MIME types; some real, some
-not. It also has special association objects; thus you can teach it to use
-an entirely different look-and-feel for the text and the image part of your
-website.
+Pybble wants to be a secure system. Pybble's templating system(s) need to
+be configured so that they auto-HTML-escape *everything*. The only
+exceptions are form data (formalchemy has been convinced, in the author's
+version, to tag its rendering output appropriately) and output from
+templates that's embedded in another template; since most templating
+systems don't use `markupsafe` for that, Pybble will add an appropriate
+wrapper.
 
 Feeding templates into Pybble
 -----------------------------
@@ -125,7 +98,8 @@ the initial template data have to come from the file system.
 
 To facilitate this, the manager's 'populate' command understands a couple
 of metadata in template files. They have to be at the immediate start of
-the file; anything not in this format terminates parsing.
+the file; anything not in this format terminates parsing and will be fed to
+the templating engine.
 
 	##src pybble/site
 	##dst html/subpage
@@ -135,28 +109,33 @@ the file; anything not in this format terminates parsing.
 	##inherit -
 	##match root
 
-This tells Pybble that this is an unnamed default template which translates
-your site to an HTML pagelet, using the Jinja template engine, and that it
-shall be attached to the system's root.
+This tells Pybble that this is an unnamed template which translates your
+site to an HTML pagelet, using the Jinja template engine, and that it shall
+be attached to the system's root.
 
 `src `dst` and `typ` are MIME types; the source may use a wildcad subtype.
+
 `named` is a Boolean denoting that the template shall be findable by name.
+
 `match` is the datum the template is to be attached to and can be given
-more than once, though so far the only recognized values are "root" and
-"superuser".
-`weight` is the template's priority. Lower is better, so this example
-serves as a default page.
-`inherit` defaults to "-" alias None; it affects the following matches and
-says whether the template applies to the attached to the destination only
-(False), to all of its children (True), or both (None).
+more than once, though so far the only recognized values are "root",
+"superuser" and "parent" (which is different from "root" for templates that
+come by way of a blueprint).
+
+`weight` is the template's priority. Lower is better. Pybble auto-adds a
+few points whenever it needs to take an indirection step so that you can
+add a "show this, no matter what" page by giving it a weight of -1000 or so.
+
+`inherit` defaults to "-" (or "None"); this affects the following "match"
+entries and tells Pybble whether the template applies to the destination
+only (False), to all of its children (True), or both (None).
 
 
 Static data
 -----------
 
 Pybble supports serving static data via a "big" web server. By default,
-access to these is not controlled. The danger of random links is
-mitigated in two ways:
+access to these is not controlled. However,
 
 * Pybble generates content-addressed file names. If you serve a file named
   `foo.pdf`, Pybble actually stores it (and links to it) as
@@ -166,24 +145,22 @@ mitigated in two ways:
   (This is not actually implemented, but the information is there if you
   need it.)
 
-  Correction: `c-k` only seem random; in fact they're generated from the
-  SHA1 checksum of the file's contents. (There is no seed included here
-  because I wouldn't want to invalidate all the file names when you need to
-  change the site's secret.)
+  Actually, `c-k` only seem random; in fact they're generated from the
+  SHA1 checksum of the file's contents.
 
-  Anyway: if you teach your web server to *not* generate directories for
-  /static (or whichever path prefix you use), people will be unable to
-  enumerate your files, or to scan directories for content.
+  This means that, if you teach your web server to *not* generate
+  directory indices for /static (or whichever path prefix you use),
+  files you don't link to are not discoverable. Also, a file's URL changes
+  every time its content changes, which is very helpful if you upload a new
+  version of jQuery to your site and want your clients to use it right
+  away, not sometime next year when the hard disk with their cached copy
+  dies. (Some web caches are well-known for their blatant disregard of
+  Expires: headers.)
 
 * You can teach your web server to check the `Referer`: header. This can be
   circumvented easily, but the main reason for random third-party linking
-  (conserving one's own bandwidth on somebody else's dime) are thwarted
+  (conserving one's own bandwidth on somebody else's dime) is thwarted
   quite well by this.
-
-* TODO: Some static content needs to be generated+cached; if you have a
-  SASS template but want to emit CSS, it's a good idea to store the CSS
-  output somewhere instead of generating it anew every time somebody wants
-  it.
 
 Navigation
 ----------
@@ -207,9 +184,6 @@ website.
 TODO: If you don't allow a user to create breadcrumb objects, they won't
 be.
 
-TODO2: create session-tracked anonymous users, so that this works without
-logging in. (Such users are also required for implementing a shop system.)
-
 Users; Authentication
 ---------------------
 
@@ -222,33 +196,27 @@ The "user" table of course has a password column. Passwords are hashed
 with your site secret, so if you need to change that, all logins become
 invalid.
 
-The LEGACY_PASSWORDS setting controls whether somebody can log in if their
-password is stored non-hashed (it will be hashed as soon as the user logs
-in). This is useful if you ever need to use SQL to change a password, but
-dangerous if somebody who does not know your site secret should gain write
-access to the database .
-
 Authorization
 -------------
 
 There's a "permission" object. It says whether user A can do action B to
-objects of type C, possibly if attached to objects of type D. The latter is
+objects of type C, possibly creating an object of type D. The latter is
 relevant when we ask "can the user add a comment to a wiki page".
+
 The permission's parent is the object it grants access to; if it's not
 found there, the system checks the parent, until it gets to the root
-website, which has no parent. For `site` objects, it also checks the owner,
-presumably because a website's owner is the superuser, who can do anything to
-it anyway.
+website, which has no parent.
 
 It also checks any "group" objects which the user may be a member of.
-(Of course, as user ⇔ group is a many-to-many relationship, there's also a
-"membership" object, which can also be used for other interesting ideas
-like wwebpages ⇔ tags.)
+
+As user ⇔ group is a many-to-many relationship, there's a generic
+"membership" object, which can also be used for other ideas.
+Webpages ⇔ tags comes to mind.
 
 Tracking
 --------
 
-Pybble can track changes. Not surprisingly, there's a Tracker object which
+Pybble tracks all changes. Not surprisingly, there's a Tracker object which
 links new objects to the page they were created in (and their site). For
 changes and deletions, additional Change and Delete objects are created
 which record what happened and who did it, allowing you (in principle) to
@@ -273,14 +241,14 @@ User notification and RSS
 -------------------------
 
 Users can attach a `WantTracking` object to anything in the system
-(assuming they have permission to). A background job then creates
-`UserTracking` objects which traverse the hierarchy, linking these
-data structures to the actual `Tracking` object which describes a change,
-thus (a) establishing a timeline and (b) demonstrate the need for all three
-parent-object pointers.
+(assuming they have permission to do so). A background job then creates
+`UserTracking` objects which link these to the actual `Tracking` object
+which describes a change, thus establishing a user-specific timeline.
 
 It's a matter of a bit of template programming to create a RSS feed from
-this. Or to send an email with the day's changes. This actually works,
+this timeline. Or to send an email with the day's changes. This actually works,
 though the user interface to describe these things needs a better design so
 that Joe User can actually understand all of that. :-/
 
+The `WantTracking` object's `user` pointer is generic, so you can attach it
+to any page you want a generic RSS feed to appear on.

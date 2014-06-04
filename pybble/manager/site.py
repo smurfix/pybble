@@ -92,7 +92,7 @@ class DirSites(Command):
 			print("This app cannot be configured individually.")
 		
 class ParamSite(Command):
-	"""Set a blueprint's parameter"""
+	"""Set a site's parameter"""
 	def __init__(self):
 		super(ParamSite,self).__init__()
 		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))

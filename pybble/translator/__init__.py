@@ -71,14 +71,11 @@ class BaseTranslator(object):
 		c.from_mime = self.db_template.adapter.to_mime
 		return c.content
 
-	@staticmethod
 	def init_app(app):
 		"""\
-			Register with this app. Typically you set up an environment and
-			store it to some attribute of the app so that __call__ can find
-			it.
+			Register with this app, if necessary.
 			"""
-		raise NotImplementedError("You need to override {}.init_app".format(cls.__name__))
+		return None
 		
 class IdentityTranslator(object):
 	"""A translator which does not actually do anything"""
