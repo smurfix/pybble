@@ -27,9 +27,10 @@ from flask import request, current_app
 from . import LEN_DOC
 from .object import Object,ObjectRef
 from .objtyp import ObjType
-from .user import User
+from .user import User,Group
 from .site import Site
 from ..db import Base, Column, check_unique, db, JSON
+from ..utils import hybridmethod
 from ...globals import current_site
 from ...core import config
 from ...core.signal import ObjDeleted
@@ -221,20 +222,28 @@ class Tracker(TrackingObject):
 class WantTracking(Object):
 	"""
 		Record that a user wants changes reported.
-		Parent: The object which should be tracked.
-		Owner: The user who wants the tracking.
+		(The "user" can in fact be a web site, if you want to create generic RSS.)
 		email: send email when this happens.
 		track_new/_mod/_del: track new / modified / deleted content
 		"""
 	_display_name = "Monitor entry"
 
-	target = ObjectRef()
-	user = ObjectRef(User, "wants_tracked")
+	target = ObjectRef(doc="the hierarchy you want to watch")
+	user = ObjectRef(doc="the user/?? you want to attach the RSS to")
 	for_objtyp = ObjectRef(ObjType, nullable=True)
 
 	@property
 	def parent(self):
 		return self.user
+	
+	@hybridmethod
+	def form_mod(self,fs,parent):
+		if parent is not None:
+			if isinstance(parent,(User,Group)):
+				fs.set('user',parent)
+			else:
+				fs.set('target',parent)
+		super(WantTracking,self).form_mod(fs)
 
 	email = Column(Boolean, nullable=False) # send mail, not just RSS/on-site?
 	track_new = Column(Boolean, nullable=False) # alert for new data?
