@@ -160,6 +160,7 @@ class RootManager(Manager):
 		coremanager.add_command("add",AddCommand())
 		coremanager.add_command("schema",SchemaCommand())
 		coremanager.add_command("migrate",MigrateCommand)
+		coremanager.shell(make_shell_context)
 
 		self.add_command("site",SiteManager())
 		#self.add_command("app",AppCommand())
@@ -168,7 +169,6 @@ class RootManager(Manager):
 		self.add_command("run",SubdomainServer())
 		self.add_command("core",coremanager)
 		self.add_command("user",UserManager())
-		self.shell(make_shell_context)
 
 	def run(self,*a,**k):
 		try:
