@@ -9,9 +9,25 @@ import datetime as dt
 from ..core.utils import format_dt
 from ..core.db import NoData
 
-from flask._compat import text_type,string_types
+from flask._compat import text_type,string_types,PY2
 
 __all__ = ("show","Cache")
+
+#!/usr/bin/python
+
+if PY2:
+	import re
+	_uregex=re.compile("\\\\([^uU])")
+	
+	def _ureplace(x):
+		x = x.group(1)
+		if x == "\\":
+			return "\\\\\\\\" # Eight of them. Required.
+		return "\\\\"+x
+	def urepr(x):
+		return _uregex.sub(_ureplace,repr(x)).decode("unicode-escape")
+else:
+	urepr = repr
 
 def pr(v):
 	if isinstance(v,time.struct_time):
@@ -19,7 +35,7 @@ def pr(v):
 	elif isinstance(v,dt.datetime):
 		v = format_dt(v)
 	elif isinstance(v,string_types):
-		v = repr(v)
+		v = urepr(v)
 		if v[0] == 'u':
 			v = v[1:]
 	else:
