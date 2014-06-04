@@ -54,12 +54,6 @@ class Translator(BaseTranslator):
 	def template(self):
 		return self.env.template_class.from_code(self.env, self.bytecode, self.env.globals, None)
 	
-	def render(self,c,globals=None, *a,**k):
-		vars = dict(*a, **k)
-		ctx = self.new_context(vars)
-		res = self.template.render(**vars)
-		return res
-
 	@staticmethod
 	def init_app(app, global_only=False):
 		env = getattr(app,'jinja_env',None)
