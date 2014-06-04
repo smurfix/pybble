@@ -51,7 +51,7 @@ def _parse(args):
 		k,v = k.split('=',1)
 		if v == "":
 			pass
-		elif v == "-":
+		elif v in ("-","None"):
 			v = None
 		elif v == "True":
 			v = True
