@@ -144,7 +144,7 @@ class ObjectMeta(type(Base)):
 						if v.backref:
 							rem['back_populates'] = v.backref
 						if isinstance(v.typ,(int,long)):
-							v.typ = ObjType.q.get(id=typ).mod
+							v.typ = ObjType.q.get(id=v.typ).mod
 							v.typ_id = v.typ.id
 						elif isinstance(v.typ,string_types):
 							if v.typ == "self":
@@ -158,7 +158,7 @@ class ObjectMeta(type(Base)):
 									setattr(cls,v.backref, relationship(cls, primaryjoin = col_typ==cls.id, back_populates=k, uselist=not v.unique))
 								continue
 							else:
-								v.typ = ObjType.q.get(path=typ).mod
+								v.typ = ObjType.q.get_by(path=v.typ).mod
 								v.typ_id = v.typ.id
 						else:
 							v.typ_id = v.typ.id
