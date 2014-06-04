@@ -40,14 +40,14 @@ class RESTend(object):
 			ov = getattr(obj,k,None)
 			if ov != v:
 				setattr(obj,k,v)
-				if k == 'password':
+				if k == 'password' or k.endswith('_password'):
 					ov = '‹old›'
 					v = '‹new›'
 				changed[data] = (ov,v)
 		for k,v in old.items():
 			if k not in data and v is not None:
 				setattr(obj,k,None)
-				if k == 'password':
+				if k == 'password' or k.endswith('_password'):
 					ov = '‹old›'
 				changed[data] = (ov,None)
 		if changed:
@@ -76,7 +76,7 @@ class RESTend(object):
 			ov = getattr(obj,k,None)
 			if ov != v:
 				setattr(obj,k,v)
-				if k == 'password':
+				if k == 'password' or k.endswith('_password'):
 					ov = '‹old›'
 					v = '‹new›'
 				changed[k] = (ov,v)
