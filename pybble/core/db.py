@@ -14,10 +14,10 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ## Thus, please do not remove the next line, or insert any blank lines.
 ##BP
 
-from functools import update_wrapper
+from functools import wraps, partial
 
 from sqlalchemy import create_engine, Integer, types, util, exc as sa_exc, event, or_, Boolean
-from sqlalchemy.orm import scoped_session, sessionmaker,query
+from sqlalchemy.orm import scoped_session, sessionmaker,query,class_mapper
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm.session import Session
 from sqlalchemy.orm.base import NO_VALUE,NEVER_SET
@@ -35,6 +35,8 @@ from formalchemy.fields import IntegerFieldRenderer,TextAreaFieldRenderer, TextF
 from flask import Markup, url_for, escape, g, request
 from flask._compat import implements_to_string as py2_unicode, text_type
 from flask.ext.migrate import Migrate
+import flask.ext.sqlalchemy as flask_sqla
+from flask.ext.sqlalchemy import SQLAlchemy as BaseSQLAlchemy, BaseQuery, _BoundDeclarativeMeta, UnmappedClassError, _SignallingSession
 
 from . import json
 from . import config
@@ -43,15 +45,14 @@ from .models import LEN_JSON
 import logging
 logger = logging.getLogger('pybble.core.db')
 
-def Column(col, *a,**k):
+def _BaseColumn(col, *a,**k):
 	if "renderer" not in k and ((col in (Unicode,VARCHAR,JSON)) or isinstance(col,(Unicode,VARCHAR,JSON))):
 		if col is JSON or col.length > 255:
 			k['renderer'] = TextAreaFieldRenderer
 		else:
 			k['renderer'] = TextFieldRenderer
-	elif getattr(col,'length',0) == 100000:
-		import pdb;pdb.set_trace()
 	return FAColumn(col,*a,**k)
+BaseColumn = staticmethod(_BaseColumn)
 
 class ManyDataExc(IntegrityError,MultipleResultsFound):
 	"""Class for tests of unique constraint violations"""
@@ -76,21 +77,24 @@ class NoDataExc(NoData):
 ManyData = (ManyDataExc,)+ManyDataExc.__bases__
 NoData = (NoDataExc,)+NoDataExc.__bases__
 
-def db_engine(**kw):
-	kw.setdefault('pool_recycle',255)
-	kw.setdefault('uri',config.sql_uri)
-	if config.TRACE:
-		kw.setdefault('echo',True)
-		kw.setdefault('poolclass',AssertionPool)
-	uri = kw.pop('uri')
-	if uri.startswith("mysql"):
-		uri += "?charset=utf8"
-	return create_engine(uri, **kw)
-engine = db_engine()
+class _QueryProperty(object):
+	"""copy from flask_sqlalchemy's code, but filters .deleted"""
+	def __init__(self, sa,filtered=False):
+		self.sa = sa
+		self.filtered = filtered
 
-# don't keep database connections open for more than 5min
+	def __get__(self, obj, type):
+		try:
+			mapper = class_mapper(type)
+			if mapper:
+				q = type.query_class(mapper, session=self.sa.session())
+				if self.filtered:
+					q = q.filter_by(deleted=False)
+				return q
+		except UnmappedClassError:
+			return None
 
-class PybbleSession(Session):
+class BaseSession(_SignallingSession):
 	"""Ignore recursive calls to flush()"""
 	def flush(self, *a,**k):
 		if self._flushing:
@@ -107,22 +111,35 @@ class PybbleSession(Session):
 					done.add(obj)
 		finally:
 			self._flushing = False
-		super(PybbleSession,self).flush(*a,**k)
+		super(BaseSession,self).flush(*a,**k)
 		for obj in done:
 			obj.after_insert()
-#
-#	def merge(self,obj):
-#		if self._flushing:
-#			return obj
-#		s = instance_state(obj)
-#		if not s.expired:
-#			return obj
-#		return super(PybbleSession,self).merge(obj)
 
-db = scoped_session(sessionmaker(autocommit=False,
-                                 class_=PybbleSession,
-                                 #autoflush=False,
-                                 bind=engine))
+class SQLAlchemy(BaseSQLAlchemy):
+	Column = BaseColumn
+
+	def make_declarative_base(self):
+		"""Creates the declarative base."""
+		base = declarative_base(cls=BaseModel, name=str('Model'), metaclass=_BoundDeclarativeMeta)
+		base.qq = _QueryProperty(self,filtered=False)
+		base.q = _QueryProperty(self,filtered=True)
+		return base
+
+	def apply_driver_hacks(self,app,info,options):
+		options.setdefault('pool_recycle',255)
+		if config.TRACE:
+			options.setdefault('echo',True)
+			options.setdefault('poolclass',AssertionPool)
+		super(SQLAlchemy,self).apply_driver_hacks(app,info,options)
+
+	def create_scoped_session(self, options=None):
+		"""Helper factory method that creates a scoped session."""
+		if options is None:
+			options = {}
+		scopefunc=options.pop('scopefunc', None)
+		return scoped_session(
+			partial(BaseSession, self, **options), scopefunc=scopefunc
+		)
 
 class IDrenderer(IntegerFieldRenderer):
 	"""A renderer which, when readonly, returns a URL pointing at the admin page"""
@@ -135,7 +152,7 @@ class IDrenderer(IntegerFieldRenderer):
 		except Exception as e:
 			return self.value
 
-class GetQuery(query.Query):
+class Query(BaseQuery):
 	"""\
 		A query which provides `get` and `get_by` methods.
 
@@ -181,7 +198,7 @@ class JSON(TypeDecorator):
 		return value
 
 def not_deleted(*a,**k):
-	q = GetQuery(*a,**k)
+	q = Query(*a,**k)
 	return q.filter_by(deleted=False)
 
 def no_autoflush(fn):
@@ -194,15 +211,16 @@ def no_autoflush(fn):
 				…
 
 		"""
+	@wraps(fn)
 	def go(*args, **kw):
-		autoflush = db.autoflush
-		db.autoflush = False
+		autoflush = db.session.autoflush
+		db.session.autoflush = False
 		try:
 			return fn(*args, **kw)
 		finally:
-			db.autoflush = autoflush
+			db.session.autoflush = autoflush
 
-	return update_wrapper(go, fn)
+	return go
 
 #def limitedQuery(mapper,session):
 #	return session.query(mapper)
@@ -281,7 +299,7 @@ class Dumpable(object):
 	def as_dict(self):
 		return self._as_dict()
 
-class _Base(Dumpable):
+class BaseModel(Dumpable):
 	"""\
 		Base object for the system's tables; sets table name and adds ID column automagically
 
@@ -299,6 +317,9 @@ class _Base(Dumpable):
 			* .after_load() will run after a record has been loaded from the database
 
 		"""
+	
+	query_class = Query
+
 	@declared_attr
 	def __tablename__(cls):
 		return cls.__name__.lower()
@@ -307,12 +328,12 @@ class _Base(Dumpable):
 	def __declare_last__(cls):
 		setup_events(cls)
 		try:
-			super(_Base,cls).__declare_last__()
+			super(BaseModel,cls).__declare_last__()
 		except AttributeError:
 			pass
 
-	id = Column(Integer, primary_key=True, label="ID", renderer=IDrenderer)
-	deleted = Column(Boolean, nullable=False, default=False)
+	id = _BaseColumn(Integer, primary_key=True, label="ID", renderer=IDrenderer)
+	deleted = _BaseColumn(Boolean, nullable=False, default=False)
 
 	# canonical representation
 	@property
@@ -355,15 +376,9 @@ class _Base(Dumpable):
 		with new_protect():
 			self = cls()
 		self.setup(*a,**kw)
-		self.add_db()
+		db.session.add(self)
+		db.session.flush()
 		return self
-
-	def add_db(self):
-		"""\
-			Add this record to the database.
-			"""
-		db.add(self)
-		db.flush()
 
 	def setup(self):
 		"""\
@@ -402,13 +417,6 @@ class _Base(Dumpable):
 		"""Called after writing to the database"""
 		pass
 
-	q = db.query_property(query_cls=not_deleted)
-
-Base = declarative_base(cls=_Base)
-Base.super_readonly = False
-#logged_session(db,Base)
-
-
 class new_protect(object):
 	"""\
 		This is a ‘with’ wrapper to allow instantiation of an
@@ -422,22 +430,23 @@ class new_protect(object):
 		g.naked_new = self.naked_new
 
 def init_db(app):
+	db.init_app(app)
 	migrate = Migrate(app, db)
 
-	@app.teardown_request
-	def shutdown_session(exception=None):
-		if exception:
-			db.rollback()
-		else:
-			db.commit()
-		db.close()
+#	@app.teardown_request
+#	def shutdown_session(exception=None):
+#		if exception:
+#			db.rollback()
+#		else:
+#			db.session.commit()
+#		db.close()
 
 def refresh(obj):
 	"""\
 		Return a current copy of my argument, if that is necessary.
 		"""
 	i = inspect(obj)
-	if i.expired:
+	if i.expired or (not i.persistent and i.identity and i.identity[0]):
 		obj = i.class_.q.get_by(id=i.identity[0])
 	return obj
 
@@ -445,13 +454,13 @@ def maybe_stale(fn):
 	"""\
 		Decorator which refreshes its target's first argument.
 		"""
+	@wraps(fn)
 	def refresh_first(self, *args, **kw):
 		self = refresh(self)
 		return fn(self, *args, **kw)
 
-	return update_wrapper(refresh_first, fn)
+	return refresh_first
 	
-@no_autoflush
 def check_unique(cls, *vars):
 	"""\
 		This is a before-insert/update verifier which tests for uniqueness
@@ -480,6 +489,7 @@ def check_unique(cls, *vars):
 		return
 	setattr(cls,k,True)
 
+	@no_autoflush
 	def check(mapper, connection, obj):
 		q = []
 		for v in vars:
@@ -510,4 +520,6 @@ def no_update(var):
 		return
 	setattr(var.class_,k,True)
 	event.listen(var, 'set', _block_updates)
+
+db = SQLAlchemy()
 

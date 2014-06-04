@@ -119,15 +119,14 @@ class CmdGET(PrepCommand):
 			if exp is None and len(args) == 1:
 				exp = "-"
 
-		if quiet:
-			return
-		cache=Cache()
-		for d in data:
-			if json:
-				print(encode(d))
-			else:
-				show(d, expand=exp, cache=cache)
-		db.commit()
+		if not quiet:
+			cache=Cache()
+			for d in data:
+				if json:
+					print(encode(d))
+				else:
+					show(d, expand=exp, cache=cache)
+		db.session.commit()
 		
 class CmdDIR(PrepCommand):
 	"""Retrieve a list of records (or a list of record types)"""
@@ -150,14 +149,13 @@ class CmdDIR(PrepCommand):
 		else:
 			data = RESTend(json).list(typ)
 
-		if quiet:
-			return
-		for d in data:
-			if json:
-				print(encode(d))
-			else:
-				show(d, expand=exp)
-		db.commit()
+		if not quiet:
+			for d in data:
+				if json:
+					print(encode(d))
+				else:
+					show(d, expand=exp)
+		db.session.commit()
 		
 class CmdDELETE(PrepCommand):
 	"""Delete a record"""
@@ -175,13 +173,12 @@ class CmdDELETE(PrepCommand):
 			sys.exit(not help)
 		res = RESTend(json).delete(id=int(id),objtyp=typ, comment=comment)
 
-		if quiet:
-			return
-		if json:
-			print(encode(res))
-		else:
-			show(res, expand=exp)
-		db.commit()
+		if not quiet:
+			if json:
+				print(encode(res))
+			else:
+				show(res, expand=exp)
+		db.session.commit()
 		
 class CmdPOST(PrepCommand):
 	"""Add a record"""
@@ -200,13 +197,12 @@ class CmdPOST(PrepCommand):
 		data = _parse(args)
 		res = RESTend(json).post(objtyp=typ, comment=comment, **data)
 
-		if quiet:
-			return
-		if json:
-			print(encode(res))
-		else:
-			show(res, expand=exp)
-		db.commit()
+		if not quiet:
+			if json:
+				print(encode(res))
+			else:
+				show(res, expand=exp)
+		db.session.commit()
 		
 class CmdPUT(PrepCommand):
 	"""Change a record (clear not-mentioned data)"""
@@ -226,13 +222,12 @@ class CmdPUT(PrepCommand):
 		data = _parse(args)
 		res = RESTend(json).put(id=int(id), objtyp=typ, comment=comment, **data)
 
-		if quiet:
-			return
-		if json:
-			print(encode(res))
-		else:
-			show(res, expand=exp)
-		db.commit()
+		if not quiet:
+			if json:
+				print(encode(res))
+			else:
+				show(res, expand=exp)
+		db.session.commit()
 		
 class CmdPATCH(PrepCommand):
 	"""Change a record (don't touch not-mentioned data)"""
@@ -253,13 +248,12 @@ class CmdPATCH(PrepCommand):
 		data = _parse(args)
 		res = RESTend(json).patch(id=int(id), objtyp=typ, comment=comment, **data)
 
-		if quiet:
-			return
-		if json:
-			print(encode(res))
-		else:
-			show(res, expand=exp)
-		db.commit()
+		if not quiet:
+			if json:
+				print(encode(res))
+			else:
+				show(res, expand=exp)
+		db.session.commit()
 		
 class RESTManager(Manager):
 	"""Directly manipulate the database"""

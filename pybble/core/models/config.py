@@ -25,7 +25,7 @@ from flask._compat import string_types,text_type
 from .. import config as pybble_config
 from ...globals import root_site
 from ..utils import attrdict
-from ..db import db, Base, Column, NoData,NoDataExc, check_unique,no_update, refresh, JSON, maybe_stale
+from ..db import db, NoData,NoDataExc, check_unique,no_update, refresh, JSON, maybe_stale
 from ..signal import ConfigChanged
 from . import LEN_NAME,LEN_DOC
 from .object import Object,ObjectRef
@@ -51,7 +51,7 @@ logger = logging.getLogger('pybble.core.models.config')
 ## JSON type
 
 class JsonValue(object):
-	value = Column(JSON)
+	value = db.Column(JSON)
 
 ## ConfigVar
 
@@ -66,8 +66,8 @@ class ConfigVar(Object, JsonValue):
 		super(ConfigVar,cls).__declare_last__()
 
 	parent = ObjectRef()
-	name = Column(Unicode(LEN_NAME), index=True)
-	doc = Column(Unicode(LEN_DOC))
+	name = db.Column(Unicode(LEN_NAME), index=True)
+	doc = db.Column(Unicode(LEN_DOC))
 
 	def setup(self, parent, name,value, doc=None):
 		self.parent = parent
@@ -99,7 +99,7 @@ class ConfigData(Object):
 	"""This is a collection of configuration variables, referred to by some object or other"""
 
 	super = ObjectRef("self", nullable=True, doc="inherited configuration")
-	name = Column(Unicode(LEN_NAME), index=True, doc="informal name for this collection")
+	name = db.Column(Unicode(LEN_NAME), index=True, doc="informal name for this collection")
 
 	@property
 	@maybe_stale
@@ -112,7 +112,6 @@ class ConfigData(Object):
 		self.super = parent
 		super(ConfigData,self).setup()
 
-	@maybe_stale
 	def get(self, k, default=None):
 		try:
 			return self[k]
@@ -125,13 +124,18 @@ class ConfigData(Object):
 		except KeyError:
 			raise AttributeError(k)
 
-	@maybe_stale
+	def setdefault(self,k,d):
+		try:
+			res = self[k]
+		except KeyError:
+			self[k] = res = d
+		return res
+
 	def __contains__(self,k):
 		if k in pybble_config:
 			return True
 		return ConfigVar.q.get_by(name=k).count()
 
-	@maybe_stale
 	def __getitem__(self,k):
 		if isinstance(k,ConfigVar):
 			var = k
@@ -141,9 +145,12 @@ class ConfigData(Object):
 				return pybble_config[k]
 			try:
 				var = ConfigVar.q.get_by(name=k)
+			except RuntimeError: # system not yet configured
+				return pybble_config[k]
 			except NoData:
 				raise KeyError(k)
 
+		self = refresh(self)
 		try:
 			return SiteConfigVar.q.get_by(parent=self, var=var).value
 		except NoData:
@@ -151,7 +158,6 @@ class ConfigData(Object):
 				return var.value
 			return self.super[k]
 	
-	@maybe_stale
 	def __setitem__(self,k,v):
 		if isinstance(k,ConfigVar):
 			var = k
@@ -162,13 +168,21 @@ class ConfigData(Object):
 				if pybble_config._is_fixed(k):
 					return
 
-			var = ConfigVar.q.get_by(name=k)
+			try:
+				var = ConfigVar.q.get_by(name=k)
+			except RuntimeError:
+				if k in pybble_config:
+					return
+				raise
+
+		self = refresh(self)
 		try:
 			ov = SiteConfigVar.q.get_by(parent=self, var=var)
 		except NoData:
 			SiteConfigVar.new(self,var,v)
 		else:
 			ov.value = v
+		db.session.flush()
 
 	@maybe_stale
 	def __delitem__(self,k):
@@ -181,7 +195,8 @@ class ConfigData(Object):
 		except NoData:
 			pass
 		else:
-			db.delete(ov)
+			db.session.delete(ov)
+			db.session.flush()
 
 	@maybe_stale
 	def keys(self):

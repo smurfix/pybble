@@ -140,7 +140,7 @@ def get_site_template(c,site,weight,got):
 		try: # the name might refer to a SiteBlueprint
 			sbp = SiteBlueprint.q.get_by(site=site,name=bn)
 		except NoData: # or to the Blueprint it points to
-			try: bp = db.query(SiteBlueprint).filter(SiteBlueprint.site==site).join(Blueprint, SiteBlueprint.blueprint).filter(Blueprint.name==bn).limit(1).one().blueprint
+			try: bp = SiteBlueprint.q.filter_by(site=site).join(Blueprint, SiteBlueprint.blueprint).filter(Blueprint.name==bn).limit(1).one().blueprint
 			except NoData: bp = None
 		else:
 			# we get here if the prefix refers to a SiteBlueprint entity

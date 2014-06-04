@@ -16,13 +16,13 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from sqlalchemy import Unicode
 
-from ..db import Column, no_update
+from ..db import db, no_update
 
 from werkzeug.utils import cached_property, import_string
 
 class Loadable(object):
 	"""A mix-in which translates a path into the object it references"""
-	path = Column(Unicode(100), nullable=True, doc="Python object name")
+	path = db.Column(Unicode(100), nullable=True, doc="Python object name")
 	_module = None
 
 	def setup(self, path, **kw):

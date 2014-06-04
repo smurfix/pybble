@@ -15,7 +15,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ##BP
 
 import sys
-from ..core.db import db,db_engine,Base
+from ..core.db import db
 
 from . import Manager,Command,Option
 from ..core import config
@@ -40,11 +40,11 @@ class SchemaCommand(Command):
 		def dump(sql, *multiparams, **params):
 				print(str(sql.compile(dialect=dump_engine.dialect)).strip()+";", file=dest)
 		dump_engine = create_engine('mysql://', strategy='mock', executor=dump)
-		Base.metadata.create_all(dump_engine)
+		db.create_all(dump_engine)
 
 	def dump_current(self, dest=sys.stdout):
-		engine = db_engine()
-		for k in Base.metadata.tables.keys():
+		engine = db.engine
+		for k in db.tables.keys():
 			try:
 				r = engine.execute("show create table `{}`".format(k))
 			except ProgrammingError as err:
@@ -92,8 +92,7 @@ Else, use SQLAlchemy directly (which does not catch all differences).
 			run_diff(opt,())
 
 		elif exe:
-			engine = db_engine(echo=config.DEBUG)
-			Base.metadata.create_all(engine)
+			db.create_all(app=app)
 		else:
 			self.dump_intended()
 

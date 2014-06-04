@@ -42,7 +42,7 @@ class ObjSignal(Signal):
 	_need_init = True
 	def __new__(cls,parent):
 		if parent.id is None:
-			db.flush()
+			db.session.flush()
 			assert parent.id > 0
 		name = str(parent.type.id)+":"+str(parent.id)
 		sig = cls._cached_names.get(name,None)

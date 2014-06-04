@@ -30,7 +30,7 @@ from sqlalchemy.types import TypeDecorator, VARCHAR
 from ... import ANON_USER_NAME
 from ...utils import random_string, AuthError
 from ...core import config
-from ..db import Base, Column, db, NoData,NoDataExc, check_unique,no_update
+from ..db import db, NoData,NoDataExc, check_unique,no_update
 from ...globals import current_site
 from . import LEN_NAME,LEN_USERNAME,LEN_PERSONNAME,LEN_CRYPTPW
 from ._const import PERM,PERM_NONE,PERM_ADMIN,PERM_READ,PERM_ADD,PERM_name
@@ -62,7 +62,7 @@ class Password(TypeDecorator):
 		return value
 
 class PasswordValue(object):
-	password = Column(Password)
+	password = db.Column(Password)
 	## empty: cannot be used.  None: not known.
 
 	def check_password(self, password):
@@ -105,20 +105,20 @@ class User(PasswordValue,Object):
 	_alias = {'parent':'site'}
 	        
 	# A simple way to make 'username' read-only
-	username = Column(Unicode(LEN_USERNAME), nullable=False)
+	username = db.Column(Unicode(LEN_USERNAME), nullable=False)
 
-	first_name = Column(Unicode(LEN_PERSONNAME), nullable=True)
-	last_name = Column(Unicode(LEN_PERSONNAME), nullable=True)
-	email = Column(Unicode(200), nullable=True)
+	first_name = db.Column(Unicode(LEN_PERSONNAME), nullable=True)
+	last_name = db.Column(Unicode(LEN_PERSONNAME), nullable=True)
+	email = db.Column(Unicode(200), nullable=True)
 
-	first_login = Column(DateTime, nullable=True) ## ever
-	last_login = Column(DateTime, nullable=True)  ## the one before this session
-	this_login = Column(DateTime, nullable=True)  ## this session start
-	cur_login = Column(DateTime, nullable=True)   ## this session end
+	first_login = db.Column(DateTime, nullable=True) ## ever
+	last_login = db.Column(DateTime, nullable=True)  ## the one before this session
+	this_login = db.Column(DateTime, nullable=True)  ## this session start
+	cur_login = db.Column(DateTime, nullable=True)   ## this session end
 
-	feed_age = Column(Integer, nullable=False, default=10)
-	feed_pass = Column(Unicode(30), nullable=True)
-	feed_read = Column(DateTime, nullable=True)
+	feed_age = db.Column(Integer, nullable=False, default=10)
+	feed_pass = db.Column(Unicode(30), nullable=True)
+	feed_read = db.Column(DateTime, nullable=True)
 
 	site = ObjectRef(Site, doc="The site which the user registered at, otherwise not interesting")
 
@@ -351,7 +351,7 @@ class Group(Object):
 	__tablename__ = "groups"
 	_admin_add_perm="User"
 
-	name = Column(Unicode(LEN_NAME))
+	name = db.Column(Unicode(LEN_NAME))
 	parent = ObjectRef()
 
 	def setup(self,name,parent):
@@ -390,7 +390,7 @@ class Member(Object):
 	member = ObjectRef()
 	group = ObjectRef(doc="Usually a group, but may be anything")
 
-	excluded = Column(Boolean, nullable=False,default=False)
+	excluded = db.Column(Boolean, nullable=False,default=False)
 
 	def setup(self,member,group, excluded=False):
 		if isinstance(member,User) and isinstance(group,Site) and member.username == ANON_USER_NAME:

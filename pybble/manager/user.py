@@ -37,6 +37,7 @@ class AddUser(Command):
 			self.parser.print_help()
 			sys.exit(not help)
 		User.new(username=name)
+		db.session.commit()
 		
 class ListUsers(Command):
 	"""Show the list of known sites"""
@@ -67,6 +68,7 @@ class DropUser(Command):
 			self.parser.print_help()
 			sys.exit(not help)
 		drop_user(name)
+		db.session.commit()
 
 class ParamUser(Command):
 	"""Set a user-specific parameter"""
@@ -111,12 +113,12 @@ class ParamUser(Command):
 			return
 		if value == "-":
 			if v is not None:
-				db.delete(v)
+				db.session.delete(v)
 		elif v is None:
 			SiteConfigVar.new(var=var,owner=user,value=value)
 		else:
 			v.value=value
-		db.commit()
+		db.session.commit()
 		
 class UserManager(Manager):
 	"""Manage a site's users"""

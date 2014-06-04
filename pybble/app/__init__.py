@@ -251,6 +251,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 		from pybble.core import config as cfg
 		assert testing == cfg.get('TESTING',False), (testing,cfg.get('TESTING',False))
 		cfg_app.config = cfg
+		init_db(cfg_app)
 
 		if verbose:
 			if app:
@@ -264,6 +265,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 				datefmt=cf['LOGGER_DATE_FORMAT']
 			)
 	
+	db.session.commit()
 	with cfg_app.test_request_context('/'):
 		if site is None:
 			pass
@@ -293,6 +295,9 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 		else:
 			app = site.app.mod(site, testing=testing)
 
+	if app is not cfg_app:
+		init_db(app)
+
 	logging.disable(logging.NOTSET if app.debug is not None else logging.DEBUG)
 
 	@app.url_value_preprocessor
@@ -308,13 +313,12 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 			return Markup('bad_Link/')+endpoint+"?"+urlencode(values)
 		app.url_build_error_handlers.append(build_err)
 
-	init_db(app)
 	return app
 
 def create_site(parent,domain,app,name):
 	app = App.q.get_by(name=app)
 	site = Site.new(parent=parent, name=name, domain=domain, app=app, superuser=request.user)
-	db.flush()
+	db.session.flush()
 	return site
 
 def drop_site(site=None):

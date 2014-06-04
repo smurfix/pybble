@@ -55,7 +55,7 @@ class ObjEditor(object):
 			fields.rebind(data=request.form)
 			if fields.validate():
 				fields.sync()
-				db.flush()
+				db.session.flush()
 				if done is not None:
 					return done()
 				next_url = url_for('pybble.views.view_oid', oid=fields.model.oid)

@@ -26,7 +26,7 @@ from flask._compat import string_types,text_type
 from ... import ROOT_SITE_NAME,ANON_USER_NAME,ROOT_USER_NAME
 from ...globals import root_site
 from .. import config
-from ..db import Base, Column, db, NoData, maybe_stale, no_update,check_unique
+from ..db import db, NoData, maybe_stale, no_update,check_unique
 from ..utils import hybridmethod
 from ..signal import app_list, ConfigChanged,NewSite
 from . import LEN_NAME,LEN_DOMAIN,LEN_PATH
@@ -102,10 +102,10 @@ class Site(Object):
 	config = ObjectRef(ConfigData)
 	app = ObjectRef(App)
 
-	inherit_parent = Column(Boolean, nullable=False, server_default='FALSE', default=False, doc="Inherit blueprints etc. from parent")
-	domain = Column(Unicode(LEN_DOMAIN), nullable=False, unique=True)
-	name = Column(Unicode(LEN_NAME), nullable=False, unique=True)
-	tracked = Column(DateTime,nullable=False, default=datetime.utcnow)
+	inherit_parent = db.Column(Boolean, nullable=False, server_default='FALSE', default=False, doc="Inherit blueprints etc. from parent")
+	domain = db.Column(Unicode(LEN_DOMAIN), nullable=False, unique=True)
+	name = db.Column(Unicode(LEN_NAME), nullable=False, unique=True)
+	tracked = db.Column(DateTime,nullable=False, default=datetime.utcnow)
 	## Datestamp of newest fully-processed Tracker
 
 	#storages = relationship(Storage, secondary=t_storage_site, backref="sites")
@@ -304,9 +304,9 @@ class SiteBlueprint(Object):
 
 		super(SiteBlueprint,cls).__declare_last__()
 
-	name = Column(Unicode(LEN_NAME), required=True, nullable=False, doc="blueprint's name, for url_for() et al.")
-	endpoint = Column(Unicode(LEN_NAME), required=False, null_as=("","impo.ssible"), nullable=False, default="", doc="Endpoint to attach as. May be empty.")
-	path = Column(Unicode(LEN_PATH), required=False, null_as=("","impo.ssible"), nullable=False, default="", doc="URL path where to attach this ")
+	name = db.Column(Unicode(LEN_NAME), required=True, nullable=False, doc="blueprint's name, for url_for() et al.")
+	endpoint = db.Column(Unicode(LEN_NAME), required=False, null_as=("","impo.ssible"), nullable=False, default="", doc="Endpoint to attach as. May be empty.")
+	path = db.Column(Unicode(LEN_PATH), required=False, null_as=("","impo.ssible"), nullable=False, default="", doc="URL path where to attach this ")
 
 	def setup(self, site,blueprint, endpoint=None, name=None,path=None):
 		if isinstance(blueprint,string_types):

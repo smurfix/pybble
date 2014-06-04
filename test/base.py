@@ -23,6 +23,8 @@ import datetime
 import flask
 from wsgi_intercept import WSGI_HTTPConnection,WSGI_HTTPSConnection
 from pybble.manager.main import SubdomainDispatcher
+from pybble.core.db import init_db
+from pybble.core import config as pybble_config
 
 main_app = None
 
@@ -89,19 +91,22 @@ class TC(unittest.TestCase):
 	def setUp(self):
 		super(TC,self).setUp()
 		app = self.app_class(__name__)
+		app.config = pybble_config
 		app.config.from_object(self)
 		app.config.from_object("TEST")
+		init_db(app)
 
 		self.app = app
 		self.ctx = app.test_request_context()
 		self.ctx.push()
 		self.cleanData()
+
 		if self.testsite:
 			try:
 				s = Site.q.get_by(name=self.testsite)
 			except NoData:
 				s = Site.new(name=self.testsite, domain=self.testsite)
-				db.flush()
+				db.session.flush()
 			flask.current_app.site = s
 		else:
 			flask.current_app.site = Site.q.get_by(name=ROOT_SITE_NAME)

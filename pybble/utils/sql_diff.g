@@ -1364,8 +1364,8 @@ class Schema:
 		for res in odbq.transact_iter(_trans):
 			yield res
 
-			odb.commit()
-			ndb.commit()
+			odb.session.commit()
+			ndb.session.commit()
 			ndbq.commit()
 		odbq.commit()
 

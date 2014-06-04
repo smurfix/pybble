@@ -24,7 +24,7 @@ from flask._compat import text_type
 from . import Manager,Option
 from . import PrepCommand as Command
 from ..core.models.site import Blueprint,SiteBlueprint
-from ..core.db import NoData,NoDataExc
+from ..core.db import NoData,NoDataExc, db
 from ..globals import current_site
 from ..blueprint import create_blueprint,drop_blueprint
 
@@ -50,6 +50,7 @@ class AddBlueprint(Command):
 		if name is None:
 			name = bp.name
 		create_blueprint(site=current_site, path=path, blueprint=bp, name=name, endpoint=endpoint)
+		db.session.commit()
 		
 class DirBlueprint(Command):
 	"""List available blueprints, or blueprint details."""
@@ -113,6 +114,7 @@ class ParamBlueprint(Command):
 			except StandardError:
 				pass
 			bp.config[key]=value
+		db.session.commit()
 		
 class DropBlueprint(Command):
 	def __init__(self):
@@ -124,6 +126,7 @@ class DropBlueprint(Command):
 			self.parser.print_help()
 			sys.exit(not help)
 		drop_blueprint(name)
+		db.session.commit()
 		
 class ListBlueprint(Command):
 	def run(self, help=False):

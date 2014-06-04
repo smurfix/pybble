@@ -25,7 +25,7 @@ from flask import request,current_app
 from werkzeug.utils import cached_property
 
 from .. import config
-from ..db import Base, Column, no_update,check_unique, db, refresh, maybe_stale
+from ..db import no_update,check_unique, db, refresh, maybe_stale
 from ...globals import current_site
 from .object import Object,ObjectRef
 from . import LEN_NAME,LEN_PATH
@@ -60,11 +60,11 @@ class Template(_Content, Cached, Object):
 	target = ObjectRef()
 	adapter = ObjectRef(MIMEadapter)
 
-	name = Column(Unicode(LEN_NAME), nullable=False, index=True)
-	modified = Column(DateTime,default=datetime.utcnow)
-	weight = Column(Integer, nullable=False, default=0, doc="preference when there are conflicts. Less is better.")
+	name = db.Column(Unicode(LEN_NAME), nullable=False, index=True)
+	modified = db.Column(DateTime,default=datetime.utcnow)
+	weight = db.Column(Integer, nullable=False, default=0, doc="preference when there are conflicts. Less is better.")
 
-	source = Column(Unicode(LEN_PATH), nullable=True, doc="original file this template was loaded from")
+	source = db.Column(Unicode(LEN_PATH), nullable=True, doc="original file this template was loaded from")
 	## so we can dump it back to the file system after editing
 
 	from_mime = property(lambda s: s.adapter.from_mime)
@@ -140,8 +140,8 @@ class TemplateMatch(Object):
 	target = ObjectRef()
 	template = ObjectRef(Template)
 
-	inherit = Column(Boolean, nullable=True)
-	weight = Column(Integer, nullable=False, default=0, doc="preference when there are conflicts. Less is better.")
+	inherit = db.Column(Boolean, nullable=True)
+	weight = db.Column(Integer, nullable=False, default=0, doc="preference when there are conflicts. Less is better.")
 
 	from_mime = property(lambda s:s.template.from_mime)
 	to_mime = property(lambda s:s.template.to_mime)

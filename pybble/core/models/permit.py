@@ -29,7 +29,7 @@ from sqlalchemy.types import TypeDecorator, VARCHAR
 
 from ... import ANON_USER_NAME
 from ...utils import random_string, AuthError
-from ..db import Base, Column, db, NoData, check_unique,no_update
+from ..db import db, NoData, check_unique,no_update
 from ..utils import hybridmethod
 from ...globals import current_site
 from ._const import PERM,PERM_NONE,PERM_ADMIN,PERM_READ,PERM_ADD,PERM_name,PERM_LIST
@@ -86,8 +86,8 @@ class Permission(Object):
 	user = ObjectRef(doc="The user or group who can do things")
 	target = ObjectRef(doc="The target which can have things done to it")
 
-	right = Column(Integer, nullable=False)
-	inherit = Column(Boolean, nullable=True, doc="three-valued: False:this, True:descendants, None:Both")
+	right = db.Column(Integer, nullable=False)
+	inherit = db.Column(Boolean, nullable=True, doc="three-valued: False:this, True:descendants, None:Both")
 
 	for_objtyp = ObjectRef(ObjType)
 	new_objtyp = ObjectRef(ObjType, nullable=True)

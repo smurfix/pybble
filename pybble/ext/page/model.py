@@ -15,8 +15,9 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from flask import url_for
 
-from sqlalchemy import Column,Unicode,Boolean,DateTime,Integer
+from sqlalchemy import Unicode,Boolean,DateTime,Integer
 
+from pybble.core.db import db
 from pybble.core.models import LEN_NAME
 from pybble.core.models.object import Object,ObjectRef
 from pybble.core.models._content import Content
@@ -42,11 +43,11 @@ class Page(Content, Object):
 	_admin_perm=PERM_ADMIN
 	_admin_add_perm=('Site','Page')
 
-	name = Column(Unicode(LEN_NAME), nullable=False)
+	name = db.Column(Unicode(LEN_NAME), nullable=False)
 	parent = ObjectRef()
 
-	modified = Column(DateTime, default=datetime.utcnow)
-	order = Column(Integer, nullable=True, doc="Include on parent page? if so, in what order?")
+	modified = db.Column(DateTime, default=datetime.utcnow)
+	order = db.Column(Integer, nullable=True, doc="Include on parent page? if so, in what order?")
 
 	# the `Content` mix-in provides everything required for rendering
 

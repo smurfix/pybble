@@ -37,7 +37,7 @@ from functools import update_wrapper
 from itertools import chain
 
 from sqlalchemy import Integer, Unicode, ForeignKey, event, Index
-from sqlalchemy.orm import relationship,backref,composite, mapper
+from sqlalchemy.orm import backref,composite, mapper
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.inspection import inspect
 
@@ -48,7 +48,7 @@ from ..utils import hybridmethod
 from ..json import json_adapter
 from ..signal import ObjSignal
 
-from ..db import Base, Column, IDrenderer, db, NoData,NoDataExc, maybe_stale, no_autoflush, refresh, setup_events, Dumpable
+from ..db import db, NoData,NoDataExc, maybe_stale, no_autoflush, refresh, setup_events, Dumpable
 from ._const import PERM_ADD,PERM_READ,PERM_ADMIN
 from ._render import Rendered
 
@@ -75,7 +75,7 @@ class _serialize_object(object):
 
 _tables = [] # A list of new tables
 _refs = [] # A list of "any-table" references (tableobject,columnname)
-class ObjectMeta(type(Base)):
+class ObjectMeta(type(db.Model)):
 	"""\
 		Metaclass to auto-setup *-to-one relationships
 
@@ -100,7 +100,7 @@ class ObjectMeta(type(Base)):
 		if "id" not in dct:
 			# the inherited class already has an 'id' column, but that ends
 			# up being ambiguous and thus won't work
-			dct['id'] = cls.id = Column(Integer, primary_key=True)
+			dct['id'] = cls.id = db.Column(Integer, primary_key=True)
 		cls._refs = []
 		cls.__table_args__ = list(dct.get('__table_args__',[])) # collect indices for foreign-key tables here
 
@@ -129,8 +129,8 @@ class ObjectMeta(type(Base)):
 							col_typ = declared_attr((lambda k,v: lambda cls: Column(k+'_typ_id',Integer, ForeignKey(ObjType.id),nullable=v.nullable, doc=v.doc, unique=v.unique))(k,v))
 							col_id = declared_attr((lambda k,v: lambda cls: Column(k+'_id',Integer, nullable=v.nullable))(k,v))
 						else:
-							col_typ = Column(k+'_typ_id',Integer, ForeignKey(ObjType.id),nullable=v.nullable, doc=v.doc, unique=v.unique)
-							col_id = Column(k+'_id',Integer, nullable=v.nullable)
+							col_typ = db.Column(k+'_typ_id',Integer, ForeignKey(ObjType.id),nullable=v.nullable, doc=v.doc, unique=v.unique)
+							col_id = db.Column(k+'_id',Integer, nullable=v.nullable)
 						setattr(cls,k+"_typ_id", col_typ)
 						setattr(cls,k+"_id", col_id)
 						if v.declared_attr:
@@ -148,14 +148,14 @@ class ObjectMeta(type(Base)):
 							v.typ_id = v.typ.id
 						elif isinstance(v.typ,string_types):
 							if v.typ == "self":
-								col_typ = Column(k+'_id',Integer, ForeignKey(cls.__tablename__+'.id'),nullable=v.nullable, doc=v.doc, unique=v.unique)
-								col_ref = relationship(cls, remote_side=[cls.id], foreign_keys=(col_typ,), **rem)
+								col_typ = db.Column(k+'_id',Integer, ForeignKey(cls.__tablename__+'.id'),nullable=v.nullable, doc=v.doc, unique=v.unique)
+								col_ref = db.relationship(cls, remote_side=[cls.id], foreign_keys=(col_typ,), **rem)
 								setattr(cls,k+"_id", col_typ)
 								setattr(cls,k, col_ref)
 								cls._refs.append((cls,k))
 								cls.__table_args__.append(Index("i_%s_%s"%(name,k),col_typ))
 								if v.backref:
-									setattr(cls,v.backref, relationship(cls, primaryjoin = col_typ==cls.id, back_populates=k, uselist=not v.unique))
+									setattr(cls,v.backref, db.relationship(cls, primaryjoin = col_typ==cls.id, back_populates=k, uselist=not v.unique))
 								continue
 							else:
 								v.typ = ObjType.q.get_by(path=v.typ).mod
@@ -165,19 +165,19 @@ class ObjectMeta(type(Base)):
 							rem['remote_side'] = v.typ.__name__+'.id'
 						if v.declared_attr:
 							col_typ = declared_attr((lambda k,v: lambda cls: Column(k+'_id',Integer, ForeignKey(v.typ_id),nullable=v.nullable, doc=v.doc, unique=v.unique))(k,v))
-							col_ref = declared_attr((lambda k,v,r: lambda cls: relationship(v.typ, primaryjoin = col_typ==v.typ_id, **r))(k,v,rem))
+							col_ref = declared_attr((lambda k,v,r: lambda cls: db.relationship(v.typ, primaryjoin = col_typ==v.typ_id, **r))(k,v,rem))
 						else:
-							col_typ = Column(k+'_id',Integer, ForeignKey(v.typ_id),nullable=v.nullable, doc=v.doc, unique=v.unique)
-							col_ref = relationship(v.typ, primaryjoin = col_typ==v.typ_id, **rem)
+							col_typ = db.Column(k+'_id',Integer, ForeignKey(v.typ_id),nullable=v.nullable, doc=v.doc, unique=v.unique)
+							col_ref = db.relationship(v.typ, primaryjoin = col_typ==v.typ_id, **rem)
 						setattr(cls,k+"_id", col_typ)
 						setattr(cls,k, col_ref)
 						v.typ._refs.append((cls,k))
 						cls.__table_args__.append(Index("i_%s_%s"%(name,k),col_typ))
 						if v.backref:
 							if isinstance(v.typ,string_types):
-								setattr(v.typ,v.backref, relationship(cls, primaryjoin = "%s_id==%s" % (k,v.typ_id), back_populates=k))
+								setattr(v.typ,v.backref, db.relationship(cls, primaryjoin = "%s_id==%s" % (k,v.typ_id), back_populates=k))
 							else:
-								setattr(v.typ,v.backref, relationship(cls, primaryjoin = col_typ==v.typ.id, back_populates=k, uselist=not v.unique))
+								setattr(v.typ,v.backref, db.relationship(cls, primaryjoin = col_typ==v.typ.id, back_populates=k, uselist=not v.unique))
 					
 				elif k == 'modified':
 					event.listen(cls,'before_update',update_modified)
@@ -219,7 +219,7 @@ class ObjRefComposer(object):
 		from .objtyp import ObjType
 		return ObjType.get(type, id)
 
-class Object(Base,Rendered):
+class Object(db.Model,Rendered):
 	__metaclass__ = ObjectMeta
 	__abstract__ = True
 
@@ -330,7 +330,7 @@ class Object(Base,Rendered):
 			This is done so that simply enumerating object IDs off the web pages wont work.
 			"""
 		if self.id is None:
-			db.flush()
+			db.session.flush()
 		return "%d.%d.%s" % (self.type.id,
 		                     self.id, 
 		                     urlsafe_b64encode(md5(str(self.type.id) +'.'+ str(self.id) + current_app.config['SECRET_KEY'])\

@@ -206,7 +206,7 @@ class SubdomainServer(Server):
 			from werkzeug.contrib.fixers import ProxyFix
 			dispatch = ProxyFix(dispatch)
 		server = WSGIServer((host,port), dispatch)
-		db.commit()
+		db.session.commit()
 		db.close()
 		logger.debug("Serving requests.")
 		server.serve_forever()

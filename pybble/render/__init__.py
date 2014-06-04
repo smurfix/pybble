@@ -132,7 +132,7 @@ class ContentData(object):
 					bp = SiteBlueprint.q.get_by(site=site,name=bpname)
 				except NoData: # or to the Blueprint it points to
 					try:
-						bp = db.query(SiteBlueprint).filter(SiteBlueprint.site==site).join(Blueprint, SiteBlueprint.blueprint).filter(Blueprint.name==bpname).limit(1).one()
+						bp = SiteBlueprint.q.filter(SiteBlueprint.site==site).join(Blueprint, SiteBlueprint.blueprint).filter(Blueprint.name==bpname).limit(1).one()
 					except NoData:
 						bp = None
 				if bp is not None:
@@ -201,7 +201,7 @@ class ContentData(object):
 		r1 = r2 = w = None
 		ma = aliased(MIMEadapter)
 		mb = aliased(MIMEadapter)
-		for a,b in db.query(ma,mb).filter(
+		for a,b in ma.q.join(mb).filter(
 				or_(ma.from_mime==self.from_mime,ma.from_mime==MIMEtype.get(self.from_mime.typ,"*")),
 				mb.to_mime==self.to_mime,
 				ma.to_mime_id==mb.from_mime_id,

@@ -202,7 +202,7 @@ class PopulateCommand(Command):
 				else:
 					logger.error("The root site is not actually root. This is a problem.")
 
-		db.commit()
+		db.session.flush()
 		_app_ctx_stack.top.site = root
 		_app_ctx_stack.top.app.app = root.app
 
@@ -218,7 +218,7 @@ class PopulateCommand(Command):
 				st.default = True
 		else:
 			st.site = root
-		db.commit()
+		db.session.flush()
 
 		## main user
 		try:
@@ -226,19 +226,19 @@ class PopulateCommand(Command):
 		except NoData:
 			password = random_string()
 			superuser = User.new(site=root,username=ROOT_USER_NAME,password=password)
-			db.commit()
+			db.session.flush()
 			logger.info(u"The root user has been created. Password: ‘{}’.".format(password))
 		else:
 			if superuser.site != root:
 				logger.warning(u"The root user's site is {}, not {}.".format(superuser.site,root))
 				if force:
 					superuser.site = root
-		db.flush()
+		db.session.flush()
 		if superuser.email is None or (force and superuser.email != config.ADMIN_EMAIL):
 			if superuser.email is not None:
 				logger.info(u"The main admin email changed from ‘{}’ to ‘{}’".format(superuser.email,config.ADMIN_EMAIL))
 			superuser.email = text_type(config.ADMIN_EMAIL)
-		db.commit()
+		db.session.flush()
 		request.user = superuser
 		root.initial_permissions(superuser)
 
@@ -316,7 +316,7 @@ class PopulateCommand(Command):
 				logger.warn("Root site alias is {}, not {}".format(asite.domain,hostname))
 				if force:
 					logger.warn("This is NOT aut-corrected.")
-		db.commit()
+		db.session.flush()
 
 		try:
 			root_bp = Blueprint.q.get_by(name='_root')
@@ -335,7 +335,7 @@ class PopulateCommand(Command):
 				if rbp.endpoint != "pybble" and force:
 					logger.warn("Root site's static blueprint endpoint changed from ‘{}’ to ‘pybble’.".format(rbp.name))
 					rbp.endpoint = "pybble"
-		db.commit()
+		db.session.flush()
 
 		try:
 			static_bp = Blueprint.q.get_by(name='static')
@@ -354,7 +354,7 @@ class PopulateCommand(Command):
 				if rbp.endpoint != "" and force:
 					logger.warn("Root site's static blueprint endpoint changed from ‘{}’ to ‘static’.".format(rbp.name))
 					rbp.endpoint = ""
-		db.commit()
+		db.session.flush()
 
 		# Add file types that may be uploaded
 		for typ,subtyp,ext,name,doc in upload_content_types:
@@ -363,3 +363,4 @@ class PopulateCommand(Command):
 
 		## All done!
 		logger.debug("Setup finished.")
+		db.session.commit()

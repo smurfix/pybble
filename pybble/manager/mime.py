@@ -42,7 +42,7 @@ class AddMIME(Command):
 			sys.exit(not help)
 		typ,subtyp = msplit(typ)
 		add_mime(name=name,typ=typ, subtyp=subtyp, ext=ext)
-		db.commit()
+		db.session.commit()
 		
 class DocMIME(Command):
 	def __init__(self):
@@ -64,7 +64,7 @@ class DocMIME(Command):
 			if doc == "-":
 				doc = None
 			mtype.doc = doc
-			db.commit()
+			db.session.commit()
 		
 class DropMIME(Command):
 	def __init__(self):
@@ -77,8 +77,8 @@ class DropMIME(Command):
 			sys.exit(not help)
 		typ,subtyp = msplit(typ)
 		mtype = MIMEtype.q.get_by(typ=typ,subtyp=subtyp)
-		db.delete(mtype)
-		db.commit()
+		db.session.delete(mtype)
+		db.session.commit()
 		
 class ListMIME(Command):
 	def __call__(self,app, help=False):

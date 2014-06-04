@@ -35,7 +35,7 @@ class AddTyp(Command):
 			sys.exit(not help)
 		d = Typ(path=path,name=name)
 		db.add(d)
-		db.commit()
+		db.session.commit()
 		
 class DocTyp(Command):
 	def __init__(self):
@@ -56,7 +56,7 @@ class DocTyp(Command):
 			if doc == "-":
 				doc = None
 			d.infotext = doc
-			db.commit()
+			db.session.commit()
 		
 class DropTyp(Command):
 	def __init__(self):
@@ -68,8 +68,8 @@ class DropTyp(Command):
 			self.parser.print_help()
 			sys.exit(not help)
 		d = Typ.q.get_by(name=name)
-		db.delete(d)
-		db.commit()
+		db.session.delete(d)
+		db.session.commit()
 		
 class ListTyp(Command):
 	def __init__(self):

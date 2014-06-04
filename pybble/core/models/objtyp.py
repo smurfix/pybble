@@ -23,14 +23,14 @@ from . import LEN_NAME,LEN_DOC
 from ._utils import Loadable
 from .object import Object
 from ..json import json_adapter
-from ..db import Column, NoData
+from ..db import db, NoData
 
 class ObjType(Loadable, Object):
 	"""Object registry"""
 	__tablename__ = "objtype"
 
-	name = Column(Unicode(LEN_NAME), nullable=False, unique=True)
-	doc = Column(Unicode(LEN_DOC), nullable=True)
+	name = db.Column(Unicode(LEN_NAME), nullable=False, unique=True)
+	doc = db.Column(Unicode(LEN_DOC), nullable=True)
 
 	def __str__(self):
 		return u'‹T:%s %s›' % (self.id, self.name)

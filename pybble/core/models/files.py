@@ -23,7 +23,7 @@ from sqlalchemy import event
 from ...core import config
 from ...globals import current_site
 from ...utils import hash_data
-from ..db import Base, Column, db, check_unique,no_update
+from ..db import db, check_unique,no_update
 from . import LEN_NAME,LEN_PATH
 from .object import Object,ObjectRef, update_modified
 from .types import MIMEtype
@@ -54,10 +54,10 @@ class BinData(Object):
 	storage = ObjectRef(Storage)
 	mime = ObjectRef(MIMEtype)
 
-	name = Column(Unicode(LEN_NAME), nullable=False)
-	hash = Column(Unicode(33), nullable=True, unique=True) ## NULL if deleted
-	timestamp = Column(DateTime,default=datetime.utcnow)
-	size = Column(Integer)
+	name = db.Column(Unicode(LEN_NAME), nullable=False)
+	hash = db.Column(Unicode(33), nullable=True, unique=True) ## NULL if deleted
+	timestamp = db.Column(DateTime,default=datetime.utcnow)
+	size = db.Column(Integer)
 
 	@property
 	def parent(self):
@@ -83,7 +83,7 @@ class BinData(Object):
 		self.hash = hash_data(content)
 		self.size = len(content)
 		self.storage = storage
-		db.add(self)
+		db.session.add(self)
 		self._save_content()
 
 	@property
@@ -121,7 +121,7 @@ class BinData(Object):
 
 	def _get_chars(self):
 		if self.id is None:
-			db.flush((self,))
+			db.session.flush((self,))
 		id = self.id-1
 		chars = "bcdfghjkmn" ## 100 files per end directory (long names)
 		midchars = "bcdfghjkmnopqrst" ## 256 subdirectories (short names)
@@ -202,8 +202,8 @@ class StaticFile(Object):
 	parent = ObjectRef(doc="wherever this has been uploaded into")
 	site = ObjectRef(Site)
 
-	path = Column(Unicode(LEN_PATH), nullable=False)
-	modified = Column(DateTime,default=datetime.utcnow)
+	path = db.Column(Unicode(LEN_PATH), nullable=False)
+	modified = db.Column(DateTime,default=datetime.utcnow)
 
 	def setup(self, path, bin, parent=None, site=None, **kw):
 		self.path = path

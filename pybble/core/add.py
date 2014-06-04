@@ -30,7 +30,7 @@ from ..utils import NotGiven
 from ..globals import root_site
 from . import config
 from .utils import attrdict
-from .db import db, NoData, engine
+from .db import db, NoData
 from .models.types import MIMEtype,MIMEtranslator,MIMEadapter,MIMEext
 from .models.config import ConfigVar
 from .models.site import Site,App,Blueprint
@@ -178,7 +178,7 @@ def add_vars(gen,parent=None, force=False):
 			_upd(cf,(('doc',doc), ('value',default)), force)
 	if added:
 		logger.debug("New variables for {}: ".format(parent) + ",".join(added))
-	db.commit()
+	db.session.flush()
 
 def add_objtypes(objects, force=False):
 	"""Add a list of MIME types."""
@@ -201,7 +201,7 @@ def add_objtypes(objects, force=False):
 
 		objs.append((obj,name,doc))
 
-	ObjType.metadata.create_all(engine)
+	db.create_all()
 	try:
 		root = root_site.add_default_permissions
 	except NoData:
@@ -263,7 +263,7 @@ def add_translator(obj,name,doc=NotGiven, force=False):
 			else:
 				_upd(obj,(("weight",w),),force=force)
 
-	db.commit()
+	db.session.flush()
 
 def add_translators(lister, force=False):
 	for obj in lister:
@@ -329,7 +329,7 @@ def add_static(filepath,path, force=False):
 			logger.error("File ‘{}’ vanished".format(filepath))
 			sf.file.hash = None
 			Delete.new(sf.file, comment="file vanished")
-			db.flush()
+			db.session.flush()
 
 			try:
 				sb = BinData.lookup(content)
@@ -354,7 +354,7 @@ def add_static(filepath,path, force=False):
 					pdb.post_mortem()
 					raise
 				sf.file = sb
-	db.commit()
+	db.session.flush()
 
 def add_statics(data, force=False):
 	for filepath,webpath in data:
@@ -476,7 +476,7 @@ def add_template(parent, filepath,webpath, inferred="", force=False):
 			tm = TemplateMatch.new(template=t,target=m,for_objtyp=hdr_dsc,inherit=inherit)
 			logger.debug("New: "+str(tm))
 
-	db.commit()
+	db.session.flush()
 
 def add_templates(data, parent=None, force=False):
 	if parent is None: # default to the system root

@@ -17,6 +17,7 @@ from .utils import attrdict
 import os
 from flask import Flask
 from flask._compat import text_type
+from flask.config import Config
 
 # We use our own template system
 from formalchemy import config as fa_config
@@ -36,7 +37,7 @@ def _std_values(x):
 		return False
 	return x
 
-class config(attrdict):
+class config(attrdict,Config):
 	_module = None
 	_not_really = set()
 	_really = set()

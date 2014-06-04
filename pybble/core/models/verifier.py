@@ -22,7 +22,7 @@ from sqlalchemy.orm import relationship,backref
 
 from ...utils import random_string
 from .. import config
-from ..db import Column, NoData, check_unique,no_update
+from ..db import db, NoData, check_unique,no_update
 from . import LEN_NAME,LEN_DOC
 from ._utils import Loadable
 from .object import Object,ObjectRef
@@ -40,8 +40,8 @@ class VerifierBase(Loadable, Object):
 
 	__tablename__ = "verifierbase"
 
-	name = Column(Unicode(LEN_NAME), unique=True, nullable=False)
-	doc = Column(Unicode(LEN_DOC), nullable=True)
+	name = db.Column(Unicode(LEN_NAME), unique=True, nullable=False)
+	doc = db.Column(Unicode(LEN_DOC), nullable=True)
 
 	config = ObjectRef(ConfigData)
 
@@ -75,11 +75,11 @@ class Verifier(Object):
 	user = ObjectRef(User, doc="The user who shall be granted access")
 	base = ObjectRef(VerifierBase)
 
-	code = Column(Unicode(30), nullable=False)
+	code = db.Column(Unicode(30), nullable=False)
 
-	added = Column(DateTime,default=datetime.utcnow, nullable=False)
-	repeated = Column(DateTime,nullable=True)
-	timeout = Column(DateTime,nullable=False)
+	added = db.Column(DateTime,default=datetime.utcnow, nullable=False)
+	repeated = db.Column(DateTime,nullable=True)
+	timeout = db.Column(DateTime,nullable=False)
 
 	def setup(self,base, obj, user=None, code=None, days=None):
 

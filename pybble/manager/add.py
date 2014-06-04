@@ -44,7 +44,7 @@ class AddCommand(Command):
 		mod = import_string(module)
 		process_module(mod)
 
-		db.commit()
+		db.session.commit()
 
 		## All done!
 		logger.debug("Setup finished.")

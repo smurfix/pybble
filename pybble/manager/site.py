@@ -22,6 +22,7 @@ from flask._compat import text_type
 
 from . import PrepCommand as Command
 from . import Option, Manager
+from ..core.db import db
 from ..core.models.site import Site,App
 from ..globals import current_site
 from ..app import create_site
@@ -52,6 +53,7 @@ class AddSite(Command):
 			self.parser.print_help()
 			sys.exit(not help)
 		create_site(current_site, domain,app_name,site_name)
+		db.session.commit()
 		
 class ListSites(Command):
 	"""Show the list of known sites"""
@@ -118,6 +120,7 @@ class ParamSite(Command):
 			except (SyntaxError,NameError):
 				pass
 			site.config[key] = value
+			db.session.commit()
 		
 class SiteManager(Manager):
 	"""Manage web domains (a 'site') and their primary content (the 'app')."""

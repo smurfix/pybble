@@ -38,14 +38,14 @@ class AppConfigTestCase(TC):
 		except NoData: site3 = Site.new(name='bar', domain='bar.example.com', parent=site, app=app)
 		try: site21 = Site.q.get_by(domain='foo.foo.example.com')
 		except NoData: site21 = Site.new(name='foofoo', domain='foo.foo.example.com', parent=site2, app=app)
-		db.commit()
+		db.session.commit()
 
 		with pytest.raises(ManyData):
 			site21a = Site.new(name='foofoo', domain='foo2.foo.example.com', parent=site2)
-		db.rollback()
+		db.session.rollback()
 		with pytest.raises(ManyData):
 			site21a = Site.new(name='foofoo3', domain='foo.foo.example.com', parent=site2)
-		db.rollback()
+		db.session.rollback()
 
 		ConfigVar.exists(site,"test1","Test One",-1)
 		ConfigVar.exists(site,"test2","Test Two",-2)

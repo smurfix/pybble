@@ -23,5 +23,5 @@ def transact(self, request):
 	print("START",request)
 	def end():
 		print("END",request)
-		db.commit()
+		db.session.commit()
 	request.addfinalizer(end)

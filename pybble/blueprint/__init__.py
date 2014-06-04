@@ -139,7 +139,7 @@ def create_blueprint(site, blueprint, path, name=None,endpoint=None):
 	if name is None:
 		name = getattr(blueprint.mod,"_name",blueprint.name)
 	bp = SiteBlueprint.new(site=site, path=path, blueprint=blueprint, name=name,endpoint=endpoint)
-	db.flush()
+	db.session.flush()
 	return bp
 
 def drop_blueprint(blueprint,site=None):

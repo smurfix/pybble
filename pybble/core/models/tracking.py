@@ -29,7 +29,7 @@ from .object import Object,ObjectRef
 from .objtyp import ObjType
 from .user import User,Group
 from .site import Site
-from ..db import Base, Column, check_unique, db, JSON
+from ..db import check_unique, db, JSON
 from ..utils import hybridmethod
 from ...globals import current_site
 from ...core import config
@@ -55,11 +55,11 @@ class Breadcrumb(TrackingObject):
 	obj = ObjectRef(doc="accessed page")
 	site = ObjectRef(Site)
 
-	#seq = Column(Integer)
-	visited = Column(DateTime,default=datetime.utcnow)
-	last_visited = Column(DateTime,nullable=True)
-	cur_visited = Column(DateTime,default=datetime.utcnow, nullable=True)
-	counter = Column(Integer, default=0)
+	#seq = db.Column(Integer)
+	visited = db.Column(DateTime,default=datetime.utcnow)
+	last_visited = db.Column(DateTime,nullable=True)
+	cur_visited = db.Column(DateTime,default=datetime.utcnow, nullable=True)
+	counter = db.Column(Integer, default=0)
 
 	@property
 	def parent(self):
@@ -94,7 +94,7 @@ class Change(TrackingObject):
 	_no_crumbs = True
 
 	obj = ObjectRef()
-	data = Column(JSON)
+	data = db.Column(JSON)
 
 	@property
 	def parent(self):
@@ -143,7 +143,7 @@ class Delete(TrackingObject):
 	def tracker(self):
 		return Tracker.q.get_by(obj=self)
 
-	timestamp = Column(DateTime,default=datetime.utcnow)
+	timestamp = db.Column(DateTime,default=datetime.utcnow)
 
 	def setup(self, obj, user=None, comment=None):
 		assert obj and not isinstance(obj,TrackingObject)
@@ -179,8 +179,8 @@ class Tracker(TrackingObject):
 	user = ObjectRef(User)
 	site = ObjectRef(Site)
 	obj = ObjectRef(doc="The new object, or a change/delete record")
-	comment = Column(Unicode(LEN_DOC), nullable=True)
-	timestamp = Column(DateTime,default=datetime.utcnow)
+	comment = db.Column(Unicode(LEN_DOC), nullable=True)
+	timestamp = db.Column(DateTime,default=datetime.utcnow)
 
 	@property
 	def parent(self):
@@ -197,7 +197,7 @@ class Tracker(TrackingObject):
 		super(Tracker,self).setup()
 
 #	def after_insert(self):
-#		db.flush((self.owner,)) # required to guard against cycles
+#		db.session.flush((self.owner,)) # required to guard against cycles
 #		self.parent = self._obj
 #		self.superparent = self._site or current_site
 
@@ -245,10 +245,10 @@ class WantTracking(Object):
 				fs.set('target',parent)
 		super(WantTracking,self).form_mod(fs)
 
-	email = Column(Boolean, nullable=False) # send mail, not just RSS/on-site?
-	track_new = Column(Boolean, nullable=False) # alert for new data?
-	track_mod = Column(Boolean, nullable=False) # alert for modifications?
-	track_del = Column(Boolean, nullable=False) # alert for deletions?
+	email = db.Column(Boolean, nullable=False) # send mail, not just RSS/on-site?
+	track_new = db.Column(Boolean, nullable=False) # alert for new data?
+	track_mod = db.Column(Boolean, nullable=False) # alert for modifications?
+	track_del = db.Column(Boolean, nullable=False) # alert for deletions?
 
 	def setup(self, user,target, for_objtyp=None):
 		self.user = user
@@ -273,6 +273,11 @@ class UserTracker(TrackingObject):
 	__tablename__ = "usertracking"
 	_no_crumbs = True
 
+	@classmethod
+	def __declare_last__(cls):
+		check_unique(UserTracker,"user tracker")
+		super(UserTracker,cls).__declare_last__()
+
 	user = ObjectRef(User)
 	tracker = ObjectRef(WantTracking)
 	obj = ObjectRef(doc="The new object / change / delete record")
@@ -295,5 +300,4 @@ class UserTracker(TrackingObject):
 	def change_obj(self):
 		return self.parent.change_obj
 
-check_unique(UserTracker,"user tracker")
 

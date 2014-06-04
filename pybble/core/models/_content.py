@@ -21,7 +21,7 @@ from sqlalchemy import event
 from sqlalchemy.orm import relationship
 
 from .. import config
-from ..db import Base, Column
+from ..db import db
 from . import LEN_CONTENT
 from .object import ObjectRef
 from .types import MIMEtype
@@ -39,7 +39,7 @@ class _Content(object):
 		This is a Content version without "mime", assuming that this reference
 		is defined elsewhere.
 		"""
-	content = Column(Unicode(LEN_CONTENT), nullable=False)
+	content = db.Column(Unicode(LEN_CONTENT), nullable=False)
 
 	def setup(self,content=None,**k):
 		if content is not None:
@@ -84,8 +84,8 @@ class Cached(object):
 		handler which invalidates the cache (`del self.cache`) when any of
 		your content changes.
 		"""
-	_cache = Column("cache",PickleType(pickler=marshal), nullable=False, default="")
-	_version = Column("version",Unicode(30), nullable=False, default="")
+	_cache = db.Column("cache",PickleType(pickler=marshal), nullable=False, default="")
+	_version = db.Column("version",Unicode(30), nullable=False, default="")
 	form_hidden = ('_cache','_version')
 
 	def get_cache(self,version):
