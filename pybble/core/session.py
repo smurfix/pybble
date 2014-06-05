@@ -155,23 +155,23 @@ class SubdomainDispatcher(object):
 
 	def __call__(self, environ, start_response):
 		"""Standard WSGI"""
-		app = None
-		try:
-			app = self.get_application(environ['HTTP_HOST'], testing=environ.get('testing', None))
-			res = app(environ, start_response)
-			if isinstance(res,ContentData):
-				res = res(environ, start_response)
-			return res
-
-		except Exception as e:
-			if not app or app.config.DEBUG is not False:
-				raise
-
-			x=sys.exc_info()
+		app = self.get_application(environ['HTTP_HOST'], testing=environ.get('testing', None))
+		with app.app_context():
 			try:
-				print("ERROR:",str(e))
-			except Exception:
-				print("ERROR: ‹error message could not be printed›")
-			import pdb
-			pdb.post_mortem(x[2])
+				res = app(environ, start_response)
+				if isinstance(res,ContentData):
+					res = res(environ, start_response)
+				return res
+	
+			except Exception as e:
+				if not app or app.config.DEBUG is not False:
+					raise
+	
+				x=sys.exc_info()
+				try:
+					print("ERROR:",str(e))
+				except Exception:
+					print("ERROR: ‹error message could not be printed›")
+				import pdb
+				pdb.post_mortem(x[2])
 
