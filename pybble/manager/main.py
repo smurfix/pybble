@@ -170,21 +170,6 @@ class RootManager(Manager):
 		self.add_command("core",coremanager)
 		self.add_command("user",UserManager())
 
-	def run(self,*a,**k):
-		try:
-			super(RootManager,self).run(*a,**k)
-		except Exception as e:
-			if self._dump:
-				raise
-			x=sys.exc_info()
-			try:
-				print("ERROR:",str(e))
-			except Exception:
-				print("ERROR: ‹error message could not be printed›")
-			if self._pdb:
-				import pdb
-				pdb.post_mortem(x[2])
-
 	def __call__(self, app=None, pdb=False, dump=False, **kw):
 		self._pdb = pdb
 		self._dump = dump
