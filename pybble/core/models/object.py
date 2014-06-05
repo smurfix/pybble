@@ -225,7 +225,10 @@ class ObjRefComposer(object):
 		if type is None:
 			return object.__new__(cls)
 		from .objtyp import ObjType
-		return ObjType.get(type, id)
+		try:
+			return ObjType.get(type, id)
+		except NoData:
+			return None
 
 class Object(db.Model,Rendered):
 	__metaclass__ = ObjectMeta
