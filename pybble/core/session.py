@@ -139,7 +139,6 @@ class PdbApplication(object):
 				print("POSTMORTEM",file=sys.stderr)
 				import pdb
 				pdb.post_mortem(exc_info[2])
-				pdb.set_trace()
 
 	def __call__(self, environ, start_response):
 		"""Dispatch the requests."""
