@@ -510,16 +510,19 @@ def check_unique(cls, *vars):
 	event.listen(cls,"before_insert",check)
 	event.listen(cls,"before_update",check)
 
-def _block_updates(target, value, oldvalue, initiator):
-	if oldvalue not in (None,NO_VALUE,NEVER_SET,value) and not target._deleting:
-		raise RuntimeError("You cannot change {}.{} (‘{}’ to ‘{}’)".format(target,initiator.parent_token.key,oldvalue,value))
+class _block_updates(object):
+	def __init__(self, cls=None):
+		self.cls = cls
+	def __call__(self, target, value, oldvalue, initiator):
+		if oldvalue not in (None,NO_VALUE,NEVER_SET,value) and not target._deleting and (self.cls is None or isinstance(oldvalue,self.cls)):
+			raise RuntimeError("You cannot change {}.{} (‘{}’ to ‘{}’)".format(target,initiator.parent_token.key,oldvalue,value))
 
-def no_update(var):
+def no_update(var,cls=None):
 	k = '_pybble_block_'+var.key
 	if getattr(var.class_,k,False):
 		return
 	setattr(var.class_,k,True)
-	event.listen(var, 'set', _block_updates)
+	event.listen(var, 'set', _block_updates(cls))
 
 db = SQLAlchemy()
 
