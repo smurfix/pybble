@@ -31,6 +31,7 @@ from .user import User,Group
 from .site import Site
 from ..db import check_unique, db, JSON
 from ..utils import hybridmethod
+from ... import ROOT_USER_NAME
 from ...globals import current_site
 from ...core import config
 from ...core.signal import ObjDeleted
@@ -107,13 +108,13 @@ class Change(TrackingObject):
 	def setup(self, obj, user=None, data=None, comment=None):
 		self.obj = obj
 		self.data = data
-		self._owner = user or request.user
+		self._user = user
 		self._comment = comment
 
 		super(Change,self).setup()
 
 	def after_insert(self):
-		Tracker.new(self, user=self._owner, comment=self._comment)
+		Tracker.new(self, user=self._user, comment=self._comment)
 
 	@property
 	def as_str(self):
@@ -148,7 +149,7 @@ class Delete(TrackingObject):
 	def setup(self, obj, user=None, comment=None):
 		assert obj and not isinstance(obj,TrackingObject)
 		obj._deleting = True
-		self._user = user or request.user
+		self._user = user
 		self.obj = obj
 		self._comment = comment
 
@@ -169,9 +170,6 @@ class Delete(TrackingObject):
 class Tracker(TrackingObject):
 	"""\
 		Track any kind of change, for purpose of RSSification, Emails, et al.
-		Owner: the user who did it.
-		Parent: The Change/Delete object, or the new object.
-		Superparent: The site. TODO: or the high-level action which triggered this one.
 		"""
 	__tablename__ = "tracking"
 	_no_crumbs = True
@@ -190,7 +188,7 @@ class Tracker(TrackingObject):
 		# You can track Change and Delete objects, but not e.g. a Tracker or a Breadcrumb
 		assert obj and (isinstance(obj,(Change,Delete)) or not isinstance(obj,TrackingObject))
 
-		self.user = user or request.user
+		self.user = user or getattr(request,'user',None) or User.q.get_by(username=ROOT_USER_NAME)
 		self.comment = comment
 		self.obj = obj
 		self.site = site or current_site
