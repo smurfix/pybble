@@ -105,13 +105,13 @@ class ContentData(object):
 				best = "text/html"
 			try:
 				to_mime = MIMEtype.get(best)
-			except NoData as e:
+			except KeyError as e:
 				exc_info = sys.exc_info()
 				for k in ('text/html','text/plain','application/json'):
-					if request.accept_mimetypes(k):
+					if request.accept_mimetypes[k]:
 						try:
 							to_mime = MIMEtype.get(k)
-						except NoData:
+						except KeyError:
 							pass
 						else:
 							break
