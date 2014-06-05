@@ -16,7 +16,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from jinja2 import Markup, contextfunction, contextfilter, TemplateNotFound
 from werkzeug.utils import reraise
 from flask import request,current_app, get_flashed_messages, Response, g, escape
-from flask._compat import string_types
+from flask._compat import string_types, text_type
 from sqlalchemy.orm import aliased
 from sqlalchemy import or_
 
@@ -272,7 +272,7 @@ def render_template(template, **context):
 		                context of the template.
 		"""
 	if isinstance(template,string_types):
-		c = ContentData(name=template)
+		c = ContentData(name=text_type(template))
 		return c.render(_vars=context)
 
 	for tn in template:
