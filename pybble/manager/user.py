@@ -23,6 +23,7 @@ from flask._compat import text_type
 from . import PrepCommand as Command
 from . import Option, Manager
 from ..core.models.user import User
+from ..core.db import db
 from ..globals import current_site
 from ..utils import random_string
 

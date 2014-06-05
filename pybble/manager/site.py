@@ -120,7 +120,7 @@ class ParamSite(Command):
 			except (SyntaxError,NameError):
 				pass
 			site.config[key] = value
-			db.session.commit()
+		db.session.commit()
 		
 class SiteManager(Manager):
 	"""Manage web domains (a 'site') and their primary content (the 'app')."""
