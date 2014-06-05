@@ -347,12 +347,8 @@ def add_static(filepath,path, force=False):
 					sb = BinData.lookup(content)
 				except NoData:
 					sb = nsb()
-				try:
-					Delete.new(sf.file, comment="replaced by update")
-					Change.new(sf,root_user(), data={'file':(sf.file,sb)})
-				except:
-					pdb.post_mortem()
-					raise
+				Delete.new(sf.file, comment="replaced by update")
+				Change.new(sf,root_user(), data={'file':(sf.file,sb)})
 				sf.file = sb
 	db.session.flush()
 
