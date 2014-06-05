@@ -56,7 +56,15 @@ from flask import current_app
 from flask._compat import text_type, string_types
 from werkzeug.utils import cached_property
 
-ObjectRef = None # cyclic forward decl
+ObjectRef = None
+# This is here to break a cyclic reference problem:
+# * ObjectRef wants to refer to Object
+# * Object needs ObjectMeta when initializing
+# * ObjectMeta needs to special-case ObjectRef instances
+#
+# We resolve this by leaving ObjectRef as None here, since it's only
+# used in subclasses of Object, and declaring it for real at the bottom
+# of this file.
 
 class _serialize_object(object):
 	"""Reference superclass for JSONification"""
