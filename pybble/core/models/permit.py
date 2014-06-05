@@ -33,7 +33,7 @@ from ..db import db, NoData, check_unique,no_update
 from ..utils import hybridmethod
 from ...globals import current_site
 from ._const import PERM,PERM_NONE,PERM_ADMIN,PERM_READ,PERM_ADD,PERM_name,PERM_LIST
-from .user import User
+from .user import User,Group
 from .object import Object,ObjectRef
 from .objtyp import ObjType
 from .types import MIMEtype
