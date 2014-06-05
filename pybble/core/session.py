@@ -160,10 +160,6 @@ class SubdomainDispatcher(object):
 	def __init__(self, app):
 		with app.app_context():
 			root = app.site
-			if app.config.BEHIND_PROXY:
-				from werkzeug.contrib.fixers import ProxyFix
-				app.wsgi_app = ProxyFix(app.wsgi_app)
-			db.session.commit()
 			if isinstance(root,string_types):
 				root = Site.q.get_by(name=text_type(root))
 		self.app = app
