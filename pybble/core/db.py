@@ -197,10 +197,6 @@ class JSON(TypeDecorator):
 			value = json.decode(value)
 		return value
 
-def not_deleted(*a,**k):
-	q = Query(*a,**k)
-	return q.filter_by(deleted=False)
-
 def no_autoflush(fn):
 	"""\
 		Decorator to prevent database auto-flushing when the code
