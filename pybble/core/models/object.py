@@ -336,6 +336,11 @@ class Object(db.Model,Rendered):
 		                     urlsafe_b64encode(md5(str(self.type.id) +'.'+ str(self.id) + current_app.config['SECRET_KEY'])\
 		                                          .digest()).strip('\n =')[:10])
 
+	def _dump_attrs(self):
+		res = super(Object,self)._dump_attrs()
+		res.add('oid')
+		return res
+
 	@staticmethod
 	def by_oid(oid):
 		"""Given an object ID, return the object"""
