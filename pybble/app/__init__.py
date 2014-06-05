@@ -265,7 +265,6 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 				datefmt=cf['LOGGER_DATE_FORMAT']
 			)
 	
-	db.session.commit()
 	with cfg_app.test_request_context('/'):
 		if site is None:
 			pass

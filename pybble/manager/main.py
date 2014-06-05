@@ -201,13 +201,13 @@ class RootManager(Manager):
 class SubdomainServer(Server):
 	"""Actually run the server"""
 	def __call__(self,app, host,port,**opts):
-		dispatch = SubdomainDispatcher(app.site)
-		if app.config.BEHIND_PROXY:
-			from werkzeug.contrib.fixers import ProxyFix
-			dispatch = ProxyFix(dispatch)
-		server = WSGIServer((host,port), dispatch)
-		db.session.commit()
-		db.close()
+		with app.app_context():
+			dispatch = SubdomainDispatcher(app.site)
+			if app.config.BEHIND_PROXY:
+				from werkzeug.contrib.fixers import ProxyFix
+				dispatch = ProxyFix(dispatch)
+			server = WSGIServer((host,port), dispatch)
+			db.session.commit()
 		logger.debug("Serving requests.")
 		server.serve_forever()
 		
