@@ -193,7 +193,7 @@ def detail_oid(oid):
 	obj = Object.by_oid(oid)
 	request.user.will_read(obj)
 	title_trace=[unicode(obj),"Info"]
-	return render_template("detail.html", obj=obj, title_trace=title_trace)
+	return render_template("detail.html", obj=obj, title_trace=title_trace, _root=current_site)
 
 @expose('/last_visited')
 def last_visited():
@@ -204,7 +204,7 @@ def last_visited():
 def view_snippet(oid,k=None):
 	"""Return a list of fields in this object, and references to it"""
 	obj = Object.by_oid(oid)
-	return render_template("snippet1.html", obj=obj, key=k, sub=list(obj.count_refs()))
+	return render_template("snippet1.html", obj=obj, key=k, sub=list(obj.count_refs()), _root=current_site)
 
 @expose('/snippet/<oid>/<int:objtyp>/<k>',methods=("GET","POST"))
 def view_snippet2(oid, objtyp,k):
@@ -212,7 +212,7 @@ def view_snippet2(oid, objtyp,k):
 	objtyp = ObjType.get(objtyp)
 	
 	sub=list(obj.get_refs(objtyp,k))
-	return render_template("snippet2.html", cls=objtyp, obj=obj, sub=sub, k=k, count=len(sub))
+	return render_template("snippet2.html", cls=objtyp, obj=obj, sub=sub, k=k, count=len(sub), _root=current_site)
 
 def not_found(url=None):
 	return render_template('not_found.html', title_trace=[u"Seite nicht gefunden"])

@@ -261,7 +261,7 @@ def valid_access(o):
 
 	return v_a
 
-def render_template(template, **context):
+def render_template(template, _root=None, **context):
 	"""\
 		Renders a named template with the given context.
 
@@ -272,7 +272,7 @@ def render_template(template, **context):
 		                context of the template.
 		"""
 	if isinstance(template,string_types):
-		c = ContentData(name=text_type(template))
+		c = ContentData(name=text_type(template), anchor=_root)
 		return c.render(_vars=context)
 
 	for tn in template:
@@ -282,7 +282,7 @@ def render_template(template, **context):
 			pass
 	raise TemplateNotFound(template)
 
-def render_my_template(obj, detail=None, mimetype=NotGiven, **context):
+def render_my_template(obj, detail=None, _root=None, mimetype=NotGiven, **context):
 	"""\
 		Renders an object's template with the given context.
 
@@ -312,7 +312,7 @@ def render_my_template(obj, detail=None, mimetype=NotGiven, **context):
 
 	context["obj"] = obj
 
-	c = ContentData(obj=obj,from_mime=obj.mimetype, to_mime=TM_MIME(detail))
+	c = ContentData(obj=obj,from_mime=obj.mimetype, to_mime=TM_MIME(detail), anchor=_root)
 	return c.render(**context)
 	
 class TaggedMarkup(Markup):
