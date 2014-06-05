@@ -282,7 +282,7 @@ class Object(db.Model,Rendered):
 			else:
 				cls = obj
 			obj = None
-			fs = FieldSet(cls, session=db)
+			fs = FieldSet(cls, session=db.session())
 
 		seen = set()
 		for c in cls.__mro__:
