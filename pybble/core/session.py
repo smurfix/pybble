@@ -160,7 +160,9 @@ class SubdomainDispatcher(object):
 	def __init__(self, app):
 		with app.app_context():
 			root = app.site
-			if isinstance(root,string_types):
+			if root is None:
+				root = Site.q.get_by(parent=None)
+			elif isinstance(root,string_types):
 				root = Site.q.get_by(name=text_type(root))
 		self.app = app
 		self.root = root

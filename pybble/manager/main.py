@@ -47,15 +47,16 @@ def make_shell_context():
 def check():
 	"""Prints app status"""
 	from flask import current_app
+	from pprint import pprint
 	app = current_app
 
-	from pprint import pprint
-	print("App:",)
-	print(str(app))
-	print("Extensions:")
-	pprint(app.extensions)
-	print("Modules:")
-	pprint(app.blueprints)
+	with app.app_context():
+		print("App:",)
+		print(str(app))
+		print("Extensions:")
+		pprint(app.extensions)
+		print("Modules:")
+		pprint(app.blueprints)
     
 def config():
 	"""Dumps configuration data"""
@@ -132,7 +133,6 @@ class RootManager(Manager):
 		self.add_option("-c", "--config", dest="config", required=False, default=None, help="Config file to use")
 		self.add_option("-s", "--site", dest="site", required=False, default=ROOT_SITE_NAME, help="which Site to run on")
 		self.add_option("-S", "--no-site", dest="site", action="store_const", const=None, required=False, help="Do not choose a site")
-		self.add_option("-v", "--verbose", dest="verbose", action="count", default=0, required=False, help="Enable verbose logging")
 		self.add_option("-t", "--test", dest="testing", action="store_true", required=False, default=False, help="Use the test database")
 		self.add_option("-d", "--pdb", dest="pdb", action="store_true", required=False, default=False, help="drop into the debugger if there's an error")
 		self.add_option("-D", "--stackdump", dest="dump", action="store_true", required=False, default=False, help="Do not catch crashes at all")

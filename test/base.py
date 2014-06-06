@@ -126,9 +126,11 @@ class TC(unittest.TestCase):
 
 class WebTC(TC):
 	def setupRest(self):
+		from pybble.app import make_cfg_app
 		super(WebTC,self).setupRest()
 		global main_app
-		main_app = SubdomainDispatcher()
+		app = make_cfg_app()
+		main_app = SubdomainDispatcher(app)
 
 		if not skip_httpclient:
 			http_client_intercept.install()

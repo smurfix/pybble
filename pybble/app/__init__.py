@@ -97,7 +97,7 @@ class WrapperApp(object):
 		pass
 	
 	def __str__(self):
-		return "‹{}.{} ‘{}’›".format(self.__class__.__module__,self.__class__.__name__,self.site.name if self.site else "??")
+		return "‹{}.{} ‘{}’›".format(self.__class__.__module__,self.__class__.__name__,refresh(self.site).name if self.site else "??")
 	__repr__=__str__
 	__unicode__=__str__
 
@@ -217,6 +217,23 @@ def datetimeformat(value, format='%d-%m-%Y %H:%M %Z%z'):
 
 # global default config
 cfg_app = None
+def make_cfg_app():
+	global cfg_app
+	if cfg_app is not None:
+		return cfg_app
+	cfg_app = _fake_app(import_name=os.path.abspath(os.curdir))
+
+	from pybble.core import config as cfg
+	cfg_app.config = cfg
+	init_db(cfg_app)
+
+#	logging.basicConfig(
+#		stream=sys.stderr,
+#		level=getattr(logging, cfg['LOGGER_LEVEL']),
+#		format=cfg['LOGGER_FORMAT'],
+#		datefmt=cfg['LOGGER_DATE_FORMAT']
+#	)
+	return cfg_app
 
 class _fake_app(WrapperApp,Flask):
 	"""
@@ -227,7 +244,7 @@ class _fake_app(WrapperApp,Flask):
 		k["static_folder"] = None
 		super(_fake_app,self).__init__(*a,**k)
 
-def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing=False):
+def create_app(app=None, config=None, site=ROOT_SITE_NAME, testing=False):
 	"""\
 		Setup an app instance. Configuration is loaded from
 		* local_settings
@@ -239,32 +256,19 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 		:param config: A configuration file to load. Default: the PYBBLE
 		            environment variable.
 		:param testing: Required to be identical to config.TESTING.
-		:param verbose: Turn on logging.
 		"""
 
-	global cfg_app
+	if config:
+		os.environ['PYBBLE'] = config
 
-	if cfg_app is None:
-		cfg_app = _fake_app(import_name=os.path.abspath(os.curdir))
-		if config:
-			os.environ['PYBBLE'] = config
-		from pybble.core import config as cfg
-		assert testing == cfg.get('TESTING',False), (testing,cfg.get('TESTING',False))
-		cfg_app.config = cfg
-		init_db(cfg_app)
+	make_cfg_app()
 
-		if verbose:
-			if app:
-				cf = app.config
-			else:
-				cf = cfg
-			logging.basicConfig(
-				stream=sys.stderr,
-				level=getattr(logging, cf['LOGGER_LEVEL']),
-				format=cf['LOGGER_FORMAT'],
-				datefmt=cf['LOGGER_DATE_FORMAT']
-			)
-	
+	if testing is not None:
+		assert testing == cfg_app.config.get('TESTING',False), (testing,cfg_app.config.get('TESTING',False))
+	else:
+		testing = cfg_app.config.get('TESTING',False)
+		assert testing is not None
+
 	with cfg_app.test_request_context('/'):
 		if site is None:
 			pass

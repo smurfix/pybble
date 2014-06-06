@@ -49,6 +49,7 @@ class AppConfigTestCase(TC):
 
 		ConfigVar.exists(site,"test1","Test One",-1)
 		ConfigVar.exists(site,"test2","Test Two",-2)
+		db.session.commit()
 
 		app = create_app(site="root", testing=True)
 		app1 = create_app(site="foo", testing=True)
