@@ -308,6 +308,8 @@ class Object(db.Model,Rendered):
 
 		if hasattr(fs,'config'):
 			hide.append(fs.config)
+		if hasattr(fs,'modified'):
+			opts.append(fs.modified.readonly())
 		fs.configure(options=opts, exclude=hide)
 		if obj is not None:
 			fs.reconfigure(pk=True)
