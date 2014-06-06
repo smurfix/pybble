@@ -105,20 +105,22 @@ class DeleteForm(Form):
 
 @expose('/delete/<oid>', methods=('POST','GET'))
 def delete_oid(oid):
-	obj=Object.by_oid(oid)
-	request.user.will_delete(obj)
+ 	obj=Object.by_oid(oid)
+ 	request.user.will_delete(obj)
+ 
+	form = DeleteForm(request.form, prefix='delete')
+	if request.method == 'POST' and form.validate():
+		Delete.new(obj, comment=form.comment.data)
 
-	ed = ObjEditor(Delete,obj)
-
-	def _did_delete():
-		flash(u"{} was deleted".format(obj), True)
-		parent = getattr(obj,"parent",None)
-		if parent:
-			return redirect(url_for("pybble.views.view_oid", oid=parent.oid))
+		flash(u"%s (%s) has been deleted" % (unicode(obj),obj.oid), True)
+		if form.next.data:
+			return redirect(form.next.data)
+		elif obj.parent:
+			return redirect(url_for("pybble.views.view_oid", oid=obj.parent.oid))
 		else:
 			return redirect(url_for("pybble.views.mainpage"))
 
-	return ed.editor(template="delete.html", done=_did_delete)
+	return render_template('delete.html', form=form, title_trace=["Delete"], obj=obj)
 
 def split_details(obj, details):
 	if details == "all":
