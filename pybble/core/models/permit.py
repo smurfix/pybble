@@ -32,7 +32,7 @@ from ...utils import random_string, AuthError
 from ..db import db, NoData, check_unique,no_update
 from ..utils import hybridmethod
 from ...globals import current_site
-from ._const import PERM,PERM_NONE,PERM_ADMIN,PERM_READ,PERM_ADD,PERM_name,PERM_LIST
+from ._const import PERM,PERM_NONE,PERM_ADMIN,PERM_READ,PERM_ADD,PERM_name,PERM_LIST,PERM_DELETE,PERM_WRITE
 from .user import User,Group
 from .object import Object,ObjectRef
 from .objtyp import ObjType
@@ -237,6 +237,13 @@ def can_do(user,obj, objtyp=None, new_objtyp=None,new_mimetyp=None, want=None):
 
 	if current_app.config.DEBUG_ACCESS:
 		log_access("PERM", objtyp or "-", (str(new_objtyp) if new_objtyp else "-")+'/'+(str(new_mimetyp) if new_mimetyp else "-"), (PERM_name(want) if want else "-")+":",obj,"FOR",user,"AT",current_site, u"⇒")
+
+	## These are covered by permission checks on the actual objects
+	from .tracking import Delete,Change
+	if obj == Delete.type:
+		return PERM_DELETE
+	if obj == Change.type:
+		return PERM_WRITE
 
 	pq = []
 	if want is not None:
