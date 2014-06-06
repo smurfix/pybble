@@ -265,7 +265,6 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 				datefmt=cf['LOGGER_DATE_FORMAT']
 			)
 	
-	db.session.commit()
 	with cfg_app.test_request_context('/'):
 		if site is None:
 			pass
@@ -298,20 +297,21 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, verbose=None, testing
 	if app is not cfg_app:
 		init_db(app)
 
-	logging.disable(logging.NOTSET if app.debug is not None else logging.DEBUG)
+		@app.url_value_preprocessor
+		def bp_url_value_preprocessor(endpoint, values):
+			if values:
+				request.bp = refresh(values.pop('bp',None))
 
-	@app.url_value_preprocessor
-	def bp_url_value_preprocessor(endpoint, values):
-		if values:
-			request.bp = refresh(values.pop('bp',None))
+	with app.app_context():
+		logging.disable(logging.NOTSET if app.debug is not None else logging.DEBUG)
 
-	if app.config.URLFOR_ERROR_FATAL is None:
-		app.config.URLFOR_ERROR_FATAL = app.debug
-	if not app.config.URLFOR_ERROR_FATAL:
-		def build_err(error, endpoint, values):
-			#return Markup('<a href="#" class="build_error" title="%s (%s)">Bad link</a>') % (endpoint,repr(values))
-			return Markup('bad_Link/')+endpoint+"?"+urlencode(values)
-		app.url_build_error_handlers.append(build_err)
+		if app.config.URLFOR_ERROR_FATAL is None:
+			app.config.URLFOR_ERROR_FATAL = app.debug
+		if not app.config.URLFOR_ERROR_FATAL:
+			def build_err(error, endpoint, values):
+				#return Markup('<a href="#" class="build_error" title="%s (%s)">Bad link</a>') % (endpoint,repr(values))
+				return Markup('bad_Link/')+endpoint+"?"+urlencode(values)
+			app.url_build_error_handlers.append(build_err)
 
 	return app
 

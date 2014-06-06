@@ -94,6 +94,62 @@ def logged_in(user):
 		user.last_login = user.this_login or now
 		user.this_login = user.cur_login = now
 
+
+class PdbApplication(object):
+	"""Debugs a given application."""
+
+	def __init__(self, app):
+		self.app = app
+
+	def pdb_application(self, environ, start_response):
+		"""Run the application and conserve the traceback frames."""
+		app_iter = None
+		try:
+			app_iter = self.app(environ, start_response)
+			for item in app_iter:
+				yield item
+			if hasattr(app_iter, 'close'):
+				app_iter.close()
+		except Exception as e:
+			exc_info = sys.exc_info()
+			if hasattr(app_iter, 'close'):
+				app_iter.close()
+			
+			try:
+				start_response(b'500 INTERNAL SERVER ERROR', [
+					('Content-Type', 'text/html; charset=utf-8'),
+					# Disable Chrome's XSS protection, the debug
+					# output can cause false-positives.
+					('X-XSS-Protection', '0'),
+				])
+			except Exception:
+				# if we end up here there has been output but an error
+				# occurred.  in that situation we can do nothing fancy any
+				# more, better log something into the error log and fall
+				# back gracefully.
+				environ['wsgi.errors'].write(
+					'Debugging middleware caught exception in streamed '
+					'response at a point where response headers were already '
+					'sent.\n')
+			else:
+				import pdb;pdb.set_trace()
+				yield "ERROR, debugging"
+
+			finally:
+				print("POSTMORTEM",file=sys.stderr)
+				import pdb
+				pdb.post_mortem(exc_info[2])
+
+	def __call__(self, environ, start_response):
+		"""Dispatch the requests."""
+		# important: don't ever access a function here that reads the incoming
+		# form data!  Otherwise the application won't have access to that data
+		# any more!
+		from werkzeug.wrappers import BaseRequest as Request, BaseResponse as Response
+		request = Request(environ)
+		response = self.pdb_application
+		return response(environ, start_response)
+
 class SubdomainDispatcher(object):
 	"""
 	This code creates individual app instances (one per site) and sends
@@ -101,15 +157,19 @@ class SubdomainDispatcher(object):
 
 	:param root: Only dispatch to sites within this sub-hierarchy
 	"""
-	def __init__(self, root=ROOT_SITE_NAME):
-		if isinstance(root,string_types):
-			root = Site.q.get_by(name=text_type(root))
+	def __init__(self, app):
+		with app.app_context():
+			root = app.site
+			if isinstance(root,string_types):
+				root = Site.q.get_by(name=text_type(root))
+		self.app = app
 		self.root = root
 		self.lock = Lock()
 		self.instances = {}
 		all_apps.connect(self._reload)
 		app_list.connect(self._reload)
-		self._reload(sender=self)
+		with app.app_context():
+			self._reload(sender=self)
 
 	def _reload(self,sender):
 		# This pre-loads the instances with the sites necessary to
@@ -131,7 +191,7 @@ class SubdomainDispatcher(object):
 			host = site.domain
 		else:
 			host = host.split(':')[0]
-		with self.lock:
+		with self.lock, self.app.app_context():
 			try:
 				app = self.instances[host]
 			except KeyError:
@@ -150,28 +210,14 @@ class SubdomainDispatcher(object):
 				# TODO: this is not actually enforced anywhere
 
 			if app.config.DEBUG is True:
-				app = DebuggedApplication(app, evalex=True)
+				app.wsgi_app = DebuggedApplication(app.wsgi_app, evalex=True, show_hidden_frames=True)
+			elif app.config.DEBUG is False:
+				app.wsgi_app = PdbApplication(app.wsgi_app)
 			return app
 
 	def __call__(self, environ, start_response):
 		"""Standard WSGI"""
-		app = None
-		try:
-			app = self.get_application(environ['HTTP_HOST'], testing=environ.get('testing', None))
-			res = app(environ, start_response)
-			if isinstance(res,ContentData):
-				res = res(environ, start_response)
-			return res
-
-		except Exception as e:
-			if not app or app.config.DEBUG is not False:
-				raise
-
-			x=sys.exc_info()
-			try:
-				print("ERROR:",str(e))
-			except Exception:
-				print("ERROR: ‹error message could not be printed›")
-			import pdb
-			pdb.post_mortem(x[2])
+		app = self.get_application(environ['HTTP_HOST'], testing=environ.get('testing', None))
+		res = app(environ, start_response)
+		return res
 

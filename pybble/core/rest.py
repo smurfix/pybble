@@ -18,7 +18,6 @@ from .db import db
 from .models.object import Object
 from .models.objtyp import ObjType
 from .models.tracking import Tracker,Change,Delete
-from .json import encode
 
 class RESTend(object):
 	"""This implements a generic front-end to the database object system"""
@@ -26,13 +25,16 @@ class RESTend(object):
 		self.json = json
 
 	## TODO: permissions
+
 	def get(self,objtyp,id):
+		"""Retrieve an object."""
 		obj = ObjType.get(objtyp,id)
 		if self.json:
 			obj = obj.as_dict
 		return obj
 
 	def put(self,objtyp,id, comment=None,**data):
+		"""Replace an object."""
 		obj = ObjType.get(objtyp,id)
 		changed = {}
 		old = obj.as_dict
@@ -51,23 +53,25 @@ class RESTend(object):
 					ov = '‹old›'
 				changed[data] = (ov,None)
 		if changed:
-			Change.new(obj, data=encode(changed), comment=comment)
-		if self.json:
-			obj = obj.as_dict
-		return { "obj":obj, "changed":changed }
+			changed = Change.new(obj, data=changed, comment=comment)
+			if self.json:
+				changed = changed.as_dict
+		return changed
 	
 	def post(self,objtyp, comment=None,**data):
+		"""Add a new object."""
 		objtyp = ObjType.get(objtyp)
 		try:
 			obj = objtyp.mod.new(**data)
 		except TypeError as e:
 			raise TypeError("{}: {}".format(objtyp,e)) ## SIGH
-		res = Tracker.new(obj, comment=comment)
+		Tracker.new(obj, comment=comment)
 		if self.json:
-			res = res.as_dict
-		return res
+			obj = obj.as_dict
+		return obj
 
 	def patch(self,objtyp,id, comment=None,**data):
+		"""Update an object."""
 		obj = ObjType.get(objtyp,id)
 		changed = {}
 
@@ -81,24 +85,23 @@ class RESTend(object):
 					v = '‹new›'
 				changed[k] = (ov,v)
 		if changed:
-			res = Change.new(obj, data=encode(changed), comment=comment)
+			changed = Change.new(obj, data=changed, comment=comment)
 			if self.json:
-				res = res.as_dict
-		else:
-			res = { 'obj': obj}
-		return res
+				changed = changed.as_dict
+		return changed
 	
-	def delete(self,typ,id, comment=None):
-		obj = ObjType.get(typ,id)
-		Delete.new(obj, comment=comment)
+	def delete(self,objtyp,id, comment=None):
+		"""Delete an object."""
+		obj = ObjType.get(objtyp,id)
+		obj = Delete.new(obj, comment=comment)
 		if self.json:
 			obj = obj.as_dict
-		return { "obj":obj, "deleted":True }
+		return obj
 
-	def list(self,typ=None):
+	def list(self,objtyp=None):
 
 		res = []
-		for obj in ObjType.get(typ).mod.q.all():
+		for obj in ObjType.get(objtyp).mod.q.all():
 			if self.json:
 				obj = obj.as_dict
 			res.append(obj)

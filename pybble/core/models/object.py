@@ -56,7 +56,15 @@ from flask import current_app
 from flask._compat import text_type, string_types
 from werkzeug.utils import cached_property
 
-ObjectRef = None # cyclic forward decl
+ObjectRef = None
+# This is here to break a cyclic reference problem:
+# * ObjectRef wants to refer to Object
+# * Object needs ObjectMeta when initializing
+# * ObjectMeta needs to special-case ObjectRef instances
+#
+# We resolve this by leaving ObjectRef as None here, since it's only
+# used in subclasses of Object, and declaring it for real at the bottom
+# of this file.
 
 class _serialize_object(object):
 	"""Reference superclass for JSONification"""
@@ -217,7 +225,7 @@ class ObjRefComposer(object):
 		if type is None:
 			return object.__new__(cls)
 		from .objtyp import ObjType
-		return ObjType.get(type, id)
+		return ObjType.q.get_by(id=type).mod.qq.get_by(id=id)
 
 class Object(db.Model,Rendered):
 	__metaclass__ = ObjectMeta
@@ -249,7 +257,11 @@ class Object(db.Model,Rendered):
 	form_readonly = ('id',)
 	@hybridmethod
 	def form_mod(self, fs,parent=None):
-		"""Override for more specific form changes"""
+		"""\
+			Override this for specific form changes.
+
+			:Note: your code is run twice when copying a record, so it must be idempotent.
+			"""
 		if parent is not None:
 			f = self._alias.get('parent','parent')
 			fs.set(f,parent)
@@ -270,19 +282,27 @@ class Object(db.Model,Rendered):
 		from .objtyp import ObjType
 		hide = []
 		opts = []
-		if isinstance(obj,Object) and not isinstance(obj,ObjType):
+		if isinstance(obj,Object) and not isinstance(obj,ObjType) and not parent: # it's new
 			fs = FieldSet(obj)
 			cls = type(obj)
 			for fn,f in fs._fields.items():
 				if getattr(cls,'_pybble_block_'+fn, False):
 					opts.append(f.readonly())
+		
+		elif isinstance(obj,Object) and not isinstance(obj,ObjType): # it's a copy
+			assert parent is not None
+			fs = obj.fieldset() # get a fieldset with the original data
+			data = fs.to_dict(with_prefix=False) # copy it
+			fs = fs.bind(model=type(obj),data=data,with_prefix=False, session=db.session())
+			obj.form_mod(fs,parent)
+			return fs
 		else:
 			if isinstance(obj,ObjType):
 				cls = obj.mod
 			else:
 				cls = obj
 			obj = None
-			fs = FieldSet(cls, session=db)
+			fs = FieldSet(cls, session=db.session())
 
 		seen = set()
 		for c in cls.__mro__:
@@ -297,6 +317,8 @@ class Object(db.Model,Rendered):
 
 		if hasattr(fs,'config'):
 			hide.append(fs.config)
+		if hasattr(fs,'modified'):
+			opts.append(fs.modified.readonly())
 		fs.configure(options=opts, exclude=hide)
 		if obj is not None:
 			fs.reconfigure(pk=True)
@@ -335,6 +357,11 @@ class Object(db.Model,Rendered):
 		                     self.id, 
 		                     urlsafe_b64encode(md5(str(self.type.id) +'.'+ str(self.id) + current_app.config['SECRET_KEY'])\
 		                                          .digest()).strip('\n =')[:10])
+
+	def _dump_attrs(self):
+		res = super(Object,self)._dump_attrs()
+		res.add('oid')
+		return res
 
 	@staticmethod
 	def by_oid(oid):

@@ -110,7 +110,6 @@ class MIMEtype(Object):
 			return cls.q.get_by(typ=typ,subtyp=subtyp)
 		except NoData:
 			if not add:
-				import pdb;pdb.set_trace()
 				raise KeyError("Could not find MIME type "+typ+'/'+subtyp)
 			return cls.new(typ=typ,subtyp=subtyp, add=add)
 

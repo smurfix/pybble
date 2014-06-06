@@ -20,6 +20,7 @@ from formalchemy import FieldSet, helpers as fa_h
 from formalchemy.fields import FieldRenderer
 
 from pybble.blueprint import BaseBlueprint
+from pybble.globals import current_site
 from pybble.core.utils import attrdict
 from pybble.core.models.objtyp import ObjType
 from pybble.core.models.object import Object,ObjRefComposer
@@ -63,5 +64,5 @@ class ObjEditor(object):
 
 		if template is None:
 			template = 'admin/new.html' if isinstance(self.obj,ObjType) else 'admin/edit.html'
-		return render_template(template, fields=fields, obj=self.obj, **kw)
+		return render_template(template, fields=fields, obj=self.obj, _root=current_site, **kw)
 

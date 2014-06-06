@@ -228,7 +228,7 @@ class SiteConfigVar(Object, JsonValue):
 	@classmethod
 	def __declare_last__(cls):
 		check_unique(cls,"parent var")
-		no_update(cls.parent)
+		no_update(cls.parent,ConfigData)
 		no_update(cls.var)
 		super(SiteConfigVar,cls).__declare_last__()
 	# Owner: the user who last set the variable
@@ -241,6 +241,11 @@ class SiteConfigVar(Object, JsonValue):
 
 		super(SiteConfigVar,self).setup()
 
+	def before_insert(self):
+		if not isinstance(self.parent,ConfigData):
+			self.parent = self.parent.config
+		super(SiteConfigVar,self).before_insert()
+		
 	@property
 	def as_str(self):
 		if self.var is None or self.parent is None:

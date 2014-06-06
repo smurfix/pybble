@@ -16,7 +16,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from jinja2 import Markup, contextfunction, contextfilter, TemplateNotFound
 from werkzeug.utils import reraise
 from flask import request,current_app, get_flashed_messages, Response, g, escape
-from flask._compat import string_types
+from flask._compat import string_types, text_type
 from sqlalchemy.orm import aliased
 from sqlalchemy import or_
 
@@ -105,13 +105,13 @@ class ContentData(object):
 				best = "text/html"
 			try:
 				to_mime = MIMEtype.get(best)
-			except NoData as e:
+			except KeyError as e:
 				exc_info = sys.exc_info()
 				for k in ('text/html','text/plain','application/json'):
-					if request.accept_mimetypes(k):
+					if request.accept_mimetypes[k]:
 						try:
 							to_mime = MIMEtype.get(k)
-						except NoData:
+						except KeyError:
 							pass
 						else:
 							break
@@ -201,7 +201,7 @@ class ContentData(object):
 		r1 = r2 = w = None
 		ma = aliased(MIMEadapter)
 		mb = aliased(MIMEadapter)
-		for a,b in ma.q.join(mb).filter(
+		for a,b in db.session().query(ma,mb).filter(
 				or_(ma.from_mime==self.from_mime,ma.from_mime==MIMEtype.get(self.from_mime.typ,"*")),
 				mb.to_mime==self.to_mime,
 				ma.to_mime_id==mb.from_mime_id,
@@ -261,7 +261,7 @@ def valid_access(o):
 
 	return v_a
 
-def render_template(template, **context):
+def render_template(template, _root=None, **context):
 	"""\
 		Renders a named template with the given context.
 
@@ -272,7 +272,7 @@ def render_template(template, **context):
 		                context of the template.
 		"""
 	if isinstance(template,string_types):
-		c = ContentData(name=template)
+		c = ContentData(name=text_type(template), anchor=_root)
 		return c.render(_vars=context)
 
 	for tn in template:
@@ -282,7 +282,7 @@ def render_template(template, **context):
 			pass
 	raise TemplateNotFound(template)
 
-def render_my_template(obj, detail=None, mimetype=NotGiven, **context):
+def render_my_template(obj, detail=None, _root=None, mimetype=NotGiven, **context):
 	"""\
 		Renders an object's template with the given context.
 
@@ -312,7 +312,7 @@ def render_my_template(obj, detail=None, mimetype=NotGiven, **context):
 
 	context["obj"] = obj
 
-	c = ContentData(obj=obj,from_mime=obj.mimetype, to_mime=TM_MIME(detail))
+	c = ContentData(obj=obj,from_mime=obj.mimetype, to_mime=TM_MIME(detail), anchor=_root)
 	return c.render(**context)
 	
 class TaggedMarkup(Markup):

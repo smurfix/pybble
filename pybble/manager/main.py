@@ -170,21 +170,6 @@ class RootManager(Manager):
 		self.add_command("core",coremanager)
 		self.add_command("user",UserManager())
 
-	def run(self,*a,**k):
-		try:
-			super(RootManager,self).run(*a,**k)
-		except Exception as e:
-			if self._dump:
-				raise
-			x=sys.exc_info()
-			try:
-				print("ERROR:",str(e))
-			except Exception:
-				print("ERROR: ‹error message could not be printed›")
-			if self._pdb:
-				import pdb
-				pdb.post_mortem(x[2])
-
 	def __call__(self, app=None, pdb=False, dump=False, **kw):
 		self._pdb = pdb
 		self._dump = dump
@@ -201,13 +186,12 @@ class RootManager(Manager):
 class SubdomainServer(Server):
 	"""Actually run the server"""
 	def __call__(self,app, host,port,**opts):
-		dispatch = SubdomainDispatcher(app.site)
-		if app.config.BEHIND_PROXY:
-			from werkzeug.contrib.fixers import ProxyFix
-			dispatch = ProxyFix(dispatch)
+		dispatch = SubdomainDispatcher(app)
+		with app.app_context():
+			if app.config.BEHIND_PROXY:
+				from werkzeug.contrib.fixers import ProxyFix
+				dispatch = ProxyFix(dispatch)
 		server = WSGIServer((host,port), dispatch)
-		db.session.commit()
-		db.close()
 		logger.debug("Serving requests.")
 		server.serve_forever()
 		

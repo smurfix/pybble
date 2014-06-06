@@ -31,6 +31,7 @@ from .user import User,Group
 from .site import Site
 from ..db import check_unique, db, JSON
 from ..utils import hybridmethod
+from ... import ROOT_USER_NAME
 from ...globals import current_site
 from ...core import config
 from ...core.signal import ObjDeleted
@@ -50,6 +51,7 @@ class Breadcrumb(TrackingObject):
 		"""
 	__tablename__ = "breadcrumbs"
 	_no_crumbs = True
+	_alias = {'parent':'user'}
 
 	user = ObjectRef(User, doc="The user whodunit")
 	obj = ObjectRef(doc="accessed page")
@@ -60,10 +62,6 @@ class Breadcrumb(TrackingObject):
 	last_visited = db.Column(DateTime,nullable=True)
 	cur_visited = db.Column(DateTime,default=datetime.utcnow, nullable=True)
 	counter = db.Column(Integer, default=0)
-
-	@property
-	def parent(self):
-		return self.user
 
 	def setup(self, user, obj):
 		self.user = user
@@ -92,13 +90,10 @@ class Change(TrackingObject):
 		"""
 	__tablename__ = "changes"
 	_no_crumbs = True
+	_alias = {'parent':'obj'}
 
 	obj = ObjectRef()
 	data = db.Column(JSON)
-
-	@property
-	def parent(self):
-		return self.obj
 
 	@property
 	def tracker(self):
@@ -107,13 +102,13 @@ class Change(TrackingObject):
 	def setup(self, obj, user=None, data=None, comment=None):
 		self.obj = obj
 		self.data = data
-		self._owner = user or request.user
+		self._user = user
 		self._comment = comment
 
 		super(Change,self).setup()
 
 	def after_insert(self):
-		Tracker.new(self, user=self._owner, comment=self._comment)
+		Tracker.new(self, user=self._user, comment=self._comment)
 
 	@property
 	def as_str(self):
@@ -127,6 +122,7 @@ class Delete(TrackingObject):
 		"""
 	__tablename__ = "deleted"
 	_no_crumbs = True
+	_alias = {'parent':'obj'}
 
 	@classmethod
 	def __declare_last__(cls):
@@ -134,10 +130,6 @@ class Delete(TrackingObject):
 		super(Delete,cls).__declare_last__()
 
 	obj = ObjectRef(doc="the deleted object")
-
-	@property
-	def parent(self):
-		return self.obj
 
 	@property
 	def tracker(self):
@@ -148,7 +140,7 @@ class Delete(TrackingObject):
 	def setup(self, obj, user=None, comment=None):
 		assert obj and not isinstance(obj,TrackingObject)
 		obj._deleting = True
-		self._user = user or request.user
+		self._user = user
 		self.obj = obj
 		self._comment = comment
 
@@ -169,12 +161,10 @@ class Delete(TrackingObject):
 class Tracker(TrackingObject):
 	"""\
 		Track any kind of change, for purpose of RSSification, Emails, et al.
-		Owner: the user who did it.
-		Parent: The Change/Delete object, or the new object.
-		Superparent: The site. TODO: or the high-level action which triggered this one.
 		"""
 	__tablename__ = "tracking"
 	_no_crumbs = True
+	_alias = {'parent':'obj'}
 
 	user = ObjectRef(User)
 	site = ObjectRef(Site)
@@ -182,15 +172,11 @@ class Tracker(TrackingObject):
 	comment = db.Column(Unicode(LEN_DOC), nullable=True)
 	timestamp = db.Column(DateTime,default=datetime.utcnow)
 
-	@property
-	def parent(self):
-		return self.obj
-
 	def setup(self, obj, user=None,site=None, comment=None):
 		# You can track Change and Delete objects, but not e.g. a Tracker or a Breadcrumb
 		assert obj and (isinstance(obj,(Change,Delete)) or not isinstance(obj,TrackingObject))
 
-		self.user = user or request.user
+		self.user = user or getattr(request,'user',None) or User.q.get_by(username=ROOT_USER_NAME)
 		self.comment = comment
 		self.obj = obj
 		self.site = site or current_site
@@ -227,15 +213,12 @@ class WantTracking(Object):
 		track_new/_mod/_del: track new / modified / deleted content
 		"""
 	_display_name = "Monitor entry"
+	_alias = {'parent':'user'}
 
 	target = ObjectRef(doc="the hierarchy you want to watch")
 	user = ObjectRef(doc="the user/?? you want to attach the RSS to")
 	for_objtyp = ObjectRef(ObjType, nullable=True)
 
-	@property
-	def parent(self):
-		return self.user
-	
 	@hybridmethod
 	def form_mod(self,fs,parent):
 		if parent is not None:
@@ -272,6 +255,7 @@ class UserTracker(TrackingObject):
 		"""
 	__tablename__ = "usertracking"
 	_no_crumbs = True
+	_alias = {'parent':'user'}
 
 	@classmethod
 	def __declare_last__(cls):
@@ -281,10 +265,6 @@ class UserTracker(TrackingObject):
 	user = ObjectRef(User)
 	tracker = ObjectRef(WantTracking)
 	obj = ObjectRef(doc="The new object / change / delete record")
-
-	@property
-	def parent(self):
-		return self.user
 
 	def setup(self, tracker, obj):
 		self.user = tracker.user
