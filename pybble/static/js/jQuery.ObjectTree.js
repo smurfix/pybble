@@ -59,7 +59,7 @@ if(jQuery) (function($){
 						// if( o.root == t ) $(c).find('UL:hidden').show(); else $(c).find('UL:hidden').slideDown({ duration: o.expandSpeed, easing: o.expandEasing });
 						$(c).find('UL:hidden').show();
 						bindTree(c);
-					});
+					},"text/html");
 				}
 				function clickExpand(target) {
 					if( $(target).hasClass('directory') ) {
