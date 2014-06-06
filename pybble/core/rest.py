@@ -88,7 +88,7 @@ class RESTend(object):
 			changed = Change.new(obj, data=changed, comment=comment)
 			if self.json:
 				changed = changed.as_dict
-		return res
+		return changed
 	
 	def delete(self,objtyp,id, comment=None):
 		"""Delete an object."""
