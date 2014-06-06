@@ -257,7 +257,11 @@ class Object(db.Model,Rendered):
 	form_readonly = ('id',)
 	@hybridmethod
 	def form_mod(self, fs,parent=None):
-		"""Override for more specific form changes"""
+		"""\
+			Override this for specific form changes.
+
+			:Note: your code is run twice when copying a record, so it must be idempotent.
+			"""
 		if parent is not None:
 			f = self._alias.get('parent','parent')
 			fs.set(f,parent)
@@ -278,12 +282,20 @@ class Object(db.Model,Rendered):
 		from .objtyp import ObjType
 		hide = []
 		opts = []
-		if isinstance(obj,Object) and not isinstance(obj,ObjType):
+		if isinstance(obj,Object) and not isinstance(obj,ObjType) and not parent: # it's new
 			fs = FieldSet(obj)
 			cls = type(obj)
 			for fn,f in fs._fields.items():
 				if getattr(cls,'_pybble_block_'+fn, False):
 					opts.append(f.readonly())
+		
+		elif isinstance(obj,Object) and not isinstance(obj,ObjType): # it's a copy
+			assert parent is not None
+			fs = obj.fieldset() # get a fieldset with the original data
+			data = fs.to_dict(with_prefix=False) # copy it
+			fs = fs.bind(model=type(obj),data=data,with_prefix=False, session=db.session())
+			obj.form_mod(fs,parent)
+			return fs
 		else:
 			if isinstance(obj,ObjType):
 				cls = obj.mod
