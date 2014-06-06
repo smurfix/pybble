@@ -64,7 +64,7 @@ d_URLFOR_ERROR_FATAL="Die on BuildError? defaults to DEBUG"
 ## used when logging is on.
 LOGGER_NAME='pybble'
 LOGGER_LEVEL="DEBUG"
-LOGGER_FORMAT='%(asctime)s %(name)-12s %%(levelname)-8s %%(message)s'
+LOGGER_FORMAT='%(asctime)s %(name)-12s %(levelname)-8s %(message)s'
 LOGGER_DATE_FORMAT='%Y-%m-%d %H:%M:%S'
 
 MEDIA_PATH="/var/www/pybble"

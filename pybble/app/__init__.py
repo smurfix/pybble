@@ -227,12 +227,12 @@ def make_cfg_app():
 	cfg_app.config = cfg
 	init_db(cfg_app)
 
-#	logging.basicConfig(
-#		stream=sys.stderr,
-#		level=getattr(logging, cfg['LOGGER_LEVEL']),
-#		format=cfg['LOGGER_FORMAT'],
-#		datefmt=cfg['LOGGER_DATE_FORMAT']
-#	)
+	logging.basicConfig(
+		stream=sys.stderr,
+		level=getattr(logging, cfg['LOGGER_LEVEL']),
+		format=cfg['LOGGER_FORMAT'],
+		datefmt=cfg['LOGGER_DATE_FORMAT']
+	)
 	return cfg_app
 
 class _fake_app(WrapperApp,Flask):
