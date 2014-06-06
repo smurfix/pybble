@@ -24,7 +24,8 @@ class App(BaseApp):
 	_parent = None
 	def __call__(self, environ, start_response):
 		if self._parent is None:
-			s = refresh(self.site)
-			self._parent = self.pybble_dispatcher.get_application(site=s.parent)
+			with self.app_context():
+				s = refresh(self.site)
+				self._parent = self.pybble_dispatcher.get_application(site=s.parent)
 		return self._parent(environ, start_response)
 
