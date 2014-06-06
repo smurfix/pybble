@@ -201,7 +201,7 @@ class ContentData(object):
 		r1 = r2 = w = None
 		ma = aliased(MIMEadapter)
 		mb = aliased(MIMEadapter)
-		for a,b in ma.q.join(mb).filter(
+		for a,b in db.session().query(ma,mb).filter(
 				or_(ma.from_mime==self.from_mime,ma.from_mime==MIMEtype.get(self.from_mime.typ,"*")),
 				mb.to_mime==self.to_mime,
 				ma.to_mime_id==mb.from_mime_id,
