@@ -51,6 +51,7 @@ class Breadcrumb(TrackingObject):
 		"""
 	__tablename__ = "breadcrumbs"
 	_no_crumbs = True
+	_alias = {'parent':'user'}
 
 	user = ObjectRef(User, doc="The user whodunit")
 	obj = ObjectRef(doc="accessed page")
@@ -61,10 +62,6 @@ class Breadcrumb(TrackingObject):
 	last_visited = db.Column(DateTime,nullable=True)
 	cur_visited = db.Column(DateTime,default=datetime.utcnow, nullable=True)
 	counter = db.Column(Integer, default=0)
-
-	@property
-	def parent(self):
-		return self.user
 
 	def setup(self, user, obj):
 		self.user = user
@@ -93,13 +90,10 @@ class Change(TrackingObject):
 		"""
 	__tablename__ = "changes"
 	_no_crumbs = True
+	_alias = {'parent':'obj'}
 
 	obj = ObjectRef()
 	data = db.Column(JSON)
-
-	@property
-	def parent(self):
-		return self.obj
 
 	@property
 	def tracker(self):
@@ -128,6 +122,7 @@ class Delete(TrackingObject):
 		"""
 	__tablename__ = "deleted"
 	_no_crumbs = True
+	_alias = {'parent':'obj'}
 
 	@classmethod
 	def __declare_last__(cls):
@@ -135,10 +130,6 @@ class Delete(TrackingObject):
 		super(Delete,cls).__declare_last__()
 
 	obj = ObjectRef(doc="the deleted object")
-
-	@property
-	def parent(self):
-		return self.obj
 
 	@property
 	def tracker(self):
@@ -173,16 +164,13 @@ class Tracker(TrackingObject):
 		"""
 	__tablename__ = "tracking"
 	_no_crumbs = True
+	_alias = {'parent':'obj'}
 
 	user = ObjectRef(User)
 	site = ObjectRef(Site)
 	obj = ObjectRef(doc="The new object, or a change/delete record")
 	comment = db.Column(Unicode(LEN_DOC), nullable=True)
 	timestamp = db.Column(DateTime,default=datetime.utcnow)
-
-	@property
-	def parent(self):
-		return self.obj
 
 	def setup(self, obj, user=None,site=None, comment=None):
 		# You can track Change and Delete objects, but not e.g. a Tracker or a Breadcrumb
@@ -225,15 +213,12 @@ class WantTracking(Object):
 		track_new/_mod/_del: track new / modified / deleted content
 		"""
 	_display_name = "Monitor entry"
+	_alias = {'parent':'user'}
 
 	target = ObjectRef(doc="the hierarchy you want to watch")
 	user = ObjectRef(doc="the user/?? you want to attach the RSS to")
 	for_objtyp = ObjectRef(ObjType, nullable=True)
 
-	@property
-	def parent(self):
-		return self.user
-	
 	@hybridmethod
 	def form_mod(self,fs,parent):
 		if parent is not None:
@@ -270,6 +255,7 @@ class UserTracker(TrackingObject):
 		"""
 	__tablename__ = "usertracking"
 	_no_crumbs = True
+	_alias = {'parent':'user'}
 
 	@classmethod
 	def __declare_last__(cls):
@@ -279,10 +265,6 @@ class UserTracker(TrackingObject):
 	user = ObjectRef(User)
 	tracker = ObjectRef(WantTracking)
 	obj = ObjectRef(doc="The new object / change / delete record")
-
-	@property
-	def parent(self):
-		return self.user
 
 	def setup(self, tracker, obj):
 		self.user = tracker.user
