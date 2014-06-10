@@ -1,14 +1,9 @@
-#! /usr/bin/python
-# EASY-INSTALL-ENTRY-SCRIPT: 'nose==1.3.1','console_scripts','nosetests'
-__requires__ = 'nose'
-import pybble # for monkeypatching
-import sys
-from pkg_resources import load_entry_point
+#!/usr/bin/env python
 
-from pybble.core.utils import init_logging
+# need to load pybble at the very beginning because it monkeypatches the
+# threading module and everybody under the sun uses that thing
+import pybble
 
-if __name__ == '__main__':
-	init_logging()
-	sys.exit(
-		load_entry_point('nose', 'console_scripts', 'nosetests')()
-	)
+# Then, just call nose
+from nose.core import run
+run()
