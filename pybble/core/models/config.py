@@ -157,19 +157,15 @@ class ConfigData(Object):
 				raise KeyError(k)
 		self = refresh(self)
 
-		val = cache.get("SVAR", self.id,var.id)
-		if val is not cache.NO_VALUE:
+		def gen():
+			try:
+				val = SiteConfigVar.q.get_by(parent=self, var=var).value
+			except NoData:
+				if self.super is None:
+					return var.value
+				val = self.super[k]
 			return val
-
-		try:
-			val = SiteConfigVar.q.get_by(parent=self, var=var).value
-		except NoData:
-			if self.super is None:
-				return var.value
-			val = self.super[k]
-		cache.set(val, "SVAR", self.id,var.id)
-		return val
-
+		return cache.cached(gen, "SVAR", self.id,var.id)
 	
 	def __setitem__(self,k,v):
 		if isinstance(k,ConfigVar):

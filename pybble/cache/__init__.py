@@ -48,3 +48,11 @@ def set(val, *args):
 	r = regions['default']
 	r.set(keystr(args),val)
 
+def cached(func, *args):
+	global regions
+	if regions is None:
+		from .config import regions
+	r = regions['default']
+
+	return r.get_or_create(keystr(args), func)
+
