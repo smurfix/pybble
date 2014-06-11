@@ -22,8 +22,14 @@ __all__ = ['ROOT_SITE_NAME','ROOT_USER_NAME','ANON_USER_NAME','TEMPLATE_PATH','S
 ## this is a no-op in PY3
 ## PY2 defaults to ASCII, but that's way beyond obsolete
 import sys
-reload(sys)
-sys.setdefaultencoding("utf-8")
+try:
+	reload(sys)
+except NameError:
+	# py3 doesn't have that
+	pass
+else:
+	# py3 doesn't have this either
+	sys.setdefaultencoding("utf-8")
 
 # Warnings are bad, except for some which are not
 from warnings import filterwarnings
