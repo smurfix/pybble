@@ -108,10 +108,17 @@ class Encoder(JSONEncoder):
 		try: data = data._get_current_object()
 		except AttributeError: pass
 
+		oid = self.objcache.get(id(data),None)
+		if oid is not None:
+			return {'_or':oid}
+		oid = 1+len(self.objcache)
+		self.objcache[id(data)] = oid
+
 		obj = type2cls.get(data.__class__,None)
 		if obj is not None:
 			data = obj.encode(data)
 			data["_o"] = obj.clsname
+			data["_oi"] = oid
 			return data
 		return super(Encoder,self).default(data)
 
@@ -119,41 +126,38 @@ def encode(data):
 	return Encoder().encode(data)
 
 class Decoder(JSONDecoder):
-	def __init__(self, proxy):
+	def __init__(self):
 		self.objcache = {}
-		self.proxy = proxy
 		super(Decoder,self).__init__(object_hook=self.hook)
 
 	def hook(self,data):
+		oid = data.pop('_oi',None)
+		obj = data.pop('_o',None)
+		if obj is not None:
+			data = name2cls[ev].decode(**data)
+			if oid:
+				self.objcache[oid] = data
+
+		return data
+	
+	def _cleanup(self, data):
 		if not isinstance(data,dict):
 			return data
 
-		ev = data.pop('_o',None)
-		if ev is not None:
-			return name2cls[ev].decode(**data)
+		oid = data.pop('_or',None)
+		if oid is not None:
+			return self.objcache[oid]
 
-		cr = data.pop('_cr',None)
-		if cr is None:
-			data = attrdict(data)
-			return data
-		d = self.objcache.get(cr,None)
-		if d is None:
-			d = self.proxy()
-			self.objcache[cr]=d
+		for k,v in data.items():
+			data[k] = self._cleanup(v)
+		return data
+		
+	def _decode_refs(self, data):
+		res = self.decode(data)
+		res = self._cleanup(res)
+		return res
 
-		try:
-			t = data.pop('_table')
-			idx = data.pop('_index')
-			idx = tuple(tuple(x) for x in idx) # convert from nested list
-		except KeyError:
-			pass # recursive or whatever
-		else:
-			d = d._set(t,idx,**data)
-			self.objcache[cr] = d
-		return d
 	
-def decode(data, proxy=None, p1=None):
-	d = Decoder(proxy)
-	if p1:
-		d.objcache[1] = p1
-	return d.decode(data)
+def decode(data):
+	d = Decoder()
+	return d._decode_refs(data)
