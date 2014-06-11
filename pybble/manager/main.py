@@ -148,6 +148,7 @@ class RootManager(Manager):
 		from .obj import RESTManager
 		from .site import SiteManager
 		from .user import UserManager
+		from .cache import CacheManager
 
 		coremanager = Manager()
 		coremanager.__doc__ = "Examine and change Pybble's internal data"
@@ -169,6 +170,7 @@ class RootManager(Manager):
 		self.add_command("run",SubdomainServer())
 		self.add_command("core",coremanager)
 		self.add_command("user",UserManager())
+		self.add_command("cache",CacheManager())
 
 	def __call__(self, app=None, pdb=False, dump=False, **kw):
 		self._pdb = pdb

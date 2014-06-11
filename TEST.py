@@ -14,3 +14,5 @@ SECRET_KEY="fbfzkar2ihf3ulqhelg8srlzg7resibg748wifgbz478"
 ADMIN_EMAIL="smurf@smurf.noris.de"
 
 URLFOR_ERROR_FATAL=False
+REDIS_HOST='localhost'
+REDIS_DB=3 ## a db number not used in production

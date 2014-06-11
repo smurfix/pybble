@@ -223,16 +223,21 @@ def make_cfg_app():
 		return cfg_app
 	cfg_app = _fake_app(import_name=os.path.abspath(os.curdir))
 
-	from pybble.core import config as cfg
+	from ..core import config as cfg
 	cfg_app.config = cfg
 	init_db(cfg_app)
 
-	logging.basicConfig(
-		stream=sys.stderr,
-		level=getattr(logging, cfg['LOGGER_LEVEL']),
-		format=cfg['LOGGER_FORMAT'],
-		datefmt=cfg['LOGGER_DATE_FORMAT']
-	)
+	with cfg_app.app_context():
+		logging.basicConfig(
+			stream=sys.stderr,
+			level=getattr(logging, cfg['LOGGER_LEVEL']),
+			format=cfg['LOGGER_FORMAT'],
+			datefmt=cfg['LOGGER_DATE_FORMAT']
+		)
+
+		from ..cache.config import configure as cache_config
+		cache_config(cfg_app)
+
 	return cfg_app
 
 class _fake_app(WrapperApp,Flask):

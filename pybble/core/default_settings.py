@@ -75,4 +75,14 @@ d_MAILHOST="The system to send email through"
 URLFOR_ERROR_FATAL=None
 d_URLFOR_ERROR_FATAL="If False, URLs pointing to nowhere are not fatal. Defaults to debug."
 
+SINGLE_SERVER=True
+d_SINGLE_SERVER="Set if you run one server process (local locking). Clear for locking via REDIS"
+REDIS_HOST=""
+d_REDIS_HOST="Caching host"
+REDIS_PORT=6379
+REDIS_DB=0
+d_REDIS_DB="Database number. The maximum is configurable in redis.conf"
+CACHE_EXPIRES=3600
+d_CACHE_EXPIRES="expiry of the database cache (seconds)"
+
 del datetime

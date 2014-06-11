@@ -17,7 +17,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from functools import wraps, partial
 
 from sqlalchemy import create_engine, Integer, types, util, exc as sa_exc, event, or_, Boolean
-from sqlalchemy.orm import scoped_session, sessionmaker,query,class_mapper
+from sqlalchemy.orm import scoped_session, sessionmaker,query,class_mapper, ColumnProperty
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm.session import Session
 from sqlalchemy.orm.base import NO_VALUE,NEVER_SET
@@ -41,6 +41,8 @@ from flask.ext.sqlalchemy import SQLAlchemy as BaseSQLAlchemy, BaseQuery, _Bound
 from . import json
 from . import config
 from .models import LEN_JSON
+from ..cache.query import FromCache,CachingQuery
+from ..cache import config as cache
 
 import logging
 logger = logging.getLogger('pybble.core.db')
@@ -90,6 +92,9 @@ class _QueryProperty(object):
 				q = type.query_class(mapper, session=self.sa.session())
 				if self.filtered:
 					q = q.filter_by(deleted=False)
+					# This would require some extensive cache clearing
+					#if cache.regions:
+					#	q = q.options(FromCache())
 				return q
 		except UnmappedClassError:
 			return None
@@ -152,7 +157,7 @@ class IDrenderer(IntegerFieldRenderer):
 		except Exception as e:
 			return self.value
 
-class Query(BaseQuery):
+class Query(CachingQuery):
 	"""\
 		A query which provides `get` and `get_by` methods.
 
@@ -358,6 +363,20 @@ class BaseModel(Dumpable):
 		for k,v in kw.items():
 			setattr(self,k,v)
 
+	def __getstate__(self):
+		"""\
+			Returns the state which should be included in a pickle. Used for caching.
+			Basically, use everything but relationships.
+			"""
+		res = {}
+		i = inspect(self)
+		for p in i.mapper.iterate_properties:
+			if not isinstance(p, ColumnProperty):
+				continue
+			res[p.key] = getattr(self,p.key)
+		res['_sa_instance_state'] = self._sa_instance_state
+		return res
+		
 	@classmethod
 	@no_autoflush
 	def new(cls,*a,**kw):

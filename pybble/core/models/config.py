@@ -30,6 +30,7 @@ from ..signal import ConfigChanged
 from . import LEN_NAME,LEN_DOC
 from .object import Object,ObjectRef
 from ...core import config
+from ...cache import invalid
 
 from datetime import datetime,timedelta
 
@@ -119,6 +120,9 @@ class ConfigData(Object):
 			return default
 
 	def __getattr__(self,k):
+		if k.startswith('_'):
+			return super(ConfigData,self).__getattr__(k)
+		return self[k]
 		try:
 			return self[k]
 		except KeyError:
@@ -144,15 +148,17 @@ class ConfigData(Object):
 			if k in pybble_config and pybble_config._is_fixed(k):
 				return pybble_config[k]
 			try:
-				var = ConfigVar.q.get_by(name=k)
+				var = ConfigVar.q.cache_key("VAR",k).get_by(name=k)
 			except RuntimeError: # system not yet configured
-				return pybble_config[k]
+				if k in pybble_config:
+					return pybble_config[k]
+				raise
 			except NoData:
 				raise KeyError(k)
 
 		self = refresh(self)
 		try:
-			return SiteConfigVar.q.get_by(parent=self, var=var).value
+			return SiteConfigVar.q.cache_key("SVAR",self.id,var.id).get_by(parent=self, var=var).value
 		except NoData:
 			if self.super is None:
 				return var.value
@@ -169,7 +175,7 @@ class ConfigData(Object):
 					return
 
 			try:
-				var = ConfigVar.q.get_by(name=k)
+				var = ConfigVar.q.cache_key("VAR",k).get_by(name=k)
 			except RuntimeError:
 				if k in pybble_config:
 					return
@@ -177,11 +183,12 @@ class ConfigData(Object):
 
 		self = refresh(self)
 		try:
-			ov = SiteConfigVar.q.get_by(parent=self, var=var)
+			ov = SiteConfigVar.q.cache_key("SVAR",self.id,var.id).get_by(parent=self, var=var)
 		except NoData:
 			SiteConfigVar.new(self,var,v)
 		else:
 			ov.value = v
+		invalid("SVAR",self.id,var.id)
 		db.session.flush()
 
 	@maybe_stale
@@ -189,13 +196,14 @@ class ConfigData(Object):
 		k = text_type(k)
 		assert k not in pybble_config, k
 
-		var = ConfigVar.q.get_by(name=k)
+		var = ConfigVar.q.cache_key("VAR",k).get_by(name=k)
 		try:
-			ov = SiteConfigVar.q.get_by(parent=self, var=var)
+			ov = SiteConfigVar.q.cache_key("SVAR",self.id,var.id).get_by(parent=self, var=var)
 		except NoData:
 			pass
 		else:
 			db.session.delete(ov)
+			invalid("SVAR",self.id,var.id)
 			db.session.flush()
 
 	@maybe_stale
