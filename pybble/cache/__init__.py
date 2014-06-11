@@ -14,13 +14,37 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ##BP
 
 regions = None
+from dogpile.cache.api import NO_VALUE
 
 def keystr(args):
+	# Take care to keep this idempotent: keystr(x) == keystr(keystr(x))
     return '|'.join(str(x) for x in args)
 
-def invalid(*args): ## TODO: add keyword-only region param
+## TODO: add keyword-only region param
+
+def delete(*args):
 	global regions
 	if regions is None:
 		from .config import regions
-	regions['default'].delete(keystr(args))
+
+	# TODO: this only works with redis
+	r = regions['default'].backend.client
+	if "*" in args:
+		for k in r.keys(keystr(args)):
+			r.delete(k)
+	else:
+		r.delete(keystr(args))
+
+def get(*args):
+	global regions
+	if regions is None:
+		from .config import regions
+	r = regions['default']
+
+	return r.get(keystr(args))
+
+def set(val, *args):
+	global regions
+	r = regions['default']
+	r.set(keystr(args),val)
 

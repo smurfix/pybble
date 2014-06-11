@@ -30,7 +30,7 @@ from ..signal import ConfigChanged
 from . import LEN_NAME,LEN_DOC
 from .object import Object,ObjectRef
 from ...core import config
-from ...cache import invalid
+from ... import cache
 
 from datetime import datetime,timedelta
 
@@ -155,14 +155,21 @@ class ConfigData(Object):
 				raise
 			except NoData:
 				raise KeyError(k)
-
 		self = refresh(self)
+
+		val = cache.get("SVAR", self.id,var.id)
+		if val is not cache.NO_VALUE:
+			return val
+
 		try:
-			return SiteConfigVar.q.cache_key("SVAR",self.id,var.id).get_by(parent=self, var=var).value
+			val = SiteConfigVar.q.get_by(parent=self, var=var).value
 		except NoData:
 			if self.super is None:
 				return var.value
-			return self.super[k]
+			val = self.super[k]
+		cache.set(val, "SVAR", self.id,var.id)
+		return val
+
 	
 	def __setitem__(self,k,v):
 		if isinstance(k,ConfigVar):
@@ -183,13 +190,13 @@ class ConfigData(Object):
 
 		self = refresh(self)
 		try:
-			ov = SiteConfigVar.q.cache_key("SVAR",self.id,var.id).get_by(parent=self, var=var)
+			ov = SiteConfigVar.q.get_by(parent=self, var=var)
 		except NoData:
 			SiteConfigVar.new(self,var,v)
 		else:
 			ov.value = v
-		invalid("SVAR",self.id,var.id)
 		db.session.flush()
+		cache.delete("SVAR",'*',var.id)
 
 	@maybe_stale
 	def __delitem__(self,k):
@@ -198,12 +205,12 @@ class ConfigData(Object):
 
 		var = ConfigVar.q.cache_key("VAR",k).get_by(name=k)
 		try:
-			ov = SiteConfigVar.q.cache_key("SVAR",self.id,var.id).get_by(parent=self, var=var)
+			ov = SiteConfigVar.q.get_by(parent=self, var=var)
 		except NoData:
 			pass
 		else:
 			db.session.delete(ov)
-			invalid("SVAR",self.id,var.id)
+			cache.delete("SVAR",'*',var.id)
 			db.session.flush()
 
 	@maybe_stale

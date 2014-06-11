@@ -169,7 +169,8 @@ if [ "$*" = "" ] ; then
 
 	[ -z "$V" ] || echo "Starting test run"
 	#PYTHONPATH=$(pwd) test/run.py -x
-	env PYTHONPATH=$(pwd):$PYTHONPATH $DBGENV py.test $ASS -x
+	DBGENV="$DBGENV PYBBLE_LOGGER_LEVEL=INFO"
+	env PYTHONPATH=$(pwd):$PYTHONPATH $DBGENV $PY ./manage.py -t core test $ASS -x
 else
 	[ -z "$V" ] || echo "# ./manage.py -t $*"
 	env PYTHONPATH=$(pwd):$PYTHONPATH $DBGENV $PY ./manage.py -t "$@"

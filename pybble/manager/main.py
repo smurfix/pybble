@@ -141,6 +141,7 @@ class RootManager(Manager):
 		from .blueprint import BlueprintManager
 		from .app import AppCommand
 		from .populate import PopulateCommand
+		from .test import TestCommand
 		from .add import AddCommand
 		from .schema import SchemaCommand
 		from .mime import MIMEManager
@@ -161,6 +162,7 @@ class RootManager(Manager):
 		coremanager.add_command("add",AddCommand())
 		coremanager.add_command("schema",SchemaCommand())
 		coremanager.add_command("migrate",MigrateCommand)
+		coremanager.add_command("test",TestCommand)
 		coremanager.shell(make_shell_context)
 
 		self.add_command("site",SiteManager())
