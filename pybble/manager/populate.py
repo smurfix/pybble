@@ -14,25 +14,19 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ##BP
 
 import os
-import sys
 import logging
 import re
 from traceback import print_exc,format_exc
 
-from sqlalchemy import or_
-
-from flask import request,g, _app_ctx_stack
+from flask import request, _app_ctx_stack
 from flask._compat import text_type,string_types
-from werkzeug import import_string
 
 from .. import TEMPLATE_PATH, STATIC_PATH
 from ..utils import random_string,NotGiven
 from ..core import config
-from ..core.utils import attrdict
 from ..core.db import db, NoData
 from ..core.add import process_module
-from ..globals import current_site
-from . import Manager,Command,Option
+from . import Command,Option
 
 logger = logging.getLogger('pybble.manager.populate')
 
