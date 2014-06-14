@@ -14,7 +14,10 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ##BP
 
 from flask import request
-from urlparse import urlparse
+try:
+	from urllib.parse import urlparse
+except ImportError:
+	from urlparse import urlparse
 from random import sample, randrange
 from werkzeug import Local, LocalManager, cached_property, import_string
 from werkzeug.exceptions import Unauthorized

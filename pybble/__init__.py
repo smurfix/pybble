@@ -35,6 +35,7 @@ else:
 from warnings import filterwarnings
 filterwarnings("error")
 filterwarnings("ignore",category=DeprecationWarning)
+filterwarnings("ignore",category=PendingDeprecationWarning)
 filterwarnings("ignore",category=ImportWarning)
 filterwarnings("ignore",message="^Converting column '.*' from VARCHAR to TEXT") # mysql special
 
@@ -46,9 +47,14 @@ if True:
 		raise Exception('threading module loaded before patching!')
 
 	## All OK, so now go ahead.
-	import gevent.monkey
-	gevent.monkey.patch_all()
+	## This MUST be called outside of any import
+	def patch():
+		import gevent.monkey
+		gevent.monkey.patch_all()
 
+else:
+	def patch():
+		pass
 ## This is the default name for the site root.
 ## There should be only one.
 ROOT_SITE_NAME = '_root'

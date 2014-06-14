@@ -43,8 +43,9 @@ NOTEST=
 DBG=
 DBGENV=
 PY="env python"
+PDB="env pdb"
 export POSIXLY_CORRECT=1
-while getopts "dhkKnNprtv" i ; do
+while getopts "3dhkKnNprtv" i ; do
         case "$i"
         in
                 d)
@@ -56,6 +57,9 @@ while getopts "dhkKnNprtv" i ; do
                         usage 0 ;;
                 k)
                         KEEP=y ;;
+                3)
+						PY="env python3"
+						PDB="env pdb3" ;;
                 n)
                         NOCHECK=y ;;
                 N)
@@ -154,7 +158,7 @@ if [ -n "$PLAIN" ] ; then
 	ASS="$ASS --assert=plain"
 fi
 if [ -n "$DEBUG" ] ; then
-	PY="env pdb"
+	PY="$PDB"
 	ASS="$ASS -s --pdb"
 fi
 

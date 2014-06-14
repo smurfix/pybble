@@ -219,10 +219,7 @@ def format_dt(value, format='%Y-%m-%d %H:%M:%S'):
 
 from pprint import PrettyPrinter,_safe_repr
 import datetime as _dt
-try:
-    from cStringIO import StringIO as _StringIO
-except ImportError:
-    from StringIO import StringIO as _StringIO
+from io import StringIO as _StringIO
 
 class UTFPrinter(PrettyPrinter,object):
 	def _format(self, object, *a,**k):

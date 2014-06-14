@@ -15,7 +15,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 ##BP
 
 ## first thing, for monkeypatching
-import pybble
+import pybble; pybble.patch()
 pybble.FROM_SCRIPT = True
 from pybble.core.utils import init_logging
 
