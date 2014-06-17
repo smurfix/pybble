@@ -37,7 +37,7 @@ class PermTestCase(TC):
 		request.user = User.q.get_by(username=ROOT_USER_NAME)
 		app = create_app(testing=True)
 		with app.app_context():
-			anon = current_site.anon_user
+			anon = current_site.anon_user(None)
 			assert anon.can_read(current_site)
 			assert not anon.can_write(current_site)
 			assert not anon.can_add(current_site)

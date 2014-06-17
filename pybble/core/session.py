@@ -32,6 +32,7 @@ from werkzeug.debug import DebuggedApplication
 
 from .. import ROOT_SITE_NAME
 from ..render import ContentData
+from ..utils import random_string
 from .models.user import User
 from .models.site import Site
 from .db import db, NoData, refresh
@@ -58,6 +59,9 @@ def add_user():
 	user_id = session.get('uid')
 	user = None
 	if user_id is not None:
+		# TODO: This is a good place to create a new anon user if the site
+		# wants to track its visitors. Make sure there's only one creator!
+		# (Use dogpile)
 		try:
 			user = User.q.get_by(id=user_id)
 		except NoData:
@@ -67,8 +71,12 @@ def add_user():
 				## Last login was too long ago.
 				user = None
 	if user is None:
-		user = current_site.anon_user
+		# Anon user. We put an anon_id in the session, instead of creating
+		# a user right away, because otherwise each request without cookies
+		# would create a new anon user: not a good idea.
+		user = current_site.anon_user(None)
 		session['uid'] = user.id
+		session['anon_id'] = random_string(10)
 
 #	# check for bann
 #	if user.is_banned:
@@ -83,6 +91,13 @@ def add_user():
 	user.cur_login = datetime.now()
 	request.user = user
 
+def unique_anon_user():
+	"""Enforce a unique user. Useful e.g. for tracking a shopper."""
+	if request.user and request.user.username != ANON_USER_NAME:
+		return
+	request.user = user = current_site.anon_user(session.get('anon_id') or random_string(10))
+	session['uid'] = user.id
+
 def logged_in(user):
 	if session.get('uid',0) == user.id:
 		return
@@ -94,6 +109,9 @@ def logged_in(user):
 		user.last_login = user.this_login or now
 		user.this_login = user.cur_login = now
 
+def logged_out():
+	request.user = user = current_site.anon_user(None)
+	session['uid'] = user.id
 
 class PdbApplication(object):
 	"""Debugs a given application."""

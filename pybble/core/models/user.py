@@ -81,9 +81,9 @@ class User(PasswordValue,Object):
 	"""\
 		Users.
 
-		Anonymous users are named ANON_USER_NAME, have no password,
-		and are members of a group named ANON_USER_NAME associated with the
-		current site.
+		Anonymous users are members of a group named ANON_USER_NAME
+		associated with the current site. The 'main' anonymous user,
+		used when no tracking is used, is named ANON_USER_NAME.
 
 		Non-anonymous users are named … well … something else, should have
 		a password, and will be members of the site they're allowed on as
@@ -99,9 +99,8 @@ class User(PasswordValue,Object):
 	def __declare_last__(cls):
 		no_update(cls.username)
 		no_update(cls.site)
+		check_unique(cls,"username site")
 		super(User,cls).__declare_last__()
-		# Uniqueness of username+site is handled in before_insert,
-		# which works because none of these may be updated
 	_alias = {'parent':'site'}
 	        
 	# A simple way to make 'username' read-only
@@ -123,33 +122,38 @@ class User(PasswordValue,Object):
 	site = ObjectRef(Site, doc="The site which the user registered at, otherwise not interesting")
 
 	@classmethod
-	def new_anon_user(cls,site=None):
+	def new_anon_user(cls,site=None, anon_id=None):
 		if site is None:
 			site = current_site
+		g = Group.q.get_by(name=ANON_USER_NAME,parent=site)
+		if anon_id is None:
+			anon_id = random_string(10)
+
+		anon_name = (ANON_USER_NAME or 'anon')+'_'+ anon_id
 		try:
-			g = Group.q.get_by(name=ANON_USER_NAME,parent=site)
+			u = cls.q.get_by(username=anon_name, site=site)
 		except NoData:
-			g = Group.new(name=ANON_USER_NAME,parent=site)
+			now = datetime.now()
+			old = now - timedelta(0,current_app.config.SESSION_COOKIE_AGE)
 
-		now = datetime.now()
-		old = now - timedelta(0,current_app.config.SESSION_COOKIE_AGE)
-
-		u = User.q.filter(User.site==site, or_(User.cur_login == None, User.cur_login < old)).order_by(cls.cur_login).join(Member,and_(Member.member_typ_id == ObjType.get(User).id, Member.member_id==User.id)).filter(Member.group==g).first()
-		#u = cls.q.filter_by(username=ANON_USER_NAME, site=site).order_by(cls.cur_login).first()
-		if u is None:
-			u = cls.new(username=ANON_USER_NAME, site=site, anon=True)
-			logger.info("New anon user {} for {}".format(u,site))
-			u.first_login = now
+			u = User.q.filter(User.site==site, or_(User.cur_login == None, User.cur_login < old)).order_by(cls.cur_login).join(Member,and_(Member.member_typ_id == ObjType.get(User).id, Member.member_id==User.id)).filter(Member.group==g).first()
+			#u = cls.q.filter_by(username=ANON_USER_NAME, site=site).order_by(cls.cur_login).first()
+			if u is None:
+				u = cls.new(username=anon_name, site=site, anon=True)
+				logger.info("New anon user {} for {}".format(u,site))
+				u.first_login = now
+				Member.add_to(u,g)
+			else:
+				logger.info("Recycling anon user {} for {}".format(u,site))
+				from .tracking import Delete, TrackingObject
+				for c,k in u.all_refs:
+					if isinstance(c,TrackingObject):
+						pass
+					elif isinstance(c,Member) and c.group.name == ANON_USER_NAME and c.group.parent == site:
+						pass
+					else:
+						Delete.new(c,comment="ANON user cleanup")
 		else:
-			logger.info("Recycling anon user {} for {}".format(u,site))
-			from .tracking import Delete, TrackingObject
-			for c,k in u.all_refs:
-				if isinstance(c,TrackingObject):
-					pass
-				elif isinstance(c,Member) and c.group.name == ANON_USER_NAME and c.group.parent == site:
-					pass
-				else:
-					Delete.new(c,comment="ANON user cleanup")
 			u.last_login = u.this_login
 		u.cur_login = now
 		u.this_login = now
@@ -176,14 +180,6 @@ class User(PasswordValue,Object):
 
 	def before_insert(self):
 		super(User,self).before_insert()
-		if self.username != ANON_USER_NAME:
-			## there may be more than one anon user
-			try:
-				User.q.get_by(site=self.site, username=self.username)
-			except (AttributeError,NoData):
-				pass
-			else:
-				raise RuntimeError(u"User '%s' already exists in %s" % (username,current_site))
 
 		if self.site is None:
 			self.site = current_site

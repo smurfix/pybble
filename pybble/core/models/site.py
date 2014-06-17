@@ -156,32 +156,40 @@ class Site(Object):
 	def after_insert(self):
 		super(Site,self).after_insert()
 
-		app_list.send(NewSite)
-		self.signal.connect(self.config_changed, ConfigChanged)
-
 		sup = getattr(self,'_superuser',None)
 		if sup is not None:
 			self.initial_permissions(sup)
-	
+
+		app_list.send(NewSite)
+		self.signal.connect(self.config_changed, ConfigChanged)
+
 	def initial_permissions(self,root):
 		from .permit import permit
-		from .user import Group,Member
+		from .user import Group,Member,User
 
 		## anon group
 		try:
-			anon = Group.q.get_by(parent=self, name=ANON_USER_NAME)
+			anongroup = Group.q.get_by(parent=self, name=ANON_USER_NAME)
 		except NoData:
-			anon = Group.new(parent=self, name=ANON_USER_NAME)
-			logger.debug("An anon user group for {} has been created.".format(self))
+			anongroup = Group.new(parent=self, name=ANON_USER_NAME)
+			logger.debug("The anon group for {} has been created.".format(self))
 
+		## anon user
+		try:
+			anonuser = User.q.get_by(site=self, username=ANON_USER_NAME)
+		except NoData:
+			anonuser = User.new(site=self, anon=True)
+			logger.debug("The anon user for {} has been created.".format(self))
+			Member.add_to(anonuser,anongroup)
+			
 		## admin group
 		try:
 			admin = Group.q.get_by(parent=self, name=ROOT_USER_NAME)
 		except NoData:
 			admin = Group.new(parent=self, name=ROOT_USER_NAME)
-			logger.debug("An admin user group for {} has been created.".format(self))
+			logger.debug("The admin user group for {} has been created.".format(self))
 		
-		Member.add_to(root,admin)
+			Member.add_to(root,admin)
 		
 		if self.parent is None:
 			self._setup_root_perms()
@@ -234,12 +242,15 @@ class Site(Object):
 		super(Site,self).after_update()
 		self.signal.connect(self.config_changed, ConfigChanged)
 
-	@property
 	@maybe_stale
-	def anon_user(self):
+	def anon_user(self, anon_id=None):
+		"""Return an anonymous user for this site."""
 		from .user import User
-		## create a new anon user.
-		return User.new_anon_user(site=self)
+		if anon_id is None:
+			return User.q.get_by(name=ANON_USER_NAME, site=self)
+		else:
+			## create/recycle a new anon user.
+			return User.new_anon_user(site=self, anon_id=anon_id)
 
 	@property
 	@maybe_stale
