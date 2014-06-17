@@ -118,7 +118,7 @@ class Permission(Object):
 	def as_str(self):
 		return u'%s can %s %s %s %s %s/%s' % (unicode(self.user),PERM[self.right],self.for_objtyp.name if self.for_objtyp else "‽",unicode(self.target), "*" if self.inherit is None else "Y" if self.inherit else "N", self.new_objtyp.name if self.new_objtyp is not None else "-", self.new_mimetyp.name if self.new_mimetyp is not None else "-")
 
-for a,b in PERM.iteritems():
+for a,b in PERM.items():
 	def can_do_closure(a,b):
 		def can_do(self, obj, objtyp=None, new_objtyp=None,new_mimetyp=None):
 			if objtyp is None and obj is not None:

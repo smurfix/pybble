@@ -339,7 +339,6 @@ def get_context():
 	)
 
 import smtplib
-import email.Message
 
 def send_mail(to='', template='', server=None, **context):
 	if "site" not in context:
@@ -359,7 +358,7 @@ def send_mail(to='', template='', server=None, **context):
 		mailServer.quit()
 
 # Permission checks for templates: {% if can_edit() %} -- menu -- {% endif %}
-for a,b in PERM.iteritems():
+for a,b in PERM.items():
 	def can_do_closure(a,b):
 		def valid_do(form, field):
 			obj = Object.by_oid(field.data)

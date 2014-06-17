@@ -1502,7 +1502,7 @@ def run_diff(opts,args, parser=DummyParser):
 
 		if not opts.init:
 			db1.tables={}
-			for k,v in db2.tables.iteritems():
+			for k,v in db2.tables.items():
 				db1.tables[k] = v.clone(db1)
 
 		try: db1.scan("", filename=opts.db1file, file=f)
@@ -1520,7 +1520,7 @@ def run_diff(opts,args, parser=DummyParser):
 
 		if not opts.init:
 			db1.tables = {}
-			for k,v in db2.tables.iteritems():
+			for k,v in db2.tables.items():
 				db1.tables[k]=v.clone(db1)
 
 		if not args:

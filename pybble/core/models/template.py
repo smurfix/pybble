@@ -165,7 +165,7 @@ class TemplateMatch(Object):
 	def as_str(self):
 		return u'%s on %s %s shows %s' % (self.for_objtyp.name if self.for_objtyp else "*",self.target, "*" if self.inherit is None else "Y" if self.inherit else "N", self.template)
  
- 	@property
+	@property
 	def data(self):
 		return self.template.data
 

@@ -181,7 +181,7 @@ class Environment(BaseEnvironment):
 		self.globals['subrss'] = render_subrss
 
 		# Permission checks for templates: {% if can_edit() %} -- menu -- {% endif %}
-		for a,b in PERM.iteritems():
+		for a,b in PERM.items():
 			def can_do_closure(a,b):
 				def can_do(env, obj=None, objtyp=None):
 					if objtyp is None:

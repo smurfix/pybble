@@ -18,7 +18,10 @@ import sys
 import logging
 from time import time
 from itertools import chain
-from urllib import urlencode
+try:
+	from urllib.parse import urlencode
+except ImportError:
+	from urllib import urlencode
 
 from flask import Flask, request, g, session, Markup, Response as BaseResponse, current_app, Markup
 from flask.config import Config
@@ -221,7 +224,7 @@ def make_cfg_app():
 	global cfg_app
 	if cfg_app is not None:
 		return cfg_app
-	cfg_app = _fake_app(import_name=os.path.abspath(os.curdir))
+	cfg_app = _fake_app(import_name="pybble")
 
 	from ..core import config as cfg
 	cfg_app.config = cfg
