@@ -37,16 +37,6 @@ from datetime import datetime,timedelta
 from sqlalchemy import Integer, Unicode, DateTime, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship,backref
 
-#from flask.ext.misaka import markdown
-#
-#from quokka.core import TEXT_FORMATS
-#from quokka.core.fields import MultipleObjectsReturned
-#from quokka.modules.accounts.models import User
-#from quokka.utils.text import slugify
-#from quokka.utils import get_current_user
-#
-#from .admin.utils import _l
-
 logger = logging.getLogger('pybble.core.models.config')
 
 ## JSON type
