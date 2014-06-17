@@ -55,6 +55,7 @@ if True:
 else:
 	def patch():
 		pass
+
 ## This is the default name for the site root.
 ## There should be only one.
 ROOT_SITE_NAME = '_root'

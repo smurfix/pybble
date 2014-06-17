@@ -27,7 +27,6 @@ from sqlalchemy.orm import relationship,backref
 from sqlalchemy.orm.base import NO_VALUE,NEVER_SET
 from sqlalchemy.types import TypeDecorator, VARCHAR
 
-from ... import ANON_USER_NAME
 from ...utils import random_string, AuthError
 from ..db import db, NoData, check_unique,no_update
 from ..utils import hybridmethod
