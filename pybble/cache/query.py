@@ -60,7 +60,7 @@ class CachingQuery(BaseQuery):
            in the cache are not the same ones in the current Session.
 
         """
-        if hasattr(self, '_cache_region'):
+        if config.regions and hasattr(self, '_cache_region'):
             return self.get_value(createfunc=lambda: list(super(CachingQuery,self).__iter__()))
         else:
             return super(CachingQuery,self).__iter__()

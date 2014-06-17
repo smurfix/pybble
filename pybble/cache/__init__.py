@@ -26,6 +26,8 @@ def delete(*args):
 	global regions
 	if regions is None:
 		from .config import regions
+	if not regions:
+		return
 
 	# TODO: this only works with redis
 	r = regions['default'].backend.client
@@ -39,12 +41,18 @@ def get(*args):
 	global regions
 	if regions is None:
 		from .config import regions
+	if not regions:
+		return NO_VALUE
 	r = regions['default']
 
 	return r.get(keystr(args))
 
 def set(val, *args):
 	global regions
+	if regions is None:
+		from .config import regions
+	if not regions:
+		return
 	r = regions['default']
 	r.set(keystr(args),val)
 
@@ -52,6 +60,8 @@ def cached(func, *args):
 	global regions
 	if regions is None:
 		from .config import regions
+	if not regions:
+		return func()
 	r = regions['default']
 
 	return r.get_or_create(keystr(args), func)
