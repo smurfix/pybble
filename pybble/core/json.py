@@ -134,7 +134,7 @@ class Decoder(JSONDecoder):
 		oid = data.pop('_oi',None)
 		obj = data.pop('_o',None)
 		if obj is not None:
-			data = name2cls[ev].decode(**data)
+			data = name2cls[obj].decode(**data)
 			if oid:
 				self.objcache[oid] = data
 
