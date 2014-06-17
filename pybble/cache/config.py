@@ -47,6 +47,7 @@ def configure(app):
                 'host': host,
                 'port': app.config['REDIS_PORT'],
                 'db': app.config['REDIS_DB'],
+                'password': app.config['REDIS_PASSWORD'],
                 'redis_expiration_time': app.config['CACHE_EXPIRES']*2,
                 'distributed_lock': not app.config['SINGLE_SERVER'],
                 }

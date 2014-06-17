@@ -82,6 +82,7 @@ d_REDIS_HOST="Caching host"
 REDIS_PORT=6379
 REDIS_DB=0
 d_REDIS_DB="Database number. The maximum is configurable in redis.conf"
+REDIS_PASSWORD=""
 CACHE_EXPIRES=3600
 d_CACHE_EXPIRES="expiry of the database cache (seconds)"
 
