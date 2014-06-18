@@ -16,7 +16,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from datetime import datetime,timedelta
 import logging
 
-from sqlalchemy import Integer, Unicode, ForeignKey, DateTime, event, Table, Boolean
+from sqlalchemy import Integer, Unicode, ForeignKey, DateTime, event, Table, Boolean, Enum
 from sqlalchemy.orm import relationship,backref
 
 from werkzeug.utils import cached_property
@@ -108,7 +108,8 @@ class Site(Object):
 	tracked = db.Column(DateTime,nullable=False, default=datetime.utcnow)
 	## Datestamp of newest fully-processed Tracker
 
-	#storages = relationship(Storage, secondary=t_storage_site, backref="sites")
+	#TODO
+	#sessioned = db.Column(Enum,name="sessiontype",enums=('ANON','ALWAYS'),nullable=False,default='ANON',server_default='ANON', doc='')
 
 	@property
 	@maybe_stale

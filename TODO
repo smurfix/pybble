@@ -1,5 +1,8 @@
 Test: Add support for coverage
 
+Control how the session is stored (not at all, login, explicitly when
+ack-ing the cookie, ?)
+
 Allow a template to selectively override one on its parent
 	* store the current context and the object where the template was found at
 	* a recursing search will simply continue at obj.parent
