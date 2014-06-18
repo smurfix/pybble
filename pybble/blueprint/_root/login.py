@@ -20,7 +20,7 @@ from werkzeug.exceptions import NotFound
 from pybble.core.db import db,NoData
 from pybble.core.models.user import User
 from pybble.core.models.verifier import Verifier, VerifierBase
-from pybble.core.session import logged_in
+from pybble.core.session import logged_in, logged_out
 from pybble.globals import current_site
 from pybble.render import render_template
 
@@ -149,8 +149,7 @@ def do_logout():
 		flash(u'Du warst nicht eingeloggt', False)
 		return redirect(request.args.get("next",None) or url_for("pybble.views.mainpage"))
 	else:
-		request.user = u = current_site.anon_user
-		session['uid'] = u.id
+		logged_out()
 		flash(u'Du hast dich erfolgreich abgemeldet.', True)
 		return redirect(url_for("pybble.views.mainpage"))
 
