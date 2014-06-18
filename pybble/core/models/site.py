@@ -247,7 +247,7 @@ class Site(Object):
 		"""Return an anonymous user for this site."""
 		from .user import User
 		if anon_id is None:
-			return User.q.get_by(name=ANON_USER_NAME, site=self)
+			return User.q.get_by(username=ANON_USER_NAME, site=self)
 		else:
 			## create/recycle a new anon user.
 			return User.new_anon_user(site=self, anon_id=anon_id)
