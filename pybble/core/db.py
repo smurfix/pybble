@@ -506,6 +506,8 @@ def check_unique(cls, *vars):
 
 	@no_autoflush
 	def check(mapper, connection, obj):
+		if obj.deleted:
+			return
 		q = []
 		for v in vars:
 			if v == "inherit":
