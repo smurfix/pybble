@@ -81,7 +81,7 @@ class config(attrdict,Config):
 				self[k]=v
 
 		self._default('TESTING',False)
-		self._default('DEBUG',False)
+		self._default('DEBUG',None)
 		self._default('TRACE',False)
 		self._default('sql_driver','mysql')
 		self._default('sql_host','localhost')
