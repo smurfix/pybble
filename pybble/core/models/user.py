@@ -148,6 +148,7 @@ class User(PasswordValue,Object):
 			else:
 				logger.info("Recycling anon user {} for {}".format(u,site))
 				from .tracking import Delete, TrackingObject
+				from .config import SiteConfigVar
 				for c,k in u.all_refs:
 					if isinstance(c,TrackingObject):
 						pass
@@ -155,6 +156,9 @@ class User(PasswordValue,Object):
 						pass
 					else:
 						Delete.new(c,comment="ANON user cleanup")
+				for c in SiteConfigVar.q.filter_by(parent=u.config):
+					Delete.new(c, comment="ANON user cleanup")
+				db.session.flush()
 		else:
 			u.last_login = u.this_login
 		u.cur_login = now
