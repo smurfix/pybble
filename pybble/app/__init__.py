@@ -177,7 +177,7 @@ class BaseApp(WrapperApp,Flask):
 					logger.warn("No root user was found.")
 					request.user = None
 		else:
-			request.user = User.q.get_by(name="",site=current_site)
+			request.user = current_site.anon_user()
 	
 	@property
 	def preserve_context_on_exception(self):
