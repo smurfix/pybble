@@ -76,7 +76,6 @@ class ParamUser(Command):
 	def __init__(self):
 		super(ParamUser,self).__init__()
 		#self.add_option(Option("-?","--help", dest="help",action="store_true",help="Display this help text and exit"))
-		self.add_option(Option("--blueprint","-b", dest="bp", nargs='?', action="store",help="The affected blueprint"))
 		self.add_option(Option("--force","-f", dest="force", action="store_true",help="Set value for different site"))
 		self.add_option(Option("name", nargs='?', action="store",help="The user's name (print defaults if empty)"))
 		self.add_option(Option("key", nargs='?', action="store",help="The parameter name (print all individual values if empty)"))
@@ -90,17 +89,26 @@ class ParamUser(Command):
 			site = SiteBlueprint.q.get_by(site=site, name=name).blueprint
 		else:
 			site = site.app
+		config = site.config
+
 		if name is None:
 			for var in ConfigVar.q.get_by(parent=site):
 				print(var.name,var.value, sep="\t")
 			return
-		user = User.q.get_by(name=key)
+		try:
+			name = int(name)
+		except ValueError:
+			user = User.q.get_by(username=name)
+		else:
+			user = User.q.get_by(id=name)
 		if user.parent != current_site and not force:
 			raise InvalidCommand("This user's main site is ‘{}’.\nYou're changing settings for ‘{}’.\nUse the ‘--force’ option if you mean it.".format(user.parent.name,current_site.name))
+
 		if key is None:
-			for v in SiteConfigVar.q.filter(SiteConfigVar.owner.parent==site, SiteConfigVar.parent==user):
+			for v in SiteConfigVar.q.filter(SiteConfigVar.var.parent==site, SiteConfigVar.parent==user.config):
 				print(v.var.name,v.value, sep="\t")
 			return
+
 		var = ConfigVar.q.get_by(parent=site,name=key)
 		try:
 			v = SiteConfigVar.q.get_by(var=var,owner=user)

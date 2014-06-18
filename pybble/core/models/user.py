@@ -36,6 +36,7 @@ from . import LEN_NAME,LEN_USERNAME,LEN_PERSONNAME,LEN_CRYPTPW
 from ._const import PERM,PERM_NONE,PERM_ADMIN,PERM_READ,PERM_ADD,PERM_name
 from .objtyp import ObjType
 from .site import Site
+from .config import ConfigData
 from .object import Object,ObjectRef
 
 import sys
@@ -120,6 +121,7 @@ class User(PasswordValue,Object):
 	feed_read = db.Column(DateTime, nullable=True)
 
 	site = ObjectRef(Site, doc="The site which the user registered at, otherwise not interesting")
+	config = ObjectRef(ConfigData)
 
 	@classmethod
 	def new_anon_user(cls,site=None, anon_id=None):
@@ -183,6 +185,9 @@ class User(PasswordValue,Object):
 
 		if self.site is None:
 			self.site = current_site
+
+		if self.config is None:
+			self.config = ConfigData.new(parent=self.site.config if self.site else None, name="for "+str(self))
 	
 	def after_insert(self):
 		from .permit import Permission
