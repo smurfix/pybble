@@ -456,7 +456,7 @@ def init_db(app):
 #			db.session.commit()
 #		db.close()
 
-def refresh(obj, force=True):
+def refresh(obj, force=False):
 	"""\
 		Return a current copy of my argument, if that is necessary.
 		"""
