@@ -41,5 +41,5 @@ class AppRunTestCase(ManagerTC,WebTC,WebTestCase):
 		u = User.q.get_by(username="Joe")
 		assert u.password is None
 		self.run_manager("mgr -Dt -s UserTest obj -q update User {} password=blafasel".format(u.id))
-		u = refresh(u)
+		u = refresh(u, force=True)
 		assert ":" in u.password # make sure it's hashed

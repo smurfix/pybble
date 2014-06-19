@@ -456,13 +456,17 @@ def init_db(app):
 #			db.session.commit()
 #		db.close()
 
-def refresh(obj):
+def refresh(obj, force=True):
 	"""\
 		Return a current copy of my argument, if that is necessary.
 		"""
 	i = inspect(obj)
 	if i.expired or (not i.persistent and i.identity and i.identity[0]):
-		obj = i.class_.q.get_by(id=i.identity[0])
+		s = db.session()
+		if s._flushing or force:
+			obj = i.class_.q.get_by(id=i.identity[0])
+		else:
+			obj = s.merge(obj, load=False)
 	return obj
 
 def maybe_stale(fn):

@@ -152,7 +152,7 @@ class ObjectMeta(type(db.Model)):
 						if v.backref:
 							rem['back_populates'] = v.backref
 						if isinstance(v.typ,(int,long)):
-							v.typ = ObjType.q.get(id=v.typ).mod
+							v.typ = ObjType.get(v.typ).mod
 							v.typ_id = v.typ.id
 						elif isinstance(v.typ,string_types):
 							if v.typ == "self":
@@ -225,7 +225,7 @@ class ObjRefComposer(object):
 		if type is None:
 			return object.__new__(cls)
 		from .objtyp import ObjType
-		return ObjType.q.get_by(id=type).mod.qq.get_by(id=id)
+		return ObjType.get(type).mod.qq.get_by(id=id)
 
 class Object(db.Model,Rendered):
 	__metaclass__ = ObjectMeta
@@ -372,7 +372,7 @@ class Object(db.Model,Rendered):
 			cid,id,hash = oid.split(".")
 			cid=int(cid)
 			id=int(id)
-			obj = ObjType.q.get_by(id=cid).mod.q.get_by(id=id)
+			obj = ObjType.get(cid).mod.q.get_by(id=id)
 		except ValueError:
 			pass
 		except NoData:

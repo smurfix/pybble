@@ -66,7 +66,7 @@ def editor(obj=None, parent=None):
 		user = Object.by_oid(form.user.data)
 		dest = Object.by_oid(form.target.data)
 		for_objtyp = int(form.for_objtyp.data)
-		new_objtyp = ObjType.q.get_by(id=form.new_objtyp.data) if form.new_objtyp.data != "-" else None
+		new_objtyp = ObjType.get(int(form.new_objtyp.data)) if form.new_objtyp.data != "-" else None
 		new_mimetyp = MIMEtype.id.get_by(form.new_mimetyp.data) if form.new_mimetyp.data != "-" else None
 		right = int(form.right.data)
 

@@ -23,7 +23,10 @@ from . import LEN_NAME,LEN_DOC
 from ._utils import Loadable
 from .object import Object
 from ..json import json_adapter
-from ..db import db, NoData
+from ..db import db, NoData, refresh
+
+_type_id = {}
+_type_name = {}
 
 class ObjType(Loadable, Object):
 	"""Object registry"""
@@ -80,10 +83,20 @@ class ObjType(Loadable, Object):
 		if isinstance(typ, Object):
 			return typ.type
 		if isinstance(typ, string_types):
-			return cls.q.get_by(name=text_type(typ))
-		if isinstance(typ, (int,long)):
-			return cls.q.get_by(id=typ)
-		raise RuntimeError("No known way to get an object type for "+str(typ))
+			res = _type_name.get(typ,None)
+			if res is not None:
+				return refresh(res)
+			res = cls.q.get_by(name=text_type(typ))
+		elif isinstance(typ, (int,long)):
+			res = _type_id.get(typ,None)
+			if res is not None:
+				return refresh(res)
+			res = cls.q.get_by(id=typ)
+		else:
+			raise RuntimeError("No known way to get an object type for "+str(typ))
+		_type_id[res.id] = res
+		_type_name[res.name] = res
+		return res
 
 	def get_obj(self, id):
 		return self.mod.q.get_by(id=id)
@@ -100,5 +113,5 @@ class _serialize_objtype(object):
 		
 	@staticmethod
 	def decode(t,s=None,**_):
-		return ObjType.q.get_by(id=t)
+		return ObjType.get(t)
 
