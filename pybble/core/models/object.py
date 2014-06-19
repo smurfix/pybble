@@ -75,7 +75,7 @@ class _serialize_object(object):
 
 	@staticmethod
 	def encode(obj):
-		res = {"t":(obj.type.id,obj.id), "s":str(obj)}
+		res = {"t":(obj.type_id,obj.id), "s":str(obj)}
 		return res
 
 	@staticmethod
@@ -222,6 +222,19 @@ class get_type(object):
 			return refresh(t)
 get_type = get_type()
 
+class get_type_id(object):
+	"""Optimized get_type.id"""
+	_type = {}
+	def __get__(self, obj, cls):
+		if obj:
+			cls = obj.__class__
+		t = self._type.get(id(cls),None)
+		if t is None:
+			from .objtyp import ObjType
+			self._type[id(cls)] = t = ObjType.get(cls)
+		return t.id
+get_type_id = get_type_id()
+
 class ObjRefComposer(object):
 	def __new__(cls,type=None,id=None):
 		if type is None:
@@ -269,7 +282,7 @@ class Object(db.Model,Rendered):
 			fs.set(f,parent)
 
 	def __composite_values__(self):
-		return self.type.id, self.id
+		return self.type_id, self.id
 	def __init__(self, type=None,id=None):
 		if type is not None:
 			assert self.type==type
@@ -277,6 +290,7 @@ class Object(db.Model,Rendered):
 			assert self.id==id
 
 	type = get_type
+	type_id = get_type_id
 
 	@hybridmethod
 	def fieldset(obj, parent=None):
@@ -355,9 +369,9 @@ class Object(db.Model,Rendered):
 			"""
 		if self.id is None:
 			db.session.flush()
-		return "%d.%d.%s" % (self.type.id,
+		return "%d.%d.%s" % (self.type_id,
 		                     self.id, 
-		                     urlsafe_b64encode(md5(str(self.type.id) +'.'+ str(self.id) + current_app.config['SECRET_KEY'])\
+		                     urlsafe_b64encode(md5(str(self.type_id) +'.'+ str(self.id) + current_app.config['SECRET_KEY'])\
 		                                          .digest()).strip('\n =')[:10])
 
 	def _dump_attrs(self):

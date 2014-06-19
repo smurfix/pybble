@@ -17,7 +17,7 @@
 	{% endif %}
 {% endfor %}
 {% for cls,k,count in sub %}
-	<li rel="{{obj.oid}}/{{cls.type.id}}/{{k}}" class="directory collapsed td_{{cls.name}}">
+	<li rel="{{obj.oid}}/{{cls.type_id}}/{{k}}" class="directory collapsed td_{{cls.name}}">
 		<span class="image" />
 	    <a href="#nogo">{{ cls.type.name }}.{{k}} ({% if count > 1 %}{{count}} items{% else %}1 item{%endif%})</a>
 	</li>

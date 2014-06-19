@@ -287,7 +287,7 @@ class SiteBlueprint(Object):
 	_alias = {'parent':'site'}
 
 	site = ObjectRef(Site)
-	blueprint = ObjectRef(Blueprint)
+	blueprint = ObjectRef(Blueprint, lazy="joined")
 	config = ObjectRef(ConfigData, lazy="joined")
 
 	@hybridmethod

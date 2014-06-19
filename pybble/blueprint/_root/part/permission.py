@@ -104,7 +104,7 @@ def editor(obj=None, parent=None):
 			form.target.data = parent.oid
 			form.user.data = request.user.oid
 			form.right.data = str(PERM_NONE)
-			form.for_objtyp.data = str(parent.type.id)
+			form.for_objtyp.data = str(parent.type_id)
 			form.new_objtyp.data = "-"
 			form.new_mimetyp.data = "-"
 			form.inherit.data = "*"
