@@ -101,7 +101,7 @@ class RESTend(object):
 	def list(self,objtyp=None):
 
 		res = []
-		for obj in ObjType.get(objtyp).mod.q.all():
+		for obj in ObjType.get_mod(objtyp).q.all():
 			if self.json:
 				obj = obj.as_dict
 			res.append(obj)

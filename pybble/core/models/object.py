@@ -44,11 +44,13 @@ from sqlalchemy.inspection import inspect
 from ..forms import FieldSet
 
 from ...compat import py2_unicode
+from ...cache import delete as delete_cache
 from ..utils import hybridmethod
 from ..json import json_adapter
 from ..signal import ObjSignal
 
 from ..db import db, NoData,NoDataExc, maybe_stale, no_autoflush, refresh, setup_events, Dumpable
+from ...cache.query import FromCache
 from ._const import PERM_ADD,PERM_READ,PERM_ADMIN
 from ._render import Rendered
 
@@ -152,7 +154,7 @@ class ObjectMeta(type(db.Model)):
 						if v.backref:
 							rem['back_populates'] = v.backref
 						if isinstance(v.typ,(int,long)):
-							v.typ = ObjType.get(v.typ).mod
+							v.typ = ObjType.get_mod(v.typ)
 							v.typ_id = v.typ.id
 						elif isinstance(v.typ,string_types):
 							if v.typ == "self":
@@ -225,7 +227,7 @@ class ObjRefComposer(object):
 		if type is None:
 			return object.__new__(cls)
 		from .objtyp import ObjType
-		return ObjType.get(type).mod.qq.get_by(id=id)
+		return ObjType.get_mod(type).qq.options(FromCache(cache_key='DB_{}_{}'.format(type,id))).get_by(id=id)
 
 class Object(db.Model,Rendered):
 	__metaclass__ = ObjectMeta
@@ -372,7 +374,7 @@ class Object(db.Model,Rendered):
 			cid,id,hash = oid.split(".")
 			cid=int(cid)
 			id=int(id)
-			obj = ObjType.get(cid).mod.q.get_by(id=id)
+			obj = ObjType.get_mod(cid).q.get_by(id=id)
 		except ValueError:
 			pass
 		except NoData:
@@ -423,7 +425,7 @@ class Object(db.Model,Rendered):
 		if is_undefined(typ):
 			from sqlalchemy.sql import false
 			return ObjType.q.filter(false())
-		return ObjType.get(typ).mod.q.filter_by(parent=self)
+		return ObjType.get_mod(typ).q.filter_by(parent=self)
 
 	@property
 	def memberships(self):
@@ -474,7 +476,7 @@ class Object(db.Model,Rendered):
 		from .objtyp import ObjType
 
 		if typ is not None and (not isinstance(typ,type) or not issubclass(typ,Object)):
-			typ = ObjType.get(objtyp).mod
+			typ = ObjType.get_mod(objtyp)
 
 		for t,k in chain(_refs,self._refs):
 			if typ is not None and typ is not t:
@@ -540,6 +542,11 @@ class Object(db.Model,Rendered):
 			return str(self)
 		except Exception as err:
 			return '<%s:%s ?? %s>' % (self.__class__.__name__, self.id, str(err))
+
+	def after_update(self):
+		"""Clear cache"""
+		delete_cache('DB_{}_{}'.format(self.type_id,self.id))
+		super(Object, self).after_update()
 
 	@property
 	def as_str(self):

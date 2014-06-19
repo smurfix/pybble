@@ -49,7 +49,7 @@ def render_subpage(ctx,obj, detail=TM_DETAIL_SUBPAGE, to_typ="html"):
 	ctx["detail"] = detail
 
 	#if objtyp is not None:
-	#	ctx["sub"] = ObjType.get(objtyp).mod.q.fiter_by(parent=obj).count()
+	#	ctx["sub"] = ObjType.get_mod(objtyp).q.fiter_by(parent=obj).count()
 	return render_my_template(**ctx)
 
 @contextfunction

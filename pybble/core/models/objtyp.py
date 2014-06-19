@@ -27,6 +27,8 @@ from ..db import db, NoData, refresh
 
 _type_id = {}
 _type_name = {}
+_typemod_id = {}
+_typemod_name = {}
 
 class ObjType(Loadable, Object):
 	"""Object registry"""
@@ -81,7 +83,7 @@ class ObjType(Loadable, Object):
 		if isinstance(typ, cls):
 			return typ
 		if isinstance(typ, Object):
-			return typ.type
+			typ = typ.type_id
 		if isinstance(typ, string_types):
 			res = _type_name.get(typ,None)
 			if res is not None:
@@ -96,8 +98,31 @@ class ObjType(Loadable, Object):
 			raise RuntimeError("No known way to get an object type for "+str(typ))
 		_type_id[res.id] = res
 		_type_name[res.name] = res
+		_typemod_id[res.id] = res.mod
+		_typemod_name[res.name] = res.mod
 		return res
 
+	@classmethod
+	def get_mod(cls, typ):
+		"Optimization"
+		if isinstance(typ, string_types):
+			res = _typemod_name.get(typ,None)
+			if res is not None:
+				return res
+			res = cls.q.get_by(name=text_type(typ))
+		elif isinstance(typ, (int,long)):
+			res = _typemod_id.get(typ,None)
+			if res is not None:
+				return res
+			res = cls.q.get_by(id=typ)
+		else:
+			raise RuntimeError("No known way to get an object type for "+str(typ))
+		_type_id[res.id] = res
+		_type_name[res.name] = res
+		_typemod_id[res.id] = res.mod
+		_typemod_name[res.name] = res.mod
+		return res.mod
+		
 	def get_obj(self, id):
 		return self.mod.q.get_by(id=id)
 
