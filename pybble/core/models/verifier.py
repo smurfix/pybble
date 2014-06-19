@@ -43,7 +43,7 @@ class VerifierBase(Loadable, Object):
 	name = db.Column(Unicode(LEN_NAME), unique=True, nullable=False)
 	doc = db.Column(Unicode(LEN_DOC), nullable=True)
 
-	config = ObjectRef(ConfigData)
+	config = ObjectRef(ConfigData, lazy="joined")
 
 	def setup(self,name,doc=None,**kw):
 		self.name = name

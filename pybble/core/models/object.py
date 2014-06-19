@@ -148,7 +148,7 @@ class ObjectMeta(type(db.Model)):
 						_refs.append((cls,k))
 						cls.__table_args__.append(Index("i_%s_%s"%(name,k),col_typ,col_id))
 					else: ## specific table
-						rem = {}
+						rem = {'lazy': v.lazy}
 						if v.backref:
 							rem['back_populates'] = v.backref
 						if isinstance(v.typ,(int,long)):
@@ -549,11 +549,12 @@ class Object(db.Model,Rendered):
 			return None
 
 class ObjectRef(object):
-	def __init__(self, typ=None,backref=None, nullable=False, doc=None, declared_attr=False, unique=False):
+	def __init__(self, typ=None,backref=None, nullable=False, doc=None, declared_attr=False, unique=False, lazy=True):
 		self.typ = typ
 		self.backref = backref
 		self.nullable = nullable
 		self.unique = unique
 		self.doc = doc
+		self.lazy = lazy
 		self.declared_attr = declared_attr
 

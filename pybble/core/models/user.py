@@ -121,7 +121,7 @@ class User(PasswordValue,Object):
 	feed_read = db.Column(DateTime, nullable=True)
 
 	site = ObjectRef(Site, doc="The site which the user registered at, otherwise not interesting")
-	config = ObjectRef(ConfigData)
+	config = ObjectRef(ConfigData, lazy="joined")
 
 	@classmethod
 	def new_anon_user(cls,site=None, anon_id=None):

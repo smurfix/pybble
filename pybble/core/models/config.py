@@ -224,7 +224,7 @@ class SiteConfigVar(Object, JsonValue):
 	"""This is one configuration variable's value for a site (or some other object, in fact)."""
 
 	var = ObjectRef(ConfigVar)
-	parent = ObjectRef(ConfigData)
+	parent = ObjectRef(ConfigData, lazy="joined")
 
 	@classmethod
 	def __declare_last__(cls):

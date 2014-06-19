@@ -51,7 +51,7 @@ class App(Module):
 	## Part of the object system so that it can be access-controlled if necessary.
 	__tablename__ = "apps"
 
-	config = ObjectRef(ConfigData)
+	config = ObjectRef(ConfigData, lazy="joined")
 
 	@property
 	def parent(self):
@@ -64,7 +64,7 @@ class Blueprint(Module):
 	## Part of the object system so that it can be access-controlled if necessary.
 	__tablename__ = "blueprints"
 
-	config = ObjectRef(ConfigData)
+	config = ObjectRef(ConfigData, lazy="joined")
 
 	@property
 	def parent(self):
@@ -99,7 +99,7 @@ class Site(Object):
 		super(Site,cls).__declare_last__()
 
 	parent = ObjectRef("self","sub_sites", nullable=True)
-	config = ObjectRef(ConfigData)
+	config = ObjectRef(ConfigData, lazy="joined")
 	app = ObjectRef(App)
 
 	inherit_parent = db.Column(Boolean, nullable=False, server_default='FALSE', default=False, doc="Inherit blueprints etc. from parent")
@@ -288,7 +288,7 @@ class SiteBlueprint(Object):
 
 	site = ObjectRef(Site)
 	blueprint = ObjectRef(Blueprint)
-	config = ObjectRef(ConfigData)
+	config = ObjectRef(ConfigData, lazy="joined")
 
 	@hybridmethod
 	def form_mod(self,fs,parent=None):
