@@ -132,7 +132,7 @@ class Environment(BaseEnvironment):
 			except ValueError:
 				return Object.by_oid(id).name
 			else:
-				return ObjType.q.get_by(id=id)
+				return ObjType.get(id)
 		self.globals['name_objtyp'] = name_objtyp
 
 		def name_detail(id):
