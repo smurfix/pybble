@@ -118,7 +118,7 @@ class DumpCache(Command):
 		pprint(d)
 
 class CacheManager(Manager):
-	"""Manage web domains (a 'site') and their primary content (the 'app')."""
+	"""Display the contents of the Redis cache"""
 	def __init__(self):
 		super(CacheManager,self).__init__()
 		self.add_command("dump", DumpCache())
