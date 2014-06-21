@@ -283,7 +283,7 @@ def create_app(app=None, config=None, site=ROOT_SITE_NAME, testing=False):
 		elif not isinstance(site,Site):
 			if site == ROOT_SITE_NAME:
 				try:
-					site = Site.q.get(Site.parent==None)
+					site = Site.q.cached("SITE",ROOT_SITE_NAME,0).get(Site.parent==None)
 				except NoData:
 					raise RuntimeError("I cannot find your root site!")
 				except ManyData:
