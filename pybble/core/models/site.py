@@ -101,7 +101,7 @@ class Site(Object):
 
 	parent = ObjectRef("self","sub_sites", nullable=True)
 	config = ObjectRef(ConfigData, lazy="joined")
-	app = ObjectRef(App)
+	app = ObjectRef(App, lazy="joined")
 
 	inherit_parent = db.Column(Boolean, nullable=False, server_default='FALSE', default=False, doc="Inherit blueprints etc. from parent")
 	domain = db.Column(Unicode(LEN_DOMAIN), nullable=False, unique=True)
