@@ -39,7 +39,7 @@ def configure(app):
         return
 
     from dogpile.cache.region import make_region
-    regions['default'] = make_region( key_mangler=md5_key_mangler if not app.testing else str
+    regions['default'] = make_region( key_mangler=str # md5_key_mangler if not app.testing else str
         ).configure(
             'dogpile.cache.redis',
             expiration_time=app.config['CACHE_EXPIRES'],
