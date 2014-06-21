@@ -23,6 +23,7 @@ def keystr(args):
 ## TODO: add keyword-only region param
 
 def delete(*args):
+	"""Delete a cache value (or a bunch of them)."""
 	global regions
 	if regions is None:
 		from .config import regions
@@ -42,6 +43,7 @@ def delete(*args):
 	return n
 
 def get(*args):
+	"""Get a cache value, or NO_VALUE if not set."""
 	global regions
 	if regions is None:
 		from .config import regions
@@ -52,6 +54,7 @@ def get(*args):
 	return r.get(keystr(args))
 
 def set(val, *args):
+	"""Set a cache value. You really should use cached() instead."""
 	global regions
 	if regions is None:
 		from .config import regions
@@ -61,6 +64,7 @@ def set(val, *args):
 	r.set(keystr(args),val)
 
 def cached(func, *args):
+	"""Cache this function's result. Runs the function exactly once."""
 	global regions
 	if regions is None:
 		from .config import regions
