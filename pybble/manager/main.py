@@ -163,6 +163,7 @@ class RootManager(Manager):
 		coremanager.add_command("schema",SchemaCommand())
 		coremanager.add_command("migrate",MigrateCommand)
 		coremanager.add_command("test",TestCommand)
+		coremanager.add_command("cache",CacheManager())
 		coremanager.shell(make_shell_context)
 
 		self.add_command("site",SiteManager())
@@ -172,7 +173,6 @@ class RootManager(Manager):
 		self.add_command("run",SubdomainServer())
 		self.add_command("core",coremanager)
 		self.add_command("user",UserManager())
-		self.add_command("cache",CacheManager())
 
 	def __call__(self, app=None, pdb=False, dump=False, **kw):
 		self._pdb = pdb
