@@ -16,6 +16,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from datetime import datetime,timedelta
 import logging
 
+from sqlalchemy import event
 from sqlalchemy.orm import relationship,backref
 
 from werkzeug.utils import cached_property
