@@ -41,6 +41,7 @@ from flask.ext.sqlalchemy import SQLAlchemy as BaseSQLAlchemy, BaseQuery, _Bound
 from . import json
 from . import config
 from .models import LEN_JSON
+from ..cache import keystr
 from ..cache.query import FromCache,CachingQuery
 from ..cache import config as cache
 
@@ -186,6 +187,9 @@ class Query(CachingQuery):
 			raise ManyDataExc(self)
 		else:
 			return  res
+
+	def cached(self, *key):
+		return self.options(FromCache(cache_key=keystr(key)))
 
 class JSON(TypeDecorator):
 	"""Represents any Python object as a json-encoded string.
