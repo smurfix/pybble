@@ -138,7 +138,7 @@ class ClearCache(Command):
 		else:
 			import dbm
 			r = dbm.open(db,'r')
-		n = delete(key)
+		n = delete(*key)
 		if not n:
 			print("Key not found")
 		elif n == 1:
