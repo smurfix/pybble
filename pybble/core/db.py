@@ -135,7 +135,6 @@ class SQLAlchemy(BaseSQLAlchemy):
 		options.setdefault('pool_recycle',255)
 		if config.TRACE:
 			options.setdefault('echo',True)
-			options.setdefault('poolclass',AssertionPool)
 		super(SQLAlchemy,self).apply_driver_hacks(app,info,options)
 
 	def create_scoped_session(self, options=None):
