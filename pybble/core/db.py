@@ -369,14 +369,13 @@ class BaseModel(Dumpable):
 	def __getstate__(self):
 		"""\
 			Returns the state which should be included in a pickle. Used for caching.
-			Basically, use everything but relationships.
+			Basically, use everything but lazy-loaded relationships.
 			"""
 		res = {}
 		i = inspect(self)
 		for p in i.mapper.iterate_properties:
-			if not isinstance(p, ColumnProperty):
-				continue
-			res[p.key] = getattr(self,p.key)
+			if p.is_property and getattr(p,'lazy',False) in (False,'joined'):
+				res[p.key] = getattr(self,p.key)
 		res['_sa_instance_state'] = self._sa_instance_state
 		return res
 		
