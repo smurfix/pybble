@@ -231,6 +231,9 @@ class get_type_id(object):
 		if t is None:
 			from .objtyp import ObjType
 			self._type[id(cls)] = t = ObjType.get(cls)
+		k = inspect(t).key
+		if k is None:
+			raise NoDataExc("ObjType for {}".format(cls))
 		return inspect(t).key[1][0]
 get_type_id = get_type_id()
 
@@ -555,6 +558,13 @@ class Object(db.Model,Rendered):
 			return str(self)
 		except Exception as err:
 			return '<%s:%s ?? %s>' % (self.__class__.__name__, self.id, str(err))
+
+	def before_insert(self):
+		"""Create the type"""
+		from .objtyp import ObjType
+		ObjType.get(self)
+
+		super(Object,self).before_insert()
 
 	def after_update(self):
 		"""Clear cache"""

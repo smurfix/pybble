@@ -15,6 +15,8 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 # This module describes the basic object type table.
 
+import logging
+
 from sqlalchemy import Unicode,Integer
 
 from flask._compat import string_types,text_type
@@ -25,10 +27,22 @@ from .object import Object
 from ..json import json_adapter
 from ..db import db, NoData, refresh
 
+logger = logging.getLogger('pybble.core.models.objtyp')
+
 _type_id = {}
 _type_name = {}
+_type_path = {}
 _typemod_id = {}
 _typemod_name = {}
+_typemod_path = {}
+
+def _add_cache(res):
+	_type_id[res.id] = res
+	_type_name[res.name] = res
+	_type_path[res.path] = res
+	_typemod_id[res.id] = res.mod
+	_typemod_name[res.name] = res.mod
+	_typemod_path[res.path] = res.mod
 
 class ObjType(Loadable, Object):
 	"""Object registry"""
@@ -68,22 +82,26 @@ class ObjType(Loadable, Object):
 
 		if hasattr(typ,'_get_current_object'): # Flask localproxy
 			typ = typ._get_current_object()
+		if isinstance(typ, Object):
+			typ = typ.__class__
 		if isinstance(typ,type) and issubclass(typ, Object):
 			path = typ.__module__+'.'+typ.__name__
+			res = _type_path.get(path)
+			if res is not None:
+				return refresh(res)
 			try:
 				return cls.q.get_by(path=path)
 			except NoData:
 				from .types import MIMEtype
 				res = cls.new(path=path,name=path)
-				mime = MIMEtype.get("pybble",typ.__name__.lower(),add=res)
+				_add_cache(res)
+				MIMEtype.get("pybble",typ.__name__.lower(),add=res)
 				return res
 		if isinstance(typ, string_types):
 			try: typ = int(typ)
 			except ValueError: pass
 		if isinstance(typ, cls):
 			return typ
-		if isinstance(typ, Object):
-			typ = typ.type_id
 		if isinstance(typ, string_types):
 			res = _type_name.get(typ,None)
 			if res is not None:
@@ -96,10 +114,7 @@ class ObjType(Loadable, Object):
 			res = cls.q.get_by(id=typ)
 		else:
 			raise RuntimeError("No known way to get an object type for "+str(typ))
-		_type_id[res.id] = res
-		_type_name[res.name] = res
-		_typemod_id[res.id] = res.mod
-		_typemod_name[res.name] = res.mod
+		_add_cache(res)
 		return res
 
 	@classmethod
@@ -117,10 +132,7 @@ class ObjType(Loadable, Object):
 			res = cls.q.get_by(id=typ)
 		else:
 			raise RuntimeError("No known way to get an object type for "+str(typ))
-		_type_id[res.id] = res
-		_type_name[res.name] = res
-		_typemod_id[res.id] = res.mod
-		_typemod_name[res.name] = res.mod
+		_add_cache(res)
 		return res.mod
 		
 	def get_obj(self, id):
