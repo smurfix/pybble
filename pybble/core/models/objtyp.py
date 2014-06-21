@@ -82,6 +82,8 @@ class ObjType(Loadable, Object):
 
 		if hasattr(typ,'_get_current_object'): # Flask localproxy
 			typ = typ._get_current_object()
+		if isinstance(typ, ObjType):
+			return typ
 		if isinstance(typ, Object):
 			typ = typ.__class__
 		if isinstance(typ,type) and issubclass(typ, Object):
