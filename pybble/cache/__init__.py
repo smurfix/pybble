@@ -31,11 +31,15 @@ def delete(*args):
 
 	# TODO: this only works with redis
 	r = regions['default'].backend.client
+	n = 0
 	if "*" in args:
 		for k in r.keys(keystr(args)):
 			r.delete(k)
+			n += 1
 	else:
 		r.delete(keystr(args))
+		n = 1
+	return n
 
 def get(*args):
 	global regions

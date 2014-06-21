@@ -3,7 +3,7 @@
 # This is a small utility to dump pickled state from redis.
 
 from pickle import Unpickler
-from pybble.cache import config
+from pybble.cache import config, keystr, delete
 from pybble.core.json import encode,json_adapter
 from json.decoder import JSONDecoder
 from pprint import pprint
@@ -94,9 +94,10 @@ class DumpCache(Command):
 	def __init__(self):
 		super(DumpCache,self).__init__()
 		self.add_option(Option("--db", dest="db", action="store", required=False, help="use this DB file"))
-		self.add_option(Option("key", nargs='?', action="store",help="The key to emit"))
+		self.add_option(Option("-r","--raw", dest="raw", action="store_true", required=False, help="Emit the raw data"))
+		self.add_option(Option("key", nargs='*', action="store",help="The key to dump"))
 
-	def run(self, args=(), db=None,key=None, help=False):
+	def run(self, args=(), db=None,key=None, help=False,raw=False):
 		if help:
 			self.parser.print_help()
 			sys.exit(not help)
@@ -105,23 +106,52 @@ class DumpCache(Command):
 		else:
 			import dbm
 			r = dbm.open(db,'r')
-		if key is None:
+		if not key:
 			for k in r.keys() if db else r.keys('*'):
-				print(k)
+				print(k.replace('|',' '))
 			return
-		v = r.get(key)
-		print(len(v),repr(v))
-		v = BytesIO(v)
-		d = DummyUnpickler(v)
-		d = d.load()
-		d = JSONDecoder().decode(encode(d))
-		pprint(d)
+		v = r.get(keystr(key))
+		if raw:
+			print(repr(v))
+		else:
+			v = BytesIO(v)
+			d = DummyUnpickler(v)
+			d = d.load()
+			d = JSONDecoder().decode(encode(d))
+			pprint(d)
+
+class ClearCache(Command):
+	"""Clear a key (or many) from the cache"""
+	add_help = False
+
+	def __init__(self):
+		super(ClearCache,self).__init__()
+		self.add_option(Option("--db", dest="db", action="store", required=False, help="use this DB file"))
+		self.add_option(Option("key", nargs='*', action="store",help="The key to erase"))
+
+	def run(self, args=(), db=None,key=None, help=False):
+		if help or not key:
+			self.parser.print_help()
+			sys.exit(not help)
+		if db is None:
+			r = config.regions['default'].backend.client
+		else:
+			import dbm
+			r = dbm.open(db,'r')
+		n = delete(key)
+		if not n:
+			print("Key not found")
+		elif n == 1:
+			print("Entry deleted")
+		else:
+			print("{} entries deleted".format(n))
 
 class CacheManager(Manager):
 	"""Display the contents of the Redis cache"""
 	def __init__(self):
 		super(CacheManager,self).__init__()
 		self.add_command("dump", DumpCache())
+		self.add_command("del", ClearCache())
 
 	def create_app(self, app):
 		return app
