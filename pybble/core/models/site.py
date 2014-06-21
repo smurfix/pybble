@@ -25,6 +25,7 @@ from flask._compat import string_types,text_type
 
 from ... import ROOT_SITE_NAME,ANON_USER_NAME,ROOT_USER_NAME
 from ...globals import root_site
+from ...cache import delete as delete_cache
 from .. import config
 from ..db import db, NoData, maybe_stale, no_update,check_unique
 from ..utils import hybridmethod
@@ -240,6 +241,7 @@ class Site(Object):
 				Permission.new(user=dst, target=p.target, for_objtyp=p.for_objtyp, inherit=p.inherit, right=p.right, new_objtyp=p.new_objtyp,new_mimetyp=p.new_mimetyp)
 
 	def after_update(self):
+		delete_cache('SITE',self.name, self.parent_id or 0)
 		super(Site,self).after_update()
 		self.signal.connect(self.config_changed, ConfigChanged)
 
@@ -248,7 +250,7 @@ class Site(Object):
 		"""Return an anonymous user for this site."""
 		from .user import User
 		if anon_id is None:
-			return User.q.get_by(username=ANON_USER_NAME, site=self)
+			return User.q.cached('USER',ANON_USER_NAME,self.id).get_by(username=ANON_USER_NAME, site=self)
 		else:
 			## create/recycle a new anon user.
 			return User.new_anon_user(site=self, anon_id=anon_id)

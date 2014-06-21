@@ -163,16 +163,16 @@ class BaseApp(WrapperApp,Flask):
 		if current_app.config.TESTING:
 			request.user = User.q.get_by(username=ROOT_USER_NAME)
 		elif 'user' in session:
-			request.user = User.q.get_by(id=session.user)
+			request.user = User.q.cached('DB',User.type_id,session.user).get_by(id=session.user)
 		elif FROM_SCRIPT:
 			try:
-				root = Site.q.get_by(name=ROOT_SITE_NAME)
+				root = Site.q.cached('SITE',ROOT_SITE_NAME,0).get_by(name=ROOT_SITE_NAME)
 			except NoData:
 				logger.warn("No root site was found.")
 				request.user = None
 			else:
 				try:
-					request.user = User.q.get(User.site == root, User.username==ROOT_USER_NAME)
+					request.user = User.q.cached('USER',ROOT_USER_NAME,root.id).get(User.site == root, User.username==ROOT_USER_NAME)
 				except NoData:
 					logger.warn("No root user was found.")
 					request.user = None

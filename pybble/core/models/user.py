@@ -30,6 +30,7 @@ from sqlalchemy.types import TypeDecorator, VARCHAR
 from ... import ANON_USER_NAME
 from ...utils import random_string, AuthError
 from ...core import config
+from ...cache import delete as delete_cache
 from ..db import db, NoData,NoDataExc, check_unique,no_update
 from ...globals import current_site
 from . import LEN_NAME,LEN_USERNAME,LEN_PERSONNAME,LEN_CRYPTPW
@@ -205,7 +206,14 @@ class User(PasswordValue,Object):
 		if self.username != ANON_USER_NAME:
 			# you can look at your own user record
 			Permission.new(self,self, right=PERM_READ, inherit=False)
+
+		super(User,self).after_insert()
 	
+	def after_update(self):
+		delete_cache('USER',self.name,self.site.id)
+		delete_cache('USER',self.id)
+		super(User,self).after_update()
+
 	@property
 	def tracks(self):
 		return Tracker.q.filter_by(owner=self).order_by(Desc(Tracker.timestamp))
