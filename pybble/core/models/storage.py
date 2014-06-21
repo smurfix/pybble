@@ -15,7 +15,6 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, DateTime, Boolean
 from sqlalchemy.orm import relationship,backref
 
 from ...globals import current_site
@@ -35,10 +34,10 @@ class Storage(Object):
 	"""A box for binary data files"""
 
 	site = ObjectRef(Site)
-	name = db.Column(Unicode(LEN_NAME), nullable=False)
-	path = db.Column(Unicode(LEN_PATH), nullable=False)
-	url = db.Column(Unicode(200), nullable=False)
-	default = db.Column(Boolean, default=False, nullable=False)
+	name = db.Column(db.Unicode(LEN_NAME), nullable=False)
+	path = db.Column(db.Unicode(LEN_PATH), nullable=False)
+	url = db.Column(db.Unicode(200), nullable=False)
+	default = db.Column(db.Boolean, default=False, nullable=False)
 
 	@classmethod
 	def __declare_last__(cls):

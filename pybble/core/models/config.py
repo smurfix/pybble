@@ -34,7 +34,6 @@ from ... import cache
 
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, DateTime, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship,backref
 
 logger = logging.getLogger('pybble.core.models.config')
@@ -57,8 +56,8 @@ class ConfigVar(Object, JsonValue):
 		super(ConfigVar,cls).__declare_last__()
 
 	parent = ObjectRef()
-	name = db.Column(Unicode(LEN_NAME), index=True)
-	doc = db.Column(Unicode(LEN_DOC))
+	name = db.Column(db.Unicode(LEN_NAME), index=True)
+	doc = db.Column(db.Unicode(LEN_DOC))
 
 	def setup(self, parent, name,value, doc=None):
 		self.parent = parent
@@ -90,7 +89,7 @@ class ConfigData(Object):
 	"""This is a collection of configuration variables, referred to by some object or other"""
 
 	super = ObjectRef("self", nullable=True, doc="inherited configuration")
-	name = db.Column(Unicode(LEN_NAME), index=True, doc="informal name for this collection")
+	name = db.Column(db.Unicode(LEN_NAME), index=True, doc="informal name for this collection")
 
 	@property
 	@maybe_stale

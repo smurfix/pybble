@@ -16,7 +16,6 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from datetime import datetime
 import logging
 
-from sqlalchemy import Integer, Unicode, ForeignKey, DateTime
 from sqlalchemy.orm import relationship,backref
 from sqlalchemy import event
 
@@ -54,10 +53,10 @@ class BinData(Object):
 	storage = ObjectRef(Storage, lazy="joined")
 	mime = ObjectRef(MIMEtype, lazy="joined")
 
-	name = db.Column(Unicode(LEN_NAME), nullable=False)
-	hash = db.Column(Unicode(33), nullable=True, unique=True) ## NULL if deleted
-	timestamp = db.Column(DateTime,default=datetime.utcnow)
-	size = db.Column(Integer)
+	name = db.Column(db.Unicode(LEN_NAME), nullable=False)
+	hash = db.Column(db.Unicode(33), nullable=True, unique=True) ## NULL if deleted
+	timestamp = db.Column(db.DateTime,default=datetime.utcnow)
+	size = db.Column(db.Integer)
 
 	@property
 	def parent(self):
@@ -202,8 +201,8 @@ class StaticFile(Object):
 	parent = ObjectRef(doc="wherever this has been uploaded into")
 	site = ObjectRef(Site)
 
-	path = db.Column(Unicode(LEN_PATH), nullable=False)
-	modified = db.Column(DateTime,default=datetime.utcnow)
+	path = db.Column(db.Unicode(LEN_PATH), nullable=False)
+	modified = db.Column(db.DateTime,default=datetime.utcnow)
 
 	def setup(self, path, bin, parent=None, site=None, **kw):
 		self.path = path

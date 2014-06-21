@@ -36,7 +36,7 @@ from datetime import datetime,timedelta
 from functools import update_wrapper
 from itertools import chain
 
-from sqlalchemy import Integer, Unicode, ForeignKey, event, Index
+from sqlalchemy import event, Index
 from sqlalchemy.orm import backref,composite, mapper
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.inspection import inspect
@@ -109,7 +109,7 @@ class ObjectMeta(type(db.Model)):
 		if "id" not in dct:
 			# the inherited class already has an 'id' column, but that ends
 			# up being ambiguous and thus won't work
-			dct['id'] = cls.id = db.Column(Integer, primary_key=True)
+			dct['id'] = cls.id = db.Column(db.Integer, primary_key=True)
 		cls._refs = []
 		cls.__table_args__ = list(dct.get('__table_args__',[])) # collect indices for foreign-key tables here
 
@@ -135,11 +135,11 @@ class ObjectMeta(type(db.Model)):
 
 						## Create a new composite.
 						if v.declared_attr:
-							col_typ = declared_attr((lambda k,v: lambda cls: Column(k+'_typ_id',Integer, ForeignKey(ObjType.id),nullable=v.nullable, doc=v.doc, unique=v.unique))(k,v))
-							col_id = declared_attr((lambda k,v: lambda cls: Column(k+'_id',Integer, nullable=v.nullable))(k,v))
+							col_typ = declared_attr((lambda k,v: lambda cls: Column(k+'_typ_id',db.Integer, db.ForeignKey(ObjType.id),nullable=v.nullable, doc=v.doc, unique=v.unique))(k,v))
+							col_id = declared_attr((lambda k,v: lambda cls: Column(k+'_id',db.Integer, nullable=v.nullable))(k,v))
 						else:
-							col_typ = db.Column(k+'_typ_id',Integer, ForeignKey(ObjType.id),nullable=v.nullable, doc=v.doc, unique=v.unique)
-							col_id = db.Column(k+'_id',Integer, nullable=v.nullable)
+							col_typ = db.Column(k+'_typ_id',db.Integer, db.ForeignKey(ObjType.id),nullable=v.nullable, doc=v.doc, unique=v.unique)
+							col_id = db.Column(k+'_id',db.Integer, nullable=v.nullable)
 						setattr(cls,k+"_typ_id", col_typ)
 						setattr(cls,k+"_id", col_id)
 						if v.declared_attr:
@@ -157,7 +157,7 @@ class ObjectMeta(type(db.Model)):
 							v.typ_id = v.typ.id
 						elif isinstance(v.typ,string_types):
 							if v.typ == "self":
-								col_typ = db.Column(k+'_id',Integer, ForeignKey(cls.__tablename__+'.id'),nullable=v.nullable, doc=v.doc, unique=v.unique)
+								col_typ = db.Column(k+'_id',db.Integer, db.ForeignKey(cls.__tablename__+'.id'),nullable=v.nullable, doc=v.doc, unique=v.unique)
 								col_ref = db.relationship(cls, remote_side=[cls.id], foreign_keys=(col_typ,), **rem)
 								setattr(cls,k+"_id", col_typ)
 								setattr(cls,k, col_ref)
@@ -173,10 +173,10 @@ class ObjectMeta(type(db.Model)):
 							v.typ_id = v.typ.id
 							rem['remote_side'] = v.typ.__name__+'.id'
 						if v.declared_attr:
-							col_typ = declared_attr((lambda k,v: lambda cls: Column(k+'_id',Integer, ForeignKey(v.typ_id),nullable=v.nullable, doc=v.doc, unique=v.unique))(k,v))
+							col_typ = declared_attr((lambda k,v: lambda cls: Column(k+'_id',db.Integer, db.ForeignKey(v.typ_id),nullable=v.nullable, doc=v.doc, unique=v.unique))(k,v))
 							col_ref = declared_attr((lambda k,v,r: lambda cls: db.relationship(v.typ, primaryjoin = col_typ==v.typ_id, **r))(k,v,rem))
 						else:
-							col_typ = db.Column(k+'_id',Integer, ForeignKey(v.typ_id),nullable=v.nullable, doc=v.doc, unique=v.unique)
+							col_typ = db.Column(k+'_id',db.Integer, db.ForeignKey(v.typ_id),nullable=v.nullable, doc=v.doc, unique=v.unique)
 							col_ref = db.relationship(v.typ, primaryjoin = col_typ==v.typ_id, **rem)
 						setattr(cls,k+"_id", col_typ)
 						setattr(cls,k, col_ref)

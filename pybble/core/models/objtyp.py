@@ -17,8 +17,6 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 import logging
 
-from sqlalchemy import Unicode,Integer
-
 from flask._compat import string_types,text_type
 
 from . import LEN_NAME,LEN_DOC
@@ -48,8 +46,8 @@ class ObjType(Loadable, Object):
 	"""Object registry"""
 	__tablename__ = "objtype"
 
-	name = db.Column(Unicode(LEN_NAME), nullable=False, unique=True)
-	doc = db.Column(Unicode(LEN_DOC), nullable=True)
+	name = db.Column(db.Unicode(LEN_NAME), nullable=False, unique=True)
+	doc = db.Column(db.Unicode(LEN_DOC), nullable=True)
 
 	def __str__(self):
 		return u'‹T:%s %s›' % (self.id, self.name)

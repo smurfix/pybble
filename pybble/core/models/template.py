@@ -17,7 +17,7 @@ import sys
 import marshal
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, DateTime, Boolean, ForeignKey, PickleType
+from sqlalchemy import PickleType
 from sqlalchemy import event
 from sqlalchemy.orm import relationship
 
@@ -60,11 +60,11 @@ class Template(_Content, Cached, Object):
 	target = ObjectRef()
 	adapter = ObjectRef(MIMEadapter)
 
-	name = db.Column(Unicode(LEN_NAME), nullable=False, index=True)
-	modified = db.Column(DateTime,default=datetime.utcnow)
-	weight = db.Column(Integer, nullable=False, default=0, doc="preference when there are conflicts. Less is better.")
+	name = db.Column(db.Unicode(LEN_NAME), nullable=False, index=True)
+	modified = db.Column(db.DateTime,default=datetime.utcnow)
+	weight = db.Column(db.Integer, nullable=False, default=0, doc="preference when there are conflicts. Less is better.")
 
-	source = db.Column(Unicode(LEN_PATH), nullable=True, doc="original file this template was loaded from")
+	source = db.Column(db.Unicode(LEN_PATH), nullable=True, doc="original file this template was loaded from")
 	## so we can dump it back to the file system after editing
 
 	from_mime = property(lambda s: s.adapter.from_mime)
@@ -140,8 +140,8 @@ class TemplateMatch(Object):
 	target = ObjectRef()
 	template = ObjectRef(Template)
 
-	inherit = db.Column(Boolean, nullable=True)
-	weight = db.Column(Integer, nullable=False, default=0, doc="preference when there are conflicts. Less is better.")
+	inherit = db.Column(db.Boolean, nullable=True)
+	weight = db.Column(db.Integer, nullable=False, default=0, doc="preference when there are conflicts. Less is better.")
 
 	from_mime = property(lambda s:s.template.from_mime)
 	to_mime = property(lambda s:s.template.to_mime)

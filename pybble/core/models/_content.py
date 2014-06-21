@@ -16,7 +16,7 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 import sys
 import marshal
 
-from sqlalchemy import Integer, Unicode, ForeignKey, PickleType
+from sqlalchemy import PickleType
 from sqlalchemy import event
 from sqlalchemy.orm import relationship
 
@@ -39,7 +39,7 @@ class _Content(object):
 		This is a Content version without "mime", assuming that this reference
 		is defined elsewhere.
 		"""
-	content = db.Column(Unicode(LEN_CONTENT), nullable=False)
+	content = db.Column(db.Unicode(LEN_CONTENT), nullable=False)
 
 	def setup(self,content=None,**k):
 		if content is not None:
@@ -85,7 +85,7 @@ class Cached(object):
 		your content changes.
 		"""
 	_cache = db.Column("cache",PickleType(pickler=marshal), nullable=False, default="")
-	_version = db.Column("version",Unicode(30), nullable=False, default="")
+	_version = db.Column("version",db.Unicode(30), nullable=False, default="")
 	form_hidden = ('_cache','_version')
 
 	def get_cache(self,version):

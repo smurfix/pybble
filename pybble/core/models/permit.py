@@ -22,7 +22,7 @@ from werkzeug.utils import cached_property
 
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, DateTime, Boolean, ForeignKey, and_,or_, event
+from sqlalchemy import and_,or_, event
 from sqlalchemy.orm import relationship,backref
 from sqlalchemy.orm.base import NO_VALUE,NEVER_SET
 from sqlalchemy.types import TypeDecorator, VARCHAR
@@ -85,8 +85,8 @@ class Permission(Object):
 	user = ObjectRef(doc="The user or group who can do things")
 	target = ObjectRef(doc="The target which can have things done to it")
 
-	right = db.Column(Integer, nullable=False)
-	inherit = db.Column(Boolean, nullable=True, doc="three-valued: False:this, True:descendants, None:Both")
+	right = db.Column(db.Integer, nullable=False)
+	inherit = db.Column(db.Boolean, nullable=True, doc="three-valued: False:this, True:descendants, None:Both")
 
 	for_objtyp = ObjectRef(ObjType)
 	new_objtyp = ObjectRef(ObjType, nullable=True)

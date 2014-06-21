@@ -17,9 +17,8 @@ from datetime import datetime
 
 from flask._compat import text_type
 
-from sqlalchemy import Integer, Unicode, ForeignKey, DateTime, or_, UniqueConstraint
+from sqlalchemy import or_, event
 from sqlalchemy.orm import relationship,backref
-from sqlalchemy import event
 
 from ...compat import py2_unicode
 from .. import config
@@ -62,14 +61,14 @@ class MIMEtype(Object):
 	"""Known MIME Types"""
 	__tablename__ = "mimetype"
 
-	name = db.Column(Unicode(LEN_NAME), nullable=False)
-	typ = db.Column(Unicode(LEN_TYPE), nullable=False)
-	subtyp = db.Column(Unicode(LEN_TYPE), nullable=False)
-	doc = db.Column(Unicode(LEN_DOC), nullable=True)
-	ext = db.Column(Unicode(LEN_EXT), nullable=True) # primary extension
+	name = db.Column(db.Unicode(LEN_NAME), nullable=False)
+	typ = db.Column(db.Unicode(LEN_TYPE), nullable=False)
+	subtyp = db.Column(db.Unicode(LEN_TYPE), nullable=False)
+	doc = db.Column(db.Unicode(LEN_DOC), nullable=True)
+	ext = db.Column(db.Unicode(LEN_EXT), nullable=True) # primary extension
 	
 	to_objtyp = ObjectRef(ObjType, "mimetype", nullable=True,unique=True)
-	__table_args__ = (UniqueConstraint(typ,subtyp),)
+	__table_args__ = (db.UniqueConstraint(typ,subtyp),)
 
 	def setup(self, typ,subtyp, name=None, ext=None,doc=None,add=None,**kw):
 		if add and isinstance(add,ObjType):
@@ -133,7 +132,7 @@ class MIMEext(Object):
 	__tablename__ = "mimeext"
 
 	mime = ObjectRef(MIMEtype, "exts")
-	ext = db.Column(Unicode(10), nullable=False)
+	ext = db.Column(db.Unicode(10), nullable=False)
 
 	def setup(self,mime,ext):
 		self.mime = mime
@@ -158,8 +157,8 @@ class MIMEtranslator(Loadable, Object):
 		super(MIMEtranslator,cls).__declare_last__()
 
 	mime = ObjectRef(MIMEtype)
-	name = db.Column(Unicode(LEN_NAME), unique=True, nullable=False)
-	weight = db.Column(Integer, nullable=False,default=0, doc="Used when translating from A to B to C. Less is better.")
+	name = db.Column(db.Unicode(LEN_NAME), unique=True, nullable=False)
+	weight = db.Column(db.Integer, nullable=False,default=0, doc="Used when translating from A to B to C. Less is better.")
 
 	def setup(self, mime, name,weight=None,**kw):
 		self.mime = MIMEtype.get(mime)
@@ -199,9 +198,9 @@ class MIMEadapter(Object):
 	to_mime = ObjectRef(MIMEtype)
 	translator = ObjectRef(MIMEtranslator)
 
-	name = db.Column(Unicode(LEN_NAME), unique=True, nullable=False)
-	doc = db.Column(Unicode(LEN_DOC), nullable=True)
-	weight = db.Column(Integer, nullable=False,default=0, doc="Used when translating from A to B to C. Less is better.")
+	name = db.Column(db.Unicode(LEN_NAME), unique=True, nullable=False)
+	doc = db.Column(db.Unicode(LEN_DOC), nullable=True)
+	weight = db.Column(db.Integer, nullable=False,default=0, doc="Used when translating from A to B to C. Less is better.")
 
 	def setup(self, translator,from_mime,to_mime, name=None,weight=None,doc=None):
 		self.translator = translator

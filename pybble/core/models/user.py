@@ -22,7 +22,7 @@ from werkzeug.utils import cached_property
 
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, DateTime, Boolean, ForeignKey, and_,or_, event
+from sqlalchemy import and_,or_, event
 from sqlalchemy.orm import relationship,backref
 from sqlalchemy.orm.base import NO_VALUE,NEVER_SET
 from sqlalchemy.types import TypeDecorator, VARCHAR
@@ -106,20 +106,20 @@ class User(PasswordValue,Object):
 	_alias = {'parent':'site'}
 	        
 	# A simple way to make 'username' read-only
-	username = db.Column(Unicode(LEN_USERNAME), nullable=False)
+	username = db.Column(db.Unicode(LEN_USERNAME), nullable=False)
 
-	first_name = db.Column(Unicode(LEN_PERSONNAME), nullable=True)
-	last_name = db.Column(Unicode(LEN_PERSONNAME), nullable=True)
-	email = db.Column(Unicode(200), nullable=True)
+	first_name = db.Column(db.Unicode(LEN_PERSONNAME), nullable=True)
+	last_name = db.Column(db.Unicode(LEN_PERSONNAME), nullable=True)
+	email = db.Column(db.Unicode(200), nullable=True)
 
-	first_login = db.Column(DateTime, nullable=True) ## ever
-	last_login = db.Column(DateTime, nullable=True)  ## the one before this session
-	this_login = db.Column(DateTime, nullable=True)  ## this session start
-	cur_login = db.Column(DateTime, nullable=True)   ## this session end
+	first_login = db.Column(db.DateTime, nullable=True) ## ever
+	last_login = db.Column(db.DateTime, nullable=True)  ## the one before this session
+	this_login = db.Column(db.DateTime, nullable=True)  ## this session start
+	cur_login = db.Column(db.DateTime, nullable=True)   ## this session end
 
-	feed_age = db.Column(Integer, nullable=False, default=10)
-	feed_pass = db.Column(Unicode(30), nullable=True)
-	feed_read = db.Column(DateTime, nullable=True)
+	feed_age = db.Column(db.Integer, nullable=False, default=10)
+	feed_pass = db.Column(db.Unicode(30), nullable=True)
+	feed_read = db.Column(db.DateTime, nullable=True)
 
 	site = ObjectRef(Site, doc="The site which the user registered at, otherwise not interesting")
 	config = ObjectRef(ConfigData, lazy="joined")
@@ -364,7 +364,7 @@ class Group(Object):
 	__tablename__ = "groups"
 	_admin_add_perm="User"
 
-	name = db.Column(Unicode(LEN_NAME))
+	name = db.Column(db.Unicode(LEN_NAME))
 	parent = ObjectRef()
 
 	def setup(self,name,parent):
@@ -403,7 +403,7 @@ class Member(Object):
 	member = ObjectRef()
 	group = ObjectRef(doc="Usually a group, but may be anything")
 
-	excluded = db.Column(Boolean, nullable=False,default=False)
+	excluded = db.Column(db.Boolean, nullable=False,default=False)
 
 	def setup(self,member,group, excluded=False):
 		if isinstance(member,User) and isinstance(group,Site) and member.username == ANON_USER_NAME:

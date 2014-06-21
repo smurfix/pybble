@@ -19,7 +19,6 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship,backref
 
 from flask import request, current_app
@@ -57,11 +56,11 @@ class Breadcrumb(TrackingObject):
 	obj = ObjectRef(doc="accessed page")
 	site = ObjectRef(Site)
 
-	#seq = db.Column(Integer)
-	visited = db.Column(DateTime,default=datetime.utcnow)
-	last_visited = db.Column(DateTime,nullable=True)
-	cur_visited = db.Column(DateTime,default=datetime.utcnow, nullable=True)
-	counter = db.Column(Integer, default=0)
+	#seq = db.Column(db.Integer)
+	visited = db.Column(db.DateTime,default=datetime.utcnow)
+	last_visited = db.Column(db.DateTime,nullable=True)
+	cur_visited = db.Column(db.DateTime,default=datetime.utcnow, nullable=True)
+	counter = db.Column(db.Integer, default=0)
 
 	def setup(self, user, obj):
 		self.user = user
@@ -135,7 +134,7 @@ class Delete(TrackingObject):
 	def tracker(self):
 		return Tracker.q.get_by(obj=self)
 
-	timestamp = db.Column(DateTime,default=datetime.utcnow)
+	timestamp = db.Column(db.DateTime,default=datetime.utcnow)
 
 	def setup(self, obj, user=None, comment=None):
 		assert obj and not isinstance(obj,TrackingObject)
@@ -169,8 +168,8 @@ class Tracker(TrackingObject):
 	user = ObjectRef(User)
 	site = ObjectRef(Site)
 	obj = ObjectRef(doc="The new object, or a change/delete record")
-	comment = db.Column(Unicode(LEN_DOC), nullable=True)
-	timestamp = db.Column(DateTime,default=datetime.utcnow)
+	comment = db.Column(db.Unicode(LEN_DOC), nullable=True)
+	timestamp = db.Column(db.DateTime,default=datetime.utcnow)
 
 	def setup(self, obj, user=None,site=None, comment=None):
 		# You can track Change and Delete objects, but not e.g. a Tracker or a Breadcrumb
@@ -228,10 +227,10 @@ class WantTracking(Object):
 				fs.set('target',parent)
 		super(WantTracking,self).form_mod(fs)
 
-	email = db.Column(Boolean, nullable=False) # send mail, not just RSS/on-site?
-	track_new = db.Column(Boolean, nullable=False) # alert for new data?
-	track_mod = db.Column(Boolean, nullable=False) # alert for modifications?
-	track_del = db.Column(Boolean, nullable=False) # alert for deletions?
+	email = db.Column(db.Boolean, nullable=False) # send mail, not just RSS/on-site?
+	track_new = db.Column(db.Boolean, nullable=False) # alert for new data?
+	track_mod = db.Column(db.Boolean, nullable=False) # alert for modifications?
+	track_del = db.Column(db.Boolean, nullable=False) # alert for deletions?
 
 	def setup(self, user,target, for_objtyp=None):
 		self.user = user

@@ -16,7 +16,6 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 from datetime import datetime,timedelta
 import logging
 
-from sqlalchemy import Integer, Unicode, ForeignKey, DateTime, event, Table, Boolean, Enum
 from sqlalchemy.orm import relationship,backref
 
 from werkzeug.utils import cached_property
@@ -39,10 +38,10 @@ from ._const import PERM_SUB_ADMIN,PERM_READ,PERM_ADMIN,PERM_ADD
 
 logger = logging.getLogger('pybble.core.models.site')
 
-#t_storage_site = Table(
+#t_storage_site = db.Table(
 #	'ref_storage_site', Base.metadata,
-#	Column('site_id', Integer, ForeignKey('sites.id')),
-#	Column('storage_id', Integer, ForeignKey('storage.id'))
+#	Column('site_id', db.Integer, db.ForeignKey('sites.id')),
+#	Column('storage_id', db.Integer, db.ForeignKey('storage.id'))
 #)
 
 ## App
@@ -103,14 +102,14 @@ class Site(Object):
 	config = ObjectRef(ConfigData, lazy="joined")
 	app = ObjectRef(App, lazy="joined")
 
-	inherit_parent = db.Column(Boolean, nullable=False, server_default='FALSE', default=False, doc="Inherit blueprints etc. from parent")
-	domain = db.Column(Unicode(LEN_DOMAIN), nullable=False, unique=True)
-	name = db.Column(Unicode(LEN_NAME), nullable=False, unique=True)
-	tracked = db.Column(DateTime,nullable=False, default=datetime.utcnow)
+	inherit_parent = db.Column(db.Boolean, nullable=False, server_default='FALSE', default=False, doc="Inherit blueprints etc. from parent")
+	domain = db.Column(db.Unicode(LEN_DOMAIN), nullable=False, unique=True)
+	name = db.Column(db.Unicode(LEN_NAME), nullable=False, unique=True)
+	tracked = db.Column(db.DateTime,nullable=False, default=datetime.utcnow)
 	## Datestamp of newest fully-processed Tracker
 
 	#TODO
-	#sessioned = db.Column(Enum,name="sessiontype",enums=('ANON','ALWAYS'),nullable=False,default='ANON',server_default='ANON', doc='')
+	#sessioned = db.Column(db.Enum,name="sessiontype",enums=('ANON','ALWAYS'),nullable=False,default='ANON',server_default='ANON', doc='')
 
 	@property
 	@maybe_stale
@@ -318,9 +317,9 @@ class SiteBlueprint(Object):
 
 		super(SiteBlueprint,cls).__declare_last__()
 
-	name = db.Column(Unicode(LEN_NAME), required=True, nullable=False, doc="blueprint's name, for url_for() et al.")
-	endpoint = db.Column(Unicode(LEN_NAME), required=False, null_as=("","impo.ssible"), nullable=False, default="", doc="Endpoint to attach as. May be empty.")
-	path = db.Column(Unicode(LEN_PATH), required=False, null_as=("","impo.ssible"), nullable=False, default="", doc="URL path where to attach this ")
+	name = db.Column(db.Unicode(LEN_NAME), required=True, nullable=False, doc="blueprint's name, for url_for() et al.")
+	endpoint = db.Column(db.Unicode(LEN_NAME), required=False, null_as=("","impo.ssible"), nullable=False, default="", doc="Endpoint to attach as. May be empty.")
+	path = db.Column(db.Unicode(LEN_PATH), required=False, null_as=("","impo.ssible"), nullable=False, default="", doc="URL path where to attach this ")
 
 	def setup(self, site,blueprint, endpoint=None, name=None,path=None):
 		if isinstance(blueprint,string_types):

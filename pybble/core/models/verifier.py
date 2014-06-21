@@ -17,7 +17,6 @@ from flask import current_app,g, request
 
 from datetime import datetime,timedelta
 
-from sqlalchemy import Integer, Unicode, DateTime, ForeignKey
 from sqlalchemy.orm import relationship,backref
 
 from ...utils import random_string
@@ -40,8 +39,8 @@ class VerifierBase(Loadable, Object):
 
 	__tablename__ = "verifierbase"
 
-	name = db.Column(Unicode(LEN_NAME), unique=True, nullable=False)
-	doc = db.Column(Unicode(LEN_DOC), nullable=True)
+	name = db.Column(db.Unicode(LEN_NAME), unique=True, nullable=False)
+	doc = db.Column(db.Unicode(LEN_DOC), nullable=True)
 
 	config = ObjectRef(ConfigData, lazy="joined")
 
@@ -75,11 +74,11 @@ class Verifier(Object):
 	user = ObjectRef(User, doc="The user who shall be granted access")
 	base = ObjectRef(VerifierBase)
 
-	code = db.Column(Unicode(30), nullable=False)
+	code = db.Column(db.Unicode(30), nullable=False)
 
-	added = db.Column(DateTime,default=datetime.utcnow, nullable=False)
-	repeated = db.Column(DateTime,nullable=True)
-	timeout = db.Column(DateTime,nullable=False)
+	added = db.Column(db.DateTime,default=datetime.utcnow, nullable=False)
+	repeated = db.Column(db.DateTime,nullable=True)
+	timeout = db.Column(db.DateTime,nullable=False)
 
 	def setup(self,base, obj, user=None, code=None, days=None):
 
