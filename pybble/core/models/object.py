@@ -232,7 +232,7 @@ class get_type_id(object):
 		if t is None:
 			from .objtyp import ObjType
 			self._type[id(cls)] = t = ObjType.get(cls)
-		return t.id
+		return inspect(t).key[1][0]
 get_type_id = get_type_id()
 
 class ObjRefComposer(object):
