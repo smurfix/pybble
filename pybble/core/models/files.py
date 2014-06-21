@@ -51,8 +51,8 @@ class BinData(Object):
 		no_update(cls.hash)
 		super(BinData,cls).__declare_last__()
 
-	storage = ObjectRef(Storage)
-	mime = ObjectRef(MIMEtype)
+	storage = ObjectRef(Storage, lazy="joined")
+	mime = ObjectRef(MIMEtype, lazy="joined")
 
 	name = db.Column(Unicode(LEN_NAME), nullable=False)
 	hash = db.Column(Unicode(33), nullable=True, unique=True) ## NULL if deleted
@@ -198,7 +198,7 @@ class StaticFile(Object):
 		check_unique(cls, "site path")
 		super(StaticFile,cls).__declare_last__()
 
-	file = ObjectRef(BinData)
+	file = ObjectRef(BinData, lazy="joined")
 	parent = ObjectRef(doc="wherever this has been uploaded into")
 	site = ObjectRef(Site)
 
