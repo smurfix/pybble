@@ -50,7 +50,6 @@ from ..json import json_adapter
 from ..signal import ObjSignal
 
 from ..db import db, NoData,NoDataExc, maybe_stale, no_autoflush, refresh, setup_events, Dumpable
-from ...cache.query import FromCache
 from ._const import PERM_ADD,PERM_READ,PERM_ADMIN
 from ._render import Rendered
 
@@ -240,7 +239,7 @@ class ObjRefComposer(object):
 		if type is None:
 			return object.__new__(cls)
 		from .objtyp import ObjType
-		return ObjType.get_mod(type).qq.options(FromCache(cache_key='DB_{}_{}'.format(type,id))).get_by(id=id)
+		return ObjType.get_mod(type).qq.cached('DB',type,id).get_by(id=id)
 
 class Object(db.Model,Rendered):
 	__metaclass__ = ObjectMeta
@@ -559,7 +558,7 @@ class Object(db.Model,Rendered):
 
 	def after_update(self):
 		"""Clear cache"""
-		delete_cache('DB_{}_{}'.format(self.type_id,self.id))
+		delete_cache('DB', self.type_id,self.id)
 		super(Object, self).after_update()
 
 	@property
