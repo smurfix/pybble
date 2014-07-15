@@ -16,7 +16,12 @@ from __future__ import absolute_import, print_function, division, unicode_litera
 
 ## first thing, for monkeypatching
 
-import dabroker
+try:
+	import dabroker
+except ImportError:
+	import sys,os
+	sys.path.insert(0,os.path.join(os.pardir,"dabroker"))
+	import dabroker
 dabroker.patch()
 
 pybble.FROM_SCRIPT = True
