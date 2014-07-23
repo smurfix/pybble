@@ -24,6 +24,7 @@ except ImportError:
 	import dabroker
 dabroker.patch()
 
+import pybble
 pybble.FROM_SCRIPT = True
 from pybble.core.utils import init_logging
 

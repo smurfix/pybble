@@ -12,6 +12,7 @@ export PYBBLE=TEST
 export PYBBLE_SQL_DRIVER=sqlite
 export PYBBLE_SQL_DATABASE=/tmp/empty
 export PYBBLE_MEDIA_PATH=/tmp/empty
+export PYTHONPATH=$(pwd):$(pwd)/../dabroker${PYTHONPATH:+:$PYTHONPATH}
 
 usage() {
 cat >&2 <<END
@@ -174,9 +175,9 @@ if [ "$*" = "" ] ; then
 	[ -z "$V" ] || echo "Starting test run"
 	#PYTHONPATH=$(pwd) test/run.py -x
 	DBGENV="$DBGENV PYBBLE_LOGGER_LEVEL=INFO"
-	env PYTHONPATH=$(pwd):$PYTHONPATH $DBGENV $PY ./manage.py -t core test $ASS -x
+	env PYTHONPATH=$(pwd):$(pwd)/../dabroker:$PYTHONPATH $DBGENV $PY ./manage.py -t core test $ASS -x
 else
 	[ -z "$V" ] || echo "# ./manage.py -t $*"
-	env PYTHONPATH=$(pwd):$PYTHONPATH $DBGENV $PY ./manage.py -t "$@"
+	env PYTHONPATH=$(pwd):$(pwd)/../dabroker:$PYTHONPATH $DBGENV $PY ./manage.py -t "$@"
 fi
 
